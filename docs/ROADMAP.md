@@ -71,4 +71,3 @@ The following are preview or advanced features. They are not required for v0.1 a
 - Audit reports and decision records (v0.5 preview).
 - `trace` command (v0.3 preview).
 - `add` and `handoff` commands (v0.4 preview).
-- Examples under `examples/preview/` are roadmap illustrations, not required v0.1 flows.

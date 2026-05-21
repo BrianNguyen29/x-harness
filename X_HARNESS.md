@@ -128,9 +128,9 @@ policies/
 
 examples/
   00-minimal/
-  01-light-task/
-  02-standard-task/
-  03-blocked-verification/
+  01-solo-agent/
+  02-assisted-agent/
+  03-multi-agent/
   04-blocked-verification/
   golden/
     success-light/

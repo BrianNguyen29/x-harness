@@ -1,5 +1,14 @@
 name: x-harness Verify
-on: [push, pull_request]
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -8,9 +17,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
+          cache: npm
+      - run: npm ci
       - run: npm run typecheck
       - run: npm run build
       - run: npm test
       - run: npm run verify
-      - run: node packages/cli/dist/index.js doctor
+      - run: node packages/cli/dist/index.js doctor --root .
