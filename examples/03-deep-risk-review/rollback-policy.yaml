@@ -1,0 +1,4 @@
+class: code_revert
+trigger: high-risk verification failure
+owner: implementation-worker
+validation: tests pass

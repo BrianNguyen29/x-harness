@@ -1,0 +1,5 @@
+version: 1
+evidence_floor:
+  light: [claim_summary, verification_status]
+  standard: [claim_packet, evidence_packet, success_criteria_mapping]
+  deep: [claim_packet, evidence_packet, verification_checks, rollback_policy]

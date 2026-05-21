@@ -1,0 +1,4 @@
+version: 1
+stale_ground_policy:
+  if_detected: withhold
+  release_condition: refreshed_or_ruled_out

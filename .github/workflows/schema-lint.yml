@@ -1,0 +1,8 @@
+name: Schema Lint
+on: [push, pull_request]
+jobs:
+  schema-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Schema lint placeholder"

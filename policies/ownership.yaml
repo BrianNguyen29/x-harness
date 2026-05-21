@@ -1,0 +1,3 @@
+version: 1
+required_fields: [owner, accountable]
+blocked_requires: [next_owner, next_action]

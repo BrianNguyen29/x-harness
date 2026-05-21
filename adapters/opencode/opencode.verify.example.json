@@ -1,0 +1,8 @@
+{
+  "agents": {
+    "verify": {
+      "mode": "read_only",
+      "instructions": "Run read-only verification; do not edit files."
+    }
+  }
+}

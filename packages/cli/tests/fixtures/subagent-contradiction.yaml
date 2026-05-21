@@ -1,0 +1,13 @@
+result:
+  summary: "Partial fix"
+  fix_status: partial
+  key_findings: []
+evidence:
+  files_changed: []
+  commands_ran: []
+verification:
+  status: passed
+  checks: []
+confidence: MED
+handoff:
+  next_action: "continue"

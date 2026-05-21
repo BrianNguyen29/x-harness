@@ -1,0 +1,5 @@
+version: 1
+default_mode: advisory_only
+can_admit_completion: false
+can_override_verify: false
+can_block_runtime_by_default: false

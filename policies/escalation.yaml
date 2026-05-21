@@ -1,0 +1,4 @@
+version: 1
+deep_escalation:
+  required_path: diagnostic_first
+  allowed_targets: [oracle, council, user]

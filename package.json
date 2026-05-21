@@ -1,0 +1,16 @@
+{
+  "name": "claimgate-repo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm -w packages/cli run build",
+    "dev": "npm -w packages/cli run dev",
+    "test": "npm -w packages/cli run test",
+    "typecheck": "npm -w packages/cli run typecheck",
+    "lint": "npm -w packages/cli run lint",
+    "verify": "npm run typecheck && npm run test"
+  }
+}

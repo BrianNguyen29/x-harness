@@ -1,0 +1,1 @@
+{"event_id":"VE-001","event_type":"verify_completed","task_id":"TASK-001","tier":"light","verifier":"claimgate","verifier_mode":"read_only","outcome":"success","acceptance_status":"accepted","created_at":"2026-01-01T00:00:00.000Z"}

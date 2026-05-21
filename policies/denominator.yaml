@@ -1,0 +1,2 @@
+version: 1
+required_metric_fields: [metric_name, unit_of_analysis, numerator, denominator, inclusion_rule, exclusion_rule, claim_boundary]

@@ -1,0 +1,3 @@
+version: 1
+deep_requires_rollback_policy: true
+classes: [none, soft, code_revert, state_restore]

@@ -1,0 +1,3 @@
+id: REC-001
+blocking_predicate: evidence_floor_met
+next_action: attach validation output
