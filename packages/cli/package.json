@@ -44,7 +44,7 @@
     "commander": "^14.0.3",
     "fs-extra": "^11.3.5",
     "yaml": "^2.9.0",
-    "zod": "^3.25.76"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
