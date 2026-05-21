@@ -1,6 +1,6 @@
-# ClaimGate Agent Contract
+# x-harness Agent Contract
 
-This repository uses ClaimGate.
+This repository uses x-harness.
 
 Agents may perform work and propose completion. Agents may not self-admit completion.
 
@@ -12,7 +12,7 @@ Use only `light`, `standard`, and `deep`. Do not use `small`, `medium`, or `larg
 
 ## Completion rule
 
-Completion is accepted only when ClaimGate emits:
+Completion is accepted only when x-harness emits:
 
 ```yaml
 verify_gate.outcome: success

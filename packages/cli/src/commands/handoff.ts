@@ -29,7 +29,7 @@ ${task}
 - Return a completion candidate with result, evidence, verification, confidence, and handoff.
 
 ## Return format
-Align with ClaimGate return schema:
+Align with x-harness return schema:
 \`\`\`yaml
 result:
   summary: <one-line outcome>

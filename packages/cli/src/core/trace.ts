@@ -7,13 +7,13 @@ export interface TraceEvent {
   [key: string]: unknown;
 }
 
-export async function appendTrace(event: TraceEvent, traceDir = ".claimgate/traces"): Promise<void> {
+export async function appendTrace(event: TraceEvent, traceDir = ".x-harness/traces"): Promise<void> {
   await fs.ensureDir(traceDir);
   const filePath = path.join(traceDir, "events.jsonl");
   await fs.appendFile(filePath, JSON.stringify(event) + "\n");
 }
 
-export async function readTrace(traceDir = ".claimgate/traces"): Promise<TraceEvent[]> {
+export async function readTrace(traceDir = ".x-harness/traces"): Promise<TraceEvent[]> {
   const filePath = path.join(traceDir, "events.jsonl");
   if (!(await fs.pathExists(filePath))) return [];
   const content = await fs.readFile(filePath, "utf-8");

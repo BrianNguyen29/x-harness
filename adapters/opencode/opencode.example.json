@@ -1,7 +1,7 @@
 {
   "agents": {
     "orchestrator": {
-      "instructions": "Use ClaimGate handoff templates and canonical tiers."
+      "instructions": "Use x-harness handoff templates and canonical tiers."
     }
   }
 }

@@ -1,6 +1,6 @@
 # Architecture
 
-ClaimGate is file-first and CLI-assisted.
+x-harness is file-first and CLI-assisted.
 
 Layers: Project Operating Layer, Tiered Handoff Layer, Admission-Control Layer, Evidence/Trace/Reporting Layer, Tooling/Install Layer, Adapter Layer.
 

@@ -101,7 +101,7 @@ export function verifyCommand(): Command {
         tier,
         claim_id: claim?.id as string | undefined ?? null,
         evidence_id: evidence?.id as string | undefined ?? null,
-        verifier: "claimgate",
+        verifier: "x-harness",
         verifier_mode: "read_only",
         outcome,
         acceptance_status: acceptance,

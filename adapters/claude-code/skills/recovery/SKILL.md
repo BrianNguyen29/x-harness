@@ -1,5 +1,5 @@
 ---
-description: Prepare ClaimGate recovery packet
+description: Prepare x-harness recovery packet
 allowed-tools: Read, Grep, Glob, Edit
 ---
 

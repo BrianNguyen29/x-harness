@@ -2,4 +2,4 @@
 alwaysApply: true
 ---
 
-Use ClaimGate tiers. Do not mark work complete without verify success. PGV is advisory-only.
+Use x-harness tiers. Do not mark work complete without verify success. PGV is advisory-only.

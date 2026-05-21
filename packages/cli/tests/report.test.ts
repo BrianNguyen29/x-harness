@@ -3,7 +3,7 @@ import fs from "fs-extra";
 import * as path from "node:path";
 import { execaNode } from "../src/test-helpers.js";
 
-const TEST_TRACE_DIR = path.join(process.cwd(), ".claimgate-test-traces-report");
+const TEST_TRACE_DIR = path.join(process.cwd(), ".x-harness-test-traces-report");
 
 describe("report command", () => {
   beforeEach(async () => {

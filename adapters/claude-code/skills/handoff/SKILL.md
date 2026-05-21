@@ -1,5 +1,5 @@
 ---
-description: Create a ClaimGate tiered handoff
+description: Create a x-harness tiered handoff
 allowed-tools: Read, Grep, Glob
 ---
 

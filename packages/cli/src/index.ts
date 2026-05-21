@@ -9,7 +9,7 @@ import { traceCommand } from "./commands/trace.js";
 import { handoffCommand } from "./commands/handoff.js";
 
 const program = new Command();
-program.name("claimgate").description("Verify-gated operating harness for AI-agent workflows").version("0.1.0");
+program.name("x-harness").description("A lightweight verify-gated harness for AI-agent workflows").version("0.1.0");
 program.addCommand(initCommand());
 program.addCommand(addCommand());
 program.addCommand(handoffCommand());

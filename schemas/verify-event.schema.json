@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "ClaimGateVerifyEvent",
+  "title": "XHarnessVerifyEvent",
   "type": "object",
   "required": [
     "event_id",

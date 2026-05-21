@@ -1,6 +1,6 @@
 # Admission Policy
 
-ClaimGate admission is fail-closed.
+x-harness admission is fail-closed.
 
 Success requires claim or completion card, evidence, owner, accountable, mapped success criteria, evidence floor, no unresolved blocker, stale ground resolved, no active recovery, no active veto, verify invoked, and read-only verifier.
 

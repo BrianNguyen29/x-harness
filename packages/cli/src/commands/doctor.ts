@@ -3,21 +3,13 @@ import * as path from "node:path";
 import fs from "fs-extra";
 
 const CRITICAL_ASSETS = [
-  "schemas/claim.schema.json",
-  "schemas/evidence.schema.json",
-  "schemas/verify-event.schema.json",
-  "schemas/subagent-return.schema.json",
+  "AGENTS.md",
+  "X_HARNESS.md",
   "schemas/completion-card.schema.json",
-  "schemas/story.schema.json",
-  "schemas/test-matrix.schema.json",
+  "schemas/subagent-return.schema.json",
+  "schemas/verify-event.schema.json",
+  "schemas/pgv-advice.schema.json",
   "policies/admission.yaml",
-  "policies/evidence.yaml",
-  "policies/stale-ground.yaml",
-  "policies/ownership.yaml",
-  "policies/pgv.yaml",
-  "policies/denominator.yaml",
-  "policies/rollback.yaml",
-  "policies/escalation.yaml",
 ];
 
 export function doctorCommand(): Command {

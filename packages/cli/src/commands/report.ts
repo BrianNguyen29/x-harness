@@ -9,9 +9,9 @@ interface ReportOptions {
 export function reportCommand(): Command {
   return new Command("report")
     .description("Summarize trace events")
-    .option("--trace-dir <dir>", "Trace directory", ".claimgate/traces")
+    .option("--trace-dir <dir>", "Trace directory", ".x-harness/traces")
     .action(async (opts: ReportOptions) => {
-      const events = await readTrace(path.resolve(opts.traceDir ?? ".claimgate/traces"));
+      const events = await readTrace(path.resolve(opts.traceDir ?? ".x-harness/traces"));
 
       const total = events.length;
       const accepted = events.filter((e) => e.acceptance_status === "accepted").length;

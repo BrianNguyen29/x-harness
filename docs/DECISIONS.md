@@ -8,7 +8,7 @@ status: <proposed|accepted|superseded>
 context: <why>
 decision: <what>
 consequences: <impact>
-claimgate_refs:
+x_harness_refs:
   feature_intake: FI-001
   story: STORY-001
   verify_event: VE-001

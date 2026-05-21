@@ -1,5 +1,5 @@
 {
-  "name": "claimgate-repo",
+  "name": "x-harness-repo",
   "private": true,
   "type": "module",
   "workspaces": [

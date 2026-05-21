@@ -17,13 +17,13 @@ interface InitOptions {
 
 const MODE_ASSETS: Record<string, string[]> = {
   minimal: ["examples/00-minimal"],
-  standard: ["examples/01-light-task", "examples/02-standard-feature", "schemas", "policies"],
+  standard: ["examples/01-light-task", "examples/02-standard-task", "schemas", "policies"],
   full: ["examples", "schemas", "policies", "templates", "adapters"],
 };
 
 export function initCommand(): Command {
   return new Command("init")
-    .description("Initialize ClaimGate files")
+    .description("Initialize x-harness files")
     .option("--minimal", "Minimal mode")
     .option("--standard", "Standard mode (default)")
     .option("--full", "Full mode")
@@ -36,15 +36,35 @@ export function initCommand(): Command {
       const mode = opts.full ? "full" : opts.minimal ? "minimal" : "standard";
       const targetDir = path.resolve(target);
       const rootDir = path.resolve(path.join(__dirname, "..", "..", "..", ".."));
-      const assets = MODE_ASSETS[mode];
 
       const plan: { src: string; dest: string }[] = [];
 
-      for (const asset of assets) {
-        const src = path.join(rootDir, asset);
-        if (!(await fs.pathExists(src))) continue;
-        const dest = path.join(targetDir, path.basename(asset));
-        plan.push({ src, dest });
+      if (mode === "minimal") {
+        const minimalFiles = [
+          { src: "AGENTS.md", dest: "AGENTS.md" },
+          { src: "X_HARNESS.md", dest: "X_HARNESS.md" },
+          { src: "docs/VERIFY_GATE.md", dest: "docs/VERIFY_GATE.md" },
+          { src: "docs/RUNTIME_CONTRACT.md", dest: "docs/RUNTIME_CONTRACT.md" },
+          { src: "templates/SUBAGENT_TASK_light.md", dest: "templates/SUBAGENT_TASK_light.md" },
+          { src: "templates/SUBAGENT_TASK_standard.md", dest: "templates/SUBAGENT_TASK_standard.md" },
+          { src: "templates/SUBAGENT_TASK_deep.md", dest: "templates/SUBAGENT_TASK_deep.md" },
+          { src: "templates/COMPLETION_CARD.md", dest: "templates/COMPLETION_CARD.md" },
+          { src: "policies/admission.yaml", dest: "policies/admission.yaml" },
+        ];
+        for (const f of minimalFiles) {
+          const src = path.join(rootDir, f.src);
+          if (await fs.pathExists(src)) {
+            plan.push({ src, dest: path.join(targetDir, f.dest) });
+          }
+        }
+      } else {
+        const assets = MODE_ASSETS[mode];
+        for (const asset of assets) {
+          const src = path.join(rootDir, asset);
+          if (!(await fs.pathExists(src))) continue;
+          const dest = path.join(targetDir, path.basename(asset));
+          plan.push({ src, dest });
+        }
       }
 
       // Copy adapter-specific files if requested
@@ -58,7 +78,7 @@ export function initCommand(): Command {
       }
 
       if (opts.dryRun) {
-        console.log(`# ClaimGate init (${mode}) - dry run`);
+        console.log(`# x-harness init (${mode}) - dry run`);
         for (const p of plan) {
           console.log(`would copy: ${p.src} -> ${p.dest}`);
         }
@@ -79,6 +99,6 @@ export function initCommand(): Command {
         console.log(`copied: ${p.dest}`);
       }
 
-      console.log(`ClaimGate init (${mode}) complete: ${plan.length} assets copied to ${targetDir}`);
+      console.log(`x-harness init (${mode}) complete: ${plan.length} assets copied to ${targetDir}`);
     });
 }

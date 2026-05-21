@@ -1,10 +1,10 @@
 {
-  "name": "claimgate",
+  "name": "x-harness",
   "version": "0.1.0",
-  "description": "A lightweight verify-gated operating harness for AI-agent workflows.",
+  "description": "A lightweight verify-gated harness for AI-agent workflows.",
   "type": "module",
   "bin": {
-    "claimgate": "./dist/index.js"
+    "x-harness": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",

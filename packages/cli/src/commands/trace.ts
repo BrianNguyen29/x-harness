@@ -30,7 +30,7 @@ export function traceCommand(): Command {
         tier: opts.tier,
         claim_id: opts.claimId ?? null,
         evidence_id: opts.evidenceId ?? null,
-        verifier: "claimgate",
+        verifier: "x-harness",
         verifier_mode: "read_only",
         outcome: opts.outcome,
         acceptance_status: opts.acceptanceStatus,

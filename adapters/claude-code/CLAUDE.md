@@ -1,3 +1,3 @@
-# Claude Code ClaimGate Instructions
+# Claude Code x-harness Instructions
 
-Follow AGENTS.md and use ClaimGate verify skill.
+Follow AGENTS.md and use x-harness verify skill.

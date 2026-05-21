@@ -3,7 +3,7 @@ import fs from "fs-extra";
 import * as path from "node:path";
 import { appendTrace, readTrace } from "../src/core/trace.js";
 
-const TEST_TRACE_DIR = path.join(process.cwd(), ".claimgate-test-traces");
+const TEST_TRACE_DIR = path.join(process.cwd(), ".x-harness-test-traces");
 
 describe("trace", () => {
   beforeEach(async () => {

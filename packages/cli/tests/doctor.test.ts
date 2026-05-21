@@ -16,7 +16,7 @@ describe("doctor command", () => {
   });
 
   it("fails when critical assets are missing", async () => {
-    const { exitCode } = await execaNode(["doctor", "--root", "/tmp/nonexistent-claimgate"]);
+    const { exitCode } = await execaNode(["doctor", "--root", "/tmp/nonexistent-x-harness"]);
     expect(exitCode).toBe(1);
   });
 });

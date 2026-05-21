@@ -1,3 +1,3 @@
 # OpenCode Adapter
 
-Use `npx claimgate verify` and `npx claimgate doctor` for portable checks.
+Use `npx x-harness verify` and `npx x-harness doctor` for portable checks.

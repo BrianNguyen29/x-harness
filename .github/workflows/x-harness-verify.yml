@@ -1,4 +1,4 @@
-name: ClaimGate Verify
+name: x-harness Verify
 on: [push, pull_request]
 jobs:
   verify:
