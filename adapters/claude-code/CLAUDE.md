@@ -39,3 +39,9 @@ npx x-harness report
 - Verifier is read-only.
 - PGV is advisory-only.
 - Non-success verify outcomes are always withheld.
+- Standard tasks should include evidence scope (`verifies` / `does_not_verify`).
+- Deep tasks require `state.read_set`, `state.write_set`, and `governance` for high-risk changes.
+
+## Authoritative hierarchy
+
+Chat summaries are non-authoritative. `completion-card.yaml` and `npx x-harness verify` output are authoritative for completion state.

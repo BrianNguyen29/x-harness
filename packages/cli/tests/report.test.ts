@@ -1,8 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "fs-extra";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { execaNode } from "../src/test-helpers.js";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(path.join(__dirname, "..", "..", ".."));
 const TEST_TRACE_DIR = path.join(process.cwd(), ".x-harness-test-traces-report");
 
 describe("report command", () => {
@@ -55,5 +58,32 @@ describe("report command", () => {
     expect(exitCode).toBe(0);
     expect(stdout).toContain("NOT_COMPUTABLE");
     await fs.remove(emptyDir);
+  });
+
+  it("outputs metrics in JSON with --metrics --json", async () => {
+    const cardPath = path.join(repoRoot, "examples", "golden", "success-standard-scoped-evidence", "completion-card.yaml");
+    const { stdout, exitCode } = await execaNode(["report", "--metrics", "--card", cardPath, "--json"]);
+    expect(exitCode).toBe(0);
+    const report = JSON.parse(stdout);
+    expect(report.metrics).toBeDefined();
+    expect(report.metrics.verification_strength.command_evidence_count).toBeGreaterThanOrEqual(0);
+    expect(report.metrics.state_consistency.owner_present).toBe(true);
+    expect(report.metrics.replayability.completion_card_present).toBe(true);
+    expect(report.metrics.cost.default_context_class).toBe("medium");
+    expect(report.denominator_warning).toContain("must not be interpreted");
+  });
+
+  it("outputs metrics in Markdown with --metrics", async () => {
+    const cardPath = path.join(repoRoot, "examples", "golden", "success-standard-scoped-evidence", "completion-card.yaml");
+    const { stdout, exitCode } = await execaNode(["report", "--metrics", "--card", cardPath]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("# x-harness Metrics Report");
+    expect(stdout).toContain("## Verification strength");
+    expect(stdout).toContain("## Denominator warning");
+  });
+
+  it("metrics fail when card not found", async () => {
+    const { exitCode } = await execaNode(["report", "--metrics", "--card", "/nonexistent/card.yaml"]);
+    expect(exitCode).toBe(2);
   });
 });

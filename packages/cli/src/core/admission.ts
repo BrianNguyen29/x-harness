@@ -1,8 +1,8 @@
-export type VerifyOutcome = "success" | "failed" | "blocked" | "skipped" | "timeout" | "error";
+export type VerifyOutcome = "success" | "failed" | "blocked" | "skipped" | "timeout" | "error" | "pending";
 export type AcceptanceStatus = "accepted" | "withheld";
 export type Tier = "light" | "standard" | "deep";
 export type FixStatus = "fixed" | "not_fixed" | "partial";
-export type VerificationStatus = "passed" | "failed" | "skipped" | "blocked";
+export type VerificationStatus = "passed" | "failed" | "skipped" | "blocked" | "timeout" | "error";
 
 export function acceptanceStatus(outcome: VerifyOutcome): AcceptanceStatus {
   return outcome === "success" ? "accepted" : "withheld";

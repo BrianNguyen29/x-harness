@@ -24,3 +24,14 @@ acceptance_status: accepted
 ```
 
 All other outcomes are withheld: `failed`, `blocked`, `skipped`, `timeout`, and `error`.
+
+## Evidence scope (light/standard/deep)
+
+- **light**: `verification_artifacts` optional.
+- **standard**: `verification_artifacts`, `verifies`, `does_not_verify`, `untested_regions` recommended.
+- **deep**: The above required, plus `remaining_risks`, `state.read_set`, `state.write_set`, and `governance` if high-risk.
+
+## Authoritative hierarchy
+
+If chat says done but `completion-card.yaml` says withheld, treat completion as withheld.
+If `completion-card.yaml` claims accepted but verify output disagrees, verify output wins.

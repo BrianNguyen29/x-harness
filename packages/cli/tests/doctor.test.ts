@@ -102,4 +102,14 @@ describe("doctor command", () => {
     expect(check).toBeDefined();
     expect(check.status).toBe("pass");
   });
+
+  it("includes templates inventory check", async () => {
+    const { stdout } = await execaNode(["doctor", "--root", repoRoot]);
+    const report = JSON.parse(stdout);
+    const check = report.checks.find((c: any) => c.name === "templates_inventory");
+    expect(check).toBeDefined();
+    expect(check.status).toBe("pass");
+    expect(check.note).toContain("SUBAGENT_TASK_light.md");
+    expect(check.note).toContain("COMPLETION_CARD.md");
+  });
 });

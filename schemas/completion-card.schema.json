@@ -158,7 +158,7 @@
       "required": ["status", "checks"],
       "properties": {
         "status": {
-          "enum": ["passed", "failed", "skipped", "blocked"]
+          "enum": ["passed", "failed", "skipped", "blocked", "timeout", "error"]
         },
         "checks": {
           "type": "array"

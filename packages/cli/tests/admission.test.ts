@@ -265,4 +265,147 @@ describe("admission", () => {
     expect(result.acceptance_status).toBe("withheld");
     expect(result.errors[0]).toContain("canonical contradiction");
   });
+
+  // Evidence floor tests for deep tier
+  it("blocks deep tier missing verification_artifacts", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("deep") && e.includes("verification_artifacts"))).toBe(true);
+    expect(result.blocking_predicate).toBe("evidence_scope_missing");
+  });
+
+  it("blocks deep tier missing evidence scope", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        verification_artifacts: [
+          { kind: "unit_test", command: "npm test", status: "passed" },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("evidence scope"))).toBe(true);
+  });
+
+  it("blocks deep tier missing state.read_set/write_set", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        verification_artifacts: [
+          { kind: "unit_test", command: "npm test", status: "passed", verifies: ["x"], does_not_verify: ["y"] },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("state.write_set"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("state.read_set"))).toBe(true);
+  });
+
+  it("accepts deep tier with full evidence floor", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        verification_artifacts: [
+          { kind: "unit_test", command: "npm test", status: "passed", verifies: ["x"], does_not_verify: ["y"] },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+  });
+
+  // Governance approval tests
+  it("blocks deep tier with pending human approval", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        verification_artifacts: [
+          { kind: "unit_test", command: "npm test", status: "passed", verifies: ["x"], does_not_verify: ["y"] },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+      },
+      governance: {
+        risk_class: "high",
+        requires_human_approval: true,
+        approval_required_for: ["auth change"],
+        approval_status: "pending",
+        approver: "user",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("human approval"))).toBe(true);
+    expect(result.blocking_predicate).toBe("approval_missing");
+  });
+
+  it("accepts deep tier with approved human approval", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        verification_artifacts: [
+          { kind: "unit_test", command: "npm test", status: "passed", verifies: ["x"], does_not_verify: ["y"] },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+      },
+      governance: {
+        risk_class: "high",
+        requires_human_approval: true,
+        approval_required_for: ["auth change"],
+        approval_status: "approved",
+        approver: "user",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+  });
 });

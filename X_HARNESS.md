@@ -33,8 +33,8 @@ Task
 ## Canonical Tiers
 
 - **light**: Narrow, low-ceremony tasks. One clear objective, read-only or nearly read-only, one to three files.
-- **standard**: Normal multi-step work. Bounded synthesis, two to four sources, clear but lightweight verification plan.
-- **deep**: High-stakes work only. Multiple dependencies, rollback policy, execution controls. Must not become the default.
+- **standard**: Normal multi-step work. Bounded synthesis, two to four sources, clear but lightweight verification plan. Evidence scope (verifies/does_not_verify/untested_regions) is recommended.
+- **deep**: High-stakes work only. Multiple dependencies, rollback policy, execution controls, state read/write sets, and governance approval if required. Must not become the default.
 
 ## Completion Semantics
 
@@ -85,6 +85,7 @@ npx x-harness init --minimal
 npx x-harness verify
 npx x-harness doctor
 npx x-harness report
+npx x-harness report --metrics --card completion-card.yaml
 ```
 
 ## Repository Structure
@@ -105,12 +106,15 @@ docs/
   ADMISSION_POLICY.md
   PGV_ADVISORY.md
   ROADMAP.md
+  RECOVERY.md
+  METRICS.md
 
 templates/
   SUBAGENT_TASK_light.md
   SUBAGENT_TASK_standard.md
   SUBAGENT_TASK_deep.md
   COMPLETION_CARD.md
+  HARNESS_CHANGE_CONTRACT.md
 
 schemas/
   completion-card.schema.json
@@ -120,12 +124,24 @@ schemas/
 
 policies/
   admission.yaml
+  recovery.yaml
 
 examples/
   00-minimal/
   01-light-task/
   02-standard-task/
   03-blocked-verification/
+  04-blocked-verification/
+  golden/
+    success-light/
+    success-standard-scoped-evidence/
+    blocked-missing-evidence/
+    blocked-missing-evidence-scope/
+    failed-invalid-status/
+    failed-typecheck-recovery-route/
+    withheld-partial-fix/
+    deep-approval-required/
+    multi-agent-success/
 
 adapters/
   generic/

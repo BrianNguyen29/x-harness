@@ -14,10 +14,13 @@ const CRITICAL_ASSETS = [
   "docs/DENOMINATOR_POLICY.md",
   "docs/ROADMAP.md",
   "docs/ADAPTERS.md",
+  "docs/RECOVERY.md",
+  "docs/METRICS.md",
   "templates/COMPLETION_CARD.md",
   "templates/SUBAGENT_TASK_light.md",
   "templates/SUBAGENT_TASK_standard.md",
   "templates/SUBAGENT_TASK_deep.md",
+  "templates/HARNESS_CHANGE_CONTRACT.md",
   "schemas/completion-card.schema.json",
   "schemas/subagent-return.schema.json",
   "schemas/verify-event.schema.json",
@@ -350,27 +353,35 @@ async function checkNoHeavyRuntime(root: string): Promise<{ ok: boolean; notes: 
   return { ok, notes };
 }
 
-async function checkTemplatesDeepNotDefault(root: string): Promise<{ ok: boolean; notes: string[] }> {
+async function checkTemplatesInventory(root: string): Promise<{ ok: boolean; notes: string[] }> {
   const notes: string[] = [];
   let ok = true;
-  const lightTemplate = path.join(root, "templates", "SUBAGENT_TASK_light.md");
-  if (await fs.pathExists(lightTemplate)) {
-    const content = await fs.readFile(lightTemplate, "utf-8");
-    if (content.includes("deep") && !content.toLowerCase().includes("deep is opt-in")) {
-      // Allow mentions of deep if they say it's opt-in
-    }
-    notes.push("light template exists");
-  } else {
-    notes.push("light template missing");
-    ok = false;
+  const templatesDir = path.join(root, "templates");
+  if (!(await fs.pathExists(templatesDir))) {
+    notes.push("templates directory missing");
+    return { ok: false, notes };
   }
 
-  const standardTemplate = path.join(root, "templates", "SUBAGENT_TASK_standard.md");
-  if (await fs.pathExists(standardTemplate)) {
-    notes.push("standard template exists");
-  } else {
-    notes.push("standard template missing");
+  const entries = await fs.readdir(templatesDir, { withFileTypes: true });
+  const mdFiles = entries
+    .filter((e) => e.isFile() && e.name.endsWith(".md"))
+    .map((e) => e.name)
+    .sort();
+
+  if (mdFiles.length === 0) {
+    notes.push("no markdown templates found");
     ok = false;
+  } else {
+    notes.push(`${mdFiles.length} template(s) present: ${mdFiles.join(", ")}`);
+  }
+
+  // Ensure core tier templates exist
+  const coreTemplates = ["SUBAGENT_TASK_light.md", "SUBAGENT_TASK_standard.md", "SUBAGENT_TASK_deep.md", "COMPLETION_CARD.md"];
+  for (const core of coreTemplates) {
+    if (!mdFiles.includes(core)) {
+      notes.push(`core template missing: ${core}`);
+      ok = false;
+    }
   }
 
   return { ok, notes };
@@ -490,10 +501,10 @@ export function doctorCommand(): Command {
         note: runtimeResult.notes.join("; "),
       });
 
-      // Templates/deep not default check
-      const templatesResult = await checkTemplatesDeepNotDefault(root);
+      // Templates inventory check
+      const templatesResult = await checkTemplatesInventory(root);
       checks.push({
-        name: "templates_present",
+        name: "templates_inventory",
         status: templatesResult.ok ? "pass" : "fail",
         note: templatesResult.notes.join("; "),
       });

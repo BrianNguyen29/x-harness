@@ -68,6 +68,16 @@ npx x-harness report
 
 Python is not part of the canonical core tooling path. Python utilities, if ever added, must live under `legacy/python/` or `tools/experimental/` and must be marked non-canonical.
 
+## Recovery routing
+
+Blocked and failed verifications include a suggested recovery route:
+
+```bash
+npx x-harness verify --card completion-card.yaml --json
+```
+
+Look for `recovery.next_action` and `recovery.owner` in the JSON output to route the next step.
+
 ## ClaimGate compatibility
 
 x-harness is the evolution of the ClaimGate concept. `CLAIMGATE.md` is preserved as a backward-compatible alias.

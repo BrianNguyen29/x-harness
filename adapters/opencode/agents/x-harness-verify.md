@@ -36,3 +36,14 @@ npx x-harness report
 - `admission_outcome: success|failed|blocked|skipped|timeout|error`
 - `withheld_reason: <string|null>`
 - `checks: <array>`
+- `recovery: { predicate, next_action, owner } | null`
+
+## Evidence scope checks
+
+- Light: optional `verification_artifacts`.
+- Standard: recommends `verifies`, `does_not_verify`, `untested_regions`.
+- Deep: requires the above plus `remaining_risks`, `state.read_set`, `state.write_set`.
+
+## Governance
+
+Deep tasks with `governance.requires_human_approval: true` require `approval_status: approved`.
