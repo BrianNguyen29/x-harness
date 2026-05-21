@@ -29,7 +29,6 @@ Task
   -> Read-only Verify
   -> Accepted / Withheld
 ```
-
 ## Canonical Tiers
 
 - **light**: Narrow, low-ceremony tasks. One clear objective, read-only or nearly read-only, one to three files.
@@ -149,7 +148,3 @@ adapters/
   cursor/
   opencode/
 ```
-
-## ClaimGate Compatibility
-
-x-harness is the evolution of the ClaimGate concept. `CLAIMGATE.md` is preserved as a backward-compatible alias for historical reference.

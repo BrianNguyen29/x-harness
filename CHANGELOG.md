@@ -2,4 +2,4 @@
 
 ## 0.1.0
 
-Initial TypeScript-first ClaimGate blueprint.
+Initial TypeScript-first x-harness blueprint.

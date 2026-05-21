@@ -30,7 +30,7 @@ x-harness adapters are thin conventions that make the harness usable inside spec
 
 - Location: `adapters/cursor/rules/`
 - Use when: You use Cursor as the agent platform.
-- Key files: `x-harness.mdc` (primary), `claimgate.mdc` (legacy compatibility pointer)
+- Key files: `x-harness.mdc` (primary)
 - Rules are applied via Cursor's `.cursor/rules/` directory.
 
 ### OpenCode

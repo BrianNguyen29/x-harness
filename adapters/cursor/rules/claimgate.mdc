@@ -1,9 +1,0 @@
----
-alwaysApply: true
----
-
-# Compatibility pointer
-
-This file is preserved for backward compatibility. Use `x-harness.mdc` as the primary Cursor rule.
-
-See: `adapters/cursor/rules/x-harness.mdc`
