@@ -16,7 +16,7 @@ Current release. One rule, one card, one verify command.
 - Minimal JSON schemas.
 - TypeScript CLI scaffold.
 - Generic, Claude Code, Cursor, and OpenCode adapter docs.
-- Four examples: minimal, light-task, standard-task, blocked-verification.
+- Five examples: minimal, solo-agent, assisted-agent, multi-agent, blocked-verification.
 
 ## v0.2 — Standard Mode
 
@@ -61,3 +61,14 @@ Stabilize:
 - Adapter contracts.
 - Admission policy.
 - Documentation.
+
+## Advanced / preview artifacts
+
+The following are preview or advanced features. They are not required for v0.1 and do not redefine the default lightweight flow:
+
+- Feature intake and story packets (v0.2 preview).
+- Product contract and test matrix (v0.2 preview).
+- Audit reports and decision records (v0.5 preview).
+- `trace` command (v0.3 preview).
+- `add` and `handoff` commands (v0.4 preview).
+- Examples under `examples/preview/` are roadmap illustrations, not required v0.1 flows.

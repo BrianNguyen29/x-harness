@@ -1,0 +1,23 @@
+schema_version: "1"
+task_id: TASK-SOLO-001
+tier: light
+owner: solo-agent
+accountable: user-alice
+claim:
+  fix_status: fixed
+  summary: Checked config rule and updated setting
+  evidence:
+    - type: note
+      value: config rule verified against spec
+verification:
+  status: passed
+  checks:
+    - name: config_check
+      status: passed
+      note: setting matches spec
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: solo-agent

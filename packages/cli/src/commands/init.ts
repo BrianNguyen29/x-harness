@@ -17,7 +17,7 @@ interface InitOptions {
 
 const MODE_ASSETS: Record<string, string[]> = {
   minimal: ["examples/00-minimal"],
-  standard: ["examples/01-light-task", "examples/02-standard-task", "schemas", "policies"],
+  standard: ["examples/01-solo-agent", "examples/02-assisted-agent", "schemas", "policies"],
   full: ["examples", "schemas", "policies", "templates", "adapters"],
 };
 

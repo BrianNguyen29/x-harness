@@ -1,0 +1,36 @@
+schema_version: "1"
+task_id: TASK-MULTI-001
+tier: standard
+owner: worker-alpha
+accountable: user-alice
+claim:
+  fix_status: fixed
+  summary: Implemented user auth flow with password reset
+  evidence:
+    - type: file
+      value: src/auth/login.ts
+    - type: file
+      value: src/auth/reset.ts
+    - type: command
+      value: npm test -- auth
+verification:
+  status: passed
+  checks:
+    - name: schema_validation
+      status: passed
+      note: completion card schema valid
+    - name: canonical_consistency
+      status: passed
+      note: verification.passed implies fix_status.fixed
+    - name: evidence_presence
+      status: passed
+      note: standard tier has evidence
+    - name: unit_tests
+      status: passed
+      note: all auth tests pass
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: worker-alpha

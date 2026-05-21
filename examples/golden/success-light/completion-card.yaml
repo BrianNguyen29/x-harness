@@ -1,0 +1,27 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-001
+tier: light
+owner: alice
+accountable: bob
+claim:
+  fix_status: fixed
+  summary: Implemented formatDate() utility with graceful invalid-input handling
+  evidence:
+    - description: Source file src/utils/formatDate.ts
+      url: ./src/utils/formatDate.ts
+    - description: Test output
+      result: passed
+      command: npm test -- formatDate
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice

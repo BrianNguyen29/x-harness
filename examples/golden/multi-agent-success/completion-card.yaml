@@ -1,0 +1,37 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-005
+tier: standard
+owner: orchestrator
+accountable: lead
+claim:
+  fix_status: fixed
+  summary: User profile API v2 implemented with avatar upload and validation
+  evidence:
+    - description: worker-1 implementation
+      files_changed:
+        - src/api/v2/profile.ts
+        - src/api/v2/avatar.ts
+        - src/validators/profileSchema.ts
+    - description: worker-2 tests and docs
+      files_changed:
+        - tests/profile.integration.test.ts
+        - tests/avatar.upload.test.ts
+        - docs/api/v2/profile.md
+    - description: verifier review
+      result: passed
+      notes: All checks passed; no blocking issues found.
+verification:
+  status: passed
+  checks:
+    - name: worker-1-review
+      result: passed
+    - name: worker-2-review
+      result: passed
+    - name: verifier-gate
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: merge and deploy
+  owner: lead

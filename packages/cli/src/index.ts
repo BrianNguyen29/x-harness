@@ -7,6 +7,8 @@ import { doctorCommand } from "./commands/doctor.js";
 import { reportCommand } from "./commands/report.js";
 import { traceCommand } from "./commands/trace.js";
 import { handoffCommand } from "./commands/handoff.js";
+import { cleanCommand } from "./commands/clean.js";
+import { examplesCommand } from "./commands/examples.js";
 
 const program = new Command();
 program.name("x-harness").description("A lightweight verify-gated harness for AI-agent workflows").version("0.1.0");
@@ -16,5 +18,7 @@ program.addCommand(handoffCommand());
 program.addCommand(verifyCommand());
 program.addCommand(traceCommand());
 program.addCommand(reportCommand());
+program.addCommand(cleanCommand());
+program.addCommand(examplesCommand());
 program.addCommand(doctorCommand());
 program.parse(process.argv);

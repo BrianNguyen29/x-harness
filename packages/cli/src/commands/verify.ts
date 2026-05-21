@@ -1,13 +1,16 @@
 import { Command } from "commander";
 import * as path from "node:path";
+import fs from "fs-extra";
 import { readYamlOrJson } from "../core/schema.js";
 import { runAdmission, acceptanceStatus } from "../core/admission.js";
 import { appendTrace } from "../core/trace.js";
 import { validate as validateClaim } from "../validators/claim.js";
 import { validate as validateEvidence } from "../validators/evidence.js";
 import { validate as validateSubagentReturn } from "../validators/subagentReturn.js";
+import { validate as validateCompletionCard } from "../validators/completionCard.js";
 
 interface VerifyOptions {
+  card?: string;
   claim?: string;
   evidence?: string;
   subagentReturn?: string;
@@ -15,24 +18,73 @@ interface VerifyOptions {
   taskId?: string;
   storyId?: string;
   trace?: boolean;
+  json?: boolean;
+  verbose?: boolean;
+}
+
+const DEFAULT_CARD_PATHS = [
+  "completion-card.yaml",
+  "completion-card.yml",
+  ".x-harness/completion-card.yaml",
+];
+
+async function resolveCardPath(cwd: string, explicit?: string): Promise<string | undefined> {
+  if (explicit) {
+    const p = path.resolve(cwd, explicit);
+    return (await fs.pathExists(p)) ? p : undefined;
+  }
+  for (const rel of DEFAULT_CARD_PATHS) {
+    const p = path.resolve(cwd, rel);
+    if (await fs.pathExists(p)) return p;
+  }
+  return undefined;
 }
 
 export function verifyCommand(): Command {
   return new Command("verify")
-    .description("Run read-only verification against claim/evidence/subagent-return")
-    .option("-c, --claim <path>", "Path to claim YAML/JSON")
-    .option("-e, --evidence <path>", "Path to evidence YAML/JSON")
-    .option("-s, --subagent-return <path>", "Path to subagent return YAML/JSON")
+    .description("Run read-only verification against a completion card or claim/evidence/subagent-return")
+    .option("--card <path>", "Path to completion card YAML/JSON (default: auto-detect)")
+    .option("-c, --claim <path>", "Path to claim YAML/JSON (advanced/compatibility mode)")
+    .option("-e, --evidence <path>", "Path to evidence YAML/JSON (advanced/compatibility mode)")
+    .option("-s, --subagent-return <path>", "Path to subagent return YAML/JSON (advanced/compatibility mode)")
     .option("-t, --tier <tier>", "Tier: light, standard, deep", "standard")
     .option("--task-id <id>", "Task ID")
     .option("--story-id <id>", "Story ID")
     .option("--trace", "Append verify event to trace", false)
+    .option("--json", "Output JSON instead of human-readable text", false)
+    .option("--verbose", "Output detailed human-readable text", false)
     .action(async (opts: VerifyOptions) => {
       const errors: string[] = [];
       const notes: string[] = [];
       let claim: Record<string, unknown> | undefined;
       let evidence: Record<string, unknown> | undefined;
       let subagentReturn: Record<string, unknown> | undefined;
+      let card: Record<string, unknown> | undefined;
+      let cardPath: string | undefined;
+
+      const useLegacy = opts.claim || opts.evidence || opts.subagentReturn;
+      const useCard = !useLegacy;
+
+      if (useCard) {
+        cardPath = await resolveCardPath(process.cwd(), opts.card);
+        if (!cardPath) {
+          console.error("Error: No completion card found. Searched: " + DEFAULT_CARD_PATHS.join(", "));
+          console.error("Provide --card <path> or use --claim/--evidence/--subagent-return for compatibility mode.");
+          process.exit(2);
+        }
+        try {
+          const data = await readYamlOrJson(cardPath);
+          const result = await validateCompletionCard(data);
+          if (!result.valid) {
+            errors.push(`completion card validation failed: ${result.errors.join("; ")}`);
+          } else {
+            card = data as Record<string, unknown>;
+            notes.push(`completion card valid: ${path.relative(process.cwd(), cardPath)}`);
+          }
+        } catch (err) {
+          errors.push(`completion card load error: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
 
       // Load and validate claim
       if (opts.claim) {
@@ -84,7 +136,23 @@ export function verifyCommand(): Command {
 
       // Admission checks
       const tier = (opts.tier as "light" | "standard" | "deep") ?? "standard";
-      const admission = runAdmission({ claim, evidence, subagentReturn, tier, staleGround: false });
+      const admissionInput: Parameters<typeof runAdmission>[0] = card
+        ? {
+            schema_version: String(card.schema_version ?? ""),
+            task_id: String(card.task_id ?? opts.taskId ?? ""),
+            tier: (card.tier as "light" | "standard" | "deep") ?? tier,
+            owner: String(card.owner ?? ""),
+            accountable: String(card.accountable ?? ""),
+            claim: card.claim as Record<string, unknown>,
+            verification: card.verification as Record<string, unknown>,
+            admission: card.admission as Record<string, unknown>,
+            acceptance_status: card.acceptance_status as "accepted" | "withheld",
+            handoff: card.handoff as Record<string, unknown>,
+            staleGround: false,
+          }
+        : { claim, evidence, subagentReturn, tier, staleGround: false };
+
+      const admission = runAdmission(admissionInput);
 
       // Merge admission results
       errors.push(...admission.errors);
@@ -96,10 +164,10 @@ export function verifyCommand(): Command {
       const event = {
         event_id: `VE-${Date.now()}`,
         event_type: "verify_completed",
-        task_id: opts.taskId ?? "TASK-UNKNOWN",
+        task_id: opts.taskId ?? (card?.task_id as string | undefined) ?? "TASK-UNKNOWN",
         story_id: opts.storyId ?? null,
-        tier,
-        claim_id: claim?.id as string | undefined ?? null,
+        tier: card?.tier ?? tier,
+        claim_id: claim?.id as string | undefined ?? (card?.task_id as string | undefined) ?? null,
         evidence_id: evidence?.id as string | undefined ?? null,
         verifier: "x-harness",
         verifier_mode: "read_only",
@@ -107,8 +175,8 @@ export function verifyCommand(): Command {
         acceptance_status: acceptance,
         blocking_predicate: outcome === "blocked" ? "admission_failed" : null,
         blocked_reason_class: outcome === "blocked" ? "policy_violation" : null,
-        next_owner: null,
-        next_action: errors.length > 0 ? "resolve validation errors" : null,
+        next_owner: (card?.handoff as Record<string, unknown> | undefined)?.owner as string | null ?? null,
+        next_action: (card?.handoff as Record<string, unknown> | undefined)?.next_action as string | null ?? (errors.length > 0 ? "resolve validation errors" : null),
         created_at: new Date().toISOString(),
         notes,
         errors,
@@ -118,7 +186,52 @@ export function verifyCommand(): Command {
         await appendTrace(event);
       }
 
-      console.log(JSON.stringify(event, null, 2));
-      process.exit(errors.length > 0 ? 1 : 0);
+      if (opts.json) {
+        console.log(JSON.stringify({
+          ok: errors.length === 0 && outcome === "success",
+          acceptance_status: acceptance,
+          admission_outcome: outcome,
+          withheld_reason: errors.length > 0 ? errors.join("; ") : null,
+          checks: notes,
+        }, null, 2));
+      } else if (opts.verbose) {
+        const cardName = cardPath ? path.basename(cardPath) : "N/A";
+        const cardTier = String(card?.tier ?? tier);
+        const cardClaim = card?.claim ? (card.claim as Record<string, unknown>).fix_status : (claim?.fix_status as string | undefined) ?? "N/A";
+        const cardVerification = card?.verification ? (card.verification as Record<string, unknown>).status : "N/A";
+        const cardAdmission = card?.admission ? (card.admission as Record<string, unknown>).outcome : outcome;
+        const cardAcceptance = acceptance;
+
+        console.log(`Card: ${cardName}`);
+        console.log(`Tier: ${cardTier}`);
+        console.log(`Claim: ${cardClaim}`);
+        console.log(`Verification: ${cardVerification}`);
+        console.log(`Admission: ${cardAdmission}`);
+        console.log(`Acceptance: ${cardAcceptance}`);
+        console.log(`Result: ${errors.length === 0 && outcome === "success" ? "ACCEPTED" : "WITHHELD"}`);
+        if (errors.length > 0) {
+          console.log("Errors:");
+          for (const err of errors) {
+            console.log(`  - ${err}`);
+          }
+        }
+        if (event.next_action && event.next_owner) {
+          console.log(`Handoff: ${event.next_action} -> ${event.next_owner}`);
+        }
+      } else {
+        // Quiet default: <=3 lines
+        const passedChecks = notes.filter((n) => n.includes("valid") || n.includes("passed") || n.includes("checks passed")).length;
+        const failedChecks = errors.length;
+        console.log(`outcome: ${outcome}`);
+        console.log(`acceptance_status: ${acceptance}`);
+        if (failedChecks > 0) {
+          console.log(`checks: ${passedChecks} passed, ${failedChecks} failed`);
+        } else {
+          console.log(`checks: ${passedChecks} passed, 0 failed`);
+        }
+      }
+
+      const accepted = outcome === "success" && acceptance === "accepted";
+      process.exit(accepted ? 0 : 1);
     });
 }

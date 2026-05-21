@@ -1,4 +1,30 @@
 version: 1
+candidate_completion:
+  required:
+    - schema_version
+    - task_id
+    - tier
+    - owner
+    - accountable
+    - claim.fix_status
+    - verification.status
+    - claim.evidence
+    - handoff.next_action
+    - handoff.owner
+success_requires:
+  - claim.fix_status == fixed
+  - verification.status == passed
+  - admission.outcome == success
+  - acceptance_status == accepted
+  - claim.evidence present and non-empty
+  - owner.present == true
+  - accountable.present == true
+reject_success_if:
+  - verification.status in [failed, blocked, skipped]
+  - admission.outcome in [failed, blocked, skipped, timeout, error]
+  - claim.fix_status in [not_fixed, partial]
+  - claim.evidence missing or empty
+  - handoff.owner.missing == true
 outcome_mapping:
   success: accepted
   failed: withheld
@@ -6,3 +32,11 @@ outcome_mapping:
   skipped: withheld
   timeout: withheld
   error: withheld
+blocked_requires:
+  handoff:
+    next_action: present
+    owner: present
+withheld_requires:
+  handoff:
+    next_action: present
+    owner: present

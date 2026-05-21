@@ -1,0 +1,21 @@
+schema_version: "1"
+task_id: TASK-MINIMAL-001
+tier: light
+owner: alice
+accountable: bob
+claim:
+  fix_status: fixed
+  summary: Minimal task completed successfully
+  evidence:
+    - description: verified by test
+verification:
+  status: passed
+  checks:
+    - name: basic
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice

@@ -1,7 +1,0 @@
-id: CC-001
-task_id: TASK-001
-tier: light
-claim:
-  state: fixed
-verification:
-  self_status: passed

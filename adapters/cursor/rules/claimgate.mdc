@@ -2,4 +2,8 @@
 alwaysApply: true
 ---
 
-Use x-harness tiers. Do not mark work complete without verify success. PGV is advisory-only.
+# Compatibility pointer
+
+This file is preserved for backward compatibility. Use `x-harness.mdc` as the primary Cursor rule.
+
+See: `adapters/cursor/rules/x-harness.mdc`

@@ -1,0 +1,18 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-002
+tier: standard
+owner: alice
+accountable: bob
+claim:
+  fix_status: fixed
+  summary: Refactored auth module for OAuth2 PKCE
+  evidence: []
+verification:
+  status: passed
+  checks: []
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: attach evidence and re-verify
+  owner: alice

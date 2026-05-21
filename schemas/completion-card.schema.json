@@ -2,5 +2,151 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "completion-card",
   "type": "object",
-  "additionalProperties": true
+  "required": [
+    "schema_version",
+    "task_id",
+    "tier",
+    "owner",
+    "accountable",
+    "claim",
+    "verification",
+    "admission",
+    "acceptance_status",
+    "handoff"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "tier": {
+      "enum": ["light", "standard", "deep"]
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "accountable": {
+      "type": "string",
+      "minLength": 1
+    },
+    "claim": {
+      "type": "object",
+      "required": ["fix_status", "summary", "evidence"],
+      "properties": {
+        "fix_status": {
+          "enum": ["fixed", "not_fixed", "partial"]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "array"
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "required": ["status", "checks"],
+      "properties": {
+        "status": {
+          "enum": ["passed", "failed", "skipped", "blocked"]
+        },
+        "checks": {
+          "type": "array"
+        }
+      }
+    },
+    "admission": {
+      "type": "object",
+      "required": ["outcome"],
+      "properties": {
+        "outcome": {
+          "enum": ["pending", "success", "failed", "blocked", "skipped", "timeout", "error"]
+        }
+      }
+    },
+    "acceptance_status": {
+      "enum": ["accepted", "withheld"]
+    },
+    "handoff": {
+      "type": "object",
+      "required": ["next_action", "owner"],
+      "properties": {
+        "next_action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "status": { "const": "passed" }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "claim": {
+            "properties": {
+              "fix_status": { "const": "fixed" }
+            }
+          }
+        }
+      },
+      "else": {}
+    },
+    {
+      "if": {
+        "properties": {
+          "acceptance_status": { "const": "accepted" }
+        }
+      },
+      "then": {
+        "properties": {
+          "admission": {
+            "properties": {
+              "outcome": { "const": "success" }
+            }
+          }
+        }
+      },
+      "else": {}
+    },
+    {
+      "if": {
+        "properties": {
+          "admission": {
+            "properties": {
+              "outcome": { "enum": ["blocked", "failed", "skipped"] }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "handoff": {
+            "properties": {
+              "next_action": { "type": "string", "minLength": 1 },
+              "owner": { "type": "string", "minLength": 1 }
+            },
+            "required": ["next_action", "owner"]
+          }
+        }
+      },
+      "else": {}
+    }
+  ]
 }

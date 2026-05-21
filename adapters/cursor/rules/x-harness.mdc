@@ -1,0 +1,41 @@
+---
+alwaysApply: true
+---
+
+# x-harness Cursor Rules
+
+## Default behavior
+
+- Use `light` tier by default.
+- Use `standard` for multi-step research, review, or synthesis.
+- Use `deep` only for risk/control decisions.
+
+## Completion rules
+
+- Write a completion card before claiming completion.
+- Do not mark work complete without verify success.
+- `fix_status: fixed` requires `verification.status: passed`.
+- Non-success verify outcomes are always `withheld`.
+
+## Verifier rules
+
+- The verifier is read-only.
+- The verifier does not edit source files to fix findings.
+- Only `admission.outcome: success` + `acceptance_status: accepted` counts as accepted.
+
+## PGV rules
+
+- PGV is advisory-only.
+- PGV does not block, gate, decide, or override verify.
+
+## Tiers
+
+Use only `light`, `standard`, `deep`. Do not use `small`, `medium`, `large`.
+
+## CLI commands
+
+```bash
+npx x-harness verify --card completion-card.yaml
+npx x-harness doctor --root .
+npx x-harness report
+```

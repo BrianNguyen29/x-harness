@@ -35,7 +35,7 @@ npx x-harness init --full --adapters generic,opencode,claude-code,cursor
 
 Minimal mode installs only the core agent contract, runtime contract, verify gate, and three handoff templates.
 
-Standard mode adds product intake, story packets, test matrix, completion cards, claim/evidence schemas, and verification artifacts.
+Standard mode adds examples, completion cards, claim/evidence schemas, and verification artifacts.
 
 Full mode adds adapters, policies, examples, GitHub Actions, schemas, and runtime-audit guidance.
 

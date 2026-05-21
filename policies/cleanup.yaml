@@ -1,0 +1,23 @@
+cleanup:
+  auto_delete_evidence: false
+  tmp_retention_days: 7
+  archive_success_default: false
+  reset_card_requires_explicit_command: true
+  dry_run_first_recommended: true
+
+safe_delete:
+  - .x-harness/tmp/
+  - .x-harness/cache/
+
+never_delete_by_default:
+  - completion-card.yaml
+  - .x-harness/archive/
+  - templates/
+  - schemas/
+  - policies/
+  - docs/
+  - AGENTS.md
+  - X_HARNESS.md
+  - adapters/
+  - examples/
+  - packages/

@@ -1,0 +1,21 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-003
+tier: light
+owner: alice
+accountable: bob
+claim:
+  fix_status: fixed
+  summary: Fixed pagination off-by-one error
+  evidence:
+    - description: pagination.ts diff
+verification:
+  status: passed
+  checks:
+    - name: unit-tests
+      result: passed
+admission:
+  outcome: failed
+acceptance_status: accepted
+handoff:
+  next_action: resolve status contradiction
+  owner: alice

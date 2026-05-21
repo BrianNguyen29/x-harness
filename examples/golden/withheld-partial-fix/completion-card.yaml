@@ -1,0 +1,25 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-004
+tier: light
+owner: alice
+accountable: bob
+claim:
+  fix_status: partial
+  summary: Implemented basic rate limiter; Redis sliding window not yet integrated
+  evidence:
+    - description: Basic in-memory rate limiter
+      files_changed:
+        - src/middleware/rateLimit.ts
+verification:
+  status: failed
+  checks:
+    - name: redis-integration
+      result: failed
+    - name: load-test
+      result: failed
+admission:
+  outcome: failed
+acceptance_status: withheld
+handoff:
+  next_action: integrate Redis sliding window and re-run tests
+  owner: alice
