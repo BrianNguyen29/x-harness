@@ -13,21 +13,80 @@
 
 > **Completion is admitted, not merely claimed.**
 
-Traditional agent harnesses focus primarily on generation (what code/text to write). `x-harness` shifts the focus to verification and governance. It provides orchestrators and developers with a deterministic, rule-based gate to verify agent work products against strict repository policies.
+Traditional agent harnesses focus primarily on generation (what code or text the agent should write). `x-harness` shifts the focus to verification and governance. It provides orchestrators and developers with a deterministic, rule-based gate to verify agent work products against strict repository policies.
 
 In `x-harness`, an agent stating `fix_status: fixed` or running a passing test is simply producing a **completion candidate**. Actual completion is only **accepted** when the read-only verification gate runs its policy and admits the work.
 
 ---
 
+## 🔰 Beginner's Fast-Track Guide (5-Minute Tour)
+
+If you are new to `x-harness`, follow this step-by-step walkthrough to get up and running in minutes!
+
+### Step 1: Install and Compile
+Clone the repository and build the TypeScript CLI application locally:
+```bash
+# Install dependencies
+npm install
+
+# Compile the TypeScript CLI source code
+npm run build
+```
+
+### Step 2: Run Your First Verification
+`x-harness` comes with pre-packaged reference scenarios called "Golden Examples". Let's run a verification against a successful task claim:
+```bash
+node packages/cli/dist/index.js verify --card examples/golden/success-light/completion-card.yaml
+```
+> **Expected Output:**
+> ```yaml
+> verify_gate.outcome: success
+> acceptance_status: accepted
+> ```
+> *Note: The CLI returns exit code `0` because the card meets all the light-tier policy requirements.*
+
+Now, let's run verification on a card that is missing mandatory evidence scopes:
+```bash
+node packages/cli/dist/index.js verify --card examples/golden/blocked-missing-evidence/completion-card.yaml
+```
+> **Expected Output:**
+> ```yaml
+> verify_gate.outcome: withheld
+> acceptance_status: withheld
+> ```
+> *Note: The CLI returns exit code `1` (fail-closed) because the card failed the required evidence floor rules.*
+
+### Step 3: Initialize a New Workspace
+To start using `x-harness` in a separate development project, run the `init` command in the root of your project:
+```bash
+# Set up a Standard workspace (installs agents contract, schemas, policies, and templates)
+npx x-harness init --standard
+```
+
+### Step 4: Dispatch a Task Handoff
+When assigning a task to an agent, generate a structured handoff prompt. For example, to dispatch a normal task:
+```bash
+node packages/cli/dist/index.js handoff standard --title "Fix Checkout Page Button Alignment"
+```
+This generates a markdown file matching the `standard` tier containing explicit file sets, required evidence checklists, and rollback definitions.
+
+### Step 5: Validate Workspace Health
+Run the diagnostics command at any time to verify that all schemas, policies, templates, and links are healthy:
+```bash
+node packages/cli/dist/index.js doctor
+```
+
+---
+
 ## 🧱 Key Features & Capabilities
 
-- 🚦 **Read-Only Verification Gate**: Enforces that verification agents/tools inspect evidence without mutating the codebase to fix issues during validation.
+- 🚦 **Read-Only Verification Gate**: Enforces that verification agents or tools inspect evidence without mutating the codebase to fix issues during validation.
 - 📦 **Tiered Handoff Templates**: Clean, standard markdown templates for task dispatch across three canonical tiers: `light`, `standard`, and `deep`.
 - 🔌 **Platform-Agnostic Adapters**: Native configurations and instructions for popular agent environments (Generic, Claude Code, Cursor, OpenCode, Antigravity).
 - 🧩 **Schema-Validated Completion Cards**: Standardized YAML/JSON metadata (Claim, Evidence, Verification, Handoff) for recording and auditing task outcomes.
 - 🔄 **Fail-Closed & Recovery Routing**: Any verification result other than a total pass is withheld (`withheld`). Under failure, the harness yields structured recovery actions (e.g. `evidence_missing` routes back to the worker, `approval_missing` routes to the user).
 - 📊 **Deterministic Local Metrics**: Generates local, offline reports analyzing verification strength, state consistency, recovery ability, replayability, and runtime cost.
-- 🧠 **Advisory-Only Policy Governance (PGV)**: Guides agents through safe practices without granting them final admission authority.
+- 🧠 **Advisory-Only Pre-Gate Validation (PGV)**: Guides agents through safe practices without granting them final admission authority.
 
 ---
 
@@ -70,7 +129,7 @@ In `x-harness`, an agent stating `fix_status: fixed` or running a passing test i
 
 ## 🎚️ Canonical Handoff Tiers
 
-Task delegation in `x-harness` uses **only** the following three canonical tiers. The use of non-canonical labels (e.g. *small*, *medium*, *large*) in active runtime handoffs is forbidden.
+Task delegation in `x-harness` uses **only** the following three canonical tiers. The use of non-canonical labels in active runtime handoffs is forbidden.
 
 | Tier | Complexity & Scope | Evidence Floor | Human Approval |
 | :--- | :--- | :--- | :--- |
@@ -83,16 +142,6 @@ Task delegation in `x-harness` uses **only** the following three canonical tiers
 ## 🛠️ Command-Line Interface (CLI)
 
 `x-harness` features a TypeScript-first CLI tool to initialize templates, run verify gates, audit project health, and compute performance metrics.
-
-### Installation & Compilation
-
-```bash
-# Install dependencies
-npm install
-
-# Compile the TypeScript CLI source code
-npm run build
-```
 
 ### Core Commands
 
@@ -155,7 +204,7 @@ Running `npx x-harness verify --trace` logs a JSONL event detailing the verifica
 2. **State Consistency**: Checks if owners are declared and if card status maps to admission outcome.
 3. **Recovery Ability**: Checks if withheld cards contain actionable next owners and paths.
 4. **Replayability**: Computes card and policy SHA-256 hashes to guarantee reproducibility.
-5. **Cost**: Tracks runtime class (low/medium/high) and verify execution time.
+5. **Cost**: Tracks runtime class (low/moderate/high) and verify execution time.
 
 > [!WARNING]
 > **Denominator Rule**: Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or a safety guarantee. A template lint pass is not runtime correctness.
@@ -172,12 +221,12 @@ Running `npx x-harness verify --trace` logs a JSONL event detailing the verifica
 │       │   ├── core/       # admission, metrics, and recovery engines
 │       │   └── validators/ # Ajv schema validation
 │       └── tests/          # CLI Unit and Integration tests
-├── templates/              # Markdown templates for tasks & completion cards
-├── schemas/                # JSON schemas for validating claims & cards
-├── policies/               # admission and recovery YAML policies
-├── docs/                   # Full reference documentation files
-├── adapters/               # Platform-specific instructions and rules
-└── examples/               # Reference scenarios & golden test cases
+│   templates/              # Markdown templates for tasks & completion cards
+│   schemas/                # JSON schemas for validating claims & cards
+│   policies/               # admission and recovery YAML policies
+│   docs/                   # Full reference documentation files
+│   adapters/               # Platform-specific instructions and rules
+│   examples/               # Reference scenarios & golden test cases
 ```
 
 ---
