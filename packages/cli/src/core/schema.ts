@@ -10,11 +10,16 @@ const __dirname = dirname(__filename);
 const ajv = new Ajv2020({ strict: false });
 
 export async function loadSchema(name: string): Promise<Record<string, unknown>> {
-  const schemaPath = join(__dirname, "..", "..", "..", "..", "schemas", `${name}.schema.json`);
-  if (!(await fs.pathExists(schemaPath))) {
-    throw new Error(`Schema not found: ${schemaPath}`);
+  const schemaPath = join(__dirname, "..", "..", "schemas", `${name}.schema.json`);
+  if (await fs.pathExists(schemaPath)) {
+    return fs.readJson(schemaPath);
   }
-  return fs.readJson(schemaPath);
+  // Fallback for repo development (outside package root)
+  const fallbackPath = join(__dirname, "..", "..", "..", "..", "schemas", `${name}.schema.json`);
+  if (await fs.pathExists(fallbackPath)) {
+    return fs.readJson(fallbackPath);
+  }
+  throw new Error(`Schema not found: ${schemaPath}`);
 }
 
 export function compileSchema(schema: Record<string, unknown>) {

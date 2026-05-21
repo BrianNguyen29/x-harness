@@ -20,7 +20,7 @@ Current release. One rule, one card, one verify command.
 
 ## v0.2 — Standard Mode
 
-Optional product operating layer:
+Optional product operating layer (not shipped in v0.1):
 
 - Feature intake.
 - Product contract.

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PGVAdvice",
+  "type": "object",
+  "required": [
+    "risk_score",
+    "claim_allowed",
+    "needs_escalation",
+    "verify_outcome_pred"
+  ],
+  "properties": {
+    "risk_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "claim_allowed": {
+      "enum": [
+        "yes",
+        "no"
+      ]
+    },
+    "needs_escalation": {
+      "enum": [
+        "none",
+        "oracle",
+        "council"
+      ]
+    },
+    "top_violation": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "next_control_action": {
+      "type": "string"
+    },
+    "verify_outcome_pred": {
+      "enum": [
+        "passed",
+        "failed",
+        "blocked",
+        "uncertain"
+      ]
+    }
+  }
+}

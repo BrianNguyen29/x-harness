@@ -100,7 +100,7 @@ npm run build
 | :--- | :--- | :--- |
 | **`init`** | `npx x-harness init [target_dir] [--minimal / --standard / --full]` | Installs the core harness assets, schemas, policies, and adapters. |
 | **`handoff`** | `npx x-harness handoff <light / standard / deep> [--title <text>] [--task <text>]` | Generates a clean markdown handoff task prompt structure. |
-| **`add`** | `npx x-harness add <claim / evidence / story / completion-card> [key=value]` | Adds a metadata helper file for compatibility modes. |
+| **`add`** | `npx x-harness add <claim / evidence / completion-card> [key=value]` | Adds a metadata helper file for compatibility modes. |
 | **`verify`** | `npx x-harness verify [--card <path>] [--json] [--verbose]` | Executes the read-only verification policy against a completion card. |
 | **`doctor`** | `npx x-harness doctor [--root <path>]` | Checks critical file presence, schemas compilation, policies, and wording. |
 | **`report`** | `npx x-harness report [--metrics] [--card <path>] [--json]` | Summarizes verification events or calculates local card metrics. |
@@ -170,7 +170,7 @@ Running `npx x-harness verify --trace` logs a JSONL event detailing the verifica
 │       ├── src/
 │       │   ├── commands/   # command-line sub-commands
 │       │   ├── core/       # admission, metrics, and recovery engines
-│       │   └── validators/ # Zod & Ajv schemas validation
+│       │   └── validators/ # Ajv schema validation
 │       └── tests/          # CLI Unit and Integration tests
 ├── templates/              # Markdown templates for tasks & completion cards
 ├── schemas/                # JSON schemas for validating claims & cards

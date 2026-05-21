@@ -120,6 +120,8 @@ schemas/
   subagent-return.schema.json
   verify-event.schema.json
   pgv-advice.schema.json
+  claim.schema.json
+  evidence.schema.json
 
 policies/
   admission.yaml

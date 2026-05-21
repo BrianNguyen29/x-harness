@@ -6,7 +6,7 @@ Agent contract, runtime contract, verify gate, and three handoff templates.
 
 ## Standard
 
-Adds product intake, product contract, story packet, test matrix, completion card, claim/evidence artifacts, and schemas.
+Adds completion card, claim/evidence artifacts, schemas, policies, and examples.
 
 ## Full
 

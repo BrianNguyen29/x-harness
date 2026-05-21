@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "XHarnessSubagentReturn",
+  "type": "object",
+  "required": [
+    "result",
+    "evidence",
+    "verification",
+    "confidence",
+    "handoff"
+  ],
+  "properties": {
+    "result": {
+      "type": "object",
+      "required": [
+        "summary",
+        "fix_status",
+        "key_findings"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string"
+        },
+        "fix_status": {
+          "enum": [
+            "fixed",
+            "not_fixed",
+            "partial"
+          ]
+        },
+        "key_findings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "recommendations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unsupported_or_unclear": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object"
+    },
+    "verification": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "passed",
+            "failed",
+            "skipped",
+            "blocked"
+          ]
+        },
+        "checks": {
+          "type": "array"
+        }
+      }
+    },
+    "confidence": {
+      "enum": [
+        "LOW",
+        "MED",
+        "HIGH"
+      ]
+    },
+    "handoff": {
+      "type": "object",
+      "required": [
+        "next_action"
+      ],
+      "properties": {
+        "next_action": {
+          "type": "string"
+        },
+        "escalation_needed": {
+          "type": [
+            "boolean",
+            "string"
+          ]
+        }
+      }
+    },
+    "pgv_advice": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  }
+}

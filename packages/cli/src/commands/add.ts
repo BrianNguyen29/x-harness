@@ -4,8 +4,8 @@ import * as path from "node:path";
 
 export function addCommand(): Command {
   return new Command("add")
-    .description("Add a module file (claim, evidence, story)")
-    .argument("<module>", "Module type: claim, evidence, story, test-matrix, completion-card")
+    .description("Add a module file (claim, evidence, completion-card)")
+    .argument("<module>", "Module type: claim, evidence, completion-card")
     .argument("[values]", "Comma-separated key=value pairs")
     .option("--out <path>", "Output file path")
     .action(async (module: string, values: string | undefined, opts: { out?: string }) => {
