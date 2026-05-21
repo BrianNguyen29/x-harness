@@ -98,15 +98,15 @@ tsconfig.base.json
 
 docs/
   QUICKSTART.md
-  PRINCIPLES.md
-  MODES.md
   VERIFY_GATE.md
   RUNTIME_CONTRACT.md
   ADMISSION_POLICY.md
-  PGV_ADVISORY.md
+  SCHEMAS.md
+  ADAPTERS.md
   ROADMAP.md
-  RECOVERY.md
-  METRICS.md
+  ...
+  (See docs/ for additional reference pages)
+
 
 templates/
   SUBAGENT_TASK_light.md

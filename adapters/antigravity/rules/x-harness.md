@@ -28,7 +28,3 @@ Use only `light`, `standard`, `deep`. Do not use `small`, `medium`, `large`.
 
 - `workflows/x-harness-implementation.md`: Worker produces claim/evidence/card.
 - `workflows/x-harness-verify.md`: Verifier runs read-only admission checks.
-
-## Legacy
-
-Missions under `missions/` are preserved for compatibility.

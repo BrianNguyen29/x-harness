@@ -1,39 +1,41 @@
 # OpenCode Adapter
 
-This adapter integrates x-harness with the OpenCode agent platform.
+## Purpose
+This adapter integrates `x-harness` with the **OpenCode** agent platform. It enables orchestrators to automatically route tasks to worker agents, gather completion cards, and verify them via OpenCode verify-agent files.
 
-## Workflow
-
-1. **Orchestrator** dispatches a task to a worker agent.
-2. **Worker** performs the task and writes `completion-card.yaml`.
-3. **Verify agent** (`verify-agent.md`) runs read-only verification.
-4. **Outcome**: accepted or withheld. Handoff routed back to orchestrator.
-
-## Files
-
-- `README.md`: This file.
-- `verify-agent.md`: Read-only verifier rules and commands.
-- `opencode.example.json`: Example OpenCode configuration.
-- `opencode.verify.example.json`: Example verify-agent configuration.
-- `orchestrator_append.example.md`: Example orchestrator handoff snippet.
-
-## Quick commands
-
+## Install
+To install this adapter in your repository, run the copy command:
 ```bash
-# Verify a completion card
-npx x-harness verify --card completion-card.yaml
-
-# Check repo health
-npx x-harness doctor --root .
-
-# View trace summary
-npx x-harness report
+cp -r adapters/opencode/* .
 ```
+This copies the verify agent instructions, orchestrator snippets, and OpenCode JSON environment example configurations to your workspace.
+
+## Files included
+- `verify-agent.md`: The instruction file read by the OpenCode verification agent. This guides the agent to act strictly in a read-only capacity.
+- `opencode.example.json`: A template demonstrating how to register implementation worker agent pipelines in OpenCode.
+- `opencode.verify.example.json`: A template configuration detailing how to register the verifier agent task and commands in OpenCode.
+- `orchestrator_append.example.md`: Snippet to append to orchestrator handoffs, instructing the OpenCode dispatcher on handling outputs.
+
+## Workflow & Configurations
+
+### 1. Set Up Worker and Verifier in OpenCode
+You can use `opencode.example.json` and `opencode.verify.example.json` as guides to register agent containers or tasks in OpenCode:
+- Copy `verify-agent.md` to your project root or specific task configurations directory (e.g. `.opencode/agents/`).
+- The worker executes standard instructions, writes changes to the source files, and exports `completion-card.yaml`.
+- The verifier loads `verify-agent.md`, mounts the workspace, and runs the read-only check command:
+  ```bash
+  node packages/cli/dist/index.js verify --card completion-card.yaml
+  ```
+
+### 2. Output Analysis
+- **Accepted**: Verification succeeds (exit code `0`). Handoff routes successfully to the orchestrator.
+- **Withheld**: Verification is blocked or failed (exit code `1`). OpenCode handles the recovery guide generated in JSON format to re-dispatch to the worker.
 
 ## Constraints
+- **Verifier is read-only**: Under no circumstances should the verifier agent rewrite files or edit code in the mounted workspace.
+- **Strict Tiering**: Ensure that dispatches strictly declare standard `light`, `standard`, or `deep` tiers.
+- **Fail-Closed**: Non-success outcomes are always withheld (`withheld`).
+- **No heavy runtime required**: Fully local, offline-first.
 
-- Use `light` tier by default.
-- Verifier is read-only.
-- PGV is advisory-only.
-- Non-success verify outcomes are always withheld.
-- No heavy runtime required (no daemon, database, server, or MCP).
+## When to use
+Use this adapter when running tasks inside the **OpenCode** container or agent environment. It standardizes the registration of implementation and verify agent blocks, ensuring OpenCode dispatchers can run verification commands cleanly.

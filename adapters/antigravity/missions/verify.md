@@ -1,1 +1,0 @@
-# x-harness Verify Mission

@@ -45,7 +45,7 @@ x-harness adapters are thin conventions that make the harness usable inside spec
 - Location: `adapters/antigravity/`
 - Use when: You use Antigravity as the agent platform.
 - Key files: `rules/x-harness.md`, `workflows/x-harness-implementation.md`, `workflows/x-harness-verify.md`
-- Legacy missions under `missions/` preserved for compatibility.
+
 
 ## Tier selection quick reference
 
