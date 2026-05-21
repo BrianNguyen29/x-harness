@@ -11,10 +11,10 @@ describe("examples command", () => {
     expect(exitCode).toBe(0);
     const output = JSON.parse(stdout);
     expect(output.ok).toBe(true);
-    expect(output.total).toBe(5);
-    expect(output.passed).toBe(5);
+    expect(output.total).toBe(9);
+    expect(output.passed).toBe(9);
     expect(output.failed).toBe(0);
-    expect(output.results).toHaveLength(5);
+    expect(output.results).toHaveLength(9);
 
     const names = output.results.map((r: { name: string }) => r.name);
     expect(names).toContain("success-light");
@@ -22,6 +22,10 @@ describe("examples command", () => {
     expect(names).toContain("failed-invalid-status");
     expect(names).toContain("withheld-partial-fix");
     expect(names).toContain("multi-agent-success");
+    expect(names).toContain("success-standard-scoped-evidence");
+    expect(names).toContain("blocked-missing-evidence-scope");
+    expect(names).toContain("deep-approval-required");
+    expect(names).toContain("failed-typecheck-recovery-route");
   });
 
   it("verify subcommand prints human-readable summary", async () => {
@@ -30,12 +34,16 @@ describe("examples command", () => {
       "verify",
     ]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("Golden examples: 5 total");
+    expect(stdout).toContain("Golden examples: 9 total");
     expect(stdout).toContain("success-light");
     expect(stdout).toContain("blocked-missing-evidence");
     expect(stdout).toContain("failed-invalid-status");
     expect(stdout).toContain("withheld-partial-fix");
     expect(stdout).toContain("multi-agent-success");
+    expect(stdout).toContain("success-standard-scoped-evidence");
+    expect(stdout).toContain("blocked-missing-evidence-scope");
+    expect(stdout).toContain("deep-approval-required");
+    expect(stdout).toContain("failed-typecheck-recovery-route");
     expect(stdout).toContain("All golden examples passed.");
   });
 
@@ -67,5 +75,21 @@ describe("examples command", () => {
     const multi = output.results.find((r: { name: string }) => r.name === "multi-agent-success");
     expect(multi.outcome).toBe("success");
     expect(multi.acceptance_status).toBe("accepted");
+
+    const scoped = output.results.find((r: { name: string }) => r.name === "success-standard-scoped-evidence");
+    expect(scoped.outcome).toBe("success");
+    expect(scoped.acceptance_status).toBe("accepted");
+
+    const blockedScope = output.results.find((r: { name: string }) => r.name === "blocked-missing-evidence-scope");
+    expect(blockedScope.outcome).toBe("failed");
+    expect(blockedScope.acceptance_status).toBe("withheld");
+
+    const approval = output.results.find((r: { name: string }) => r.name === "deep-approval-required");
+    expect(approval.outcome).toBe("failed");
+    expect(approval.acceptance_status).toBe("withheld");
+
+    const recovery = output.results.find((r: { name: string }) => r.name === "failed-typecheck-recovery-route");
+    expect(recovery.outcome).toBe("failed");
+    expect(recovery.acceptance_status).toBe("withheld");
   });
 });

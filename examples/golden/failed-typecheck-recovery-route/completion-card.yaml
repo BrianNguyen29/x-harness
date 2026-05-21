@@ -1,0 +1,23 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-TYPECHECK-001
+tier: standard
+owner: alice
+accountable: bob
+claim:
+  fix_status: fixed
+  summary: Refactored payment module
+  evidence:
+    - description: Source file src/payment.ts
+      url: ./src/payment.ts
+verification:
+  status: failed
+  checks:
+    - name: typecheck
+      status: failed
+      note: "tsc --noEmit errors in src/payment.ts"
+admission:
+  outcome: failed
+acceptance_status: withheld
+handoff:
+  next_action: fix type errors and re-verify
+  owner: alice

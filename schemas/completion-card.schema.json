@@ -15,6 +15,9 @@
     "handoff"
   ],
   "properties": {
+    "id": {
+      "type": "string"
+    },
     "schema_version": {
       "type": "string"
     },
@@ -44,6 +47,109 @@
         },
         "evidence": {
           "type": "array"
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "properties": {
+        "read_set": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "write_set": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "conflict_policy": {
+          "type": "object",
+          "properties": {
+            "if_files_changed_after_claim": { "type": "string" },
+            "if_tests_changed_after_claim": { "type": "string" }
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "files_changed": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "verification_artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["kind", "status"],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "typecheck",
+                  "unit_test",
+                  "integration_test",
+                  "e2e_test",
+                  "lint",
+                  "build",
+                  "static_analysis",
+                  "security_scan",
+                  "fuzz",
+                  "performance_profile",
+                  "manual_review",
+                  "model_critique",
+                  "custom"
+                ]
+              },
+              "command": { "type": "string" },
+              "status": {
+                "enum": ["passed", "failed", "blocked", "skipped", "timeout", "error"]
+              },
+              "verifies": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "does_not_verify": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "confidence": {
+                "enum": ["low", "medium", "high"]
+              }
+            }
+          }
+        },
+        "untested_regions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "remaining_risks": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "properties": {
+        "risk_class": {
+          "enum": ["low", "medium", "high"]
+        },
+        "requires_human_approval": {
+          "type": "boolean"
+        },
+        "approval_required_for": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "approval_status": {
+          "enum": ["not_required", "pending", "approved", "rejected"]
+        },
+        "approver": {
+          "type": "string"
         }
       }
     },

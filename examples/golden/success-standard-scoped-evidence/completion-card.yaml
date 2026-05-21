@@ -1,0 +1,56 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-SCOPED-001
+tier: standard
+owner: alice
+accountable: bob
+state:
+  read_set:
+    - src/product-form.tsx
+  write_set:
+    - src/product-form.tsx
+    - src/product-form.test.tsx
+evidence:
+  files_changed:
+    - src/product-form.tsx
+    - src/product-form.test.tsx
+  verification_artifacts:
+    - kind: unit_test
+      command: npm test -- product-form
+      status: passed
+      verifies:
+        - "empty product name is rejected"
+      does_not_verify:
+        - "server-side validation"
+      confidence: medium
+    - kind: typecheck
+      command: npm run typecheck
+      status: passed
+      verifies:
+        - "TypeScript type consistency"
+      does_not_verify:
+        - "runtime browser behavior"
+      confidence: medium
+  untested_regions:
+    - "No E2E browser validation test was run."
+claim:
+  fix_status: fixed
+  summary: Added product form validation with scoped evidence
+  evidence:
+    - description: Source file src/product-form.tsx
+      url: ./src/product-form.tsx
+    - description: Test output
+      result: passed
+      command: npm test -- product-form
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice

@@ -67,6 +67,9 @@ async function verifyExample(example: GoldenExample): Promise<{
       admission: card.admission as Record<string, unknown>,
       acceptance_status: card.acceptance_status as "accepted" | "withheld",
       handoff: card.handoff as Record<string, unknown>,
+      evidence: card.evidence as Record<string, unknown> | undefined,
+      state: card.state as Record<string, unknown> | undefined,
+      governance: card.governance as Record<string, unknown> | undefined,
       staleGround: false,
     };
 

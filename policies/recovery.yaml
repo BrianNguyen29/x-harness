@@ -1,0 +1,38 @@
+version: 1
+
+recovery_routing:
+  evidence_missing:
+    next_action: "Attach validation evidence or explain why unavailable."
+    owner: implementation-worker
+
+  evidence_scope_missing:
+    next_action: "Declare what each validation artifact verifies and does not verify."
+    owner: implementation-worker
+
+  typecheck_failed:
+    next_action: "Return to implementation-worker for type repair."
+    owner: implementation-worker
+
+  test_failed:
+    next_action: "Diagnose failing behavior and update implementation or tests."
+    owner: implementation-worker
+
+  lint_failed:
+    next_action: "Fix lint issues or justify why the lint rule is not applicable."
+    owner: implementation-worker
+
+  build_failed:
+    next_action: "Fix build failure before requesting admission."
+    owner: implementation-worker
+
+  approval_missing:
+    next_action: "Request human approval before admission."
+    owner: user
+
+  conflicting_scope:
+    next_action: "Ask user to clarify task scope."
+    owner: user
+
+  verifier_not_read_only:
+    next_action: "Rerun verification with a read-only verifier."
+    owner: admission-verifier

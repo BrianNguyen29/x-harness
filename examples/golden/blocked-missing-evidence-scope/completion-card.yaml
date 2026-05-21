@@ -1,0 +1,25 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-BLOCKED-SCOPE-001
+tier: deep
+owner: alice
+accountable: bob
+state:
+  read_set:
+    - src/auth.ts
+  write_set:
+    - src/auth.ts
+claim:
+  fix_status: fixed
+  summary: Refactored auth module but missing evidence scope
+  evidence:
+    - description: Source file src/auth.ts
+      url: ./src/auth.ts
+verification:
+  status: passed
+  checks: []
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: attach scoped evidence and re-verify
+  owner: alice

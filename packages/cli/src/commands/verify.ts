@@ -4,6 +4,8 @@ import fs from "fs-extra";
 import { readYamlOrJson } from "../core/schema.js";
 import { runAdmission, acceptanceStatus } from "../core/admission.js";
 import { appendTrace } from "../core/trace.js";
+import { sha256File, sha256String } from "../core/hash.js";
+import { suggestRecovery } from "../core/recovery.js";
 import { validate as validateClaim } from "../validators/claim.js";
 import { validate as validateEvidence } from "../validators/evidence.js";
 import { validate as validateSubagentReturn } from "../validators/subagentReturn.js";
@@ -54,6 +56,7 @@ export function verifyCommand(): Command {
     .option("--json", "Output JSON instead of human-readable text", false)
     .option("--verbose", "Output detailed human-readable text", false)
     .action(async (opts: VerifyOptions) => {
+      const startTime = Date.now();
       const errors: string[] = [];
       const notes: string[] = [];
       let claim: Record<string, unknown> | undefined;
@@ -61,6 +64,8 @@ export function verifyCommand(): Command {
       let subagentReturn: Record<string, unknown> | undefined;
       let card: Record<string, unknown> | undefined;
       let cardPath: string | undefined;
+      let inputCardHash: string | null = null;
+      let policyHash: string | null = null;
 
       const useLegacy = opts.claim || opts.evidence || opts.subagentReturn;
       const useCard = !useLegacy;
@@ -81,10 +86,15 @@ export function verifyCommand(): Command {
             card = data as Record<string, unknown>;
             notes.push(`completion card valid: ${path.relative(process.cwd(), cardPath)}`);
           }
+          inputCardHash = sha256String(JSON.stringify(data));
         } catch (err) {
           errors.push(`completion card load error: ${err instanceof Error ? err.message : String(err)}`);
         }
       }
+
+      // Load policy hash
+      const policyPath = path.resolve(process.cwd(), "policies", "admission.yaml");
+      policyHash = await sha256File(policyPath);
 
       // Load and validate claim
       if (opts.claim) {
@@ -148,6 +158,9 @@ export function verifyCommand(): Command {
             admission: card.admission as Record<string, unknown>,
             acceptance_status: card.acceptance_status as "accepted" | "withheld",
             handoff: card.handoff as Record<string, unknown>,
+            evidence: card.evidence as Record<string, unknown> | undefined,
+            state: card.state as Record<string, unknown> | undefined,
+            governance: card.governance as Record<string, unknown> | undefined,
             staleGround: false,
           }
         : { claim, evidence, subagentReturn, tier, staleGround: false };
@@ -160,11 +173,39 @@ export function verifyCommand(): Command {
 
       const outcome = errors.length > 0 ? "failed" : admission.outcome;
       const acceptance = acceptanceStatus(outcome);
+      const verifyRuntimeMs = Date.now() - startTime;
+
+      const recovery = suggestRecovery(errors, outcome);
+      const blockingPredicate = admission.blocking_predicate ?? recovery.predicate ?? (outcome === "blocked" || outcome === "failed" ? "admission_failed" : null);
+      const recoveryRoute = recovery.route;
+
+      const cardId = (card?.id as string | undefined) ?? null;
+      const taskId = opts.taskId ?? (card?.task_id as string | undefined) ?? "TASK-UNKNOWN";
+
+      // Build enriched checks
+      const checks: { name: string; status: string; severity: string; note?: string }[] = [];
+      for (const note of notes) {
+        const isWarning = note.includes("recommends") || note.includes("warning");
+        checks.push({
+          name: note.split(":")[0] || "note",
+          status: isWarning ? "warning" : "passed",
+          severity: isWarning ? "warning" : "info",
+          note,
+        });
+      }
+      for (const err of errors) {
+        checks.push({
+          name: err.split(":")[0] || "error",
+          status: "failed",
+          severity: "error",
+          note: err,
+        });
+      }
 
       const event = {
         event_id: `VE-${Date.now()}`,
         event_type: "verify_completed",
-        task_id: opts.taskId ?? (card?.task_id as string | undefined) ?? "TASK-UNKNOWN",
+        task_id: taskId,
         story_id: opts.storyId ?? null,
         tier: card?.tier ?? tier,
         claim_id: claim?.id as string | undefined ?? (card?.task_id as string | undefined) ?? null,
@@ -173,10 +214,10 @@ export function verifyCommand(): Command {
         verifier_mode: "read_only",
         outcome,
         acceptance_status: acceptance,
-        blocking_predicate: outcome === "blocked" ? "admission_failed" : null,
+        blocking_predicate: blockingPredicate,
         blocked_reason_class: outcome === "blocked" ? "policy_violation" : null,
-        next_owner: (card?.handoff as Record<string, unknown> | undefined)?.owner as string | null ?? null,
-        next_action: (card?.handoff as Record<string, unknown> | undefined)?.next_action as string | null ?? (errors.length > 0 ? "resolve validation errors" : null),
+        next_owner: recoveryRoute?.owner ?? (card?.handoff as Record<string, unknown> | undefined)?.owner as string | null ?? null,
+        next_action: recoveryRoute?.next_action ?? (card?.handoff as Record<string, unknown> | undefined)?.next_action as string | null ?? (errors.length > 0 ? "resolve validation errors" : null),
         created_at: new Date().toISOString(),
         notes,
         errors,
@@ -192,7 +233,22 @@ export function verifyCommand(): Command {
           acceptance_status: acceptance,
           admission_outcome: outcome,
           withheld_reason: errors.length > 0 ? errors.join("; ") : null,
-          checks: notes,
+          card_id: cardId,
+          task_id: taskId,
+          schema_version: 1,
+          input_card_hash: inputCardHash ? `sha256:${inputCardHash}` : null,
+          policy_hash: policyHash ? `sha256:${policyHash}` : null,
+          checks,
+          decision: {
+            outcome,
+            acceptance_status: acceptance,
+          },
+          recovery: recoveryRoute ? {
+            predicate: blockingPredicate,
+            next_action: recoveryRoute.next_action,
+            owner: recoveryRoute.owner,
+          } : null,
+          denominator_warning: "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
         }, null, 2));
       } else if (opts.verbose) {
         const cardName = cardPath ? path.basename(cardPath) : "N/A";
@@ -217,6 +273,9 @@ export function verifyCommand(): Command {
         }
         if (event.next_action && event.next_owner) {
           console.log(`Handoff: ${event.next_action} -> ${event.next_owner}`);
+        }
+        if (recoveryRoute) {
+          console.log(`Recovery: ${recoveryRoute.next_action} -> ${recoveryRoute.owner}`);
         }
       } else {
         // Quiet default: <=3 lines

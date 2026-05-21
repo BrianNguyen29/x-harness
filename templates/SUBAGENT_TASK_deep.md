@@ -74,3 +74,43 @@ handoff:
   escalation_needed: <yes|no>
 pgv_advice: null
 ```
+
+### Evidence scope (required for deep)
+
+Deep tasks must declare:
+
+```yaml
+state:
+  read_set:
+    - <files read>
+  write_set:
+    - <files changed>
+  assumptions:
+    - "<assumption 1>"
+  conflict_policy:
+    if_files_changed_after_claim: "rerun verify"
+    if_tests_changed_after_claim: "rerun evidence"
+
+evidence:
+  verification_artifacts:
+    - kind: unit_test
+      command: npm test -- <feature>
+      status: passed
+      verifies:
+        - "<what this check proves>"
+      does_not_verify:
+        - "<what this check does not prove>"
+      confidence: medium
+  untested_regions:
+    - "<what was not tested>"
+  remaining_risks:
+    - "<what risks remain>"
+
+governance:
+  risk_class: high
+  requires_human_approval: true
+  approval_required_for:
+    - "<high-risk category>"
+  approval_status: pending
+  approver: user
+```

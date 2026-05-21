@@ -41,8 +41,11 @@ export interface AdmissionInput {
   handoff?: Handoff | Record<string, unknown>;
   staleGround?: boolean;
   pgv_risk?: "LOW" | "MED" | "HIGH";
-  // Backward compatibility: subagent-return shape
+  // New optional fields
   evidence?: Record<string, unknown>;
+  state?: Record<string, unknown>;
+  governance?: Record<string, unknown>;
+  // Backward compatibility: subagent-return shape
   subagentReturn?: Record<string, unknown>;
 }
 
@@ -51,6 +54,7 @@ export interface AdmissionResult {
   acceptance_status: AcceptanceStatus;
   errors: string[];
   notes: string[];
+  blocking_predicate?: string | null;
 }
 
 function isString(value: unknown): value is string {
@@ -116,9 +120,52 @@ function isCompletionCardShape(input: AdmissionInput): boolean {
   );
 }
 
+function getVerificationArtifacts(input: AdmissionInput): unknown[] | undefined {
+  if (input.evidence && Array.isArray((input.evidence as Record<string, unknown>).verification_artifacts)) {
+    return (input.evidence as Record<string, unknown>).verification_artifacts as unknown[];
+  }
+  return undefined;
+}
+
+function getUntestedRegions(input: AdmissionInput): unknown[] | undefined {
+  if (input.evidence && Array.isArray((input.evidence as Record<string, unknown>).untested_regions)) {
+    return (input.evidence as Record<string, unknown>).untested_regions as unknown[];
+  }
+  return undefined;
+}
+
+function getRemainingRisks(input: AdmissionInput): unknown[] | undefined {
+  if (input.evidence && Array.isArray((input.evidence as Record<string, unknown>).remaining_risks)) {
+    return (input.evidence as Record<string, unknown>).remaining_risks as unknown[];
+  }
+  return undefined;
+}
+
+function getState(input: AdmissionInput): Record<string, unknown> | undefined {
+  return input.state;
+}
+
+function getGovernance(input: AdmissionInput): Record<string, unknown> | undefined {
+  return input.governance;
+}
+
+function hasScopeDeclared(artifacts: unknown[] | undefined): boolean {
+  if (!artifacts || artifacts.length === 0) return false;
+  for (const artifact of artifacts) {
+    const a = artifact as Record<string, unknown> | undefined;
+    if (!a) continue;
+    const verifies = a.verifies as unknown[] | undefined;
+    const doesNotVerify = a.does_not_verify as unknown[] | undefined;
+    if (verifies && verifies.length > 0) return true;
+    if (doesNotVerify && doesNotVerify.length > 0) return true;
+  }
+  return false;
+}
+
 export function runAdmission(input: AdmissionInput): AdmissionResult {
   const errors: string[] = [];
   const notes: string[] = [];
+  let blockingPredicate: string | null = null;
 
   // Stale-ground fail-closed
   if (input.staleGround) {
@@ -128,6 +175,7 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
       acceptance_status: "withheld",
       errors,
       notes: ["stale-ground policy: if_detected = withhold"],
+      blocking_predicate: "stale_ground",
     };
   }
 
@@ -154,6 +202,11 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
   const admissionOutcome = getAdmissionOutcome(input);
   const evidenceArray = getEvidenceArray(input);
   const handoff = getHandoff(input);
+  const verificationArtifacts = getVerificationArtifacts(input);
+  const untestedRegions = getUntestedRegions(input);
+  const remainingRisks = getRemainingRisks(input);
+  const state = getState(input);
+  const governance = getGovernance(input);
 
   // Evidence presence check
   if (evidenceArray !== undefined) {
@@ -175,6 +228,57 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
     if (input.tier && input.tier !== "light") {
       if (!input.evidence) {
         errors.push(`tier "${input.tier}" requires evidence packet`);
+      }
+    }
+  }
+
+  // Tier evidence floor
+  if (input.tier === "deep") {
+    if (!verificationArtifacts || verificationArtifacts.length === 0) {
+      errors.push('tier "deep" requires verification_artifacts');
+      if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
+    }
+    if (!hasScopeDeclared(verificationArtifacts)) {
+      errors.push('tier "deep" requires evidence scope declared (verifies/does_not_verify)');
+      if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
+    }
+    if (!untestedRegions || untestedRegions.length === 0) {
+      errors.push('tier "deep" requires untested_regions');
+      if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
+    }
+    if (!remainingRisks || remainingRisks.length === 0) {
+      errors.push('tier "deep" requires remaining_risks');
+      if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
+    }
+    if (!state || !Array.isArray(state.write_set) || (state.write_set as unknown[]).length === 0) {
+      errors.push('tier "deep" requires state.write_set');
+      if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
+    }
+    if (!state || !Array.isArray(state.read_set) || (state.read_set as unknown[]).length === 0) {
+      errors.push('tier "deep" requires state.read_set');
+      if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
+    }
+  }
+
+  if (input.tier === "standard") {
+    if (!verificationArtifacts || verificationArtifacts.length === 0) {
+      notes.push('tier "standard" recommends verification_artifacts');
+    }
+    if (!hasScopeDeclared(verificationArtifacts)) {
+      notes.push('tier "standard" recommends evidence scope (verifies/does_not_verify)');
+    }
+    if (!untestedRegions || untestedRegions.length === 0) {
+      notes.push('tier "standard" recommends untested_regions');
+    }
+  }
+
+  // Governance / human approval check for deep
+  if (input.tier === "deep" && governance) {
+    if (governance.requires_human_approval === true) {
+      const approvalStatus = governance.approval_status as string | undefined;
+      if (approvalStatus !== "approved") {
+        errors.push("deep task requires human approval before admission");
+        if (!blockingPredicate) blockingPredicate = "approval_missing";
       }
     }
   }
@@ -235,6 +339,7 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
       acceptance_status: "withheld",
       errors,
       notes,
+      blocking_predicate: blockingPredicate ?? "admission_failed",
     };
   }
 
@@ -248,5 +353,6 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
     acceptance_status: acceptanceStatus(finalOutcome),
     errors: [],
     notes: notes.length > 0 ? [...notes, "admission checks passed"] : ["admission checks passed"],
+    blocking_predicate: null,
   };
 }

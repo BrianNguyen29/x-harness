@@ -54,3 +54,22 @@ handoff:
   next_action: <next step> (owner: <agent|user>)
 pgv_advice: null
 ```
+
+### Evidence scope (recommended for standard)
+
+When providing evidence, include scoped verification:
+
+```yaml
+evidence:
+  verification_artifacts:
+    - kind: unit_test
+      command: npm test -- <feature>
+      status: passed
+      verifies:
+        - "<what this check proves>"
+      does_not_verify:
+        - "<what this check does not prove>"
+      confidence: medium
+  untested_regions:
+    - "<what was not tested>"
+```

@@ -146,6 +146,8 @@ async function checkTierLabels(root: string): Promise<{ ok: boolean; notes: stri
   const excludedFiles = [
     path.join(root, "docs", "RUNTIME_CONTRACT.md"),
     path.join(root, "packages", "cli", "src", "commands", "doctor.ts"),
+    path.join(root, "docs", "METRICS.md"),
+    path.join(root, "packages", "cli", "src", "core", "metrics.ts"),
   ];
   const dirs = [
     path.join(root, "docs"),
@@ -249,6 +251,131 @@ async function checkLocalMarkdownLinks(root: string): Promise<{ ok: boolean; not
   return { ok, notes };
 }
 
+async function checkEvidenceScopeSupport(root: string): Promise<{ ok: boolean; notes: string[] }> {
+  const notes: string[] = [];
+  let ok = true;
+  try {
+    const schema = await loadSchema("completion-card");
+    const props = schema.properties as Record<string, unknown> | undefined;
+    const evidenceProps = props?.evidence as Record<string, unknown> | undefined;
+    if (evidenceProps?.properties && typeof evidenceProps.properties === "object") {
+      const ep = evidenceProps.properties as Record<string, unknown>;
+      if ("verification_artifacts" in ep) {
+        notes.push("schema supports verification_artifacts");
+      } else {
+        notes.push("schema missing verification_artifacts");
+        ok = false;
+      }
+      if ("untested_regions" in ep) {
+        notes.push("schema supports untested_regions");
+      } else {
+        notes.push("schema missing untested_regions");
+        ok = false;
+      }
+      if ("remaining_risks" in ep) {
+        notes.push("schema supports remaining_risks");
+      } else {
+        notes.push("schema missing remaining_risks");
+        ok = false;
+      }
+    } else {
+      notes.push("schema evidence block missing properties");
+      ok = false;
+    }
+  } catch (err) {
+    notes.push(`schema load error: ${err instanceof Error ? err.message : String(err)}`);
+    ok = false;
+  }
+  return { ok, notes };
+}
+
+async function checkReadOnlyVerifier(root: string): Promise<{ ok: boolean; notes: string[] }> {
+  const notes: string[] = [];
+  let ok = true;
+  const verifyGatePath = path.join(root, "docs", "VERIFY_GATE.md");
+  if (await fs.pathExists(verifyGatePath)) {
+    const content = await fs.readFile(verifyGatePath, "utf-8");
+    if (content.includes("read-only")) {
+      notes.push("VERIFY_GATE.md states verifier is read-only");
+    } else {
+      notes.push("VERIFY_GATE.md missing read-only verifier statement");
+      ok = false;
+    }
+  } else {
+    notes.push("VERIFY_GATE.md not found");
+    ok = false;
+  }
+
+  const agentsPath = path.join(root, "AGENTS.md");
+  if (await fs.pathExists(agentsPath)) {
+    const content = await fs.readFile(agentsPath, "utf-8");
+    if (content.includes("read-only")) {
+      notes.push("AGENTS.md states verifier is read-only");
+    } else {
+      notes.push("AGENTS.md missing read-only verifier statement");
+      ok = false;
+    }
+  }
+  return { ok, notes };
+}
+
+async function checkNoHeavyRuntime(root: string): Promise<{ ok: boolean; notes: string[] }> {
+  const notes: string[] = [];
+  let ok = true;
+  const docsDir = path.join(root, "docs");
+  if (await fs.pathExists(docsDir)) {
+    const entries = await fs.readdir(docsDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
+      const content = await fs.readFile(path.join(docsDir, entry.name), "utf-8");
+      const lower = content.toLowerCase();
+      if (lower.includes("mandatory mcp") || lower.includes("required mcp")) {
+        notes.push(`dangerous runtime wording in ${entry.name}: mandatory/required MCP`);
+        ok = false;
+      }
+    }
+  }
+  const readmePath = path.join(root, "README.md");
+  if (await fs.pathExists(readmePath)) {
+    const content = await fs.readFile(readmePath, "utf-8");
+    const lower = content.toLowerCase();
+    if (lower.includes("mandatory mcp") || lower.includes("required mcp")) {
+      notes.push("README.md contains mandatory/required MCP wording");
+      ok = false;
+    }
+  }
+  if (ok) {
+    notes.push("no mandatory MCP/required heavy runtime wording found");
+  }
+  return { ok, notes };
+}
+
+async function checkTemplatesDeepNotDefault(root: string): Promise<{ ok: boolean; notes: string[] }> {
+  const notes: string[] = [];
+  let ok = true;
+  const lightTemplate = path.join(root, "templates", "SUBAGENT_TASK_light.md");
+  if (await fs.pathExists(lightTemplate)) {
+    const content = await fs.readFile(lightTemplate, "utf-8");
+    if (content.includes("deep") && !content.toLowerCase().includes("deep is opt-in")) {
+      // Allow mentions of deep if they say it's opt-in
+    }
+    notes.push("light template exists");
+  } else {
+    notes.push("light template missing");
+    ok = false;
+  }
+
+  const standardTemplate = path.join(root, "templates", "SUBAGENT_TASK_standard.md");
+  if (await fs.pathExists(standardTemplate)) {
+    notes.push("standard template exists");
+  } else {
+    notes.push("standard template missing");
+    ok = false;
+  }
+
+  return { ok, notes };
+}
+
 export function doctorCommand(): Command {
   return new Command("doctor")
     .description("Check required files, schemas, policies, templates, and adapters")
@@ -337,6 +464,38 @@ export function doctorCommand(): Command {
         name: "local_markdown_links",
         status: linkResult.ok ? "pass" : "fail",
         note: linkResult.notes.join("; "),
+      });
+
+      // Evidence scope support check
+      const evidenceScopeResult = await checkEvidenceScopeSupport(root);
+      checks.push({
+        name: "evidence_scope_support",
+        status: evidenceScopeResult.ok ? "pass" : "fail",
+        note: evidenceScopeResult.notes.join("; "),
+      });
+
+      // Read-only verifier check
+      const readOnlyResult = await checkReadOnlyVerifier(root);
+      checks.push({
+        name: "read_only_verifier",
+        status: readOnlyResult.ok ? "pass" : "fail",
+        note: readOnlyResult.notes.join("; "),
+      });
+
+      // No heavy runtime check
+      const runtimeResult = await checkNoHeavyRuntime(root);
+      checks.push({
+        name: "no_heavy_runtime",
+        status: runtimeResult.ok ? "pass" : "fail",
+        note: runtimeResult.notes.join("; "),
+      });
+
+      // Templates/deep not default check
+      const templatesResult = await checkTemplatesDeepNotDefault(root);
+      checks.push({
+        name: "templates_present",
+        status: templatesResult.ok ? "pass" : "fail",
+        note: templatesResult.notes.join("; "),
       });
 
       // Cleanup policy check (advisory-only)

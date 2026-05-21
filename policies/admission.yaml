@@ -1,4 +1,5 @@
 version: 1
+
 candidate_completion:
   required:
     - schema_version
@@ -11,6 +12,7 @@ candidate_completion:
     - claim.evidence
     - handoff.next_action
     - handoff.owner
+
 success_requires:
   - claim.fix_status == fixed
   - verification.status == passed
@@ -19,23 +21,75 @@ success_requires:
   - claim.evidence present and non-empty
   - owner.present == true
   - accountable.present == true
+  - evidence_floor_met
+  - admission_mapping_valid
+  - no_unresolved_blocker
+  - no_active_recovery
+  - verifier_read_only
+
+evidence_floor:
+  light:
+    required:
+      - files_changed
+    one_of:
+      - command_evidence
+      - manual_rationale
+
+  standard:
+    required:
+      - files_changed
+      - command_evidence
+    recommended:
+      - evidence_scope_declared
+      - untested_regions_declared
+
+  deep:
+    required:
+      - files_changed
+      - command_evidence
+      - evidence_scope_declared
+      - untested_regions_declared
+      - remaining_risks_declared
+      - execution_controls_present
+      - rollback_policy_present
+
 reject_success_if:
-  - verification.status in [failed, blocked, skipped]
-  - admission.outcome in [failed, blocked, skipped, timeout, error]
-  - claim.fix_status in [not_fixed, partial]
-  - claim.evidence missing or empty
-  - handoff.owner.missing == true
+  fix_status:
+    - partial
+    - not_fixed
+
+  verification_status:
+    - failed
+    - skipped
+    - blocked
+
+  evidence_quality:
+    - missing
+    - weak
+
+  approval_required_but_missing: true
+  timeout: true
+  error: true
+
 outcome_mapping:
-  success: accepted
-  failed: withheld
-  blocked: withheld
-  skipped: withheld
-  timeout: withheld
-  error: withheld
+  success:
+    acceptance_status: accepted
+  failed:
+    acceptance_status: withheld
+  blocked:
+    acceptance_status: withheld
+  skipped:
+    acceptance_status: withheld
+  timeout:
+    acceptance_status: withheld
+  error:
+    acceptance_status: withheld
+
 blocked_requires:
   handoff:
     next_action: present
     owner: present
+
 withheld_requires:
   handoff:
     next_action: present

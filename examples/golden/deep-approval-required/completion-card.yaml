@@ -1,0 +1,54 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-APPROVAL-001
+tier: deep
+owner: alice
+accountable: bob
+state:
+  read_set:
+    - src/auth/oauth.ts
+  write_set:
+    - src/auth/oauth.ts
+    - src/auth/oauth.test.ts
+evidence:
+  files_changed:
+    - src/auth/oauth.ts
+    - src/auth/oauth.test.ts
+  verification_artifacts:
+    - kind: unit_test
+      command: npm test -- oauth
+      status: passed
+      verifies:
+        - "PKCE flow completes"
+      does_not_verify:
+        - "production IdP behavior"
+      confidence: medium
+  untested_regions:
+    - "No production IdP integration test was run."
+  remaining_risks:
+    - "Production IdP rate limits may differ."
+governance:
+  risk_class: high
+  requires_human_approval: true
+  approval_required_for:
+    - "auth logic change"
+  approval_status: pending
+  approver: user
+claim:
+  fix_status: fixed
+  summary: Implemented OAuth2 PKCE flow awaiting approval
+  evidence:
+    - description: Source file src/auth/oauth.ts
+      url: ./src/auth/oauth.ts
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: request human approval
+  owner: user

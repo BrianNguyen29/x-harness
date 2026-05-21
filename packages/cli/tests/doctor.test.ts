@@ -78,4 +78,28 @@ describe("doctor command", () => {
     expect(adapterCheck).toBeDefined();
     expect(adapterCheck.status).toBe("pass");
   });
+
+  it("includes evidence scope support check", async () => {
+    const { stdout } = await execaNode(["doctor", "--root", repoRoot]);
+    const report = JSON.parse(stdout);
+    const check = report.checks.find((c: any) => c.name === "evidence_scope_support");
+    expect(check).toBeDefined();
+    expect(check.status).toBe("pass");
+  });
+
+  it("includes read-only verifier check", async () => {
+    const { stdout } = await execaNode(["doctor", "--root", repoRoot]);
+    const report = JSON.parse(stdout);
+    const check = report.checks.find((c: any) => c.name === "read_only_verifier");
+    expect(check).toBeDefined();
+    expect(check.status).toBe("pass");
+  });
+
+  it("includes no heavy runtime check", async () => {
+    const { stdout } = await execaNode(["doctor", "--root", repoRoot]);
+    const report = JSON.parse(stdout);
+    const check = report.checks.find((c: any) => c.name === "no_heavy_runtime");
+    expect(check).toBeDefined();
+    expect(check.status).toBe("pass");
+  });
 });
