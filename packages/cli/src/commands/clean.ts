@@ -39,8 +39,14 @@ export function cleanCommand(): Command {
     .option("--dry-run", "Show what would be cleaned without deleting", true)
     .option("--tmp", "Clean .x-harness/tmp/ and .x-harness/cache/")
     .option("--reset-card", "Reset completion-card.yaml by renaming to backup")
-    .option("--archive-success", "Move accepted completion cards to .x-harness/archive/")
-    .option("--force", "Actually perform mutations (required when not using --dry-run)")
+    .option(
+      "--archive-success",
+      "Move accepted completion cards to .x-harness/archive/"
+    )
+    .option(
+      "--force",
+      "Actually perform mutations (required when not using --dry-run)"
+    )
     .action(async (opts: CleanOptions) => {
       const cwd = process.cwd();
       const actions: { type: string; path: string; note: string }[] = [];
@@ -52,7 +58,11 @@ export function cleanCommand(): Command {
         for (const dir of [".x-harness/tmp", ".x-harness/cache"]) {
           const fullPath = path.join(cwd, dir);
           if (await fs.pathExists(fullPath)) {
-            actions.push({ type: "delete", path: fullPath, note: `remove ${dir}` });
+            actions.push({
+              type: "delete",
+              path: fullPath,
+              note: `remove ${dir}`,
+            });
           }
         }
       }
@@ -61,8 +71,15 @@ export function cleanCommand(): Command {
       if (opts.resetCard) {
         const cardPath = path.join(cwd, "completion-card.yaml");
         if (await fs.pathExists(cardPath)) {
-          const backupPath = path.join(cwd, `completion-card.yaml.bak.${Date.now()}`);
-          actions.push({ type: "rename", path: `${cardPath} -> ${backupPath}`, note: "reset completion card" });
+          const backupPath = path.join(
+            cwd,
+            `completion-card.yaml.bak.${Date.now()}`
+          );
+          actions.push({
+            type: "rename",
+            path: `${cardPath} -> ${backupPath}`,
+            note: "reset completion card",
+          });
         } else {
           console.log("No completion-card.yaml found to reset.");
         }
@@ -76,16 +93,27 @@ export function cleanCommand(): Command {
             const content = await fs.readFile(cardPath, "utf-8");
             const YAML = await import("yaml");
             const data = YAML.parse(content) as Record<string, unknown>;
-            if (data.acceptance_status === "accepted" && (data.admission as Record<string, unknown>)?.outcome === "success") {
+            if (
+              data.acceptance_status === "accepted" &&
+              (data.admission as Record<string, unknown>)?.outcome === "success"
+            ) {
               const archiveDir = path.join(cwd, ".x-harness", "archive");
               const archiveName = `completion-card-${Date.now()}.yaml`;
               const archivePath = path.join(archiveDir, archiveName);
-              actions.push({ type: "move", path: `${cardPath} -> ${archivePath}`, note: "archive successful card" });
+              actions.push({
+                type: "move",
+                path: `${cardPath} -> ${archivePath}`,
+                note: "archive successful card",
+              });
             } else {
-              console.log("Current completion card is not accepted; skipping archive.");
+              console.log(
+                "Current completion card is not accepted; skipping archive."
+              );
             }
           } catch {
-            console.log("Could not parse completion-card.yaml; skipping archive.");
+            console.log(
+              "Could not parse completion-card.yaml; skipping archive."
+            );
           }
         } else {
           console.log("No completion-card.yaml found to archive.");
@@ -104,7 +132,9 @@ export function cleanCommand(): Command {
 
       if (safeActions.length === 0) {
         console.log("Nothing to clean.");
-        console.log("Use --tmp, --reset-card, or --archive-success to specify what to clean.");
+        console.log(
+          "Use --tmp, --reset-card, or --archive-success to specify what to clean."
+        );
         process.exit(0);
       }
 
@@ -136,7 +166,9 @@ export function cleanCommand(): Command {
             console.log(`moved: ${a.path}`);
           }
         } catch (err) {
-          console.error(`failed: ${a.path} - ${err instanceof Error ? err.message : String(err)}`);
+          console.error(
+            `failed: ${a.path} - ${err instanceof Error ? err.message : String(err)}`
+          );
         }
       }
       console.log("\nclean complete.");

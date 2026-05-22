@@ -16,7 +16,7 @@ An agent completes a deep-tier task but fails to declare the required evidence s
 ## Expected verify outcome
 
 ```bash
-npx x-harness verify --card examples/golden/blocked-missing-evidence-scope/completion-card.yaml
+node packages/cli/dist/index.js verify --card examples/golden/blocked-missing-evidence-scope/completion-card.yaml
 # -> WITHHELD
 # Reason: tier "deep" requires evidence scope declarations
 ```
@@ -24,6 +24,7 @@ npx x-harness verify --card examples/golden/blocked-missing-evidence-scope/compl
 ## Try it
 
 Run the verification gate:
+
 ```bash
 node packages/cli/dist/index.js verify --card examples/golden/blocked-missing-evidence-scope/completion-card.yaml
 ```

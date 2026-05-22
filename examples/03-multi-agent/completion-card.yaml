@@ -3,6 +3,10 @@ task_id: TASK-MULTI-001
 tier: standard
 owner: worker-alpha
 accountable: user-alice
+evidence:
+  files_changed:
+    - src/auth/login.ts
+    - src/auth/reset.ts
 claim:
   fix_status: fixed
   summary: Implemented user auth flow with password reset

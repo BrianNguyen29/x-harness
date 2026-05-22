@@ -10,6 +10,6 @@ A single agent performs a narrow, low-ceremony task and produces a completion ca
 ## Expected verify outcome
 
 ```bash
-npx x-harness verify --card examples/01-solo-agent/completion-card.yaml
+node packages/cli/dist/index.js verify --card examples/01-solo-agent/completion-card.yaml
 # -> ACCEPTED
 ```

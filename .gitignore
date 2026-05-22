@@ -46,3 +46,6 @@ temp/
 trace/
 *.tmp
 .cache/
+
+# x-harness local state
+.x-harness/

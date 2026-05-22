@@ -31,15 +31,22 @@ export interface MetricsReport {
 
 export function computeMetrics(
   input: AdmissionInput,
-  options: { inputCardHash?: string | null; policyHash?: string | null; verifyRuntimeMs?: number }
+  options: {
+    inputCardHash?: string | null;
+    policyHash?: string | null;
+    verifyRuntimeMs?: number;
+  }
 ): MetricsReport {
   const evidence = input.evidence as Record<string, unknown> | undefined;
   const claim = input.claim as Record<string, unknown> | undefined;
   const cardEvidence = claim?.evidence as unknown[] | undefined;
 
-  const verificationArtifacts = (evidence?.verification_artifacts as unknown[] | undefined) ?? [];
-  const untestedRegions = (evidence?.untested_regions as unknown[] | undefined) ?? [];
-  const remainingRisks = (evidence?.remaining_risks as unknown[] | undefined) ?? [];
+  const verificationArtifacts =
+    (evidence?.verification_artifacts as unknown[] | undefined) ?? [];
+  const untestedRegions =
+    (evidence?.untested_regions as unknown[] | undefined) ?? [];
+  const remainingRisks =
+    (evidence?.remaining_risks as unknown[] | undefined) ?? [];
 
   const oracleKinds = new Set<string>();
   for (const artifact of verificationArtifacts) {
@@ -47,17 +54,23 @@ export function computeMetrics(
     if (a?.kind && typeof a.kind === "string") oracleKinds.add(a.kind);
   }
 
-  const filesChanged = (evidence?.files_changed as unknown[] | undefined) ?? cardEvidence ?? [];
+  const filesChanged =
+    (evidence?.files_changed as unknown[] | undefined) ?? cardEvidence ?? [];
 
-  const outcome = (input.admission as Record<string, unknown> | undefined)?.outcome as string | undefined;
+  const outcome = (input.admission as Record<string, unknown> | undefined)
+    ?.outcome as string | undefined;
   const blocked = outcome === "blocked" || outcome === "failed";
 
   const handoff = input.handoff as Record<string, unknown> | undefined;
-  const hasNextAction = !!handoff?.next_action && String(handoff.next_action).trim().length > 0 && String(handoff.next_action) !== "none";
+  const hasNextAction =
+    !!handoff?.next_action &&
+    String(handoff.next_action).trim().length > 0 &&
+    String(handoff.next_action) !== "none";
   const hasOwner = !!handoff?.owner && String(handoff.owner).trim().length > 0;
 
   const tier = input.tier ?? "standard";
-  const contextClass: "low" | "medium" | "high" = tier === "light" ? "low" : tier === "deep" ? "high" : "medium";
+  const contextClass: "low" | "medium" | "high" =
+    tier === "light" ? "low" : tier === "deep" ? "high" : "medium";
 
   return {
     verification_strength: {
@@ -68,9 +81,13 @@ export function computeMetrics(
     },
     state_consistency: {
       owner_present: !!input.owner && input.owner.trim().length > 0,
-      accountable_present: !!input.accountable && input.accountable.trim().length > 0,
+      accountable_present:
+        !!input.accountable && input.accountable.trim().length > 0,
       files_changed_present: filesChanged.length > 0,
-      admission_mapping_valid: outcome === "success" ? input.acceptance_status === "accepted" : input.acceptance_status !== "accepted",
+      admission_mapping_valid:
+        outcome === "success"
+          ? input.acceptance_status === "accepted"
+          : input.acceptance_status !== "accepted",
     },
     recovery_ability: {
       blocked_has_next_action: blocked ? hasNextAction : true,
@@ -78,7 +95,8 @@ export function computeMetrics(
       recovery_route_present: blocked ? hasNextAction && hasOwner : true,
     },
     replayability: {
-      completion_card_present: !!input.task_id && input.task_id.trim().length > 0,
+      completion_card_present:
+        !!input.task_id && input.task_id.trim().length > 0,
       input_card_hash_present: !!options.inputCardHash,
       policy_hash_present: !!options.policyHash,
     },

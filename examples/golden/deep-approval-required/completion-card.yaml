@@ -26,6 +26,10 @@ evidence:
     - "No production IdP integration test was run."
   remaining_risks:
     - "Production IdP rate limits may differ."
+  rollback_policy:
+    - "Revert auth commit and disable OAuth2 feature flag."
+  execution_controls:
+    - "Deploy behind feature flag; enable for 10% traffic first."
 governance:
   risk_class: high
   requires_human_approval: true

@@ -18,8 +18,15 @@
     "build": "npm -w packages/cli run build",
     "dev": "npm -w packages/cli run dev",
     "test": "npm -w packages/cli run test",
+    "test:watch": "npm -w packages/cli run test:watch",
+    "test:coverage": "npm -w packages/cli run test:coverage",
     "typecheck": "npm -w packages/cli run typecheck",
+    "test:typecheck": "npm -w packages/cli run test:typecheck",
     "lint": "npm -w packages/cli run lint",
+    "lint:fix": "npm -w packages/cli run lint:fix",
+    "format": "npm -w packages/cli run format",
+    "format:check": "npm -w packages/cli run format:check",
+    "ci": "npm -w packages/cli run ci",
     "verify": "npm run typecheck && npm run test"
   }
 }

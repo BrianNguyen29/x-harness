@@ -16,6 +16,6 @@ A single agent completes a small task with minimal evidence. The completion card
 ## Expected verify outcome
 
 ```bash
-npx x-harness verify --card examples/golden/success-light/completion-card.yaml
+node packages/cli/dist/index.js verify --card examples/golden/success-light/completion-card.yaml
 # -> ACCEPTED
 ```

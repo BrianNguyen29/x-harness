@@ -3,6 +3,9 @@ task_id: TASK-GOLDEN-004
 tier: light
 owner: alice
 accountable: bob
+evidence:
+  files_changed:
+    - src/middleware/rateLimit.ts
 claim:
   fix_status: partial
   summary: Implemented basic rate limiter; Redis sliding window not yet integrated

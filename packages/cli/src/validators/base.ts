@@ -5,7 +5,10 @@ export interface ValidationResult {
   errors: string[];
 }
 
-export async function validateAgainstSchema(data: unknown, schemaName: string): Promise<ValidationResult> {
+export async function validateAgainstSchema(
+  data: unknown,
+  schemaName: string
+): Promise<ValidationResult> {
   try {
     const schema = await loadSchema(schemaName);
     const validate = compileSchema(schema);
@@ -13,9 +16,16 @@ export async function validateAgainstSchema(data: unknown, schemaName: string): 
     if (valid) {
       return { valid: true, errors: [] };
     }
-    const errors = validate.errors?.map((e) => `${e.instancePath || "/"} ${e.message}`) ?? ["validation failed"];
+    const errors = validate.errors?.map(
+      (e) => `${e.instancePath || "/"} ${e.message}`
+    ) ?? ["validation failed"];
     return { valid: false, errors };
   } catch (err) {
-    return { valid: false, errors: [`schema load error: ${err instanceof Error ? err.message : String(err)}`] };
+    return {
+      valid: false,
+      errors: [
+        `schema load error: ${err instanceof Error ? err.message : String(err)}`,
+      ],
+    };
   }
 }

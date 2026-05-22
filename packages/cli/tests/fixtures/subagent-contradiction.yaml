@@ -11,3 +11,4 @@ verification:
 confidence: MED
 handoff:
   next_action: "continue"
+  owner: "alice"

@@ -9,13 +9,42 @@ const __dirname = dirname(__filename);
 
 const ajv = new Ajv2020({ strict: false });
 
-export async function loadSchema(name: string): Promise<Record<string, unknown>> {
-  const schemaPath = join(__dirname, "..", "..", "schemas", `${name}.schema.json`);
+ajv.addFormat("date-time", {
+  type: "string",
+  validate: (value: string) =>
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$/.test(
+      value
+    ),
+});
+
+ajv.addFormat("uri", {
+  type: "string",
+  validate: (value: string) => /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value),
+});
+
+export async function loadSchema(
+  name: string
+): Promise<Record<string, unknown>> {
+  const schemaPath = join(
+    __dirname,
+    "..",
+    "..",
+    "schemas",
+    `${name}.schema.json`
+  );
   if (await fs.pathExists(schemaPath)) {
     return fs.readJson(schemaPath);
   }
   // Fallback for repo development (outside package root)
-  const fallbackPath = join(__dirname, "..", "..", "..", "..", "schemas", `${name}.schema.json`);
+  const fallbackPath = join(
+    __dirname,
+    "..",
+    "..",
+    "..",
+    "..",
+    "schemas",
+    `${name}.schema.json`
+  );
   if (await fs.pathExists(fallbackPath)) {
     return fs.readJson(fallbackPath);
   }
@@ -42,7 +71,9 @@ export async function readYamlOrJson(filePath: string): Promise<unknown> {
   }
 }
 
-export async function readJsonl(filePath: string): Promise<Record<string, unknown>[]> {
+export async function readJsonl(
+  filePath: string
+): Promise<Record<string, unknown>[]> {
   if (!(await fs.pathExists(filePath))) return [];
   const content = await fs.readFile(filePath, "utf-8");
   return content

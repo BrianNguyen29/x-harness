@@ -38,6 +38,9 @@ describe("admission", () => {
         next_action: "none",
         owner: "alice",
       },
+      evidence: {
+        files_changed: ["a.ts"],
+      },
     });
     expect(result.outcome).toBe("success");
     expect(result.acceptance_status).toBe("accepted");
@@ -68,13 +71,18 @@ describe("admission", () => {
         checks: [],
       },
       handoff: { next_action: "review", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+      },
     });
     expect(result.outcome).toBe("failed");
     expect(result.acceptance_status).toBe("withheld");
-    expect(result.errors[0]).toContain("canonical contradiction");
+    expect(
+      result.errors.some((e) => e.includes("canonical contradiction"))
+    ).toBe(true);
   });
 
-  it("fails when standard tier lacks evidence", () => {
+  it("fails when standard tier lacks files_changed", () => {
     const result = runAdmission({
       task_id: "T1",
       tier: "standard",
@@ -85,10 +93,10 @@ describe("admission", () => {
       handoff: { next_action: "none", owner: "alice" },
     });
     expect(result.outcome).toBe("failed");
-    expect(result.errors[0]).toContain("requires evidence");
+    expect(result.errors.some((e) => e.includes("files_changed"))).toBe(true);
   });
 
-  it("allows light tier without evidence", () => {
+  it("allows light tier with files_changed", () => {
     const result = runAdmission({
       task_id: "T1",
       tier: "light",
@@ -97,6 +105,9 @@ describe("admission", () => {
       claim: { fix_status: "fixed", summary: "done", evidence: [] },
       verification: { status: "passed", checks: [] },
       handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+      },
     });
     expect(result.outcome).toBe("success");
   });
@@ -110,6 +121,9 @@ describe("admission", () => {
       claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
       verification: { status: "passed", checks: [] },
       handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+      },
     });
     expect(result.outcome).toBe("failed");
     expect(result.errors.some((e) => e.includes("missing owner"))).toBe(true);
@@ -123,20 +137,28 @@ describe("admission", () => {
       claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
       verification: { status: "passed", checks: [] },
       handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+      },
     });
     expect(result.outcome).toBe("failed");
-    expect(result.errors.some((e) => e.includes("missing accountable"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("missing accountable"))).toBe(
+      true
+    );
   });
 
   it("rejects invalid tier", () => {
     const result = runAdmission({
       task_id: "T1",
-      tier: "small" as any,
+      tier: "small" as "light" | "standard" | "deep",
       owner: "alice",
       accountable: "bob",
       claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
       verification: { status: "passed", checks: [] },
       handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+      },
     });
     expect(result.outcome).toBe("failed");
     expect(result.errors.some((e) => e.includes("invalid tier"))).toBe(true);
@@ -153,9 +175,16 @@ describe("admission", () => {
       admission: { outcome: "success" },
       acceptance_status: "accepted",
       handoff: { next_action: "review", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+      },
     });
     expect(result.outcome).toBe("failed");
-    expect(result.errors.some((e) => e.includes("canonical contradiction") && e.includes("blocked"))).toBe(true);
+    expect(
+      result.errors.some(
+        (e) => e.includes("canonical contradiction") && e.includes("blocked")
+      )
+    ).toBe(true);
   });
 
   it("rejects fix_status partial + verification passed", () => {
@@ -167,9 +196,14 @@ describe("admission", () => {
       claim: { fix_status: "partial", summary: "partial", evidence: ["e1"] },
       verification: { status: "passed", checks: [] },
       handoff: { next_action: "review", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+      },
     });
     expect(result.outcome).toBe("failed");
-    expect(result.errors.some((e) => e.includes("canonical contradiction"))).toBe(true);
+    expect(
+      result.errors.some((e) => e.includes("canonical contradiction"))
+    ).toBe(true);
   });
 
   it("PGV high risk alone does not block if core admission succeeds", () => {
@@ -185,6 +219,9 @@ describe("admission", () => {
       acceptance_status: "accepted",
       handoff: { next_action: "none", owner: "alice" },
       pgv_risk: "HIGH",
+      evidence: {
+        files_changed: ["a.ts"],
+      },
     });
     expect(result.outcome).toBe("success");
     expect(result.acceptance_status).toBe("accepted");
@@ -202,10 +239,15 @@ describe("admission", () => {
       admission: { outcome: "failed" },
       acceptance_status: "accepted",
       handoff: { next_action: "review", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+      },
     });
     expect(result.outcome).toBe("failed");
     expect(result.acceptance_status).toBe("withheld");
-    expect(result.errors.some((e) => e.includes("non-success outcome"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("non-success outcome"))).toBe(
+      true
+    );
   });
 
   it("rejects blocked without next_action/owner", () => {
@@ -218,9 +260,14 @@ describe("admission", () => {
       verification: { status: "blocked", checks: [] },
       admission: { outcome: "blocked" },
       handoff: { next_action: "", owner: "" },
+      evidence: {
+        files_changed: ["a.ts"],
+      },
     });
     expect(result.outcome).toBe("failed");
-    expect(result.errors.some((e) => e.includes("handoff.next_action"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("handoff.next_action"))).toBe(
+      true
+    );
     expect(result.errors.some((e) => e.includes("handoff.owner"))).toBe(true);
   });
 
@@ -233,9 +280,14 @@ describe("admission", () => {
       claim: { fix_status: "not_fixed", summary: "failed", evidence: ["e1"] },
       verification: { status: "failed", checks: [] },
       handoff: { next_action: "", owner: "" },
+      evidence: {
+        files_changed: ["a.ts"],
+      },
     });
     expect(result.outcome).toBe("failed");
-    expect(result.errors.some((e) => e.includes("handoff.next_action"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("handoff.next_action"))).toBe(
+      true
+    );
     expect(result.errors.some((e) => e.includes("handoff.owner"))).toBe(true);
   });
 
@@ -243,7 +295,7 @@ describe("admission", () => {
   it("passes admission with valid subagentReturn inputs", () => {
     const result = runAdmission({
       claim: { id: "C1" },
-      evidence: { id: "E1", owner: "alice" },
+      evidence: { id: "E1", owner: "alice", files_changed: ["a.ts"] },
       subagentReturn: {
         result: { fix_status: "fixed" },
         verification: { status: "passed" },
@@ -256,6 +308,8 @@ describe("admission", () => {
 
   it("fails on canonical contradiction via subagentReturn: passed + not_fixed", () => {
     const result = runAdmission({
+      claim: { id: "C1" },
+      evidence: { id: "E1", owner: "alice", files_changed: ["a.ts"] },
       subagentReturn: {
         result: { fix_status: "partial" },
         verification: { status: "passed" },
@@ -263,7 +317,9 @@ describe("admission", () => {
     });
     expect(result.outcome).toBe("failed");
     expect(result.acceptance_status).toBe("withheld");
-    expect(result.errors[0]).toContain("canonical contradiction");
+    expect(
+      result.errors.some((e) => e.includes("canonical contradiction"))
+    ).toBe(true);
   });
 
   // Evidence floor tests for deep tier
@@ -277,9 +333,16 @@ describe("admission", () => {
       verification: { status: "passed", checks: [] },
       handoff: { next_action: "none", owner: "alice" },
       state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        files_changed: ["a.ts"],
+      },
     });
     expect(result.outcome).toBe("failed");
-    expect(result.errors.some((e) => e.includes("deep") && e.includes("verification_artifacts"))).toBe(true);
+    expect(
+      result.errors.some(
+        (e) => e.includes("deep") && e.includes("verification_artifacts")
+      )
+    ).toBe(true);
     expect(result.blocking_predicate).toBe("evidence_scope_missing");
   });
 
@@ -294,11 +357,14 @@ describe("admission", () => {
       handoff: { next_action: "none", owner: "alice" },
       state: { read_set: ["a.ts"], write_set: ["a.ts"] },
       evidence: {
+        files_changed: ["a.ts"],
         verification_artifacts: [
           { kind: "unit_test", command: "npm test", status: "passed" },
         ],
         untested_regions: ["no e2e"],
         remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
       },
     });
     expect(result.outcome).toBe("failed");
@@ -315,11 +381,20 @@ describe("admission", () => {
       verification: { status: "passed", checks: [] },
       handoff: { next_action: "none", owner: "alice" },
       evidence: {
+        files_changed: ["a.ts"],
         verification_artifacts: [
-          { kind: "unit_test", command: "npm test", status: "passed", verifies: ["x"], does_not_verify: ["y"] },
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
         ],
         untested_regions: ["no e2e"],
         remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
       },
     });
     expect(result.outcome).toBe("failed");
@@ -338,11 +413,20 @@ describe("admission", () => {
       handoff: { next_action: "none", owner: "alice" },
       state: { read_set: ["a.ts"], write_set: ["a.ts"] },
       evidence: {
+        files_changed: ["a.ts"],
         verification_artifacts: [
-          { kind: "unit_test", command: "npm test", status: "passed", verifies: ["x"], does_not_verify: ["y"] },
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
         ],
         untested_regions: ["no e2e"],
         remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
       },
     });
     expect(result.outcome).toBe("success");
@@ -361,11 +445,20 @@ describe("admission", () => {
       handoff: { next_action: "none", owner: "alice" },
       state: { read_set: ["a.ts"], write_set: ["a.ts"] },
       evidence: {
+        files_changed: ["a.ts"],
         verification_artifacts: [
-          { kind: "unit_test", command: "npm test", status: "passed", verifies: ["x"], does_not_verify: ["y"] },
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
         ],
         untested_regions: ["no e2e"],
         remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
       },
       governance: {
         risk_class: "high",
@@ -391,11 +484,20 @@ describe("admission", () => {
       handoff: { next_action: "none", owner: "alice" },
       state: { read_set: ["a.ts"], write_set: ["a.ts"] },
       evidence: {
+        files_changed: ["a.ts"],
         verification_artifacts: [
-          { kind: "unit_test", command: "npm test", status: "passed", verifies: ["x"], does_not_verify: ["y"] },
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
         ],
         untested_regions: ["no e2e"],
         remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
       },
       governance: {
         risk_class: "high",
@@ -407,5 +509,168 @@ describe("admission", () => {
     });
     expect(result.outcome).toBe("success");
     expect(result.acceptance_status).toBe("accepted");
+  });
+
+  // context_acknowledged advisory tests
+  it("advises but does not block when context_acknowledged is missing", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(
+      result.notes.some(
+        (n) => n.includes("context_acknowledged") && n.includes("advisory-only")
+      )
+    ).toBe(true);
+  });
+
+  it("advises but does not block when context_acknowledged is false", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      context_acknowledged: false,
+      evidence: {
+        files_changed: ["a.ts"],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(
+      result.notes.some(
+        (n) => n.includes("context_acknowledged") && n.includes("advisory-only")
+      )
+    ).toBe(true);
+  });
+
+  it("does not add context_acknowledged advisory when true", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      context_acknowledged: true,
+      evidence: {
+        files_changed: ["a.ts"],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(result.notes.some((n) => n.includes("context_acknowledged"))).toBe(
+      false
+    );
+  });
+
+  it("advises standard tier when artifact metadata is sparse", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        verification_artifacts: [{ kind: "unit_test", status: "passed" }],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(result.notes.some((n) => n.includes("artifact metadata"))).toBe(
+      true
+    );
+  });
+
+  it("advises deep tier when artifact metadata is sparse", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        files_changed: ["a.ts"],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(result.notes.some((n) => n.includes("artifact metadata"))).toBe(
+      true
+    );
+  });
+
+  it("does not add artifact metadata advisory when quality is present", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            exit_code: 0,
+            started_at: "2026-05-22T10:00:00Z",
+          },
+        ],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(result.notes.some((n) => n.includes("artifact metadata"))).toBe(
+      false
+    );
   });
 });

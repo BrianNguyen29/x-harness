@@ -106,7 +106,14 @@
               },
               "command": { "type": "string" },
               "status": {
-                "enum": ["passed", "failed", "blocked", "skipped", "timeout", "error"]
+                "enum": [
+                  "passed",
+                  "failed",
+                  "blocked",
+                  "skipped",
+                  "timeout",
+                  "error"
+                ]
               },
               "verifies": {
                 "type": "array",
@@ -118,6 +125,37 @@
               },
               "confidence": {
                 "enum": ["low", "medium", "high"]
+              },
+              "exit_code": {
+                "type": "integer"
+              },
+              "started_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "ended_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "stdout_hash": {
+                "type": "string",
+                "minLength": 1
+              },
+              "stderr_hash": {
+                "type": "string",
+                "minLength": 1
+              },
+              "artifact_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "artifact_hash": {
+                "type": "string",
+                "minLength": 1
+              },
+              "ci_run_url": {
+                "type": "string",
+                "format": "uri"
               }
             }
           }
@@ -127,6 +165,14 @@
           "items": { "type": "string" }
         },
         "remaining_risks": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "rollback_policy": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "execution_controls": {
           "type": "array",
           "items": { "type": "string" }
         }
@@ -170,12 +216,24 @@
       "required": ["outcome"],
       "properties": {
         "outcome": {
-          "enum": ["pending", "success", "failed", "blocked", "skipped", "timeout", "error"]
+          "enum": [
+            "pending",
+            "success",
+            "failed",
+            "blocked",
+            "skipped",
+            "timeout",
+            "error"
+          ]
         }
       }
     },
     "acceptance_status": {
       "enum": ["accepted", "withheld"]
+    },
+    "context_acknowledged": {
+      "type": "boolean",
+      "description": "Advisory-only flag indicating the worker acknowledged context constraints. Missing or false does not block admission."
     },
     "handoff": {
       "type": "object",

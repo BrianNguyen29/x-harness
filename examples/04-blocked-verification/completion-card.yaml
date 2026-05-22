@@ -3,6 +3,9 @@ task_id: TASK-BLOCKED-001
 tier: light
 owner: alice
 accountable: bob
+evidence:
+  files_changed:
+    - src/blocked.ts
 claim:
   fix_status: not_fixed
   summary: Task blocked pending external dependency

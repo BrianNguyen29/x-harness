@@ -29,10 +29,7 @@ describe("examples command", () => {
   });
 
   it("verify subcommand prints human-readable summary", async () => {
-    const { stdout, exitCode } = await execaNode([
-      "examples",
-      "verify",
-    ]);
+    const { stdout, exitCode } = await execaNode(["examples", "verify"]);
     expect(exitCode).toBe(0);
     expect(stdout).toContain("Golden examples: 9 total");
     expect(stdout).toContain("success-light");
@@ -56,39 +53,57 @@ describe("examples command", () => {
     expect(exitCode).toBe(0);
     const output = JSON.parse(stdout);
 
-    const successLight = output.results.find((r: { name: string }) => r.name === "success-light");
+    const successLight = output.results.find(
+      (r: { name: string }) => r.name === "success-light"
+    );
     expect(successLight.outcome).toBe("success");
     expect(successLight.acceptance_status).toBe("accepted");
 
-    const blocked = output.results.find((r: { name: string }) => r.name === "blocked-missing-evidence");
+    const blocked = output.results.find(
+      (r: { name: string }) => r.name === "blocked-missing-evidence"
+    );
     expect(blocked.outcome).toBe("failed");
     expect(blocked.acceptance_status).toBe("withheld");
 
-    const failed = output.results.find((r: { name: string }) => r.name === "failed-invalid-status");
+    const failed = output.results.find(
+      (r: { name: string }) => r.name === "failed-invalid-status"
+    );
     expect(failed.outcome).toBe("failed");
     expect(failed.acceptance_status).toBe("withheld");
 
-    const withheld = output.results.find((r: { name: string }) => r.name === "withheld-partial-fix");
+    const withheld = output.results.find(
+      (r: { name: string }) => r.name === "withheld-partial-fix"
+    );
     expect(withheld.outcome).toBe("failed");
     expect(withheld.acceptance_status).toBe("withheld");
 
-    const multi = output.results.find((r: { name: string }) => r.name === "multi-agent-success");
+    const multi = output.results.find(
+      (r: { name: string }) => r.name === "multi-agent-success"
+    );
     expect(multi.outcome).toBe("success");
     expect(multi.acceptance_status).toBe("accepted");
 
-    const scoped = output.results.find((r: { name: string }) => r.name === "success-standard-scoped-evidence");
+    const scoped = output.results.find(
+      (r: { name: string }) => r.name === "success-standard-scoped-evidence"
+    );
     expect(scoped.outcome).toBe("success");
     expect(scoped.acceptance_status).toBe("accepted");
 
-    const blockedScope = output.results.find((r: { name: string }) => r.name === "blocked-missing-evidence-scope");
+    const blockedScope = output.results.find(
+      (r: { name: string }) => r.name === "blocked-missing-evidence-scope"
+    );
     expect(blockedScope.outcome).toBe("failed");
     expect(blockedScope.acceptance_status).toBe("withheld");
 
-    const approval = output.results.find((r: { name: string }) => r.name === "deep-approval-required");
+    const approval = output.results.find(
+      (r: { name: string }) => r.name === "deep-approval-required"
+    );
     expect(approval.outcome).toBe("failed");
     expect(approval.acceptance_status).toBe("withheld");
 
-    const recovery = output.results.find((r: { name: string }) => r.name === "failed-typecheck-recovery-route");
+    const recovery = output.results.find(
+      (r: { name: string }) => r.name === "failed-typecheck-recovery-route"
+    );
     expect(recovery.outcome).toBe("failed");
     expect(recovery.acceptance_status).toBe("withheld");
   });

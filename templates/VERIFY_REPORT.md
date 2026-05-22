@@ -4,7 +4,7 @@
 
 - Task ID: `TASK-___`
 - Tier: `light|standard|deep`
-- Claim summary: ___
+- Claim summary: \_\_\_
 
 ## Files inspected
 
@@ -29,12 +29,12 @@
 
 List any blockers found:
 
-- ___
+- ***
 
 ## Handoff
 
-- Next action: ___
-- Owner: ___
+- Next action: \_\_\_
+- Owner: \_\_\_
 
 ## Rules
 

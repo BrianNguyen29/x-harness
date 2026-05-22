@@ -3,6 +3,9 @@ task_id: TASK-GOLDEN-001
 tier: light
 owner: alice
 accountable: bob
+evidence:
+  files_changed:
+    - src/utils/formatDate.ts
 claim:
   fix_status: fixed
   summary: Implemented formatDate() utility with graceful invalid-input handling

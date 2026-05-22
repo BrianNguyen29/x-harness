@@ -18,6 +18,6 @@ This example demonstrates a worker/verifier split for a standard-tier task.
 ## Expected verify outcome
 
 ```bash
-npx x-harness verify --card examples/03-multi-agent/completion-card.yaml
+node packages/cli/dist/index.js verify --card examples/03-multi-agent/completion-card.yaml
 # -> ACCEPTED
 ```

@@ -2,5 +2,35 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "evidence",
   "type": "object",
+  "required": ["files_changed"],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "files_changed": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "verification_artifacts": {
+      "type": "array"
+    },
+    "untested_regions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "remaining_risks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "rollback_policy": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "execution_controls": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
   "additionalProperties": true
 }

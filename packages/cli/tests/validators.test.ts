@@ -19,7 +19,11 @@ describe("validators", () => {
   });
 
   it("validates a valid evidence packet", async () => {
-    const result = await validateEvidence({ id: "E1", evidence_quality: "sufficient" });
+    const result = await validateEvidence({
+      id: "E1",
+      evidence_quality: "sufficient",
+      files_changed: ["src/x.ts"],
+    });
     console.log("evidence result:", result);
     expect(result.valid).toBe(true);
   });
@@ -30,7 +34,7 @@ describe("validators", () => {
       evidence: {},
       verification: { status: "passed" },
       confidence: "HIGH",
-      handoff: { next_action: "none" },
+      handoff: { next_action: "none", owner: "alice" },
     });
     console.log("subagent result:", result);
     expect(result.valid).toBe(true);
@@ -127,13 +131,19 @@ describe("validators", () => {
     });
 
     it("rejects invalid claim.fix_status", async () => {
-      const card = { ...validCard, claim: { ...validCard.claim, fix_status: "done" } };
+      const card = {
+        ...validCard,
+        claim: { ...validCard.claim, fix_status: "done" },
+      };
       const result = await validateCompletionCard(card);
       expect(result.valid).toBe(false);
     });
 
     it("rejects invalid verification.status", async () => {
-      const card = { ...validCard, verification: { ...validCard.verification, status: "ok" } };
+      const card = {
+        ...validCard,
+        verification: { ...validCard.verification, status: "ok" },
+      };
       const result = await validateCompletionCard(card);
       expect(result.valid).toBe(false);
     });
@@ -159,7 +169,11 @@ describe("validators", () => {
       };
       const result = await validateCompletionCard(card);
       expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes("admission") || e.includes("accepted"))).toBe(true);
+      expect(
+        result.errors.some(
+          (e) => e.includes("admission") || e.includes("accepted")
+        )
+      ).toBe(true);
     });
 
     it("rejects success-with-withheld", async () => {
@@ -196,7 +210,11 @@ describe("validators", () => {
       };
       const result = await validateCompletionCard(card);
       expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes("fix_status") || e.includes("passed"))).toBe(true);
+      expect(
+        result.errors.some(
+          (e) => e.includes("fix_status") || e.includes("passed")
+        )
+      ).toBe(true);
     });
 
     it("rejects verification blocked without handoff", async () => {
@@ -207,6 +225,92 @@ describe("validators", () => {
       };
       const result = await validateCompletionCard(card);
       expect(result.valid).toBe(false);
+    });
+
+    it("validates a completion card with hardened verification artifacts", async () => {
+      const card = {
+        ...validCard,
+        evidence: {
+          files_changed: ["a.ts"],
+          verification_artifacts: [
+            {
+              kind: "unit_test",
+              command: "npm test",
+              status: "passed",
+              exit_code: 0,
+              started_at: "2026-05-22T10:00:00Z",
+              ended_at: "2026-05-22T10:01:00Z",
+              stdout_hash: "sha256:abc",
+              stderr_hash: "sha256:def",
+              artifact_path: "/tmp/test.log",
+              artifact_hash: "sha256:ghi",
+              ci_run_url: "https://ci.example.com/run/1",
+            },
+          ],
+        },
+      };
+      const result = await validateCompletionCard(card);
+      expect(result.valid).toBe(true);
+    });
+
+    it("rejects invalid exit_code type in verification artifact", async () => {
+      const card = {
+        ...validCard,
+        evidence: {
+          files_changed: ["a.ts"],
+          verification_artifacts: [
+            {
+              kind: "unit_test",
+              command: "npm test",
+              status: "passed",
+              exit_code: "zero",
+            },
+          ],
+        },
+      };
+      const result = await validateCompletionCard(card);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes("exit_code"))).toBe(true);
+    });
+
+    it("rejects invalid ci_run_url format in verification artifact", async () => {
+      const card = {
+        ...validCard,
+        evidence: {
+          files_changed: ["a.ts"],
+          verification_artifacts: [
+            {
+              kind: "unit_test",
+              command: "npm test",
+              status: "passed",
+              ci_run_url: "not-a-url",
+            },
+          ],
+        },
+      };
+      const result = await validateCompletionCard(card);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes("ci_run_url"))).toBe(true);
+    });
+
+    it("rejects invalid started_at format in verification artifact", async () => {
+      const card = {
+        ...validCard,
+        evidence: {
+          files_changed: ["a.ts"],
+          verification_artifacts: [
+            {
+              kind: "unit_test",
+              command: "npm test",
+              status: "passed",
+              started_at: "yesterday",
+            },
+          ],
+        },
+      };
+      const result = await validateCompletionCard(card);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes("started_at"))).toBe(true);
     });
   });
 });

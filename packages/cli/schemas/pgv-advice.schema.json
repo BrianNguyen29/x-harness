@@ -15,34 +15,19 @@
       "maximum": 1
     },
     "claim_allowed": {
-      "enum": [
-        "yes",
-        "no"
-      ]
+      "enum": ["yes", "no"]
     },
     "needs_escalation": {
-      "enum": [
-        "none",
-        "oracle",
-        "council"
-      ]
+      "enum": ["none", "oracle", "council"]
     },
     "top_violation": {
-      "type": [
-        "string",
-        "null"
-      ]
+      "type": ["string", "null"]
     },
     "next_control_action": {
       "type": "string"
     },
     "verify_outcome_pred": {
-      "enum": [
-        "passed",
-        "failed",
-        "blocked",
-        "uncertain"
-      ]
+      "enum": ["passed", "failed", "blocked", "uncertain"]
     }
   }
 }

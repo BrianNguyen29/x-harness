@@ -16,7 +16,7 @@ An agent incorrectly marks the task as `accepted` while the admission outcome is
 ## Expected verify outcome
 
 ```bash
-npx x-harness verify --card examples/golden/failed-invalid-status/completion-card.yaml
+node packages/cli/dist/index.js verify --card examples/golden/failed-invalid-status/completion-card.yaml
 # -> WITHHELD
 # Reason: canonical contradiction
 ```

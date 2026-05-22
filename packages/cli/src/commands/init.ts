@@ -17,15 +17,20 @@ interface InitOptions {
 
 const MODE_ASSETS: Record<string, string[]> = {
   minimal: ["examples/00-minimal"],
-  standard: ["examples/01-solo-agent", "examples/02-assisted-agent", "schemas", "policies"],
+  standard: [
+    "examples/01-solo-agent",
+    "examples/02-assisted-agent",
+    "schemas",
+    "policies",
+  ],
   full: ["examples", "schemas", "policies", "templates", "adapters"],
 };
 
 export function initCommand(): Command {
   return new Command("init")
     .description("Initialize x-harness files")
-    .option("--minimal", "Minimal mode")
-    .option("--standard", "Standard mode (default)")
+    .option("--minimal", "Minimal mode (default)")
+    .option("--standard", "Standard mode")
     .option("--full", "Full mode")
     .option("--dry-run", "Show what would be copied")
     .option("--merge", "Merge with existing files")
@@ -33,9 +38,11 @@ export function initCommand(): Command {
     .option("--adapters <list>", "Comma-separated adapter list")
     .argument("[target]", "Target directory", ".")
     .action(async (target: string, opts: InitOptions) => {
-      const mode = opts.full ? "full" : opts.minimal ? "minimal" : "standard";
+      const mode = opts.full ? "full" : opts.standard ? "standard" : "minimal";
       const targetDir = path.resolve(target);
-      const rootDir = path.resolve(path.join(__dirname, "..", "..", "..", ".."));
+      const rootDir = path.resolve(
+        path.join(__dirname, "..", "..", "..", "..")
+      );
 
       const plan: { src: string; dest: string }[] = [];
 
@@ -45,10 +52,22 @@ export function initCommand(): Command {
           { src: "X_HARNESS.md", dest: "X_HARNESS.md" },
           { src: "docs/VERIFY_GATE.md", dest: "docs/VERIFY_GATE.md" },
           { src: "docs/RUNTIME_CONTRACT.md", dest: "docs/RUNTIME_CONTRACT.md" },
-          { src: "templates/SUBAGENT_TASK_light.md", dest: "templates/SUBAGENT_TASK_light.md" },
-          { src: "templates/SUBAGENT_TASK_standard.md", dest: "templates/SUBAGENT_TASK_standard.md" },
-          { src: "templates/SUBAGENT_TASK_deep.md", dest: "templates/SUBAGENT_TASK_deep.md" },
-          { src: "templates/COMPLETION_CARD.md", dest: "templates/COMPLETION_CARD.md" },
+          {
+            src: "templates/SUBAGENT_TASK_light.md",
+            dest: "templates/SUBAGENT_TASK_light.md",
+          },
+          {
+            src: "templates/SUBAGENT_TASK_standard.md",
+            dest: "templates/SUBAGENT_TASK_standard.md",
+          },
+          {
+            src: "templates/SUBAGENT_TASK_deep.md",
+            dest: "templates/SUBAGENT_TASK_deep.md",
+          },
+          {
+            src: "templates/COMPLETION_CARD.md",
+            dest: "templates/COMPLETION_CARD.md",
+          },
           { src: "policies/admission.yaml", dest: "policies/admission.yaml" },
         ];
         for (const f of minimalFiles) {
@@ -85,10 +104,13 @@ export function initCommand(): Command {
         return;
       }
 
+      const conflicts: string[] = [];
+      const copied: string[] = [];
+
       for (const p of plan) {
         if (await fs.pathExists(p.dest)) {
           if (!opts.force && !opts.merge) {
-            console.log(`skip (exists): ${p.dest}`);
+            conflicts.push(p.dest);
             continue;
           }
           if (opts.force) {
@@ -96,9 +118,25 @@ export function initCommand(): Command {
           }
         }
         await fs.copy(p.src, p.dest);
+        copied.push(p.dest);
         console.log(`copied: ${p.dest}`);
       }
 
-      console.log(`x-harness init (${mode}) complete: ${plan.length} assets copied to ${targetDir}`);
+      if (conflicts.length > 0) {
+        console.error(
+          `\n# x-harness init (${mode}) blocked: ${conflicts.length} file(s) already exist`
+        );
+        for (const c of conflicts) {
+          console.error(`conflict: ${c}`);
+        }
+        console.error(
+          "\nUse --force to overwrite or --merge to merge with existing files."
+        );
+        process.exit(1);
+      }
+
+      console.log(
+        `x-harness init (${mode}) complete: ${copied.length} assets copied to ${targetDir}`
+      );
     });
 }

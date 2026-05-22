@@ -16,7 +16,7 @@ An agent implements changes but the verify gate registers type compilation failu
 ## Expected verify outcome
 
 ```bash
-npx x-harness verify --card examples/golden/failed-typecheck-recovery-route/completion-card.yaml
+node packages/cli/dist/index.js verify --card examples/golden/failed-typecheck-recovery-route/completion-card.yaml
 # -> WITHHELD
 # Reason: typecheck failed (Suggested recovery owner: implementation-worker)
 ```
@@ -24,6 +24,7 @@ npx x-harness verify --card examples/golden/failed-typecheck-recovery-route/comp
 ## Try it
 
 Run the verification gate:
+
 ```bash
 node packages/cli/dist/index.js verify --card examples/golden/failed-typecheck-recovery-route/completion-card.yaml
 ```

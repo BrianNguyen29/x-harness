@@ -16,7 +16,7 @@ An agent claims completion for a standard-tier task but provides no evidence. Th
 ## Expected verify outcome
 
 ```bash
-npx x-harness verify --card examples/golden/blocked-missing-evidence/completion-card.yaml
+node packages/cli/dist/index.js verify --card examples/golden/blocked-missing-evidence/completion-card.yaml
 # -> WITHHELD
 # Reason: tier "standard" requires evidence packet
 ```

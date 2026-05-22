@@ -3,6 +3,9 @@ task_id: TASK-SOLO-001
 tier: light
 owner: solo-agent
 accountable: user-alice
+evidence:
+  files_changed:
+    - src/config.ts
 claim:
   fix_status: fixed
   summary: Checked config rule and updated setting

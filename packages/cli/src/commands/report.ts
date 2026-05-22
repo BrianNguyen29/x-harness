@@ -12,16 +12,180 @@ interface ReportOptions {
   json?: boolean;
   metrics?: boolean;
   card?: string;
+  format?: string;
+}
+
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function renderHtmlReport(data: {
+  total: number;
+  accepted: number;
+  withheld: number;
+  blocked: number;
+  failed: number;
+  skipped: number;
+  timeout: number;
+  error: number;
+  unknownEvents: number;
+  byOutcome: Record<string, number>;
+  latest: unknown;
+}): string {
+  const {
+    total,
+    accepted,
+    withheld,
+    blocked,
+    failed,
+    skipped,
+    timeout,
+    error: errorCount,
+    unknownEvents,
+    byOutcome,
+    latest,
+  } = data;
+
+  const rows = Object.entries(byOutcome)
+    .map(
+      ([outcome, count]) =>
+        `<tr><td>${escapeHtml(outcome)}</td><td>${count}</td><td>${total > 0 ? Math.round((count / total) * 100) : 0}%</td></tr>`
+    )
+    .join("\n");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>x-harness Audit Report</title>
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; color: #333; }
+  h1 { border-bottom: 2px solid #333; padding-bottom: 8px; }
+  h2 { margin-top: 32px; color: #222; }
+  table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+  th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+  th { background: #f5f5f5; }
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-weight: 600; font-size: 14px; }
+  .badge-success { background: #d4edda; color: #155724; }
+  .badge-failed { background: #f8d7da; color: #721c24; }
+  .badge-blocked { background: #fff3cd; color: #856404; }
+  .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin-top: 16px; }
+  .muted { color: #666; font-size: 14px; }
+  code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<h1>x-harness Audit Report</h1>
+<p class="muted">Generated at ${escapeHtml(new Date().toISOString())}</p>
+
+<h2>Summary</h2>
+<table>
+  <tr><th>Metric</th><th>Value</th></tr>
+  <tr><td>Total events</td><td>${total}</td></tr>
+  <tr><td>Accepted</td><td><span class="badge badge-success">${accepted}</span></td></tr>
+  <tr><td>Withheld</td><td><span class="badge badge-failed">${withheld}</span></td></tr>
+  <tr><td>Blocked</td><td><span class="badge badge-blocked">${blocked}</span></td></tr>
+  <tr><td>Failed</td><td><span class="badge badge-failed">${failed}</span></td></tr>
+  <tr><td>Skipped</td><td>${skipped}</td></tr>
+  <tr><td>Timeout</td><td>${timeout}</td></tr>
+  <tr><td>Error</td><td>${errorCount}</td></tr>
+  <tr><td>Unknown / unlinked</td><td>${unknownEvents}</td></tr>
+</table>
+
+<h2>Outcome breakdown</h2>
+<table>
+  <tr><th>Outcome</th><th>Count</th><th>Share</th></tr>
+  ${rows || '<tr><td colspan="3">No events</td></tr>'}
+</table>
+
+<h2>Latest event</h2>
+${latest ? `<pre><code>${escapeHtml(JSON.stringify(latest, null, 2))}</code></pre>` : '<p class="muted">No events recorded.</p>'}
+
+<div class="warning">
+  <strong>Denominator warning:</strong> Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.
+</div>
+
+<footer class="muted" style="margin-top: 40px; border-top: 1px solid #ddd; padding-top: 12px;">
+  x-harness CLI-only mode (no daemon / no database / no MCP)
+</footer>
+</body>
+</html>`;
+}
+
+function renderHtmlMetricsReport(data: {
+  metrics: Record<string, unknown>;
+  admission: Record<string, unknown>;
+}): string {
+  const { metrics, admission } = data;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>x-harness Metrics Report</title>
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; color: #333; }
+  h1 { border-bottom: 2px solid #333; padding-bottom: 8px; }
+  h2 { margin-top: 32px; color: #222; }
+  table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+  th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+  th { background: #f5f5f5; }
+  .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin-top: 16px; }
+  .muted { color: #666; font-size: 14px; }
+  code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<h1>x-harness Metrics Report</h1>
+<p class="muted">Generated at ${escapeHtml(new Date().toISOString())}</p>
+
+<h2>Metrics</h2>
+<pre><code>${escapeHtml(JSON.stringify(metrics, null, 2))}</code></pre>
+
+<h2>Admission</h2>
+<pre><code>${escapeHtml(JSON.stringify(admission, null, 2))}</code></pre>
+
+<div class="warning">
+  <strong>Denominator warning:</strong> Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.
+</div>
+
+<footer class="muted" style="margin-top: 40px; border-top: 1px solid #ddd; padding-top: 12px;">
+  x-harness CLI-only mode (no daemon / no database / no MCP)
+</footer>
+</body>
+</html>`;
 }
 
 export function reportCommand(): Command {
   return new Command("report")
-    .description("Summarize trace events or compute metrics for a completion card")
+    .description(
+      "Summarize trace events or compute metrics for a completion card"
+    )
     .option("--trace-dir <dir>", "Trace directory", ".x-harness/traces")
     .option("--json", "Output JSON instead of Markdown", false)
-    .option("--metrics", "Compute deterministic local metrics for a completion card", false)
-    .option("--card <path>", "Path to completion card for --metrics", "completion-card.yaml")
+    .option(
+      "--format <format>",
+      "Output format: markdown, html, json",
+      "markdown"
+    )
+    .option(
+      "--metrics",
+      "Compute deterministic local metrics for a completion card",
+      false
+    )
+    .option(
+      "--card <path>",
+      "Path to completion card for --metrics",
+      "completion-card.yaml"
+    )
     .action(async (opts: ReportOptions) => {
+      const format = opts.json ? "json" : (opts.format ?? "markdown");
       if (opts.metrics) {
         const cardPath = path.resolve(opts.card ?? "completion-card.yaml");
         if (!(await fs.pathExists(cardPath))) {
@@ -33,7 +197,11 @@ export function reportCommand(): Command {
         const data = await readYamlOrJson(cardPath);
         const card = data as Record<string, unknown>;
         const inputCardHash = sha256String(JSON.stringify(data));
-        const policyPath = path.resolve(process.cwd(), "policies", "admission.yaml");
+        const policyPath = path.resolve(
+          process.cwd(),
+          "policies",
+          "admission.yaml"
+        );
         const policyHash = await sha256File(policyPath);
 
         const admissionInput = {
@@ -73,68 +241,243 @@ export function reportCommand(): Command {
             errors: admission.errors,
             notes: admission.notes,
           },
-          denominator_warning: "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
+          verify_event_accounting: {
+            cards_analyzed: 1,
+            note: "Single-card analysis; aggregate task denominator is not inferred.",
+          },
+          task_lifecycle_accounting: {
+            admitted: admission.acceptance_status === "accepted" ? 1 : 0,
+            withheld: admission.acceptance_status === "withheld" ? 1 : 0,
+            note: "Lifecycle state reflects only the analyzed completion card.",
+          },
+          admission_accounting: {
+            accepted: admission.acceptance_status === "accepted" ? 1 : 0,
+            total_analyzed: 1,
+            note: "Admission requires outcome=success; non-success outcomes are withheld.",
+          },
+          withheld_accounting: {
+            failed: admission.outcome === "failed" ? 1 : 0,
+            blocked: admission.outcome === "blocked" ? 1 : 0,
+            skipped: admission.outcome === "skipped" ? 1 : 0,
+            timeout: admission.outcome === "timeout" ? 1 : 0,
+            error: admission.outcome === "error" ? 1 : 0,
+            note: "Withheld breakdown reflects only the analyzed completion card.",
+          },
+          unknown_or_unlinked_events: {
+            count: 0,
+            note: "Not applicable for single-card metrics analysis.",
+          },
+          denominator_warning:
+            "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
         };
 
-        if (opts.json) {
+        if (format === "json") {
           console.log(JSON.stringify(report, null, 2));
+        } else if (format === "html") {
+          console.log(
+            renderHtmlMetricsReport({
+              metrics: metrics as unknown as Record<string, unknown>,
+              admission: report.admission as unknown as Record<string, unknown>,
+            })
+          );
         } else {
           console.log("# x-harness Metrics Report");
           console.log("");
           console.log("## Verification strength");
-          console.log(`- command_evidence_count: ${metrics.verification_strength.command_evidence_count}`);
-          console.log(`- oracle_kinds: ${metrics.verification_strength.oracle_kinds.join(", ") || "none"}`);
-          console.log(`- untested_regions_count: ${metrics.verification_strength.untested_regions_count}`);
-          console.log(`- remaining_risks_count: ${metrics.verification_strength.remaining_risks_count}`);
+          console.log(
+            `- command_evidence_count: ${metrics.verification_strength.command_evidence_count}`
+          );
+          console.log(
+            `- oracle_kinds: ${metrics.verification_strength.oracle_kinds.join(", ") || "none"}`
+          );
+          console.log(
+            `- untested_regions_count: ${metrics.verification_strength.untested_regions_count}`
+          );
+          console.log(
+            `- remaining_risks_count: ${metrics.verification_strength.remaining_risks_count}`
+          );
           console.log("");
           console.log("## State consistency");
-          console.log(`- owner_present: ${metrics.state_consistency.owner_present}`);
-          console.log(`- accountable_present: ${metrics.state_consistency.accountable_present}`);
-          console.log(`- files_changed_present: ${metrics.state_consistency.files_changed_present}`);
-          console.log(`- admission_mapping_valid: ${metrics.state_consistency.admission_mapping_valid}`);
+          console.log(
+            `- owner_present: ${metrics.state_consistency.owner_present}`
+          );
+          console.log(
+            `- accountable_present: ${metrics.state_consistency.accountable_present}`
+          );
+          console.log(
+            `- files_changed_present: ${metrics.state_consistency.files_changed_present}`
+          );
+          console.log(
+            `- admission_mapping_valid: ${metrics.state_consistency.admission_mapping_valid}`
+          );
           console.log("");
           console.log("## Recovery ability");
-          console.log(`- blocked_has_next_action: ${metrics.recovery_ability.blocked_has_next_action}`);
-          console.log(`- blocked_has_owner: ${metrics.recovery_ability.blocked_has_owner}`);
-          console.log(`- recovery_route_present: ${metrics.recovery_ability.recovery_route_present}`);
+          console.log(
+            `- blocked_has_next_action: ${metrics.recovery_ability.blocked_has_next_action}`
+          );
+          console.log(
+            `- blocked_has_owner: ${metrics.recovery_ability.blocked_has_owner}`
+          );
+          console.log(
+            `- recovery_route_present: ${metrics.recovery_ability.recovery_route_present}`
+          );
           console.log("");
           console.log("## Replayability");
-          console.log(`- completion_card_present: ${metrics.replayability.completion_card_present}`);
-          console.log(`- input_card_hash_present: ${metrics.replayability.input_card_hash_present}`);
-          console.log(`- policy_hash_present: ${metrics.replayability.policy_hash_present}`);
+          console.log(
+            `- completion_card_present: ${metrics.replayability.completion_card_present}`
+          );
+          console.log(
+            `- input_card_hash_present: ${metrics.replayability.input_card_hash_present}`
+          );
+          console.log(
+            `- policy_hash_present: ${metrics.replayability.policy_hash_present}`
+          );
           console.log("");
           console.log("## Cost");
-          console.log(`- default_context_class: ${metrics.cost.default_context_class}`);
+          console.log(
+            `- default_context_class: ${metrics.cost.default_context_class}`
+          );
           console.log(`- verify_runtime_ms: ${metrics.cost.verify_runtime_ms}`);
           console.log("");
+          console.log("## Verify event accounting");
+          console.log("- cards_analyzed: 1");
+          console.log(
+            "> Single-card analysis; aggregate task denominator is not inferred."
+          );
+          console.log("");
+          console.log("## Task lifecycle accounting");
+          console.log(
+            `- admitted: ${admission.acceptance_status === "accepted" ? 1 : 0}/1`
+          );
+          console.log(
+            `- withheld: ${admission.acceptance_status === "withheld" ? 1 : 0}/1`
+          );
+          console.log(
+            "> Lifecycle state reflects only the analyzed completion card."
+          );
+          console.log("");
+          console.log("## Admission accounting");
+          console.log(
+            `- accepted: ${admission.acceptance_status === "accepted" ? 1 : 0}/1`
+          );
+          console.log(
+            "> Admission requires outcome=success; non-success outcomes are withheld."
+          );
+          console.log("");
+          console.log("## Withheld accounting");
+          if (admission.acceptance_status === "accepted") {
+            console.log("None.");
+          } else {
+            if (admission.outcome === "failed") console.log("- failed: 1/1");
+            if (admission.outcome === "blocked") console.log("- blocked: 1/1");
+            if (admission.outcome === "skipped") console.log("- skipped: 1/1");
+            if (admission.outcome === "timeout") console.log("- timeout: 1/1");
+            if (admission.outcome === "error") console.log("- error: 1/1");
+            console.log(
+              "> Withheld breakdown reflects only the analyzed completion card."
+            );
+          }
+          console.log("");
+          console.log("## Unknown or unlinked events");
+          console.log("Not applicable for single-card metrics analysis.");
+          console.log("");
           console.log("## Denominator warning");
-          console.log("> Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee."
+          console.log(
+            "> Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee."
           );
         }
         return;
       }
 
-      const events = await readTrace(path.resolve(opts.traceDir ?? ".x-harness/traces"));
+      const events = await readTrace(
+        path.resolve(opts.traceDir ?? ".x-harness/traces")
+      );
 
       const total = events.length;
-      const accepted = events.filter((e) => e.acceptance_status === "accepted").length;
-      const withheld = events.filter((e) => e.acceptance_status === "withheld").length;
+      const accepted = events.filter(
+        (e) => e.acceptance_status === "accepted"
+      ).length;
+      const withheld = events.filter(
+        (e) => e.acceptance_status === "withheld"
+      ).length;
       const blocked = events.filter((e) => e.outcome === "blocked").length;
+      const failed = events.filter((e) => e.outcome === "failed").length;
+      const skipped = events.filter((e) => e.outcome === "skipped").length;
+      const timeout = events.filter((e) => e.outcome === "timeout").length;
+      const error = events.filter((e) => e.outcome === "error").length;
+      const unknownEvents = events.filter(
+        (e) =>
+          !e.outcome ||
+          !e.acceptance_status ||
+          ![
+            "success",
+            "failed",
+            "blocked",
+            "skipped",
+            "timeout",
+            "error",
+          ].includes(String(e.outcome))
+      ).length;
       const byOutcome: Record<string, number> = {};
       for (const e of events) {
         const o = String(e.outcome ?? "unknown");
         byOutcome[o] = (byOutcome[o] ?? 0) + 1;
       }
 
-      if (opts.json) {
+      if (format === "json") {
         const report = {
           total_events: total,
           accepted,
           withheld,
           by_outcome: byOutcome,
+          verify_event_accounting: {
+            total_trace_events: total,
+            note: "Counts are based only on traced verify events; total task denominator may differ.",
+          },
+          task_lifecycle_accounting: {
+            admitted: accepted,
+            withheld,
+            note: "Lifecycle accounting covers only events present in the trace log.",
+          },
+          admission_accounting: {
+            accepted,
+            total_trace_events: total,
+            note: "Admission requires outcome=success; non-success outcomes are withheld.",
+          },
+          withheld_accounting: {
+            failed,
+            blocked,
+            skipped,
+            timeout,
+            error,
+            note: "Withheld breakdown is only as complete as the trace event set.",
+          },
+          unknown_or_unlinked_events: {
+            count: unknownEvents,
+            note: "Events with missing or unrecognized outcome/acceptance_status.",
+          },
           latest: events.length > 0 ? events[events.length - 1] : null,
         };
         console.log(JSON.stringify(report, null, 2));
+        return;
+      }
+
+      if (format === "html") {
+        console.log(
+          renderHtmlReport({
+            total,
+            accepted,
+            withheld,
+            blocked,
+            failed,
+            skipped,
+            timeout,
+            error,
+            unknownEvents,
+            byOutcome,
+            latest: events.length > 0 ? events[events.length - 1] : null,
+          })
+        );
         return;
       }
 
@@ -158,24 +501,69 @@ export function reportCommand(): Command {
         console.log(`${total} card(s) in trace.`);
       }
       console.log("");
-      console.log("## Verification summary");
+      console.log("## Verify event accounting");
       if (total === 0) {
-        console.log("No verification events recorded.");
+        console.log("No verify events recorded.");
+        console.log("Denominator: NOT_COMPUTABLE (no events)");
       } else {
+        console.log(`- total_trace_events: ${total}`);
         for (const [outcome, count] of Object.entries(byOutcome)) {
           console.log(`- ${outcome}: ${count}/${total}`);
         }
+        console.log(
+          "> Counts are based only on traced verify events; total task denominator may differ."
+        );
       }
       console.log("");
-      console.log("## Blocked items");
-      if (blocked === 0) {
+      console.log("## Task lifecycle accounting");
+      if (total === 0) {
+        console.log("No lifecycle data available.");
+      } else {
+        console.log(`- admitted: ${accepted}/${total}`);
+        console.log(`- withheld: ${withheld}/${total}`);
+        console.log(
+          "> Lifecycle accounting covers only events present in the trace log."
+        );
+      }
+      console.log("");
+      console.log("## Admission accounting");
+      if (total === 0) {
+        console.log("No admission data available.");
+      } else {
+        console.log(`- accepted: ${accepted}/${total}`);
+        console.log(
+          "> Admission requires outcome=success; non-success outcomes are withheld."
+        );
+      }
+      console.log("");
+      console.log("## Withheld accounting");
+      if (total === 0) {
+        console.log("No withheld data available.");
+      } else if (withheld === 0) {
         console.log("None.");
       } else {
-        console.log(`${blocked}/${total} blocked`);
+        if (failed > 0) console.log(`- failed: ${failed}/${total}`);
+        if (blocked > 0) console.log(`- blocked: ${blocked}/${total}`);
+        if (skipped > 0) console.log(`- skipped: ${skipped}/${total}`);
+        if (timeout > 0) console.log(`- timeout: ${timeout}/${total}`);
+        if (error > 0) console.log(`- error: ${error}/${total}`);
+        console.log(
+          "> Withheld breakdown is only as complete as the trace event set."
+        );
+      }
+      console.log("");
+      console.log("## Unknown or unlinked events");
+      if (unknownEvents === 0) {
+        console.log("None.");
+      } else {
+        console.log(
+          `${unknownEvents}/${total} events with missing or unrecognized outcome/acceptance_status.`
+        );
       }
       console.log("");
       console.log("## Denominator warning");
-      console.log("> Verify-event success must not be interpreted as task-level success without denominator review."
+      console.log(
+        "> Verify-event success must not be interpreted as task-level success without denominator review."
       );
       if (total === 0) {
         console.log("Denominator: NOT_COMPUTABLE (no events)");

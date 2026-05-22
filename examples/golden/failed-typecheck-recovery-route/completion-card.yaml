@@ -3,6 +3,9 @@ task_id: TASK-GOLDEN-TYPECHECK-001
 tier: standard
 owner: alice
 accountable: bob
+evidence:
+  files_changed:
+    - src/payment.ts
 claim:
   fix_status: fixed
   summary: Refactored payment module

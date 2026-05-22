@@ -10,14 +10,15 @@ Because the card is well-formed, contains no contradictions, and lists valid evi
 
 ## Files
 
-- [input-task.md](file:///\\wsl.localhost\Ubuntu\home\uong_guyen\.config\opencode\x-harness\examples\golden\success-standard-scoped-evidence\input-task.md) — The original task description requesting form validation.
-- [completion-card.yaml](file:///\\wsl.localhost\Ubuntu\home\uong_guyen\.config\opencode\x-harness\examples\golden\success-standard-scoped-evidence\completion-card.yaml) — The agent's completion claim containing the scoped evidence, test runs, and untested regions list.
-- [expected-verify-output.txt](file:///\\wsl.localhost\Ubuntu\home\uong_guyen\.config\opencode\x-harness\examples\golden\success-standard-scoped-evidence\expected-verify-output.txt) — Expected quiet output from `x-harness verify`.
-- [expected-final-response.md](file:///\\wsl.localhost\Ubuntu\home\uong_guyen\.config\opencode\x-harness\examples\golden\success-standard-scoped-evidence\expected-final-response.md) — Expected agent final response referencing the card.
+- [input-task.md](file:///\wsl.localhost\Ubuntu\home\uong_guyen.config\opencode\x-harness\examples\golden\success-standard-scoped-evidence\input-task.md) — The original task description requesting form validation.
+- [completion-card.yaml](file:///\wsl.localhost\Ubuntu\home\uong_guyen.config\opencode\x-harness\examples\golden\success-standard-scoped-evidence\completion-card.yaml) — The agent's completion claim containing the scoped evidence, test runs, and untested regions list.
+- [expected-verify-output.txt](file:///\wsl.localhost\Ubuntu\home\uong_guyen.config\opencode\x-harness\examples\golden\success-standard-scoped-evidence\expected-verify-output.txt) — Expected quiet output from `x-harness verify`.
+- [expected-final-response.md](file:///\wsl.localhost\Ubuntu\home\uong_guyen.config\opencode\x-harness\examples\golden\success-standard-scoped-evidence\expected-final-response.md) — Expected agent final response referencing the card.
 
 ## Expected Outcome
 
 Running verification on this card yields a success admission status since all necessary fields for the standard tier are populated correctly:
+
 ```yaml
 verify_gate.outcome: success
 acceptance_status: accepted
@@ -26,6 +27,7 @@ acceptance_status: accepted
 ## Try It Command
 
 Run the verification gate locally:
+
 ```bash
 node packages/cli/dist/index.js verify --card examples/golden/success-standard-scoped-evidence/completion-card.yaml
 ```
@@ -33,6 +35,7 @@ node packages/cli/dist/index.js verify --card examples/golden/success-standard-s
 ## Why It Matters
 
 This example demonstrates the core power of `x-harness` in standard software development workflows:
+
 1. **Evidence Accountability**: The agent must explicitly declare what their tests verified and what they did not verify, reducing false assertions of completeness.
 2. **Untested Region Transparency**: By declaring untested regions, the agent flags potential regression risks or manual QA requirements clearly to reviewers.
 3. **No Lock-in**: The verification is run locally in a fraction of a second via the CLI without complex integrations.

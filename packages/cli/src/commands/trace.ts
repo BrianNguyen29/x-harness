@@ -1,5 +1,6 @@
 import { Command } from "commander";
-import { appendTrace } from "../core/trace.js";
+import * as path from "node:path";
+import { appendTrace, readTrace, verifyTraceChain } from "../core/trace.js";
 
 interface TraceAddOptions {
   outcome?: string;
@@ -16,8 +17,16 @@ export function traceCommand(): Command {
   cmd
     .command("add")
     .description("Append a verify event to the trace log")
-    .option("--outcome <outcome>", "Outcome: success, failed, blocked, skipped, timeout, error", "success")
-    .option("--acceptance-status <status>", "acceptance or withheld", "accepted")
+    .option(
+      "--outcome <outcome>",
+      "Outcome: success, failed, blocked, skipped, timeout, error",
+      "success"
+    )
+    .option(
+      "--acceptance-status <status>",
+      "acceptance or withheld",
+      "accepted"
+    )
     .option("--task-id <id>", "Task ID", "TASK-UNKNOWN")
     .option("--tier <tier>", "Tier: light, standard, deep", "standard")
     .option("--claim-id <id>", "Claim ID")
@@ -40,8 +49,35 @@ export function traceCommand(): Command {
         next_action: null,
         created_at: new Date().toISOString(),
       };
-      await appendTrace(event);
+      const enriched = await appendTrace(event);
       console.log("trace event appended");
+      console.log(`event_id: ${enriched.event_id}`);
+      console.log(`event_hash: ${enriched.event_hash}`);
+      if (enriched.previous_hash) {
+        console.log(`previous_hash: ${enriched.previous_hash}`);
+      }
+    });
+
+  cmd
+    .command("verify-chain")
+    .description("Verify the integrity of the trace hash chain")
+    .option("--trace-dir <dir>", "Trace directory", ".x-harness/traces")
+    .action(async (opts: { traceDir?: string }) => {
+      const traceDir = path.resolve(opts.traceDir ?? ".x-harness/traces");
+      const events = await readTrace(traceDir);
+      const result = verifyTraceChain(events);
+
+      if (result.valid) {
+        console.log(`chain valid: ${result.eventsChecked} event(s) checked`);
+        process.exit(0);
+      } else {
+        console.error(
+          `chain broken at index ${result.firstBrokenIndex} (event_id: ${result.firstBrokenEventId})`
+        );
+        console.error(`expected hash: ${result.expectedHash}`);
+        console.error(`actual hash:   ${result.actualHash}`);
+        process.exit(1);
+      }
     });
 
   return cmd;

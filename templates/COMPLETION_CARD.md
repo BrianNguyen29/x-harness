@@ -5,7 +5,7 @@ Copy this template, fill in the fields, and save as `completion-card.yaml`.
 ## Accepted example — light
 
 ```yaml
-schema_version: "0.1"
+schema_version: "1"
 task_id: "TASK-001"
 tier: "light"
 owner: "agent-name"
@@ -38,7 +38,7 @@ handoff:
 ## Accepted example — standard with scoped evidence
 
 ```yaml
-schema_version: "0.1"
+schema_version: "1"
 task_id: "TASK-002"
 tier: "standard"
 owner: "agent-name"
@@ -98,7 +98,7 @@ handoff:
 ## Blocked example
 
 ```yaml
-schema_version: "0.1"
+schema_version: "1"
 task_id: "TASK-003"
 tier: "light"
 owner: "agent-name"
@@ -126,7 +126,7 @@ handoff:
 ## Deep example with governance
 
 ```yaml
-schema_version: "0.1"
+schema_version: "1"
 task_id: "TASK-004"
 tier: "deep"
 owner: "agent-name"

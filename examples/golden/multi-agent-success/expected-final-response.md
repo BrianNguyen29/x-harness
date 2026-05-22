@@ -28,6 +28,7 @@ The multi-agent collaboration is complete and has been accepted by the verify ga
 ## Notes
 
 This example demonstrates the standard x-harness flow for multi-agent tasks:
+
 1. Work is split among agents.
 2. Evidence is collected from all contributors.
 3. A separate verifier agent runs the read-only verify gate.

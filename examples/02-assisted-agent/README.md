@@ -12,6 +12,6 @@ A worker produces claim and evidence; a verifier checks them before admission.
 ## Expected verify outcome
 
 ```bash
-npx x-harness verify --claim examples/02-assisted-agent/claim.yaml --evidence examples/02-assisted-agent/evidence.yaml --tier standard --json
+node packages/cli/dist/index.js verify --claim examples/02-assisted-agent/claim.yaml --evidence examples/02-assisted-agent/evidence.yaml --tier standard --json
 # -> accepted (legacy compatibility mode)
 ```

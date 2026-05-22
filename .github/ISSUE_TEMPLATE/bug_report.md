@@ -7,12 +7,9 @@ labels: bug
 
 ## Summary
 
-
 ## Expected behavior
 
-
 ## Actual behavior
-
 
 ## Reproduction steps
 

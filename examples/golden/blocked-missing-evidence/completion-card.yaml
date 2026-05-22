@@ -3,6 +3,8 @@ task_id: TASK-GOLDEN-002
 tier: standard
 owner: alice
 accountable: bob
+evidence:
+  files_changed: []
 claim:
   fix_status: fixed
   summary: Refactored auth module for OAuth2 PKCE

@@ -2,5 +2,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "claim",
   "type": "object",
+  "required": ["fix_status"],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "fix_status": {
+      "enum": ["fixed", "not_fixed", "partial"]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "array"
+    }
+  },
   "additionalProperties": true
 }

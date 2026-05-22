@@ -1,0 +1,62 @@
+name: x-harness Verify
+author: x-harness contributors
+description: Build x-harness from source and verify a completion card
+
+inputs:
+  card-path:
+    description: Path to the completion card YAML/JSON
+    required: true
+    default: completion-card.yaml
+  x-harness-ref:
+    description: Git ref of x-harness to checkout
+    required: false
+    default: main
+  x-harness-repo:
+    description: Repository containing x-harness
+    required: false
+    default: BrianNguyen29/x-harness
+  trace-dir:
+    description: Trace directory
+    required: false
+    default: .x-harness/traces
+  trace:
+    description: Append verify event to trace
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout x-harness
+      uses: actions/checkout@v6
+      with:
+        repository: ${{ inputs.x-harness-repo }}
+        ref: ${{ inputs.x-harness-ref }}
+        path: .x-harness-tool
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: 22
+        cache: npm
+        cache-dependency-path: .x-harness-tool/package-lock.json
+
+    - name: Build x-harness
+      shell: bash
+      run: |
+        cd .x-harness-tool
+        npm ci
+        npm run build
+
+    - name: Run x-harness verify
+      shell: bash
+      run: |
+        node .x-harness-tool/packages/cli/dist/index.js verify \
+          --card "${{ inputs.card-path }}" \
+          --trace-dir "${{ inputs.trace-dir }}" \
+          ${{ inputs.trace == 'true' && '--trace' || '' }}
+
+    - name: Run x-harness doctor
+      shell: bash
+      run: |
+        node .x-harness-tool/packages/cli/dist/index.js doctor --root .

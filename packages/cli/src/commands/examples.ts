@@ -17,7 +17,15 @@ interface GoldenExample {
 }
 
 async function discoverGoldenExamples(): Promise<GoldenExample[]> {
-  const goldenDir = path.resolve(__dirname, "..", "..", "..", "..", "examples", "golden");
+  const goldenDir = path.resolve(
+    __dirname,
+    "..",
+    "..",
+    "..",
+    "..",
+    "examples",
+    "golden"
+  );
   if (!(await fs.pathExists(goldenDir))) {
     return [];
   }
@@ -50,7 +58,9 @@ async function verifyExample(example: GoldenExample): Promise<{
     const data = await readYamlOrJson(example.cardPath);
     const result = await validateCompletionCard(data);
     if (!result.valid) {
-      errors.push(`completion card validation failed: ${result.errors.join("; ")}`);
+      errors.push(
+        `completion card validation failed: ${result.errors.join("; ")}`
+      );
     } else {
       notes.push(`completion card valid: ${path.basename(example.cardPath)}`);
     }
@@ -79,7 +89,12 @@ async function verifyExample(example: GoldenExample): Promise<{
 
     const outcome = errors.length > 0 ? "failed" : admission.outcome;
     const acceptance = acceptanceStatus(outcome);
-    const passedChecks = notes.filter((n) => n.includes("valid") || n.includes("passed") || n.includes("checks passed")).length;
+    const passedChecks = notes.filter(
+      (n) =>
+        n.includes("valid") ||
+        n.includes("passed") ||
+        n.includes("checks passed")
+    ).length;
     const failedChecks = errors.length;
 
     // Build quiet output to compare with expected
@@ -95,7 +110,10 @@ async function verifyExample(example: GoldenExample): Promise<{
 
     let outputMismatch: string | undefined;
     if (await fs.pathExists(example.expectedOutputPath)) {
-      const expectedOutput = await fs.readFile(example.expectedOutputPath, "utf-8");
+      const expectedOutput = await fs.readFile(
+        example.expectedOutputPath,
+        "utf-8"
+      );
       if (actualOutput.trim() !== expectedOutput.trim()) {
         outputMismatch = `Output mismatch.\nExpected:\n${expectedOutput}\nActual:\n${actualOutput}`;
       }
@@ -112,7 +130,9 @@ async function verifyExample(example: GoldenExample): Promise<{
       outputMismatch,
     };
   } catch (err) {
-    errors.push(`unexpected error: ${err instanceof Error ? err.message : String(err)}`);
+    errors.push(
+      `unexpected error: ${err instanceof Error ? err.message : String(err)}`
+    );
     return {
       name: example.name,
       passed: false,
@@ -152,29 +172,33 @@ export function examplesCommand(): Command {
           const exitCode = allPassed ? 0 : 1;
 
           if (opts.json) {
-            console.log(JSON.stringify(
-              {
-                ok: allPassed,
-                total: results.length,
-                passed: results.filter((r) => r.passed).length,
-                failed: results.filter((r) => !r.passed).length,
-                results: results.map((r) => ({
-                  name: r.name,
-                  passed: r.passed,
-                  outcome: r.outcome,
-                  acceptance_status: r.acceptanceStatus,
-                  errors: r.errors,
-                  output_mismatch: r.outputMismatch ?? null,
-                })),
-              },
-              null,
-              2
-            ));
+            console.log(
+              JSON.stringify(
+                {
+                  ok: allPassed,
+                  total: results.length,
+                  passed: results.filter((r) => r.passed).length,
+                  failed: results.filter((r) => !r.passed).length,
+                  results: results.map((r) => ({
+                    name: r.name,
+                    passed: r.passed,
+                    outcome: r.outcome,
+                    acceptance_status: r.acceptanceStatus,
+                    errors: r.errors,
+                    output_mismatch: r.outputMismatch ?? null,
+                  })),
+                },
+                null,
+                2
+              )
+            );
           } else {
             console.log(`Golden examples: ${results.length} total`);
             for (const r of results) {
               const icon = r.passed ? "✓" : "✗";
-              console.log(`${icon} ${r.name}: ${r.outcome} (${r.acceptanceStatus})`);
+              console.log(
+                `${icon} ${r.name}: ${r.outcome} (${r.acceptanceStatus})`
+              );
               if (r.errors.length > 0) {
                 for (const err of r.errors) {
                   console.log(`  - ${err}`);
@@ -185,7 +209,11 @@ export function examplesCommand(): Command {
               }
             }
             console.log("");
-            console.log(allPassed ? "All golden examples passed." : "Some golden examples failed.");
+            console.log(
+              allPassed
+                ? "All golden examples passed."
+                : "Some golden examples failed."
+            );
           }
 
           process.exit(exitCode);

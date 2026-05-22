@@ -27,11 +27,7 @@
       "type": "string"
     },
     "tier": {
-      "enum": [
-        "light",
-        "standard",
-        "deep"
-      ]
+      "enum": ["light", "standard", "deep"]
     },
     "claim_id": {
       "type": "string"
@@ -49,44 +45,22 @@
       "const": "read_only"
     },
     "outcome": {
-      "enum": [
-        "success",
-        "failed",
-        "blocked",
-        "skipped",
-        "timeout",
-        "error"
-      ]
+      "enum": ["success", "failed", "blocked", "skipped", "timeout", "error"]
     },
     "acceptance_status": {
-      "enum": [
-        "accepted",
-        "withheld"
-      ]
+      "enum": ["accepted", "withheld"]
     },
     "blocking_predicate": {
-      "type": [
-        "string",
-        "null"
-      ]
+      "type": ["string", "null"]
     },
     "blocked_reason_class": {
-      "type": [
-        "string",
-        "null"
-      ]
+      "type": ["string", "null"]
     },
     "next_owner": {
-      "type": [
-        "string",
-        "null"
-      ]
+      "type": ["string", "null"]
     },
     "next_action": {
-      "type": [
-        "string",
-        "null"
-      ]
+      "type": ["string", "null"]
     },
     "created_at": {
       "type": "string"

@@ -8,6 +8,21 @@ state:
     - src/auth.ts
   write_set:
     - src/auth.ts
+evidence:
+  files_changed:
+    - src/auth.ts
+  verification_artifacts:
+    - kind: unit_test
+      command: npm test -- auth
+      status: passed
+  untested_regions:
+    - "No E2E browser validation test was run."
+  remaining_risks:
+    - "Production auth rate limits may differ."
+  rollback_policy:
+    - "Revert auth commit."
+  execution_controls:
+    - "Feature flag auth changes."
 claim:
   fix_status: fixed
   summary: Refactored auth module but missing evidence scope

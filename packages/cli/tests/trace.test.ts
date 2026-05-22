@@ -16,8 +16,16 @@ describe("trace", () => {
   });
 
   it("appends and reads trace events", async () => {
-    const event1 = { event_id: "E1", event_type: "verify_completed", outcome: "success" };
-    const event2 = { event_id: "E2", event_type: "verify_completed", outcome: "failed" };
+    const event1 = {
+      event_id: "E1",
+      event_type: "verify_completed",
+      outcome: "success",
+    };
+    const event2 = {
+      event_id: "E2",
+      event_type: "verify_completed",
+      outcome: "failed",
+    };
 
     await appendTrace(event1, TEST_TRACE_DIR);
     await appendTrace(event2, TEST_TRACE_DIR);

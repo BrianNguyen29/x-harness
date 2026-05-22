@@ -16,7 +16,7 @@ An agent completes a deep-tier task and provides passing tests, but the deep-tie
 ## Expected verify outcome
 
 ```bash
-npx x-harness verify --card examples/golden/deep-approval-required/completion-card.yaml
+node packages/cli/dist/index.js verify --card examples/golden/deep-approval-required/completion-card.yaml
 # -> WITHHELD
 # Reason: tier "deep" requires human approval
 ```
@@ -24,6 +24,7 @@ npx x-harness verify --card examples/golden/deep-approval-required/completion-ca
 ## Try it
 
 Run the verification gate:
+
 ```bash
 node packages/cli/dist/index.js verify --card examples/golden/deep-approval-required/completion-card.yaml
 ```

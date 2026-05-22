@@ -7,9 +7,7 @@ labels: enhancement
 
 ## Problem
 
-
 ## Proposed solution
-
 
 ## Scope check
 

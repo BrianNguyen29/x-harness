@@ -3,6 +3,9 @@ task_id: TASK-MINIMAL-001
 tier: light
 owner: alice
 accountable: bob
+evidence:
+  files_changed:
+    - src/minimal.ts
 claim:
   fix_status: fixed
   summary: Minimal task completed successfully

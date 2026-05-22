@@ -3,6 +3,14 @@ task_id: TASK-GOLDEN-005
 tier: standard
 owner: orchestrator
 accountable: lead
+evidence:
+  files_changed:
+    - src/api/v2/profile.ts
+    - src/api/v2/avatar.ts
+    - src/validators/profileSchema.ts
+    - tests/profile.integration.test.ts
+    - tests/avatar.upload.test.ts
+    - docs/api/v2/profile.md
 claim:
   fix_status: fixed
   summary: User profile API v2 implemented with avatar upload and validation

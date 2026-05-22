@@ -5,6 +5,7 @@ A standard-tier task completed collaboratively by multiple agents, with full evi
 ## Scenario
 
 Three agents collaborate:
+
 1. **worker-1** implements the core feature.
 2. **worker-2** writes tests and documentation.
 3. **verifier** runs the verify gate and confirms acceptance.
@@ -21,6 +22,6 @@ The completion card includes evidence from all contributors and passes admission
 ## Expected verify outcome
 
 ```bash
-npx x-harness verify --card examples/golden/multi-agent-success/completion-card.yaml
+node packages/cli/dist/index.js verify --card examples/golden/multi-agent-success/completion-card.yaml
 # -> ACCEPTED
 ```

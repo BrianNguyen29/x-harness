@@ -3,6 +3,9 @@ task_id: TASK-GOLDEN-003
 tier: light
 owner: alice
 accountable: bob
+evidence:
+  files_changed:
+    - src/pagination.ts
 claim:
   fix_status: fixed
   summary: Fixed pagination off-by-one error

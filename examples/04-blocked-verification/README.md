@@ -12,7 +12,7 @@ A task is blocked due to missing dependency. The completion card is withheld wit
 ## Expected verify outcome
 
 ```bash
-npx x-harness verify --card examples/04-blocked-verification/completion-card.yaml
+node packages/cli/dist/index.js verify --card examples/04-blocked-verification/completion-card.yaml
 # -> WITHHELD
 # Handoff: resolve dependency and re-verify -> charlie
 ```

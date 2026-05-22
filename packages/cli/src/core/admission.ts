@@ -1,8 +1,21 @@
-export type VerifyOutcome = "success" | "failed" | "blocked" | "skipped" | "timeout" | "error" | "pending";
+export type VerifyOutcome =
+  | "success"
+  | "failed"
+  | "blocked"
+  | "skipped"
+  | "timeout"
+  | "error"
+  | "pending";
 export type AcceptanceStatus = "accepted" | "withheld";
 export type Tier = "light" | "standard" | "deep";
 export type FixStatus = "fixed" | "not_fixed" | "partial";
-export type VerificationStatus = "passed" | "failed" | "skipped" | "blocked" | "timeout" | "error";
+export type VerificationStatus =
+  | "passed"
+  | "failed"
+  | "skipped"
+  | "blocked"
+  | "timeout"
+  | "error";
 
 export function acceptanceStatus(outcome: VerifyOutcome): AcceptanceStatus {
   return outcome === "success" ? "accepted" : "withheld";
@@ -45,6 +58,7 @@ export interface AdmissionInput {
   evidence?: Record<string, unknown>;
   state?: Record<string, unknown>;
   governance?: Record<string, unknown>;
+  context_acknowledged?: boolean;
   // Backward compatibility: subagent-return shape
   subagentReturn?: Record<string, unknown>;
 }
@@ -67,7 +81,9 @@ function getFixStatus(input: AdmissionInput): string | undefined {
     if (isString(claim.fix_status)) return claim.fix_status;
   }
   if (input.subagentReturn) {
-    const result = input.subagentReturn.result as Record<string, unknown> | undefined;
+    const result = input.subagentReturn.result as
+      | Record<string, unknown>
+      | undefined;
     if (result && isString(result.fix_status)) return result.fix_status;
   }
   return undefined;
@@ -79,7 +95,9 @@ function getVerifyStatus(input: AdmissionInput): string | undefined {
     if (isString(v.status)) return v.status;
   }
   if (input.subagentReturn) {
-    const v = input.subagentReturn.verification as Record<string, unknown> | undefined;
+    const v = input.subagentReturn.verification as
+      | Record<string, unknown>
+      | undefined;
     if (v && isString(v.status)) return v.status;
   }
   return undefined;
@@ -101,7 +119,9 @@ function getEvidenceArray(input: AdmissionInput): unknown[] | undefined {
   return undefined;
 }
 
-function getHandoff(input: AdmissionInput): Record<string, unknown> | undefined {
+function getHandoff(
+  input: AdmissionInput
+): Record<string, unknown> | undefined {
   if (input.handoff) return input.handoff as Record<string, unknown>;
   return undefined;
 }
@@ -120,23 +140,74 @@ function isCompletionCardShape(input: AdmissionInput): boolean {
   );
 }
 
-function getVerificationArtifacts(input: AdmissionInput): unknown[] | undefined {
-  if (input.evidence && Array.isArray((input.evidence as Record<string, unknown>).verification_artifacts)) {
-    return (input.evidence as Record<string, unknown>).verification_artifacts as unknown[];
+function getVerificationArtifacts(
+  input: AdmissionInput
+): unknown[] | undefined {
+  if (
+    input.evidence &&
+    Array.isArray(
+      (input.evidence as Record<string, unknown>).verification_artifacts
+    )
+  ) {
+    return (input.evidence as Record<string, unknown>)
+      .verification_artifacts as unknown[];
   }
   return undefined;
 }
 
 function getUntestedRegions(input: AdmissionInput): unknown[] | undefined {
-  if (input.evidence && Array.isArray((input.evidence as Record<string, unknown>).untested_regions)) {
-    return (input.evidence as Record<string, unknown>).untested_regions as unknown[];
+  if (
+    input.evidence &&
+    Array.isArray((input.evidence as Record<string, unknown>).untested_regions)
+  ) {
+    return (input.evidence as Record<string, unknown>)
+      .untested_regions as unknown[];
   }
   return undefined;
 }
 
 function getRemainingRisks(input: AdmissionInput): unknown[] | undefined {
-  if (input.evidence && Array.isArray((input.evidence as Record<string, unknown>).remaining_risks)) {
-    return (input.evidence as Record<string, unknown>).remaining_risks as unknown[];
+  if (
+    input.evidence &&
+    Array.isArray((input.evidence as Record<string, unknown>).remaining_risks)
+  ) {
+    return (input.evidence as Record<string, unknown>)
+      .remaining_risks as unknown[];
+  }
+  return undefined;
+}
+
+function getFilesChanged(input: AdmissionInput): unknown[] | undefined {
+  if (
+    input.evidence &&
+    Array.isArray((input.evidence as Record<string, unknown>).files_changed)
+  ) {
+    return (input.evidence as Record<string, unknown>)
+      .files_changed as unknown[];
+  }
+  return undefined;
+}
+
+function getRollbackPolicy(input: AdmissionInput): unknown[] | undefined {
+  if (
+    input.evidence &&
+    Array.isArray((input.evidence as Record<string, unknown>).rollback_policy)
+  ) {
+    return (input.evidence as Record<string, unknown>)
+      .rollback_policy as unknown[];
+  }
+  return undefined;
+}
+
+function getExecutionControls(input: AdmissionInput): unknown[] | undefined {
+  if (
+    input.evidence &&
+    Array.isArray(
+      (input.evidence as Record<string, unknown>).execution_controls
+    )
+  ) {
+    return (input.evidence as Record<string, unknown>)
+      .execution_controls as unknown[];
   }
   return undefined;
 }
@@ -145,7 +216,9 @@ function getState(input: AdmissionInput): Record<string, unknown> | undefined {
   return input.state;
 }
 
-function getGovernance(input: AdmissionInput): Record<string, unknown> | undefined {
+function getGovernance(
+  input: AdmissionInput
+): Record<string, unknown> | undefined {
   return input.governance;
 }
 
@@ -162,6 +235,22 @@ function hasScopeDeclared(artifacts: unknown[] | undefined): boolean {
   return false;
 }
 
+function hasArtifactQuality(artifact: unknown): boolean {
+  const a = artifact as Record<string, unknown> | undefined;
+  if (!a) return false;
+  const hasCommand = typeof a.command === "string" && a.command.length > 0;
+  const hasQualityField =
+    typeof a.exit_code === "number" ||
+    typeof a.started_at === "string" ||
+    typeof a.ended_at === "string" ||
+    typeof a.stdout_hash === "string" ||
+    typeof a.stderr_hash === "string" ||
+    typeof a.artifact_path === "string" ||
+    typeof a.artifact_hash === "string" ||
+    typeof a.ci_run_url === "string";
+  return hasCommand && hasQualityField;
+}
+
 export function runAdmission(input: AdmissionInput): AdmissionResult {
   const errors: string[] = [];
   const notes: string[] = [];
@@ -169,7 +258,9 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
 
   // Stale-ground fail-closed
   if (input.staleGround) {
-    errors.push("stale_ground detected: withholding pending refresh or ruling out");
+    errors.push(
+      "stale_ground detected: withholding pending refresh or ruling out"
+    );
     return {
       outcome: "blocked",
       acceptance_status: "withheld",
@@ -194,7 +285,9 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
 
   // Tier validation
   if (input.tier && !["light", "standard", "deep"].includes(input.tier)) {
-    errors.push(`invalid tier: "${input.tier}" must be one of light, standard, deep`);
+    errors.push(
+      `invalid tier: "${input.tier}" must be one of light, standard, deep`
+    );
   }
 
   const fixStatus = getFixStatus(input);
@@ -205,6 +298,9 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
   const verificationArtifacts = getVerificationArtifacts(input);
   const untestedRegions = getUntestedRegions(input);
   const remainingRisks = getRemainingRisks(input);
+  const filesChanged = getFilesChanged(input);
+  const rollbackPolicy = getRollbackPolicy(input);
+  const executionControls = getExecutionControls(input);
   const state = getState(input);
   const governance = getGovernance(input);
 
@@ -232,6 +328,12 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
     }
   }
 
+  // Evidence floor: files_changed required for all tiers
+  if (!filesChanged || filesChanged.length === 0) {
+    errors.push("evidence.files_changed is required and must be non-empty");
+    if (!blockingPredicate) blockingPredicate = "evidence_missing";
+  }
+
   // Tier evidence floor
   if (input.tier === "deep") {
     if (!verificationArtifacts || verificationArtifacts.length === 0) {
@@ -239,7 +341,9 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
       if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
     }
     if (!hasScopeDeclared(verificationArtifacts)) {
-      errors.push('tier "deep" requires evidence scope declared (verifies/does_not_verify)');
+      errors.push(
+        'tier "deep" requires evidence scope declared (verifies/does_not_verify)'
+      );
       if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
     }
     if (!untestedRegions || untestedRegions.length === 0) {
@@ -250,22 +354,59 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
       errors.push('tier "deep" requires remaining_risks');
       if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
     }
-    if (!state || !Array.isArray(state.write_set) || (state.write_set as unknown[]).length === 0) {
+    if (!rollbackPolicy || rollbackPolicy.length === 0) {
+      errors.push('tier "deep" requires rollback_policy');
+      if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
+    }
+    if (!executionControls || executionControls.length === 0) {
+      errors.push('tier "deep" requires execution_controls');
+      if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
+    }
+    if (
+      !state ||
+      !Array.isArray(state.write_set) ||
+      (state.write_set as unknown[]).length === 0
+    ) {
       errors.push('tier "deep" requires state.write_set');
       if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
     }
-    if (!state || !Array.isArray(state.read_set) || (state.read_set as unknown[]).length === 0) {
+    if (
+      !state ||
+      !Array.isArray(state.read_set) ||
+      (state.read_set as unknown[]).length === 0
+    ) {
       errors.push('tier "deep" requires state.read_set');
       if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
+    }
+    if (verificationArtifacts && verificationArtifacts.length > 0) {
+      const lowQuality = verificationArtifacts.filter(
+        (a) => !hasArtifactQuality(a)
+      );
+      if (lowQuality.length > 0) {
+        notes.push(
+          'tier "deep" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability'
+        );
+      }
     }
   }
 
   if (input.tier === "standard") {
     if (!verificationArtifacts || verificationArtifacts.length === 0) {
       notes.push('tier "standard" recommends verification_artifacts');
+    } else {
+      const lowQuality = verificationArtifacts.filter(
+        (a) => !hasArtifactQuality(a)
+      );
+      if (lowQuality.length > 0) {
+        notes.push(
+          'tier "standard" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability'
+        );
+      }
     }
     if (!hasScopeDeclared(verificationArtifacts)) {
-      notes.push('tier "standard" recommends evidence scope (verifies/does_not_verify)');
+      notes.push(
+        'tier "standard" recommends evidence scope (verifies/does_not_verify)'
+      );
     }
     if (!untestedRegions || untestedRegions.length === 0) {
       notes.push('tier "standard" recommends untested_regions');
@@ -286,46 +427,97 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
   // Canonical contradiction: verification.status passed must imply fix_status fixed
   if (verifyStatus !== undefined && fixStatus !== undefined) {
     if (verifyStatus === "passed" && fixStatus !== "fixed") {
-      errors.push(`canonical contradiction: verification.status is "passed" but claim.fix_status is "${fixStatus}" (must be "fixed")`);
+      errors.push(
+        `canonical contradiction: verification.status is "passed" but claim.fix_status is "${fixStatus}" (must be "fixed")`
+      );
     }
 
     // Reject accepted when verification is non-success
-    if (input.acceptance_status === "accepted" && ["failed", "blocked", "skipped"].includes(verifyStatus)) {
-      errors.push(`canonical contradiction: acceptance_status is "accepted" but verification.status is "${verifyStatus}"`);
+    if (
+      input.acceptance_status === "accepted" &&
+      ["failed", "blocked", "skipped"].includes(verifyStatus)
+    ) {
+      errors.push(
+        `canonical contradiction: acceptance_status is "accepted" but verification.status is "${verifyStatus}"`
+      );
     }
   }
 
   // Admission outcome and acceptance status alignment
   if (admissionOutcome !== undefined) {
     // acceptance_status=accepted only when admission.outcome=success
-    if (input.acceptance_status === "accepted" && admissionOutcome !== "success") {
-      errors.push(`canonical contradiction: acceptance_status is "accepted" but admission.outcome is "${admissionOutcome}" (must be "success")`);
+    if (
+      input.acceptance_status === "accepted" &&
+      admissionOutcome !== "success"
+    ) {
+      errors.push(
+        `canonical contradiction: acceptance_status is "accepted" but admission.outcome is "${admissionOutcome}" (must be "success")`
+      );
     }
 
     // non-success outcome -> acceptance_status=withheld
-    if (admissionOutcome !== "success" && input.acceptance_status === "accepted") {
-      errors.push(`canonical contradiction: non-success outcome "${admissionOutcome}" cannot have acceptance_status "accepted"`);
+    if (
+      admissionOutcome !== "success" &&
+      input.acceptance_status === "accepted"
+    ) {
+      errors.push(
+        `canonical contradiction: non-success outcome "${admissionOutcome}" cannot have acceptance_status "accepted"`
+      );
     }
 
     // blocked/failed/skipped requires handoff.next_action + handoff.owner
     if (["blocked", "failed", "skipped"].includes(admissionOutcome)) {
-      if (!handoff || !handoff.next_action || String(handoff.next_action).trim().length === 0) {
-        errors.push(`admission.outcome "${admissionOutcome}" requires handoff.next_action`);
+      if (
+        !handoff ||
+        !handoff.next_action ||
+        String(handoff.next_action).trim().length === 0
+      ) {
+        errors.push(
+          `admission.outcome "${admissionOutcome}" requires handoff.next_action`
+        );
       }
-      if (!handoff || !handoff.owner || String(handoff.owner).trim().length === 0) {
-        errors.push(`admission.outcome "${admissionOutcome}" requires handoff.owner`);
+      if (
+        !handoff ||
+        !handoff.owner ||
+        String(handoff.owner).trim().length === 0
+      ) {
+        errors.push(
+          `admission.outcome "${admissionOutcome}" requires handoff.owner`
+        );
       }
     }
   }
 
   // Also check handoff required for verification blocked/failed/skipped
-  if (verifyStatus !== undefined && ["blocked", "failed", "skipped"].includes(verifyStatus)) {
-    if (!handoff || !handoff.next_action || String(handoff.next_action).trim().length === 0) {
-      errors.push(`verification.status "${verifyStatus}" requires handoff.next_action`);
+  if (
+    verifyStatus !== undefined &&
+    ["blocked", "failed", "skipped"].includes(verifyStatus)
+  ) {
+    if (
+      !handoff ||
+      !handoff.next_action ||
+      String(handoff.next_action).trim().length === 0
+    ) {
+      errors.push(
+        `verification.status "${verifyStatus}" requires handoff.next_action`
+      );
     }
-    if (!handoff || !handoff.owner || String(handoff.owner).trim().length === 0) {
-      errors.push(`verification.status "${verifyStatus}" requires handoff.owner`);
+    if (
+      !handoff ||
+      !handoff.owner ||
+      String(handoff.owner).trim().length === 0
+    ) {
+      errors.push(
+        `verification.status "${verifyStatus}" requires handoff.owner`
+      );
     }
+  }
+
+  // context_acknowledged is advisory-only; never blocks admission
+  if (isCompletionCardShape(input) && input.context_acknowledged !== true) {
+    notes.push(
+      "context_acknowledged is missing or false (advisory-only; does not block admission)"
+    );
   }
 
   // PGV is advisory-only; never blocks by default
@@ -344,15 +536,22 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
   }
 
   // Respect input admission outcome if present and valid
-  const finalOutcome: VerifyOutcome = admissionOutcome && ["success", "failed", "blocked", "skipped", "timeout", "error"].includes(admissionOutcome)
-    ? (admissionOutcome as VerifyOutcome)
-    : "success";
+  const finalOutcome: VerifyOutcome =
+    admissionOutcome &&
+    ["success", "failed", "blocked", "skipped", "timeout", "error"].includes(
+      admissionOutcome
+    )
+      ? (admissionOutcome as VerifyOutcome)
+      : "success";
 
   return {
     outcome: finalOutcome,
     acceptance_status: acceptanceStatus(finalOutcome),
     errors: [],
-    notes: notes.length > 0 ? [...notes, "admission checks passed"] : ["admission checks passed"],
+    notes:
+      notes.length > 0
+        ? [...notes, "admission checks passed"]
+        : ["admission checks passed"],
     blocking_predicate: null,
   };
 }

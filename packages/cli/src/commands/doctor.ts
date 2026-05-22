@@ -2,6 +2,73 @@ import { Command } from "commander";
 import * as path from "node:path";
 import fs from "fs-extra";
 import { loadSchema, compileSchema, readYamlOrJson } from "../core/schema.js";
+import { validateManagedBlock } from "../core/context.js";
+
+// Known predicates/fields from the TypeScript admission engine (runtime source of truth)
+const KNOWN_SCHEMA_REQUIRED_FIELDS = [
+  "schema_version",
+  "task_id",
+  "tier",
+  "owner",
+  "accountable",
+  "claim",
+  "verification",
+  "admission",
+  "acceptance_status",
+  "handoff",
+];
+
+const KNOWN_SUCCESS_PREDICATES = [
+  "claim.fix_status == fixed",
+  "verification.status == passed",
+  "admission.outcome == success",
+  "acceptance_status == accepted",
+  "claim.evidence present and non-empty",
+  "owner.present == true",
+  "accountable.present == true",
+  "evidence_floor_met",
+  "admission_mapping_valid",
+  "no_unresolved_blocker",
+  "no_active_recovery",
+  "verifier_read_only",
+];
+
+const KNOWN_TIER_EVIDENCE_LABELS: Record<string, string[]> = {
+  light: ["files_changed", "command_evidence", "manual_rationale"],
+  standard: [
+    "files_changed",
+    "command_evidence",
+    "evidence_scope_declared",
+    "untested_regions_declared",
+  ],
+  deep: [
+    "files_changed",
+    "command_evidence",
+    "evidence_scope_declared",
+    "untested_regions_declared",
+    "remaining_risks_declared",
+    "execution_controls_present",
+    "rollback_policy_present",
+  ],
+};
+
+const KNOWN_OUTCOMES = [
+  "success",
+  "failed",
+  "blocked",
+  "skipped",
+  "timeout",
+  "error",
+];
+
+const KNOWN_REJECT_KEYS = [
+  "fix_status",
+  "verification_status",
+  "evidence_quality",
+  "approval_required_but_missing",
+  "timeout",
+  "error",
+];
 
 const CRITICAL_ASSETS = [
   "README.md",
@@ -51,10 +118,11 @@ const DANGEROUS_PGV_PHRASES = [
   "PGV overrides verify",
 ];
 
-const VALID_TIER_LABELS = ["light", "standard", "deep"];
 const INVALID_TIER_LABELS = ["small", "medium", "large"];
 
-async function checkSchemaCompile(root: string): Promise<{ ok: boolean; notes: string[] }> {
+async function checkSchemaCompile(
+  _root: string
+): Promise<{ ok: boolean; notes: string[] }> {
   const notes: string[] = [];
   let ok = true;
   for (const name of CORE_SCHEMAS) {
@@ -68,18 +136,29 @@ async function checkSchemaCompile(root: string): Promise<{ ok: boolean; notes: s
       compileSchema(schema);
       notes.push(`schema ${name} compiles`);
     } catch (err) {
-      notes.push(`schema ${name} compile error: ${err instanceof Error ? err.message : String(err)}`);
+      notes.push(
+        `schema ${name} compile error: ${err instanceof Error ? err.message : String(err)}`
+      );
       ok = false;
     }
   }
   return { ok, notes };
 }
 
-async function checkPolicyKeys(root: string): Promise<{ ok: boolean; notes: string[] }> {
+async function checkPolicyKeys(
+  root: string
+): Promise<{ ok: boolean; notes: string[] }> {
   const notes: string[] = [];
   try {
-    const policy = await readYamlOrJson(path.join(root, "policies", "admission.yaml")) as Record<string, unknown>;
-    const requiredKeys = ["candidate_completion", "success_requires", "reject_success_if", "outcome_mapping"];
+    const policy = (await readYamlOrJson(
+      path.join(root, "policies", "admission.yaml")
+    )) as Record<string, unknown>;
+    const requiredKeys = [
+      "candidate_completion",
+      "success_requires",
+      "reject_success_if",
+      "outcome_mapping",
+    ];
     let ok = true;
     for (const key of requiredKeys) {
       if (key in policy) {
@@ -91,12 +170,16 @@ async function checkPolicyKeys(root: string): Promise<{ ok: boolean; notes: stri
     }
     return { ok, notes };
   } catch (err) {
-    notes.push(`admission.yaml read error: ${err instanceof Error ? err.message : String(err)}`);
+    notes.push(
+      `admission.yaml read error: ${err instanceof Error ? err.message : String(err)}`
+    );
     return { ok: false, notes };
   }
 }
 
-async function checkNoPythonCore(root: string): Promise<{ ok: boolean; notes: string[] }> {
+async function checkNoPythonCore(
+  root: string
+): Promise<{ ok: boolean; notes: string[] }> {
   const cliSrc = path.join(root, "packages", "cli", "src");
   let pythonFiles = 0;
   if (await fs.pathExists(cliSrc)) {
@@ -114,10 +197,19 @@ async function checkNoPythonCore(root: string): Promise<{ ok: boolean; notes: st
     await walk(cliSrc);
   }
   const ok = pythonFiles === 0;
-  return { ok, notes: [ok ? "no Python files in packages/cli/src" : `python files in packages/cli/src (${pythonFiles} found)`] };
+  return {
+    ok,
+    notes: [
+      ok
+        ? "no Python files in packages/cli/src"
+        : `python files in packages/cli/src (${pythonFiles} found)`,
+    ],
+  };
 }
 
-async function checkPgvWording(root: string): Promise<{ ok: boolean; notes: string[] }> {
+async function checkPgvWording(
+  root: string
+): Promise<{ ok: boolean; notes: string[] }> {
   const notes: string[] = [];
   let ok = true;
   const docsDir = path.join(root, "docs");
@@ -143,7 +235,9 @@ async function checkPgvWording(root: string): Promise<{ ok: boolean; notes: stri
   return { ok, notes };
 }
 
-async function checkTierLabels(root: string): Promise<{ ok: boolean; notes: string[] }> {
+async function checkTierLabels(
+  root: string
+): Promise<{ ok: boolean; notes: string[] }> {
   const notes: string[] = [];
   let ok = true;
   const excludedFiles = [
@@ -151,6 +245,7 @@ async function checkTierLabels(root: string): Promise<{ ok: boolean; notes: stri
     path.join(root, "packages", "cli", "src", "commands", "doctor.ts"),
     path.join(root, "docs", "METRICS.md"),
     path.join(root, "packages", "cli", "src", "core", "metrics.ts"),
+    path.join(root, "packages", "cli", "src", "core", "context.ts"),
   ];
   const dirs = [
     path.join(root, "docs"),
@@ -186,7 +281,9 @@ async function checkTierLabels(root: string): Promise<{ ok: boolean; notes: stri
   return { ok, notes };
 }
 
-async function checkAgentsSize(root: string): Promise<{ ok: boolean; notes: string[] }> {
+async function checkAgentsSize(
+  root: string
+): Promise<{ ok: boolean; notes: string[] }> {
   const agentsPath = path.join(root, "AGENTS.md");
   if (!(await fs.pathExists(agentsPath))) {
     return { ok: false, notes: ["AGENTS.md not found"] };
@@ -194,10 +291,32 @@ async function checkAgentsSize(root: string): Promise<{ ok: boolean; notes: stri
   const content = await fs.readFile(agentsPath, "utf-8");
   const lines = content.split(/\r?\n/);
   const ok = lines.length <= 150;
-  return { ok, notes: [`AGENTS.md is ${lines.length} lines ${ok ? "(<= 150)" : "(> 150)"}`] };
+  return {
+    ok,
+    notes: [
+      `AGENTS.md is ${lines.length} lines ${ok ? "(<= 150)" : "(> 150)"}`,
+    ],
+  };
 }
 
-async function checkAdapters(root: string): Promise<{ ok: boolean; notes: string[] }> {
+async function checkContextFreshness(
+  root: string
+): Promise<{ ok: boolean; notes: string[] }> {
+  const agentsPath = path.join(root, "AGENTS.md");
+  if (!(await fs.pathExists(agentsPath))) {
+    return { ok: false, notes: ["AGENTS.md not found"] };
+  }
+  const content = await fs.readFile(agentsPath, "utf-8");
+  const result = validateManagedBlock(content);
+  return {
+    ok: result.valid,
+    notes: [result.note],
+  };
+}
+
+async function checkAdapters(
+  root: string
+): Promise<{ ok: boolean; notes: string[] }> {
   const notes: string[] = [];
   let ok = true;
   for (const adapter of ADAPTERS) {
@@ -212,7 +331,9 @@ async function checkAdapters(root: string): Promise<{ ok: boolean; notes: string
   return { ok, notes };
 }
 
-async function checkLocalMarkdownLinks(root: string): Promise<{ ok: boolean; notes: string[] }> {
+async function checkLocalMarkdownLinks(
+  root: string
+): Promise<{ ok: boolean; notes: string[] }> {
   const notes: string[] = [];
   let ok = true;
   const mdFiles: string[] = [];
@@ -229,8 +350,10 @@ async function checkLocalMarkdownLinks(root: string): Promise<{ ok: boolean; not
     }
   };
 
-  if (await fs.pathExists(path.join(root, "docs"))) await collectMd(path.join(root, "docs"));
-  if (await fs.pathExists(path.join(root, "templates"))) await collectMd(path.join(root, "templates"));
+  if (await fs.pathExists(path.join(root, "docs")))
+    await collectMd(path.join(root, "docs"));
+  if (await fs.pathExists(path.join(root, "templates")))
+    await collectMd(path.join(root, "templates"));
 
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
   for (const mdPath of mdFiles) {
@@ -254,14 +377,21 @@ async function checkLocalMarkdownLinks(root: string): Promise<{ ok: boolean; not
   return { ok, notes };
 }
 
-async function checkEvidenceScopeSupport(root: string): Promise<{ ok: boolean; notes: string[] }> {
+async function checkEvidenceScopeSupport(
+  _root: string
+): Promise<{ ok: boolean; notes: string[] }> {
   const notes: string[] = [];
   let ok = true;
   try {
     const schema = await loadSchema("completion-card");
     const props = schema.properties as Record<string, unknown> | undefined;
-    const evidenceProps = props?.evidence as Record<string, unknown> | undefined;
-    if (evidenceProps?.properties && typeof evidenceProps.properties === "object") {
+    const evidenceProps = props?.evidence as
+      | Record<string, unknown>
+      | undefined;
+    if (
+      evidenceProps?.properties &&
+      typeof evidenceProps.properties === "object"
+    ) {
       const ep = evidenceProps.properties as Record<string, unknown>;
       if ("verification_artifacts" in ep) {
         notes.push("schema supports verification_artifacts");
@@ -286,13 +416,17 @@ async function checkEvidenceScopeSupport(root: string): Promise<{ ok: boolean; n
       ok = false;
     }
   } catch (err) {
-    notes.push(`schema load error: ${err instanceof Error ? err.message : String(err)}`);
+    notes.push(
+      `schema load error: ${err instanceof Error ? err.message : String(err)}`
+    );
     ok = false;
   }
   return { ok, notes };
 }
 
-async function checkReadOnlyVerifier(root: string): Promise<{ ok: boolean; notes: string[] }> {
+async function checkReadOnlyVerifier(
+  root: string
+): Promise<{ ok: boolean; notes: string[] }> {
   const notes: string[] = [];
   let ok = true;
   const verifyGatePath = path.join(root, "docs", "VERIFY_GATE.md");
@@ -322,7 +456,9 @@ async function checkReadOnlyVerifier(root: string): Promise<{ ok: boolean; notes
   return { ok, notes };
 }
 
-async function checkNoHeavyRuntime(root: string): Promise<{ ok: boolean; notes: string[] }> {
+async function checkNoHeavyRuntime(
+  root: string
+): Promise<{ ok: boolean; notes: string[] }> {
   const notes: string[] = [];
   let ok = true;
   const docsDir = path.join(root, "docs");
@@ -330,10 +466,15 @@ async function checkNoHeavyRuntime(root: string): Promise<{ ok: boolean; notes: 
     const entries = await fs.readdir(docsDir, { withFileTypes: true });
     for (const entry of entries) {
       if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
-      const content = await fs.readFile(path.join(docsDir, entry.name), "utf-8");
+      const content = await fs.readFile(
+        path.join(docsDir, entry.name),
+        "utf-8"
+      );
       const lower = content.toLowerCase();
       if (lower.includes("mandatory mcp") || lower.includes("required mcp")) {
-        notes.push(`dangerous runtime wording in ${entry.name}: mandatory/required MCP`);
+        notes.push(
+          `dangerous runtime wording in ${entry.name}: mandatory/required MCP`
+        );
         ok = false;
       }
     }
@@ -353,7 +494,9 @@ async function checkNoHeavyRuntime(root: string): Promise<{ ok: boolean; notes: 
   return { ok, notes };
 }
 
-async function checkTemplatesInventory(root: string): Promise<{ ok: boolean; notes: string[] }> {
+async function checkTemplatesInventory(
+  root: string
+): Promise<{ ok: boolean; notes: string[] }> {
   const notes: string[] = [];
   let ok = true;
   const templatesDir = path.join(root, "templates");
@@ -376,7 +519,12 @@ async function checkTemplatesInventory(root: string): Promise<{ ok: boolean; not
   }
 
   // Ensure core tier templates exist
-  const coreTemplates = ["SUBAGENT_TASK_light.md", "SUBAGENT_TASK_standard.md", "SUBAGENT_TASK_deep.md", "COMPLETION_CARD.md"];
+  const coreTemplates = [
+    "SUBAGENT_TASK_light.md",
+    "SUBAGENT_TASK_standard.md",
+    "SUBAGENT_TASK_deep.md",
+    "COMPLETION_CARD.md",
+  ];
   for (const core of coreTemplates) {
     if (!mdFiles.includes(core)) {
       notes.push(`core template missing: ${core}`);
@@ -387,16 +535,173 @@ async function checkTemplatesInventory(root: string): Promise<{ ok: boolean; not
   return { ok, notes };
 }
 
+async function checkPolicyDrift(
+  root: string
+): Promise<{ ok: boolean; notes: string[] }> {
+  const notes: string[] = [];
+  let ok = true;
+  const policyPath = path.join(root, "policies", "admission.yaml");
+
+  let policy: Record<string, unknown>;
+  try {
+    policy = (await readYamlOrJson(policyPath)) as Record<string, unknown>;
+  } catch (err) {
+    notes.push(
+      `admission.yaml read error: ${err instanceof Error ? err.message : String(err)}`
+    );
+    return { ok: false, notes };
+  }
+
+  // 1. Validate required policy sections exist
+  const requiredSections = [
+    "candidate_completion",
+    "success_requires",
+    "reject_success_if",
+    "outcome_mapping",
+    "evidence_floor",
+  ];
+  for (const section of requiredSections) {
+    if (section in policy) {
+      notes.push(`policy section ${section} present`);
+    } else {
+      notes.push(`policy section ${section} missing`);
+      ok = false;
+    }
+  }
+
+  // 2. Validate candidate_completion.required fields map to schema known fields
+  const candidateCompletion = policy.candidate_completion as
+    | Record<string, unknown>
+    | undefined;
+  if (candidateCompletion && Array.isArray(candidateCompletion.required)) {
+    const requiredFields = candidateCompletion.required as string[];
+    for (const field of requiredFields) {
+      // Normalize dotted paths like "claim.fix_status" to just check top-level "claim"
+      const topLevel = field.split(".")[0];
+      if (KNOWN_SCHEMA_REQUIRED_FIELDS.includes(topLevel)) {
+        notes.push(`candidate_completion.required field known: ${field}`);
+      } else {
+        notes.push(`candidate_completion.required field unknown: ${field}`);
+        ok = false;
+      }
+    }
+  } else {
+    notes.push("candidate_completion.required missing or not an array");
+    ok = false;
+  }
+
+  // 3. Validate success_requires predicates are known
+  const successRequires = policy.success_requires as string[] | undefined;
+  if (successRequires && Array.isArray(successRequires)) {
+    for (const predicate of successRequires) {
+      const normalized = predicate.trim();
+      const isKnown = KNOWN_SUCCESS_PREDICATES.some((kp) =>
+        normalized.toLowerCase().startsWith(kp.toLowerCase())
+      );
+      if (isKnown) {
+        notes.push(`success_requires predicate known: ${predicate}`);
+      } else {
+        notes.push(`success_requires predicate unknown: ${predicate}`);
+        ok = false;
+      }
+    }
+  } else {
+    notes.push("success_requires missing or not an array");
+    ok = false;
+  }
+
+  // 4. Validate evidence_floor tier labels map to schema evidence properties and admission.ts expectations
+  const evidenceFloor = policy.evidence_floor as
+    | Record<string, unknown>
+    | undefined;
+  if (evidenceFloor && typeof evidenceFloor === "object") {
+    for (const tier of ["light", "standard", "deep"] as const) {
+      const tierConfig = evidenceFloor[tier] as
+        | Record<string, unknown>
+        | undefined;
+      if (!tierConfig) {
+        notes.push(`evidence_floor missing tier: ${tier}`);
+        ok = false;
+        continue;
+      }
+
+      const knownLabels = KNOWN_TIER_EVIDENCE_LABELS[tier];
+      for (const key of ["required", "one_of", "recommended"] as const) {
+        const labels = tierConfig[key] as string[] | undefined;
+        if (!labels) continue;
+        if (!Array.isArray(labels)) {
+          notes.push(`evidence_floor.${tier}.${key} is not an array`);
+          ok = false;
+          continue;
+        }
+        for (const label of labels) {
+          if (knownLabels.includes(label)) {
+            notes.push(`evidence_floor.${tier} label known: ${label}`);
+          } else {
+            notes.push(`evidence_floor.${tier} label unknown: ${label}`);
+            ok = false;
+          }
+        }
+      }
+    }
+  } else {
+    notes.push("evidence_floor missing or not an object");
+    ok = false;
+  }
+
+  // 5. Validate outcome_mapping keys are known outcomes
+  const outcomeMapping = policy.outcome_mapping as
+    | Record<string, unknown>
+    | undefined;
+  if (outcomeMapping && typeof outcomeMapping === "object") {
+    for (const key of Object.keys(outcomeMapping)) {
+      if (KNOWN_OUTCOMES.includes(key)) {
+        notes.push(`outcome_mapping key known: ${key}`);
+      } else {
+        notes.push(`outcome_mapping key unknown: ${key}`);
+        ok = false;
+      }
+    }
+  } else {
+    notes.push("outcome_mapping missing or not an object");
+    ok = false;
+  }
+
+  // 6. Validate reject_success_if keys are known rejection fields
+  const rejectSuccessIf = policy.reject_success_if as
+    | Record<string, unknown>
+    | undefined;
+  if (rejectSuccessIf && typeof rejectSuccessIf === "object") {
+    for (const key of Object.keys(rejectSuccessIf)) {
+      if (KNOWN_REJECT_KEYS.includes(key)) {
+        notes.push(`reject_success_if key known: ${key}`);
+      } else {
+        notes.push(`reject_success_if key unknown: ${key}`);
+        ok = false;
+      }
+    }
+  } else {
+    notes.push("reject_success_if missing or not an object");
+    ok = false;
+  }
+
+  return { ok, notes };
+}
+
 export function doctorCommand(): Command {
   return new Command("doctor")
-    .description("Check required files, schemas, policies, templates, and adapters")
+    .description(
+      "Check required files, schemas, policies, templates, and adapters"
+    )
     .option("--root <path>", "Repository root", process.cwd())
-    .action(async (opts: { root: string }) => {
+    .option("--policy-drift", "Run policy-code drift checks", false)
+    .action(async (opts: { root: string; policyDrift: boolean }) => {
       const root = path.resolve(opts.root);
       const missing: string[] = [];
       const present: string[] = [];
       const notes: string[] = [];
-      const checks: { name: string; status: "pass" | "fail"; note: string }[] = [];
+      const checks: { name: string; status: "pass" | "fail"; note: string }[] =
+        [];
 
       // Required file check
       for (const asset of CRITICAL_ASSETS) {
@@ -410,7 +715,10 @@ export function doctorCommand(): Command {
       checks.push({
         name: "required_files",
         status: missing.length === 0 ? "pass" : "fail",
-        note: missing.length === 0 ? "all required files present" : `missing: ${missing.join(", ")}`,
+        note:
+          missing.length === 0
+            ? "all required files present"
+            : `missing: ${missing.join(", ")}`,
       });
 
       // Schema compile check
@@ -427,6 +735,14 @@ export function doctorCommand(): Command {
         name: "policy_keys",
         status: policyResult.ok ? "pass" : "fail",
         note: policyResult.notes.join("; "),
+      });
+
+      // Policy-code drift check (always run; --policy-drift can be used to surface it explicitly)
+      const driftResult = await checkPolicyDrift(root);
+      checks.push({
+        name: "policy_drift",
+        status: driftResult.ok ? "pass" : "fail",
+        note: driftResult.notes.join("; "),
       });
 
       // No Python core check
@@ -524,6 +840,14 @@ export function doctorCommand(): Command {
           note: "cleanup policy optional; not required for v0.1",
         });
       }
+
+      // Context freshness check
+      const contextFreshnessResult = await checkContextFreshness(root);
+      checks.push({
+        name: "context_freshness",
+        status: contextFreshnessResult.ok ? "pass" : "fail",
+        note: contextFreshnessResult.notes.join("; "),
+      });
 
       const healthy = checks.every((c) => c.status === "pass");
 

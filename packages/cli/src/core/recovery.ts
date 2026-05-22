@@ -21,7 +21,8 @@ const DEFAULT_ROUTES: Record<string, RecoveryRoute> = {
     owner: "implementation-worker",
   },
   evidence_scope_missing: {
-    next_action: "Declare what each validation artifact verifies and does not verify.",
+    next_action:
+      "Declare what each validation artifact verifies and does not verify.",
     owner: "implementation-worker",
   },
   typecheck_failed: {
@@ -29,11 +30,13 @@ const DEFAULT_ROUTES: Record<string, RecoveryRoute> = {
     owner: "implementation-worker",
   },
   test_failed: {
-    next_action: "Diagnose failing behavior and update implementation or tests.",
+    next_action:
+      "Diagnose failing behavior and update implementation or tests.",
     owner: "implementation-worker",
   },
   lint_failed: {
-    next_action: "Fix lint issues or justify why the lint rule is not applicable.",
+    next_action:
+      "Fix lint issues or justify why the lint rule is not applicable.",
     owner: "implementation-worker",
   },
   build_failed: {
@@ -58,7 +61,9 @@ const DEFAULT_ROUTES: Record<string, RecoveryRoute> = {
   },
 };
 
-export function getRecoveryRoute(predicate: string | null | undefined): RecoveryRoute | null {
+export function getRecoveryRoute(
+  predicate: string | null | undefined
+): RecoveryRoute | null {
   if (!predicate) return null;
   return DEFAULT_ROUTES[predicate] ?? null;
 }
@@ -73,13 +78,117 @@ export function suggestRecovery(
 
   // Heuristic: map error text to predicate
   const errorText = errors.join("; ").toLowerCase();
-  if (errorText.includes("approval")) return { predicate: "approval_missing", route: getRecoveryRoute("approval_missing") };
-  if (errorText.includes("typecheck") || errorText.includes("type check")) return { predicate: "typecheck_failed", route: getRecoveryRoute("typecheck_failed") };
-  if (errorText.includes("test") && !errorText.includes("typecheck")) return { predicate: "test_failed", route: getRecoveryRoute("test_failed") };
-  if (errorText.includes("lint")) return { predicate: "lint_failed", route: getRecoveryRoute("lint_failed") };
-  if (errorText.includes("build")) return { predicate: "build_failed", route: getRecoveryRoute("build_failed") };
-  if (errorText.includes("scope") || errorText.includes("untested") || errorText.includes("does_not_verify")) return { predicate: "evidence_scope_missing", route: getRecoveryRoute("evidence_scope_missing") };
-  if (errorText.includes("evidence")) return { predicate: "evidence_missing", route: getRecoveryRoute("evidence_missing") };
+  if (errorText.includes("approval"))
+    return {
+      predicate: "approval_missing",
+      route: getRecoveryRoute("approval_missing"),
+    };
+  if (errorText.includes("typecheck") || errorText.includes("type check"))
+    return {
+      predicate: "typecheck_failed",
+      route: getRecoveryRoute("typecheck_failed"),
+    };
+  if (errorText.includes("test") && !errorText.includes("typecheck"))
+    return { predicate: "test_failed", route: getRecoveryRoute("test_failed") };
+  if (errorText.includes("lint"))
+    return { predicate: "lint_failed", route: getRecoveryRoute("lint_failed") };
+  if (errorText.includes("build"))
+    return {
+      predicate: "build_failed",
+      route: getRecoveryRoute("build_failed"),
+    };
+  if (
+    errorText.includes("scope") ||
+    errorText.includes("untested") ||
+    errorText.includes("does_not_verify")
+  )
+    return {
+      predicate: "evidence_scope_missing",
+      route: getRecoveryRoute("evidence_scope_missing"),
+    };
+  if (errorText.includes("evidence"))
+    return {
+      predicate: "evidence_missing",
+      route: getRecoveryRoute("evidence_missing"),
+    };
 
-  return { predicate: "admission_failed", route: getRecoveryRoute("admission_failed") };
+  return {
+    predicate: "admission_failed",
+    route: getRecoveryRoute("admission_failed"),
+  };
+}
+
+export interface PlaybookSuggestion {
+  predicate: RecoveryPredicate;
+  route: RecoveryRoute;
+  review_required: boolean;
+  rationale: string;
+}
+
+/**
+ * Generate a deterministic recovery playbook candidate from errors.
+ * Does NOT mutate policies or completion cards.
+ */
+export function generatePlaybook(
+  errors: string[],
+  outcome: string
+): PlaybookSuggestion[] {
+  if (outcome !== "blocked" && outcome !== "failed") {
+    return [];
+  }
+
+  const suggestions: PlaybookSuggestion[] = [];
+  const seen = new Set<string>();
+
+  for (const error of errors) {
+    const suggestion = suggestRecovery([error], outcome);
+    if (
+      suggestion.predicate &&
+      suggestion.route &&
+      !seen.has(suggestion.predicate)
+    ) {
+      seen.add(suggestion.predicate);
+      suggestions.push({
+        predicate: suggestion.predicate,
+        route: suggestion.route,
+        review_required: true,
+        rationale: `Detected from error: "${error}"`,
+      });
+    }
+  }
+
+  return suggestions;
+}
+
+export function renderPlaybookMarkdown(
+  suggestions: PlaybookSuggestion[]
+): string {
+  const lines: string[] = [
+    "# Recovery Playbook (Review Required)",
+    "",
+    "> This playbook is a candidate generated from verification failures. Review before applying.",
+    "> It does NOT modify policies or completion cards.",
+    "",
+  ];
+
+  for (const s of suggestions) {
+    lines.push(`## ${s.predicate}`);
+    lines.push("");
+    lines.push(`- **Next action:** ${s.route.next_action}`);
+    lines.push(`- **Owner:** ${s.route.owner}`);
+    lines.push(`- **Review required:** ${s.review_required ? "yes" : "no"}`);
+    lines.push(`- **Rationale:** ${s.rationale}`);
+    lines.push("");
+  }
+
+  if (suggestions.length === 0) {
+    lines.push("No recovery actions suggested.");
+    lines.push("");
+  }
+
+  lines.push("---");
+  lines.push("Generated by x-harness recovery playbook generator.");
+  lines.push("");
+
+  return lines.join("\n");
 }
