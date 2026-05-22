@@ -10,9 +10,9 @@ This document outlines the shipped milestones and the future planned capabilitie
 
 The complete foundational core layer is fully built, tested, and shipped.
 
-- **TypeScript-First CLI Application**: Implemented `init`, `handoff`, `add`, `verify`, `trace`, `report`, `clean`, `examples`, and `doctor` commands.
+- **TypeScript-First CLI Application**: Implemented `init`, `add`, `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `doctor`, `recovery`, and `packet` commands.
 - **Read-Only Verification Model**: Core engine executing deterministic local evaluation without code mutation.
-- **Robust Validating Schemas**: Developed Ajv/Zod schemas for `completion-card`, `subagent-return`, `verify-event`, and `pgv-advice`.
+- **Robust Validating Schemas**: Developed Ajv/JSON Schema for `completion-card`, `subagent-return`, `verify-event`, and `pgv-advice`.
 - **Fail-Closed Admission Policy**: Integrated structured `policies/admission.yaml` and `policies/recovery.yaml` files.
 - **Handoff & Completion Templates**: Provided clean structures for `light`, `standard`, and `deep` task dispatches.
 - **Built-in Workflows & Examples**: Shipped 5 workflow reference configurations and 9 functional golden test case scenarios.

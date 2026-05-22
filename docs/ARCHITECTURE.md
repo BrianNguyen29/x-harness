@@ -23,7 +23,7 @@
 ┌──────────────┐   ┌──────────────┐   ┌──────────────────┐
 │  VALIDATOR   │   │  ADMISSION   │   │     METRICS      │
 │    LAYER     │   │ CONTROL LAYER│   │  REPORTING LAYER │
-│(Ajv / Zod)   │   │(admission.ts)│   │  (metrics.ts)    │
+│   (Ajv)      │   │(admission.ts)│   │  (metrics.ts)    │
 └──────┬───────┘   └──────┬───────┘   └────────┬─────────┘
        │                  │                    │
        │ Load             │ Load Policies      │ Calculate
@@ -48,7 +48,7 @@ Provides developer utilities to scaffolding templates (`init`, `handoff`), modif
 
 ### 3. Validator Layer
 
-Enforces complete structure verification on inputs via **Ajv (JSON Schema)** and **Zod (Types)** validation engines. This layer ensures that completion cards, sub-agent returns, and events perfectly comply with expected schemas prior to verification.
+Enforces complete structure verification on inputs via **Ajv (JSON Schema)** validation. This layer ensures that completion cards, sub-agent returns, and events perfectly comply with expected schemas prior to verification.
 
 ### 4. Admission Control Layer
 

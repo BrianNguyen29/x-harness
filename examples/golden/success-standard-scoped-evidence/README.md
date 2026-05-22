@@ -20,7 +20,7 @@ Because the card is well-formed, contains no contradictions, and lists valid evi
 Running verification on this card yields a success admission status since all necessary fields for the standard tier are populated correctly:
 
 ```yaml
-verify_gate.outcome: success
+outcome: success
 acceptance_status: accepted
 ```
 

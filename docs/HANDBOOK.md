@@ -29,8 +29,8 @@ Agents produce completion candidates. The read-only verifier decides admission b
 | Tier | Use case | Evidence floor |
 |------|----------|----------------|
 | light | Quick fixes, docs | files_changed + command_evidence or manual_rationale |
-| standard | Normal features | light + evidence_scope + untested_regions |
-| deep | Security-critical, architecture | standard + remaining_risks + rollback_policy + execution_controls |
+| standard | Normal features | files_changed + command_evidence (evidence_scope recommended) |
+| deep | Security-critical, architecture | files_changed + command_evidence + evidence_scope + untested_regions + remaining_risks + rollback_policy + execution_controls |
 
 ### Verifier is read-only
 
@@ -42,7 +42,14 @@ Pre-gate validation provides guidance but never overrides the verify gate.
 
 ## CLI commands
 
+The CLI is invoked as `node packages/cli/dist/index.js <command> [options]`.
+
+### Core commands
+
 ```bash
+# Initialize a workspace
+node packages/cli/dist/index.js init --minimal
+
 # Verify a completion card
 node packages/cli/dist/index.js verify --card completion-card.yaml
 
@@ -54,12 +61,34 @@ node packages/cli/dist/index.js doctor
 
 # Generate audit report
 node packages/cli/dist/index.js report --trace-dir .x-harness/traces
+```
+
+### Additional commands
+
+```bash
+# Add metadata helpers
+node packages/cli/dist/index.js add <claim|evidence|completion-card> [key=value]
 
 # Verify trace integrity
 node packages/cli/dist/index.js trace verify-chain
 
 # Generate recovery playbook
 node packages/cli/dist/index.js recovery suggest --errors "tests failed" --outcome failed
+
+# Create a claim packet from a completion card
+node packages/cli/dist/index.js packet create --card completion-card.yaml
+
+# Verify packet chain integrity
+node packages/cli/dist/index.js packet verify-chain --task-id <task-id>
+
+# Manage temporary artifacts
+node packages/cli/dist/index.js clean [--tmp|--reset-card|--archive-success] [--force]
+
+# List or copy built-in examples
+node packages/cli/dist/index.js examples
+
+# Show canonical context
+node packages/cli/dist/index.js context [--verbose|--json|--refresh]
 
 # Check handoff readiness
 node packages/cli/dist/index.js handoff readiness --interactive
@@ -91,9 +120,10 @@ node packages/cli/dist/index.js handoff readiness --interactive
 
 ### standard
 
-- light requirements
-- `evidence_scope_declared` (verifies / does_not_verify)
-- `untested_regions_declared`
+- `files_changed` (non-empty)
+- `command_evidence`
+- `evidence_scope_declared` (recommended, not required)
+- `untested_regions_declared` (recommended, not required)
 
 ### deep
 

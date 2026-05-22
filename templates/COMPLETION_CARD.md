@@ -154,6 +154,10 @@ evidence:
     - "No production IdP integration test was run."
   remaining_risks:
     - "Production IdP rate limits may differ."
+  rollback_policy: "Revert src/auth/oauth.ts and src/auth/oauth.test.ts to previous commits; re-run tests to confirm"
+  execution_controls:
+    - "Review OAuth token storage before merging"
+    - "Require security audit sign-off before production deployment"
 governance:
   risk_class: high
   requires_human_approval: true

@@ -11,9 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **TypeScript-First CLI Tool**: Shipped a CLI application supporting `init`, `handoff`, `add`, `verify`, `trace`, `report`, `clean`, `examples`, and `doctor` commands.
+- **TypeScript-First CLI Tool**: Shipped a CLI application supporting `init`, `add`, `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `doctor`, `recovery`, and `packet` commands.
 - **Read-Only Verification Gate**: Enforced strict read-only audit validations preventing verifier mutation of workspace source files.
-- **Robust JSON Schemas**: Added Ajv and Zod validation schemas for completion cards (`completion-card`), sub-agent returns (`subagent-return`), verification events (`verify-event`), and advisory reports (`pgv-advice`).
+- **Robust JSON Schemas**: Added Ajv/JSON Schema validation for completion cards (`completion-card`), sub-agent returns (`subagent-return`), verification events (`verify-event`), and advisory reports (`pgv-advice`).
 - **Fail-Closed YAML Policies**: Integrated `policies/admission.yaml` and `policies/recovery.yaml` to enforce strict evidence floors under `light`, `standard`, and `deep` tiers.
 - **Handoff Tasks and Card Templates**: Created standard markdown templates for task delegation and completion records tracking.
 - **Comprehensive Adapters Suite**: Delivered native setup rules and workflows for Generic, Claude Code, Cursor, OpenCode, and Antigravity.
@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Branding & Naming Unified**: Standardized all references to `x-harness`.
 - **Cleaned v0.1 Scope**: Focused schemas, policies, and code execution flow to enforce local, deterministic, offline-first runtimes.
-- **Upgraded Internal CLI Dependencies**: Bumped package files to modern Node.js versions (`>= 20`), Vitest (`^4.1.7`), Commander (`^12.1.0`), Zod (`^3.25.76`), and Ajv (`^8.20.0`).
+- **Upgraded Internal CLI Dependencies**: Bumped package files to modern Node.js versions (`>= 20`), Vitest (`^4.1.7`), Commander (`^12.1.0`), and Ajv (`^8.20.0`).
 
 ### Removed
 

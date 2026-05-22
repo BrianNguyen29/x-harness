@@ -55,7 +55,7 @@ Never propose completion without verifying your work product first! Run the loca
 ```bash
 node packages/cli/dist/index.js verify --card completion-card.yaml
 ```
-*   **Outcome - Success**: If it outputs `verify_gate.outcome: success`, proceed to Step 5.
+*   **Outcome - Success**: If it outputs `outcome: success` with `acceptance_status: accepted`, proceed to Step 5.
 *   **Outcome - Withheld**: If the verify gate is withheld or fails, look at the returned validation errors, perform the necessary repairs, and re-run verification.
 
 ### Step 5: Propose Handoff & Completion

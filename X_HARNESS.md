@@ -88,7 +88,12 @@ node packages/cli/dist/index.js verify
 node packages/cli/dist/index.js doctor
 node packages/cli/dist/index.js report
 node packages/cli/dist/index.js report --metrics --card completion-card.yaml
+node packages/cli/dist/index.js recovery suggest --errors "tests failed" --outcome failed
+node packages/cli/dist/index.js packet create --card completion-card.yaml
+node packages/cli/dist/index.js packet verify-chain --task-id TASK-001
 ```
+
+The full command set is: `init`, `add`, `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `doctor`, `recovery`, `packet`.
 
 ## Repository Structure
 

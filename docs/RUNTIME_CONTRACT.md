@@ -14,7 +14,8 @@ verification.status: passed
 Accepted completion:
 
 ```yaml
-verify_gate.outcome: success
+admission:
+  outcome: success
 acceptance_status: accepted
 ```
 

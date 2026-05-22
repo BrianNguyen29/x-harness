@@ -180,6 +180,8 @@ Task delegation in `x-harness` uses **only** the following three canonical tiers
 | **`clean`**    | `node packages/cli/dist/index.js clean [--tmp / --reset-card / --archive-success] [--force]`         | Defaults to a dry run; add `--force` to mutate tmp artifacts, reset a completion card, or archive accepted-card snapshots. |
 | **`context`**  | `node packages/cli/dist/index.js context [--verbose / --json / --refresh] [--root <path>]`            | Shows canonical context and refreshes the AGENTS.md managed block.                         |
 | **`examples`** | `node packages/cli/dist/index.js examples`                                                           | Lists or copies built-in test-cases showing successful and blocked runs.                   |
+| **`recovery`** | `node packages/cli/dist/index.js recovery suggest [--errors <text>] [--outcome <status>]`            | Generates structured recovery playbook suggestions based on failure predicates.             |
+| **`packet`**   | `node packages/cli/dist/index.js packet create --card <path>` or `packet verify-chain --task-id <id>` | Creates immutable claim packets from completion cards and verifies packet chain integrity.   |
 
 ---
 
@@ -266,6 +268,7 @@ Running `node packages/cli/dist/index.js verify --trace` logs a JSONL event deta
 | Document | Description |
 |----------|-------------|
 | [`docs/HANDBOOK.md`](docs/HANDBOOK.md) | Technical handbook: philosophy, tiers, CLI reference, evidence floors |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Architectural design, layer model, and validation flow |
 | [`docs/PACKETS.md`](docs/PACKETS.md) | Packet design spec and claim-only implementation guide |
 | [`docs/CI.md`](docs/CI.md) | CI integration guide and local-build composite action |
 | [`docs/REPORT_FORMATS.md`](docs/REPORT_FORMATS.md) | Report output formats: Markdown, JSON, HTML |

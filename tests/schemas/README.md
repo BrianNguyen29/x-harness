@@ -7,5 +7,5 @@ This directory contains tests checking the validity and compile actions of core 
 ## Actions
 
 - Compiles schemas using Ajv.
-- Ensures all Zod validation models perfectly align with core JSON schemas.
+- Validates that JSON Schema structures correctly enforce the expected metadata properties.
 - Prevents structural regression of critical metadata properties.
