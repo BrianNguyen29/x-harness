@@ -58,7 +58,16 @@ node packages/cli/dist/index.js report --trace-dir .x-harness/traces --format ht
 node packages/cli/dist/index.js report --metrics --card completion-card.yaml --format html
 ```
 
-When `--metrics` is combined with `--format html`, the report renders the metrics admission data as a self-contained HTML page.
+When `--metrics` is combined with `--format html`, the report renders a self-contained HTML page with structured sections for:
+
+- Admission outcome
+- Verification strength
+- State consistency
+- Recovery ability
+- Replayability
+- Cost
+
+The raw metrics/admission JSON remains available in a collapsed `Raw JSON` details block for debugging.
 
 ## Non-goals
 

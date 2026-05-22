@@ -58,6 +58,12 @@ export async function readTrace(
   traceDir = ".x-harness/traces"
 ): Promise<TraceEvent[]> {
   const filePath = path.join(traceDir, "events.jsonl");
+  return readTraceFromFile(filePath);
+}
+
+export async function readTraceFromFile(
+  filePath: string
+): Promise<TraceEvent[]> {
   if (!(await fs.pathExists(filePath))) return [];
   const content = await fs.readFile(filePath, "utf-8");
   return content

@@ -1,6 +1,11 @@
 import { Command } from "commander";
 import * as path from "node:path";
-import { appendTrace, readTrace, verifyTraceChain } from "../core/trace.js";
+import {
+  appendTrace,
+  readTrace,
+  readTraceFromFile,
+  verifyTraceChain,
+} from "../core/trace.js";
 
 interface TraceAddOptions {
   outcome?: string;
@@ -62,9 +67,18 @@ export function traceCommand(): Command {
     .command("verify-chain")
     .description("Verify the integrity of the trace hash chain")
     .option("--trace-dir <dir>", "Trace directory", ".x-harness/traces")
-    .action(async (opts: { traceDir?: string }) => {
-      const traceDir = path.resolve(opts.traceDir ?? ".x-harness/traces");
-      const events = await readTrace(traceDir);
+    .option(
+      "--from <file>",
+      "Read trace events from a specific JSONL file path"
+    )
+    .action(async (opts: { traceDir?: string; from?: string }) => {
+      let events: import("../core/trace.js").TraceEvent[];
+      if (opts.from) {
+        events = await readTraceFromFile(path.resolve(opts.from));
+      } else {
+        const traceDir = path.resolve(opts.traceDir ?? ".x-harness/traces");
+        events = await readTrace(traceDir);
+      }
       const result = verifyTraceChain(events);
 
       if (result.valid) {

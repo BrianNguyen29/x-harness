@@ -81,6 +81,7 @@ async function askRiskSurvey(): Promise<RiskSurvey> {
 
 async function checkReadiness(
   interactive: boolean,
+  nonInteractive: boolean,
   root: string
 ): Promise<{
   ready: boolean;
@@ -139,7 +140,7 @@ async function checkReadiness(
 
   const allPassed = checks.every((c) => c.passed);
 
-  if (interactive && !isNonInteractive()) {
+  if (interactive && !nonInteractive && !isNonInteractive()) {
     if (!allPassed) {
       console.log("Readiness checks failed:");
       for (const c of checks) {
@@ -328,16 +329,22 @@ handoff:
     .command("readiness")
     .description("Check handoff readiness with optional interactive prompts")
     .option("--interactive", "Enable interactive readiness prompts", false)
+    .option("--non-interactive", "Explicitly skip interactive prompts", false)
     .option("--json", "Output JSON instead of text", false)
     .option("--root <path>", "Repository root", process.cwd())
     .action(
       async (opts: {
         interactive?: boolean;
+        nonInteractive?: boolean;
         json?: boolean;
         root?: string;
       }) => {
         const root = path.resolve(opts.root ?? process.cwd());
-        const result = await checkReadiness(opts.interactive ?? false, root);
+        const result = await checkReadiness(
+          opts.interactive ?? false,
+          opts.nonInteractive ?? false,
+          root
+        );
         const { ready, checks } = result;
 
         if (opts.json) {

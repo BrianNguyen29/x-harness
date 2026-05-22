@@ -1055,7 +1055,7 @@ Tài liệu này dựa trên các nguồn đã được phân tích:
 ### P4.1 gaps
 - [x] Tạo `docs/REPORT_FORMATS.md`.
 - [x] Cập nhật README link đến REPORT_FORMATS.
-- [ ] Polish metrics HTML report layout (hiện tại dùng `<pre><code>` cho metrics JSON).
+- [x] Polish metrics HTML report layout (structured metrics sections; raw JSON giữ trong details block).
 - [ ] Thêm `--output <file>` để ghi HTML ra file thay vì stdout.
 
 ### P4.2 gaps
@@ -1080,7 +1080,7 @@ Tài liệu này dựa trên các nguồn đã được phân tích:
 
 ### P4.7 gaps
 - [ ] Đánh giá performance với trace file lớn (10k+ events) — hiện tại đọc tuần tự.
-- [ ] Xem xét thêm `--from` flag cho `trace verify-chain` nếu cần verify trace khác default.
+- [x] Thêm `--from <file>` flag cho `trace verify-chain` để verify trace artifact ngoài default path.
 
 ### P4.8 gaps
 - [ ] Không còn blocker nghiêm trọng; composite action đã dùng local-build.
@@ -1091,7 +1091,7 @@ Tài liệu này dựa trên các nguồn đã được phân tích:
 - [x] Thêm tier suggestion logic (`suggestTier()` dựa trên risk answers).
 - [x] JSON readiness output bao gồm suggested_tier, risk_flags, missing_information, evidence_expected.
 - [ ] Tách readiness logic ra `packages/cli/src/core/handoff/readiness.ts` nếu file `handoff.ts` quá lớn.
-- [ ] Thêm `--non-interactive` flag explicit (hiện tại dùng `!process.stdin.isTTY` hoặc `CI=true`).
+- [x] Thêm `--non-interactive` flag explicit, giữ nguyên auto-detect `!process.stdin.isTTY` / `CI=true`.
 
 ---
 

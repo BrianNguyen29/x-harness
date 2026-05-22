@@ -140,4 +140,73 @@ describe("report --format html", () => {
     expect(stdout).toContain("<!DOCTYPE html>");
     expect(stdout).toContain("x-harness Metrics Report");
   });
+
+  it("renders structured metrics sections with tables", async () => {
+    const cardPath = path.join(
+      repoRoot,
+      "examples",
+      "golden",
+      "success-standard-scoped-evidence",
+      "completion-card.yaml"
+    );
+    const { stdout, exitCode } = await execaNode([
+      "report",
+      "--metrics",
+      "--card",
+      cardPath,
+      "--format",
+      "html",
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("<table>");
+    expect(stdout).toContain("Verification Strength");
+    expect(stdout).toContain("State Consistency");
+    expect(stdout).toContain("Recovery Ability");
+    expect(stdout).toContain("Replayability");
+    expect(stdout).toContain("Cost");
+    expect(stdout).toContain("Admission Outcome");
+    expect(stdout).toContain("Denominator warning");
+  });
+
+  it("preserves escaping in metrics html report", async () => {
+    const maliciousCardPath = path.join(
+      repoRoot,
+      ".x-harness-test-malicious-card.yaml"
+    );
+    await fs.writeFile(
+      maliciousCardPath,
+      `schema_version: "1.0"
+task_id: "TASK-1"
+tier: standard
+owner: "Alice"
+accountable: "Bob"
+claim:
+  fix_status: fixed
+evidence:
+  files_changed:
+    - "<script>alert('xss')</script>.ts"
+verification:
+  status: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: verify
+  owner: verifier
+`
+    );
+    const { stdout, exitCode } = await execaNode([
+      "report",
+      "--metrics",
+      "--card",
+      maliciousCardPath,
+      "--format",
+      "html",
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stdout).not.toContain("<script>alert('xss')</script>");
+    expect(stdout).toContain("Raw JSON (for debugging)");
+    expect(stdout).toContain("&quot;outcome&quot;");
+    await fs.remove(maliciousCardPath);
+  });
 });

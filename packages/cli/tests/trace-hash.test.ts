@@ -169,6 +169,28 @@ describe("trace verify-chain CLI", () => {
     expect(stdout).toContain("2 event(s)");
   });
 
+  it("passes for a valid chain from an explicit trace file", async () => {
+    await appendTrace(
+      { event_id: "E1", event_type: "verify_completed", outcome: "success" },
+      CLI_TRACE_DIR
+    );
+    await appendTrace(
+      { event_id: "E2", event_type: "verify_completed", outcome: "success" },
+      CLI_TRACE_DIR
+    );
+
+    const traceFile = path.join(CLI_TRACE_DIR, "events.jsonl");
+    const { stdout, exitCode } = await execaNode([
+      "trace",
+      "verify-chain",
+      "--from",
+      traceFile,
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("chain valid");
+    expect(stdout).toContain("2 event(s)");
+  });
+
   it("fails for a tampered chain", async () => {
     await appendTrace(
       { event_id: "E1", event_type: "verify_completed", outcome: "success" },

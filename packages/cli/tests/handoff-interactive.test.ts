@@ -44,6 +44,20 @@ describe("handoff readiness", () => {
     expect(stdout).toContain("Non-interactive mode");
   });
 
+  it("accepts explicit --non-interactive with --interactive", async () => {
+    const { stdout, exitCode } = await execaNode([
+      "handoff",
+      "readiness",
+      "--root",
+      "../..",
+      "--interactive",
+      "--non-interactive",
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("handoff readiness: READY");
+    expect(stdout).toContain("Non-interactive mode");
+  });
+
   it("blocks safely with missing files (simulated)", async () => {
     const { stdout, exitCode } = await execaNode([
       "handoff",

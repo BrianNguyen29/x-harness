@@ -118,11 +118,26 @@ ${latest ? `<pre><code>${escapeHtml(JSON.stringify(latest, null, 2))}</code></pr
 </html>`;
 }
 
+function renderBooleanCell(value: boolean): string {
+  return value
+    ? '<span class="badge badge-success">yes</span>'
+    : '<span class="badge badge-failed">no</span>';
+}
+
 function renderHtmlMetricsReport(data: {
   metrics: Record<string, unknown>;
   admission: Record<string, unknown>;
 }): string {
   const { metrics, admission } = data;
+  const vs = (metrics.verification_strength ?? {}) as Record<string, unknown>;
+  const sc = (metrics.state_consistency ?? {}) as Record<string, unknown>;
+  const ra = (metrics.recovery_ability ?? {}) as Record<string, unknown>;
+  const rp = (metrics.replayability ?? {}) as Record<string, unknown>;
+  const cost = (metrics.cost ?? {}) as Record<string, unknown>;
+
+  const out = (admission.outcome as string) ?? "unknown";
+  const status = (admission.acceptance_status as string) ?? "unknown";
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -136,20 +151,78 @@ function renderHtmlMetricsReport(data: {
   table { border-collapse: collapse; width: 100%; margin-top: 12px; }
   th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
   th { background: #f5f5f5; }
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-weight: 600; font-size: 14px; }
+  .badge-success { background: #d4edda; color: #155724; }
+  .badge-failed { background: #f8d7da; color: #721c24; }
+  .badge-blocked { background: #fff3cd; color: #856404; }
   .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin-top: 16px; }
   .muted { color: #666; font-size: 14px; }
   code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
+  .card { border: 1px solid #ddd; border-radius: 6px; padding: 16px; margin-top: 16px; background: #fafafa; }
+  .card h3 { margin-top: 0; font-size: 16px; color: #444; }
+  details { margin-top: 16px; border: 1px solid #ddd; border-radius: 6px; padding: 12px; background: #f9f9f9; }
+  summary { cursor: pointer; font-weight: 600; }
 </style>
 </head>
 <body>
 <h1>x-harness Metrics Report</h1>
 <p class="muted">Generated at ${escapeHtml(new Date().toISOString())}</p>
 
-<h2>Metrics</h2>
-<pre><code>${escapeHtml(JSON.stringify(metrics, null, 2))}</code></pre>
+<h2>Admission Outcome</h2>
+<table>
+  <tr><th>Field</th><th>Value</th></tr>
+  <tr><td>Outcome</td><td><span class="badge badge-${out === "success" ? "success" : out === "blocked" ? "blocked" : "failed"}">${escapeHtml(out)}</span></td></tr>
+  <tr><td>Acceptance</td><td><span class="badge badge-${status === "accepted" ? "success" : "failed"}">${escapeHtml(status)}</span></td></tr>
+</table>
 
-<h2>Admission</h2>
+<h2>Verification Strength</h2>
+<table>
+  <tr><th>Metric</th><th>Value</th></tr>
+  <tr><td>Command evidence count</td><td>${Number(vs.command_evidence_count ?? 0)}</td></tr>
+  <tr><td>Oracle kinds</td><td>${escapeHtml((vs.oracle_kinds as string[])?.join(", ") || "none")}</td></tr>
+  <tr><td>Untested regions</td><td>${Number(vs.untested_regions_count ?? 0)}</td></tr>
+  <tr><td>Remaining risks</td><td>${Number(vs.remaining_risks_count ?? 0)}</td></tr>
+</table>
+
+<h2>State Consistency</h2>
+<table>
+  <tr><th>Check</th><th>Status</th></tr>
+  <tr><td>Owner present</td><td>${renderBooleanCell(Boolean(sc.owner_present))}</td></tr>
+  <tr><td>Accountable present</td><td>${renderBooleanCell(Boolean(sc.accountable_present))}</td></tr>
+  <tr><td>Files changed present</td><td>${renderBooleanCell(Boolean(sc.files_changed_present))}</td></tr>
+  <tr><td>Admission mapping valid</td><td>${renderBooleanCell(Boolean(sc.admission_mapping_valid))}</td></tr>
+</table>
+
+<h2>Recovery Ability</h2>
+<table>
+  <tr><th>Check</th><th>Status</th></tr>
+  <tr><td>Blocked has next action</td><td>${renderBooleanCell(Boolean(ra.blocked_has_next_action))}</td></tr>
+  <tr><td>Blocked has owner</td><td>${renderBooleanCell(Boolean(ra.blocked_has_owner))}</td></tr>
+  <tr><td>Recovery route present</td><td>${renderBooleanCell(Boolean(ra.recovery_route_present))}</td></tr>
+</table>
+
+<h2>Replayability</h2>
+<table>
+  <tr><th>Check</th><th>Status</th></tr>
+  <tr><td>Completion card present</td><td>${renderBooleanCell(Boolean(rp.completion_card_present))}</td></tr>
+  <tr><td>Input card hash present</td><td>${renderBooleanCell(Boolean(rp.input_card_hash_present))}</td></tr>
+  <tr><td>Policy hash present</td><td>${renderBooleanCell(Boolean(rp.policy_hash_present))}</td></tr>
+</table>
+
+<h2>Cost</h2>
+<table>
+  <tr><th>Metric</th><th>Value</th></tr>
+  <tr><td>Default context class</td><td>${escapeHtml(String(cost.default_context_class ?? "unknown"))}</td></tr>
+  <tr><td>Verify runtime (ms)</td><td>${Number(cost.verify_runtime_ms ?? 0)}</td></tr>
+</table>
+
+<details>
+<summary>Raw JSON (for debugging)</summary>
+<h3>Metrics</h3>
+<pre><code>${escapeHtml(JSON.stringify(metrics, null, 2))}</code></pre>
+<h3>Admission</h3>
 <pre><code>${escapeHtml(JSON.stringify(admission, null, 2))}</code></pre>
+</details>
 
 <div class="warning">
   <strong>Denominator warning:</strong> Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.
