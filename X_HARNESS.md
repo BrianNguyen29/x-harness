@@ -123,13 +123,14 @@ templates/
   COMPLETION_CARD.md
   HARNESS_CHANGE_CONTRACT.md
 
-schemas/
+schemas/                          # Published contract (do not edit directly for runtime)
   completion-card.schema.json
   subagent-return.schema.json
   verify-event.schema.json
   pgv-advice.schema.json
   claim.schema.json
   evidence.schema.json
+  packet.schema.json              # Packet chain schema
 
 policies/
   admission.yaml
@@ -151,10 +152,15 @@ examples/
     withheld-partial-fix/
     deep-approval-required/
     multi-agent-success/
+  actions/
+    x-harness-verify/            # GitHub Actions composite action
 
 adapters/
   generic/
   claude-code/
   cursor/
   opencode/
+  antigravity/                    # Antigravity-specific constraints & workflows
 ```
+
+**Schema Canonical Strategy**: Root `schemas/` is the published contract. Runtime copies live in `packages/cli/schemas/`. Keep both copies synchronized when schema contracts change.

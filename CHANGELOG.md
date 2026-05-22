@@ -27,6 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- **Redundant Aliases**: Phased out legacy ClaimGate runtime variables (preserving `CLAIMGATE.md` for historical reference only).
+- **Redundant Aliases**: Phased out legacy ClaimGate runtime variables. The file `CLAIMGATE.md` was a historical placeholder and is not present in this release.
 - **Outdated Missions Placeholders**: Removed empty placeholder documents under `adapters/antigravity/missions/`.
 - **Redundant Documentation**: Consolidated integration guidelines under `docs/ADAPTERS.md` and removed `docs/INTEGRATION.md`.

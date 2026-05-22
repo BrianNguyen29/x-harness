@@ -64,7 +64,7 @@ node packages/cli/dist/index.js verify --card examples/golden/blocked-missing-ev
 > **Expected Output:**
 >
 > ```yaml
-> outcome: withheld
+> outcome: failed
 > acceptance_status: withheld
 > ```
 >
@@ -269,10 +269,27 @@ Running `node packages/cli/dist/index.js verify --trace` logs a JSONL event deta
 |----------|-------------|
 | [`docs/HANDBOOK.md`](docs/HANDBOOK.md) | Technical handbook: philosophy, tiers, CLI reference, evidence floors |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Architectural design, layer model, and validation flow |
+| [`docs/PRINCIPLES.md`](docs/PRINCIPLES.md) | Core design principles and philosophy |
+| [`docs/SCHEMAS.md`](docs/SCHEMAS.md) | JSON schema inventory and validation guide |
+| [`docs/ADMISSION_POLICY.md`](docs/ADMISSION_POLICY.md) | Fail-closed admission rules and evidence floors |
+| [`docs/VERIFY_GATE.md`](docs/VERIFY_GATE.md) | Read-only verification gate mechanics |
+| [`docs/RUNTIME_CONTRACT.md`](docs/RUNTIME_CONTRACT.md) | Runtime contract between components |
 | [`docs/PACKETS.md`](docs/PACKETS.md) | Packet design spec and claim-only implementation guide |
+| [`docs/RECOVERY.md`](docs/RECOVERY.md) | Recovery routing and playbook generation |
+| [`docs/ADAPTERS.md`](docs/ADAPTERS.md) | Platform adapter guide (Generic, Claude Code, Cursor, OpenCode, Antigravity) |
 | [`docs/CI.md`](docs/CI.md) | CI integration guide and local-build composite action |
 | [`docs/REPORT_FORMATS.md`](docs/REPORT_FORMATS.md) | Report output formats: Markdown, JSON, HTML |
-| [`docs/RECOVERY.md`](docs/RECOVERY.md) | Recovery routing and playbook generation |
+| [`docs/METRICS.md`](docs/METRICS.md) | Metrics computation and interpretation |
+| [`docs/PGV_ADVISORY.md`](docs/PGV_ADVISORY.md) | Pre-gate validation advisory policy |
+| [`docs/CONTEXT_POLICY.md`](docs/CONTEXT_POLICY.md) | Context management and freshness policy |
+| [`docs/DENOMINATOR_POLICY.md`](docs/DENOMINATOR_POLICY.md) | Success denominator interpretation rules |
+| [`docs/MODES.md`](docs/MODES.md) | Operational modes and configuration |
+| [`docs/COMPARISON.md`](docs/COMPARISON.md) | Comparison with other agent frameworks |
+| [`docs/FAQ.md`](docs/FAQ.md) | Frequently asked questions |
+| [`docs/QUICKSTART.md`](docs/QUICKSTART.md) | Quick start guide |
+| [`docs/CLEANUP.md`](docs/CLEANUP.md) | Cleanup and maintenance operations |
+| [`docs/TEMPLATE_AUTHORING.md`](docs/TEMPLATE_AUTHORING.md) | Template authoring guide |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Project roadmap and future plans |
 
 ---
 

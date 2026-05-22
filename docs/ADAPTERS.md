@@ -48,11 +48,11 @@ x-harness adapters are thin conventions that make the harness usable inside spec
 
 ## Tier selection quick reference
 
-| Tier     | When to use                                         | Evidence required          |
-| -------- | --------------------------------------------------- | -------------------------- |
-| light    | Narrow, low-ceremony work                           | Optional                   |
-| standard | Bounded multi-step work                             | Required                   |
-| deep     | High-stakes, multi-source, high-cost-of-being-wrong | Required + rollback policy |
+| Tier     | When to use                                         | Evidence required                                                                                             |
+| -------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| light    | Narrow, low-ceremony work                           | `files_changed` (or manual rationale)                                                                          |
+| standard | Bounded multi-step work                             | `files_changed` + `command_evidence` (verification artifacts)                                                  |
+| deep     | High-stakes, multi-source, high-cost-of-being-wrong | `files_changed` + `command_evidence` + `evidence_scope` + `untested_regions` + `remaining_risks` + `execution_controls` + `rollback_policy` + `state.read_set` + `state.write_set` |
 
 ## Agent roles
 

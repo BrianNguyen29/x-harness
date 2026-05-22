@@ -21,6 +21,7 @@ interface VerifyOptions {
   taskId?: string;
   storyId?: string;
   trace?: boolean;
+  traceDir?: string;
   json?: boolean;
   verbose?: boolean;
   mutationGuard?: boolean;
@@ -72,6 +73,11 @@ export function verifyCommand(): Command {
     .option("--task-id <id>", "Task ID")
     .option("--story-id <id>", "Story ID")
     .option("--trace", "Append verify event to trace", false)
+    .option(
+      "--trace-dir <dir>",
+      "Directory for trace output (default: .x-harness/traces)",
+      ".x-harness/traces"
+    )
     .option("--json", "Output JSON instead of human-readable text", false)
     .option("--verbose", "Output detailed human-readable text", false)
     .option(
@@ -342,7 +348,7 @@ export function verifyCommand(): Command {
       };
 
       if (opts.trace) {
-        await appendTrace(event);
+        await appendTrace(event, opts.traceDir);
       }
 
       if (opts.json) {

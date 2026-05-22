@@ -21,7 +21,6 @@ describe("validators", () => {
   it("validates a valid evidence packet", async () => {
     const result = await validateEvidence({
       id: "E1",
-      evidence_quality: "sufficient",
       files_changed: ["src/x.ts"],
     });
     console.log("evidence result:", result);
@@ -311,6 +310,89 @@ describe("validators", () => {
       const result = await validateCompletionCard(card);
       expect(result.valid).toBe(false);
       expect(result.errors.some((e) => e.includes("started_at"))).toBe(true);
+    });
+  });
+
+  // Unknown field rejection tests (additionalProperties: false)
+  describe("additionalProperties: false enforcement", () => {
+    it("rejects claim with unknown fields", async () => {
+      const result = await validateClaim({
+        id: "C1",
+        fix_status: "fixed",
+        unknown_field: "should be rejected",
+      });
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes("additional"))).toBe(true);
+    });
+
+    it("rejects evidence with unknown fields", async () => {
+      const result = await validateEvidence({
+        id: "E1",
+        files_changed: ["a.ts"],
+        unknown_field: "should be rejected",
+      });
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes("additional"))).toBe(true);
+    });
+
+    it("accepts completion card without unknown fields", async () => {
+      const card = {
+        schema_version: "1",
+        task_id: "T1",
+        tier: "light",
+        owner: "alice",
+        accountable: "bob",
+        claim: {
+          fix_status: "fixed",
+          summary: "done",
+          evidence: ["e1"],
+        },
+        verification: {
+          status: "passed",
+          checks: ["c1"],
+        },
+        admission: {
+          outcome: "success",
+        },
+        acceptance_status: "accepted",
+        handoff: {
+          next_action: "none",
+          owner: "alice",
+        },
+      };
+      const result = await validateCompletionCard(card);
+      expect(result.valid).toBe(true);
+    });
+
+    it("rejects completion card with unknown top-level fields", async () => {
+      const card = {
+        schema_version: "1",
+        task_id: "T1",
+        tier: "light",
+        owner: "alice",
+        accountable: "bob",
+        claim: {
+          fix_status: "fixed",
+          summary: "done",
+          evidence: ["e1"],
+        },
+        verification: {
+          status: "passed",
+          checks: ["c1"],
+        },
+        admission: {
+          outcome: "success",
+        },
+        acceptance_status: "accepted",
+        handoff: {
+          next_action: "none",
+          owner: "alice",
+        },
+        unknown_top_level_field: "should be rejected",
+      };
+      const result = await validateCompletionCard(card);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes("additional"))).toBe(true);
     });
   });
 });

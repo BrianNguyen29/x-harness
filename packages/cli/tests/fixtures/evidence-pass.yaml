@@ -1,6 +1,3 @@
 id: EVID-PASS
-owner: alice
-accountable: alice
-evidence_quality: sufficient
 files_changed:
   - src/pass.ts
