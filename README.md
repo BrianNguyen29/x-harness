@@ -261,6 +261,18 @@ Running `node packages/cli/dist/index.js verify --trace` logs a JSONL event deta
 
 ---
 
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [`docs/HANDBOOK.md`](docs/HANDBOOK.md) | Technical handbook: philosophy, tiers, CLI reference, evidence floors |
+| [`docs/PACKETS.md`](docs/PACKETS.md) | Packet design spec and claim-only implementation guide |
+| [`docs/CI.md`](docs/CI.md) | CI integration guide and local-build composite action |
+| [`docs/REPORT_FORMATS.md`](docs/REPORT_FORMATS.md) | Report output formats: Markdown, JSON, HTML |
+| [`docs/RECOVERY.md`](docs/RECOVERY.md) | Recovery routing and playbook generation |
+
+---
+
 ## 🤝 Project Health & Contribution
 
 - **License**: MIT (`LICENSE`)

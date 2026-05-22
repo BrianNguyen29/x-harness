@@ -28,12 +28,70 @@ async function askQuestion(question: string): Promise<boolean> {
   });
 }
 
+interface RiskSurvey {
+  touches_security: boolean;
+  touches_payment: boolean;
+  touches_database: boolean;
+  touches_deploy: boolean;
+  risk_level: "low" | "normal" | "high";
+}
+
+function suggestTier(survey: RiskSurvey): "light" | "standard" | "deep" {
+  if (survey.risk_level === "high") return "deep";
+  if (
+    survey.touches_security ||
+    survey.touches_payment ||
+    survey.touches_deploy
+  )
+    return "deep";
+  if (survey.risk_level === "normal") return "standard";
+  return "light";
+}
+
+async function askRiskSurvey(): Promise<RiskSurvey> {
+  const touches_security = await askQuestion(
+    "Does the task touch authentication, authorization, or security boundaries?"
+  );
+  const touches_payment = await askQuestion(
+    "Does the task touch payment, billing, or financial data?"
+  );
+  const touches_database = await askQuestion(
+    "Does the task modify database schema or migration logic?"
+  );
+  const touches_deploy = await askQuestion(
+    "Does the task affect deployment, infrastructure, or release pipelines?"
+  );
+
+  // Determine risk level from answers
+  const risk_level: "low" | "normal" | "high" =
+    touches_security || touches_payment || touches_deploy
+      ? "high"
+      : touches_database
+        ? "normal"
+        : "low";
+
+  return {
+    touches_security,
+    touches_payment,
+    touches_database,
+    touches_deploy,
+    risk_level,
+  };
+}
+
 async function checkReadiness(
   interactive: boolean,
   root: string
 ): Promise<{
   ready: boolean;
   checks: { name: string; passed: boolean; note: string }[];
+  readiness?: {
+    proceed: boolean;
+    suggested_tier: "light" | "standard" | "deep";
+    risk_flags: Record<string, boolean>;
+    missing_information: string[];
+    evidence_expected: string[];
+  };
 }> {
   const checks: { name: string; passed: boolean; note: string }[] = [];
 
@@ -87,7 +145,17 @@ async function checkReadiness(
       for (const c of checks) {
         console.log(`  [${c.passed ? "PASS" : "FAIL"}] ${c.name}: ${c.note}`);
       }
-      return { ready: false, checks };
+      return {
+        ready: false,
+        checks,
+        readiness: {
+          proceed: false,
+          suggested_tier: "light",
+          risk_flags: {},
+          missing_information: ["structural checks failed"],
+          evidence_expected: [],
+        },
+      };
     }
 
     console.log("Readiness checks passed. Answer the following prompts:");
@@ -100,7 +168,17 @@ async function checkReadiness(
         passed: false,
         note: "User indicated scope is not clear",
       });
-      return { ready: false, checks };
+      return {
+        ready: false,
+        checks,
+        readiness: {
+          proceed: false,
+          suggested_tier: "light",
+          risk_flags: {},
+          missing_information: ["scope unclear"],
+          evidence_expected: [],
+        },
+      };
     }
 
     const evidencePlan = await askQuestion(
@@ -112,8 +190,22 @@ async function checkReadiness(
         passed: false,
         note: "User indicated no evidence plan",
       });
-      return { ready: false, checks };
+      return {
+        ready: false,
+        checks,
+        readiness: {
+          proceed: false,
+          suggested_tier: "light",
+          risk_flags: {},
+          missing_information: ["no evidence plan"],
+          evidence_expected: ["tests", "lint", "build"],
+        },
+      };
     }
+
+    // Risk survey
+    const survey = await askRiskSurvey();
+    const suggested_tier = suggestTier(survey);
 
     checks.push({
       name: "scope_clear",
@@ -125,12 +217,43 @@ async function checkReadiness(
       passed: true,
       note: "User confirmed evidence plan exists",
     });
-    return { ready: true, checks };
+    checks.push({
+      name: "risk_survey",
+      passed: true,
+      note: `risk_level=${survey.risk_level}, suggested_tier=${suggested_tier}`,
+    });
+
+    return {
+      ready: true,
+      checks,
+      readiness: {
+        proceed: true,
+        suggested_tier,
+        risk_flags: {
+          touches_security: survey.touches_security,
+          touches_payment: survey.touches_payment,
+          touches_database: survey.touches_database,
+          touches_deploy: survey.touches_deploy,
+        },
+        missing_information: [],
+        evidence_expected: ["tests", "lint", "build"],
+      },
+    };
   }
 
   // Non-interactive mode: just report
   if (!allPassed) {
-    return { ready: false, checks };
+    return {
+      ready: false,
+      checks,
+      readiness: {
+        proceed: false,
+        suggested_tier: "light",
+        risk_flags: {},
+        missing_information: ["structural checks failed"],
+        evidence_expected: [],
+      },
+    };
   }
 
   // In non-interactive mode, we can't ask questions, so we assume the
@@ -140,7 +263,17 @@ async function checkReadiness(
     passed: true,
     note: "Non-interactive mode: skipping readiness prompts",
   });
-  return { ready: true, checks };
+  return {
+    ready: true,
+    checks,
+    readiness: {
+      proceed: true,
+      suggested_tier: "standard",
+      risk_flags: {},
+      missing_information: [],
+      evidence_expected: ["tests", "lint", "build"],
+    },
+  };
 }
 
 export function handoffCommand(): Command {
@@ -204,19 +337,40 @@ handoff:
         root?: string;
       }) => {
         const root = path.resolve(opts.root ?? process.cwd());
-        const { ready, checks } = await checkReadiness(
-          opts.interactive ?? false,
-          root
-        );
+        const result = await checkReadiness(opts.interactive ?? false, root);
+        const { ready, checks } = result;
 
         if (opts.json) {
-          console.log(JSON.stringify({ ready, checks }, null, 2));
+          console.log(
+            JSON.stringify(
+              {
+                ready,
+                checks,
+                readiness: result.readiness,
+              },
+              null,
+              2
+            )
+          );
         } else {
           console.log(`handoff readiness: ${ready ? "READY" : "NOT READY"}`);
           for (const c of checks) {
             console.log(
               `  [${c.passed ? "PASS" : "FAIL"}] ${c.name}: ${c.note}`
             );
+          }
+          if (result.readiness) {
+            console.log(`  suggested_tier: ${result.readiness.suggested_tier}`);
+            if (Object.keys(result.readiness.risk_flags).length > 0) {
+              console.log(
+                `  risk_flags: ${
+                  Object.entries(result.readiness.risk_flags)
+                    .filter(([, v]) => v)
+                    .map(([k]) => k)
+                    .join(", ") || "none"
+                }`
+              );
+            }
           }
         }
 

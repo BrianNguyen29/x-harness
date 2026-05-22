@@ -123,6 +123,60 @@ export interface PlaybookSuggestion {
   route: RecoveryRoute;
   review_required: boolean;
   rationale: string;
+  observed_count?: number;
+  confidence?: "low" | "medium" | "high";
+  source_trace_events?: number;
+}
+
+export interface TraceEventLike {
+  outcome?: string;
+  blocking_predicate?: string | null;
+  errors?: string[];
+}
+
+/**
+ * Generate a deterministic recovery playbook candidate from trace events.
+ */
+export function generatePlaybookFromTrace(
+  events: TraceEventLike[]
+): PlaybookSuggestion[] {
+  const failedOrBlocked = events.filter(
+    (e) => e.outcome === "failed" || e.outcome === "blocked"
+  );
+  if (failedOrBlocked.length === 0) return [];
+
+  // Group by blocking predicate
+  const groups = new Map<string, TraceEventLike[]>();
+  for (const event of failedOrBlocked) {
+    const predicate = event.blocking_predicate ?? "admission_failed";
+    const list = groups.get(predicate) ?? [];
+    list.push(event);
+    groups.set(predicate, list);
+  }
+
+  const suggestions: PlaybookSuggestion[] = [];
+  for (const [predicate, groupEvents] of groups) {
+    const route = getRecoveryRoute(predicate);
+    if (!route) continue;
+
+    const count = groupEvents.length;
+    const confidence: "low" | "medium" | "high" =
+      count >= 5 ? "high" : count >= 2 ? "medium" : "low";
+
+    suggestions.push({
+      predicate: predicate as RecoveryPredicate,
+      route,
+      review_required: true,
+      rationale: `Observed in ${count} trace event(s) with predicate "${predicate}"`,
+      observed_count: count,
+      confidence,
+      source_trace_events: count,
+    });
+  }
+
+  // Sort by observed_count descending
+  suggestions.sort((a, b) => (b.observed_count ?? 0) - (a.observed_count ?? 0));
+  return suggestions;
 }
 
 /**
@@ -178,6 +232,15 @@ export function renderPlaybookMarkdown(
     lines.push(`- **Owner:** ${s.route.owner}`);
     lines.push(`- **Review required:** ${s.review_required ? "yes" : "no"}`);
     lines.push(`- **Rationale:** ${s.rationale}`);
+    if (s.observed_count !== undefined) {
+      lines.push(`- **Observed count:** ${s.observed_count}`);
+    }
+    if (s.confidence) {
+      lines.push(`- **Confidence:** ${s.confidence}`);
+    }
+    if (s.source_trace_events !== undefined) {
+      lines.push(`- **Source trace events:** ${s.source_trace_events}`);
+    }
     lines.push("");
   }
 
