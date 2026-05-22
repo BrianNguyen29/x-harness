@@ -39,6 +39,16 @@ Allowed artifact statuses:
 passed, failed, blocked, skipped, timeout, error
 ```
 
+## Read-only mutation guard (Phase 3.1)
+
+The verify command supports an opt-in `--mutation-guard` flag. When enabled, verify snapshots the repository git status before and after its work and compares the delta. This does not require a clean worktree.
+
+Behavior:
+- If git is unavailable or the working directory is not inside a git repository, the guard is skipped with a note.
+- Writes under `.x-harness/` (including trace output in `.x-harness/traces/`) are allowlisted and do not trigger the guard.
+- If any unexpected file change is detected, verify produces a `blocked` outcome with `blocking_predicate: verifier_not_read_only` and recovery routed to `admission-verifier`.
+- Without `--mutation-guard`, existing behavior is unchanged.
+
 ## Governance verification
 
 For `deep` tasks with `governance.requires_human_approval: true`, verify checks that `approval_status` is `approved`. Pending or missing approval blocks admission.

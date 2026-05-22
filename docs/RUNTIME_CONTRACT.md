@@ -27,7 +27,7 @@ In multi-agent or long-running sessions, the following artifact precedence appli
 1. Source files and git diff are authoritative for implementation state.
 2. `completion-card.yaml` is authoritative for completion claim state.
 3. `policies/admission.yaml` is authoritative for admission policy.
-4. `npx x-harness verify` output is authoritative for accepted/withheld mapping.
+4. `node packages/cli/dist/index.js verify` output is authoritative for accepted/withheld mapping in this repository.
 5. Chat summaries are non-authoritative.
 
 ### Adapter rule

@@ -24,13 +24,13 @@ This adapter integrates x-harness with Claude Code.
 
 ```bash
 # Verify a completion card
-npx x-harness verify --card completion-card.yaml
+node packages/cli/dist/index.js verify --card completion-card.yaml
 
 # Check repo health
-npx x-harness doctor --root .
+node packages/cli/dist/index.js doctor --root .
 
 # View trace summary
-npx x-harness report
+node packages/cli/dist/index.js report
 ```
 
 ## Constraints
@@ -44,4 +44,4 @@ npx x-harness report
 
 ## Authoritative hierarchy
 
-Chat summaries are non-authoritative. `completion-card.yaml` and `npx x-harness verify` output are authoritative for completion state.
+Chat summaries are non-authoritative. `completion-card.yaml` and `node packages/cli/dist/index.js verify` output are authoritative for completion state in this repository.

@@ -19,7 +19,7 @@ Use only `light`, `standard`, and `deep`. Do not use `small`, `medium`, or `larg
 Completion is accepted only when x-harness emits:
 
 ```yaml
-verify_gate.outcome: success
+outcome: success
 acceptance_status: accepted
 ```
 

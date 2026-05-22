@@ -29,6 +29,7 @@ Task
   -> Read-only Verify
   -> Accepted / Withheld
 ```
+
 ## Canonical Tiers
 
 - **light**: Narrow, low-ceremony tasks. One clear objective, read-only or nearly read-only, one to three files.
@@ -79,12 +80,14 @@ error:
 
 ## CLI Commands
 
+> **Local Development Only**: `x-harness` is not yet published to npm. Build locally with `npm run build`, then run:
+
 ```bash
-npx x-harness init --minimal
-npx x-harness verify
-npx x-harness doctor
-npx x-harness report
-npx x-harness report --metrics --card completion-card.yaml
+node packages/cli/dist/index.js init --minimal
+node packages/cli/dist/index.js verify
+node packages/cli/dist/index.js doctor
+node packages/cli/dist/index.js report
+node packages/cli/dist/index.js report --metrics --card completion-card.yaml
 ```
 
 ## Repository Structure

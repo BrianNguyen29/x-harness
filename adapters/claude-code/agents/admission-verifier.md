@@ -19,10 +19,10 @@ Read-only inspector. Validate the completion card and run admission checks.
 
 ```bash
 # Validate a completion card
-npx x-harness verify --card completion-card.yaml --json
+node packages/cli/dist/index.js verify --card completion-card.yaml --json
 
 # Check repo health
-npx x-harness doctor --root .
+node packages/cli/dist/index.js doctor --root .
 ```
 
 ## Output

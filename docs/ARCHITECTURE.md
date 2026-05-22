@@ -39,18 +39,23 @@
 ## 🧱 Key Architectural Layers
 
 ### 1. Adapter Layer
+
 Translates platform-specific conventions into unified `x-harness` parameters. It maps Cursor rules, Claude Code skills, and OpenCode workflows to standard input requirements without altering core execution behaviors.
 
 ### 2. Tooling & CLI Layer
+
 Provides developer utilities to scaffolding templates (`init`, `handoff`), modify files (`add`), clear logs (`clean`), and execute audits (`verify`, `doctor`, `report`). Built strictly in TypeScript to guarantee optimal portability.
 
 ### 3. Validator Layer
+
 Enforces complete structure verification on inputs via **Ajv (JSON Schema)** and **Zod (Types)** validation engines. This layer ensures that completion cards, sub-agent returns, and events perfectly comply with expected schemas prior to verification.
 
 ### 4. Admission Control Layer
+
 Loads `policies/admission.yaml` and executes the core verification logic. It operates in a **strictly read-only** mode, ensuring the verification process does not mutate the directory files to fix logical or lint failures during checking.
 
 ### 5. Metrics & Reporting Layer
+
 Computes deterministic, local-first performance metrics analyzing verification strength, state consistency, recovery ability, replayability, and execution costs without relying on external SaaS APIs or monitoring dashboards.
 
 ---
@@ -62,7 +67,7 @@ The interaction sequence for a standard verification run:
 ```txt
 [Developer / Agent]
        │
-       │ 1. Run CLI command: "npx x-harness verify --card completion-card.yaml"
+       │ 1. Run CLI command: "node packages/cli/dist/index.js verify --card completion-card.yaml"
        ▼
 [CLI / index.ts]
        │

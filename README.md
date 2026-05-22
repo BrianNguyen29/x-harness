@@ -5,7 +5,10 @@
 [![Node.js Version](https://img.shields.io/badge/Node.js-%3E%3D20-blue.svg)](package.json)
 [![Language: TypeScript](https://img.shields.io/badge/Language-TypeScript-blue.svg)](tsconfig.base.json)
 
-`x-harness` is a lightweight, offline-first, verify-gated harness for orchestrating and verifying AI-agent workflows. It enforces structured sub-agent handoffs, read-only validation gates, and fail-closed completion rules to ensure that tasks are truly done before they are admitted.
+`x-harness` is a lightweight, offline-first, verify-gated harness for orchestrating and verifying AI-agent workflows. It enforces structured sub-agent handoffs, read-only validation gates, and fail-closed completion rules to help ensure completion claims are admitted only when they satisfy repository verification policy.
+
+> [!NOTE]
+> **Local Development Only**: `x-harness` is not yet published to npm. To use the CLI locally, clone the repository, run `npm install`, and `npm run build`. Then invoke the CLI with `node packages/cli/dist/index.js <command>`.
 
 ---
 
@@ -24,7 +27,9 @@ In `x-harness`, an agent stating `fix_status: fixed` or running a passing test i
 If you are new to `x-harness`, follow this step-by-step walkthrough to get up and running in minutes!
 
 ### Step 1: Install and Compile
+
 Clone the repository and build the TypeScript CLI application locally:
+
 ```bash
 # Install dependencies
 npm install
@@ -34,44 +39,62 @@ npm run build
 ```
 
 ### Step 2: Run Your First Verification
+
 `x-harness` comes with pre-packaged reference scenarios called "Golden Examples". Let's run a verification against a successful task claim:
+
 ```bash
 node packages/cli/dist/index.js verify --card examples/golden/success-light/completion-card.yaml
 ```
+
 > **Expected Output:**
+>
 > ```yaml
-> verify_gate.outcome: success
+> outcome: success
 > acceptance_status: accepted
 > ```
-> *Note: The CLI returns exit code `0` because the card meets all the light-tier policy requirements.*
+>
+> _Note: The CLI returns exit code `0` because the card meets all the light-tier policy requirements._
 
 Now, let's run verification on a card that is missing mandatory evidence scopes:
+
 ```bash
 node packages/cli/dist/index.js verify --card examples/golden/blocked-missing-evidence/completion-card.yaml
 ```
+
 > **Expected Output:**
+>
 > ```yaml
-> verify_gate.outcome: withheld
+> outcome: withheld
 > acceptance_status: withheld
 > ```
-> *Note: The CLI returns exit code `1` (fail-closed) because the card failed the required evidence floor rules.*
+>
+> _Note: The CLI returns exit code `1` (fail-closed) because the card failed the required evidence floor rules._
 
 ### Step 3: Initialize a New Workspace
+
 To start using `x-harness` in a separate development project, run the `init` command in the root of your project:
+
 ```bash
-# Set up a Standard workspace (installs agents contract, schemas, policies, and templates)
-npx x-harness init --standard
+# Set up a Minimal workspace (default; installs agents contract, templates, and policies)
+node packages/cli/dist/index.js init --minimal
 ```
 
+If the target directory already contains conflicting harness files, `init` stops with a blocked summary and exits non-zero. Re-run with `--force` only when you intentionally want to overwrite those files, or use `--merge` if/when you want non-destructive merge behavior.
+
 ### Step 4: Dispatch a Task Handoff
+
 When assigning a task to an agent, generate a structured handoff prompt. For example, to dispatch a normal task:
+
 ```bash
 node packages/cli/dist/index.js handoff standard --title "Fix Checkout Page Button Alignment"
 ```
+
 This generates a markdown file matching the `standard` tier containing explicit file sets, required evidence checklists, and rollback definitions.
 
 ### Step 5: Validate Workspace Health
+
 Run the diagnostics command at any time to verify that all schemas, policies, templates, and links are healthy:
+
 ```bash
 node packages/cli/dist/index.js doctor
 ```
@@ -131,11 +154,11 @@ node packages/cli/dist/index.js doctor
 
 Task delegation in `x-harness` uses **only** the following three canonical tiers. The use of non-canonical labels in active runtime handoffs is forbidden.
 
-| Tier | Complexity & Scope | Evidence Floor | Human Approval |
-| :--- | :--- | :--- | :--- |
-| **`light`** | Narrow, low-ceremony tasks (1-3 files changed; read-only or nearly read-only). | Files changed + command evidence OR manual rationale. | Optional |
-| **`standard`** | Normal multi-step work (bounded synthesis, multiple sources). | Files changed + command evidence. Evidence scope recommended. | Optional |
-| **`deep`** | High-stakes operations (multiple dependencies, architectural risks, migration impact). | Files changed + command evidence + evidence scope + untested regions + remaining risks + rollback policy. | Required |
+| Tier           | Complexity & Scope                                                                     | Evidence Floor                                                                                            | Human Approval |
+| :------------- | :------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------- | :------------- |
+| **`light`**    | Narrow, low-ceremony tasks (1-3 files changed; read-only or nearly read-only).         | Files changed + command evidence OR manual rationale.                                                     | Optional       |
+| **`standard`** | Normal multi-step work (bounded synthesis, multiple sources).                          | Files changed + command evidence. Evidence scope recommended.                                             | Optional       |
+| **`deep`**     | High-stakes operations (multiple dependencies, architectural risks, migration impact). | Files changed + command evidence + evidence scope + untested regions + remaining risks + rollback policy. | Required       |
 
 ---
 
@@ -145,17 +168,18 @@ Task delegation in `x-harness` uses **only** the following three canonical tiers
 
 ### Core Commands
 
-| Command | Usage | Description |
-| :--- | :--- | :--- |
-| **`init`** | `npx x-harness init [target_dir] [--minimal / --standard / --full]` | Installs the core harness assets, schemas, policies, and adapters. |
-| **`handoff`** | `npx x-harness handoff <light / standard / deep> [--title <text>] [--task <text>]` | Generates a clean markdown handoff task prompt structure. |
-| **`add`** | `npx x-harness add <claim / evidence / completion-card> [key=value]` | Adds a metadata helper file for compatibility modes. |
-| **`verify`** | `npx x-harness verify [--card <path>] [--json] [--verbose]` | Executes the read-only verification policy against a completion card. |
-| **`doctor`** | `npx x-harness doctor [--root <path>]` | Checks critical file presence, schemas compilation, policies, and wording. |
-| **`report`** | `npx x-harness report [--metrics] [--card <path>] [--json]` | Summarizes verification events or calculates local card metrics. |
-| **`trace`** | `npx x-harness trace add [--outcome <status>] [--task-id <id>]` | Manually appends verification completion events to the trace log. |
-| **`clean`** | `npx x-harness clean [--all]` | Cleans up temporary validation artifacts, reports, and logs. |
-| **`examples`** | `npx x-harness examples` | Lists or copies built-in test-cases showing successful and blocked runs. |
+| Command        | Usage                                                                                                | Description                                                                                |
+| :------------- | :--------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------- |
+| **`init`**     | `node packages/cli/dist/index.js init [target_dir] [--minimal / --standard / --full]`                | Installs the core harness assets, schemas, policies, and adapters. Default is `--minimal`. |
+| **`handoff`**  | `node packages/cli/dist/index.js handoff <light / standard / deep> [--title <text>] [--task <text>]` | Generates a clean markdown handoff task prompt structure.                                  |
+| **`add`**      | `node packages/cli/dist/index.js add <claim / evidence / completion-card> [key=value]`               | Adds a metadata helper file for compatibility modes.                                       |
+| **`verify`**   | `node packages/cli/dist/index.js verify [--card <path>] [--json] [--verbose]`                        | Executes the read-only verification policy against a completion card.                      |
+| **`doctor`**   | `node packages/cli/dist/index.js doctor [--root <path>]`                                             | Checks critical file presence, schemas compilation, policies, and wording.                 |
+| **`report`**   | `node packages/cli/dist/index.js report [--metrics] [--card <path>] [--json]`                        | Summarizes verification events or calculates local card metrics.                           |
+| **`trace`**    | `node packages/cli/dist/index.js trace add [--outcome <status>] [--task-id <id>]`                    | Manually appends verification completion events to the trace log.                          |
+| **`clean`**    | `node packages/cli/dist/index.js clean [--tmp / --reset-card / --archive-success] [--force]`         | Defaults to a dry run; add `--force` to mutate tmp artifacts, reset a completion card, or archive accepted-card snapshots. |
+| **`context`**  | `node packages/cli/dist/index.js context [--verbose / --json / --refresh] [--root <path>]`            | Shows canonical context and refreshes the AGENTS.md managed block.                         |
+| **`examples`** | `node packages/cli/dist/index.js examples`                                                           | Lists or copies built-in test-cases showing successful and blocked runs.                   |
 
 ---
 
@@ -174,11 +198,14 @@ To integrate `x-harness` into your agent environment of choice, use the followin
 ## 🚦 Verification Policies & Recovery
 
 ### Fail-Closed Decision Engine
+
 The verification engine inspects the completion card (`completion-card.yaml`) and runs it against the `policies/admission.yaml` config.
+
 - **Accepted**: Verification succeeds, schema is valid, evidence floor is met, and `fix_status` is `fixed`.
 - **Withheld**: Any other outcome (failed, blocked, skipped, timeout, or error). The exit code is non-zero (`1`).
 
 ### Recovery Routing
+
 If a task is withheld, the engine evaluates the failure predicate and suggests a next step:
 
 ```json
@@ -196,10 +223,13 @@ Common recovery paths include routing back to the `implementation-worker` for te
 ## 📈 Tracing & Local Metrics
 
 ### Traces
-Running `npx x-harness verify --trace` logs a JSONL event detailing the verification runtime parameters. These events can be aggregated using `npx x-harness report` to track task success rates and blocked items over time.
+
+Running `node packages/cli/dist/index.js verify --trace` logs a JSONL event detailing the verification runtime parameters. These events can be aggregated using `node packages/cli/dist/index.js report` to track task success rates and blocked items over time.
 
 ### Deterministic Offline Metrics
-`npx x-harness report --metrics` calculates metrics under five categories:
+
+`node packages/cli/dist/index.js report --metrics` calculates metrics under five categories:
+
 1. **Verification Strength**: Count of artifacts, kind of oracles (unit tests, typecheck), and count of untested/remaining risks.
 2. **State Consistency**: Checks if owners are declared and if card status maps to admission outcome.
 3. **Recovery Ability**: Checks if withheld cards contain actionable next owners and paths.
@@ -235,4 +265,4 @@ Running `npx x-harness verify --trace` logs a JSONL event detailing the verifica
 
 - **License**: MIT (`LICENSE`)
 - **Contribution Guidelines**: See `CONTRIBUTING.md` and `templates/HARNESS_CHANGE_CONTRACT.md` before making harness-sensitive changes.
-- **Project Health Checks**: Execute `npx x-harness doctor` regularly to ensure files, schemas, and policies are valid and aligned.
+- **Project Health Checks**: Execute `node packages/cli/dist/index.js doctor` regularly to ensure files, schemas, and policies are valid and aligned.

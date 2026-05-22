@@ -53,7 +53,7 @@ Ensure the following blocks are populated matching the tier requirements:
 ### Step 4: Run the Local Verify Gate
 Never propose completion without verifying your work product first! Run the local verification gate:
 ```bash
-npx x-harness verify --card completion-card.yaml
+node packages/cli/dist/index.js verify --card completion-card.yaml
 ```
 *   **Outcome - Success**: If it outputs `verify_gate.outcome: success`, proceed to Step 5.
 *   **Outcome - Withheld**: If the verify gate is withheld or fails, look at the returned validation errors, perform the necessary repairs, and re-run verification.

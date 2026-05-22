@@ -46,14 +46,13 @@ x-harness adapters are thin conventions that make the harness usable inside spec
 - Use when: You use Antigravity as the agent platform.
 - Key files: `rules/x-harness.md`, `workflows/x-harness-implementation.md`, `workflows/x-harness-verify.md`
 
-
 ## Tier selection quick reference
 
-| Tier | When to use | Evidence required |
-|------|-------------|-------------------|
-| light | Narrow, low-ceremony work | Optional |
-| standard | Bounded multi-step work | Required |
-| deep | High-stakes, multi-source, high-cost-of-being-wrong | Required + rollback policy |
+| Tier     | When to use                                         | Evidence required          |
+| -------- | --------------------------------------------------- | -------------------------- |
+| light    | Narrow, low-ceremony work                           | Optional                   |
+| standard | Bounded multi-step work                             | Required                   |
+| deep     | High-stakes, multi-source, high-cost-of-being-wrong | Required + rollback policy |
 
 ## Agent roles
 

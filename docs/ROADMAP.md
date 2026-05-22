@@ -7,6 +7,7 @@ This document outlines the shipped milestones and the future planned capabilitie
 ## 🚀 Shipped Milestones
 
 ### v0.1 — Minimal Verify-Gated Harness (Current Release)
+
 The complete foundational core layer is fully built, tested, and shipped.
 
 - **TypeScript-First CLI Application**: Implemented `init`, `handoff`, `add`, `verify`, `trace`, `report`, `clean`, `examples`, and `doctor` commands.
@@ -22,6 +23,7 @@ The complete foundational core layer is fully built, tested, and shipped.
 ## 🗺️ Future Development Path
 
 ### v0.2 — Standard Product & Story Integration
+
 Bring runtime automation and validation to standard product development documents.
 
 - **Real Product Intake Validation**: Automatic JSON-schema mapping and syntax check for `feature-intake.md` templates.
@@ -29,13 +31,15 @@ Bring runtime automation and validation to standard product development document
 - **Decision Record Linking**: Validate that architectural changes link to corresponding `DECISION_RECORD.md` templates.
 
 ### v0.3 — Richer Recovery & Automated Initialization
+
 Strengthen the debugging paths and automate the setups across platforms.
 
 - **Interactive Handoff Recovery**: Suggested console prompts dynamically outputting git command recovery lines (e.g. autocompiling a patch or auto-typechecking problem files).
-- **Interactive Multi-Platform Adapter Init**: CLI commands to selectively setup individual adapters (e.g. `npx x-harness init --adapter claude-code`).
+- **Interactive Multi-Platform Adapter Init**: CLI commands to selectively setup individual adapters (e.g. `node packages/cli/dist/index.js init --adapter claude-code` in this repository).
 - **Dynamic Policy Customization**: Interactive terminal prompts to easily modify admission threshold properties in `admission.yaml`.
 
 ### v0.4 — Deep Platform Integration
+
 Direct native integrations to elevate developer environments.
 
 - **GitHub Action verify-gate runner**: A lightweight, pre-packaged CI action that runs read-only verification on Pull Requests.
@@ -43,6 +47,7 @@ Direct native integrations to elevate developer environments.
 - **Claude Code MCP Integration**: A model context protocol server exposing `x-harness verify` and `doctor` tools directly to MCP-enabled models.
 
 ### v0.5 — Full Audit & Deep Governance
+
 Provide tooling for compliance-heavy enterprise pipelines.
 
 - **Automated Audit Reports Compilation**: Generate complete, cryptographic-grade compliance files proving exact verification outcomes and replayability traces.
@@ -50,5 +55,6 @@ Provide tooling for compliance-heavy enterprise pipelines.
 - **Custom Policy Plugins**: Enable loading external JavaScript/TypeScript policy files to extend standard YAML check lists.
 
 ### v1.0 — Production-Stable Harness
+
 - Freeze CLI command signatures, template formats, and schema keys.
 - Complete documentation handbook and stable API references.

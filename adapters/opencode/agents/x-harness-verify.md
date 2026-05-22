@@ -24,9 +24,9 @@ Read-only verifier for OpenCode adapter.
 ## Commands
 
 ```bash
-npx x-harness verify --card completion-card.yaml --json
-npx x-harness doctor --root .
-npx x-harness report
+node packages/cli/dist/index.js verify --card completion-card.yaml --json
+node packages/cli/dist/index.js doctor --root .
+node packages/cli/dist/index.js report
 ```
 
 ## Output

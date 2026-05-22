@@ -1,6 +1,6 @@
 # Metrics
 
-`npx x-harness report --metrics` computes deterministic local metrics for a completion card without external services.
+`node packages/cli/dist/index.js report --metrics` computes deterministic local metrics for a completion card without external services in this repository.
 
 ## Metric categories
 
@@ -42,6 +42,37 @@ Metrics use simple classes rather than complex scoring:
 - `low | medium | high`
 - `weak | adequate | strong`
 - `present | missing`
+
+## Report accounting sections
+
+Reports include denominator-safe accounting sections. These are intentionally scoped to the analyzed events or card and do not imply completeness when the full denominator is unknown.
+
+### verify_event_accounting
+
+- `total_trace_events` (trace report) or `cards_analyzed` (metrics report): count of events/cards analyzed.
+- Note: explicitly states the scope is limited to traced events or the single card.
+
+### task_lifecycle_accounting
+
+- `admitted`: count of accepted events/cards.
+- `withheld`: count of withheld events/cards.
+- Note: covers only events present in the trace log or the analyzed card.
+
+### admission_accounting
+
+- `accepted`: count of accepted events/cards.
+- `total_trace_events` or `total_analyzed`: denominator.
+- Note: admission requires `outcome=success`; non-success outcomes are withheld.
+
+### withheld_accounting
+
+- Breakdown by `failed`, `blocked`, `skipped`, `timeout`, `error`.
+- Note: breakdown is only as complete as the trace event set or the single card.
+
+### unknown_or_unlinked_events
+
+- `count`: events with missing or unrecognized `outcome`/`acceptance_status`.
+- Note: for single-card metrics analysis this is marked as not applicable.
 
 ## Denominator warning
 

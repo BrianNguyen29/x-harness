@@ -24,7 +24,7 @@ Handle blocked verification outcomes without converting blocked to success.
    - If missing evidence: worker attaches evidence.
    - If stale context: refresh context.
    - If partial fix: return to implementation.
-5. **Re-verify**: Run `npx x-harness verify` again after recovery.
+5. **Re-verify**: Run `node packages/cli/dist/index.js verify` again after recovery in this repository.
 
 ## Rules
 

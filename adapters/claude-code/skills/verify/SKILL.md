@@ -16,7 +16,7 @@ Use this skill to verify a completion claim.
 - **Read-only**. Do not edit source files.
 - Inspect `completion-card.yaml`.
 - Inspect changed files and evidence if available.
-- Run `npx x-harness verify`.
+- Run `node packages/cli/dist/index.js verify` in this repository.
 - Return one outcome:
   - `success`
   - `failed`
