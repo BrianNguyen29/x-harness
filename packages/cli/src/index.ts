@@ -11,6 +11,7 @@ import { cleanCommand } from "./commands/clean.js";
 import { examplesCommand } from "./commands/examples.js";
 import { contextCommand } from "./commands/context.js";
 import { recoveryCommand } from "./commands/recovery.js";
+import { packetCommand } from "./commands/packet.js";
 
 const program = new Command();
 program
@@ -27,5 +28,6 @@ program.addCommand(cleanCommand());
 program.addCommand(examplesCommand());
 program.addCommand(contextCommand());
 program.addCommand(recoveryCommand());
+program.addCommand(packetCommand());
 program.addCommand(doctorCommand());
 program.parse(process.argv);

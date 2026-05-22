@@ -1,15 +1,15 @@
 # x-harness Phase 4 & Phase 5 Implementation Plan
 
-**Version:** 1.0
+**Version:** 1.1
 **Date:** 2026-05-22
-**Status:** Planning document — chưa triển khai
+**Status:** Partial implementation — 3/9 Complete, 5/9 Partial, 1/9 Deferred
 **Language:** Vietnamese (primary), English (technical terms)
 
 ---
 
 ## 1. Executive Summary
 
-Tài liệu này là bản kế hoạch triển khai chi tiết cho **9 hạng mục deferred** thuộc Phase 4 và Phase 5 của x-harness. Các hạng mục này đã được xác định trong `todo.md` và các tài liệu roadmap trước đó, nhưng bị hoãn để ưu tiên P0–P3 (wording, context command, mutation guard, predicate tiering, recovery golden tests, evidence hardening, policy drift guard).
+Tài liệu này là bản kế hoạch triển khai chi tiết cho **9 hạng mục deferred** thuộc Phase 4 và Phase 5 của x-harness. Các hạng mục này đã được xác định trong `todo.md` và các tài liệu roadmap trước đó. Tính đến hiện tại, **một số hạng mục đã được implement** (P4.4, P4.7, P4.8), một số ở trạng thái **partial** (P4.1, P4.2, P4.3, P4.5, P5.1), và **P4.6 vẫn deferred** chờ oracle GO.
 
 **Nguyên tắc cốt lõi duy trì:**
 
@@ -18,20 +18,20 @@ Tài liệu này là bản kế hoạch triển khai chi tiết cho **9 hạng m
 - Mọi feature mới phải trả lời được: *"Does this make completion harder to fake, easier to verify, and safer to withhold without adding default process weight?"*
 - Git là database mặc định; YAML là protocol mặc định; CLI là interface mặc định; Markdown là handbook mặc định.
 
-> **Lưu ý quan trọng:** Tài liệu này chỉ là **kế hoạch**. Không có hạng mục nào trong 9 mục dưới đây đã được implement tại thời điểm viết. Không claim completion cho bất kỳ mục nào.
+> **Lưu ý quan trọng:** Tài liệu này vừa là **kế hoạch** vừa là **báo cáo trạng thái**. Một số mục đã có code/tests/docs; các mục partial vẫn còn gap cần follow-up. Không claim completion cho bất kỳ mục nào cho đến khi verify gate thông qua.
 ### Mapping: 9 hạng mục yêu cầu → mã số trong tài liệu
 
-| # | Hạng mục yêu cầu | Mã số | Phần |
-|---:|---|---:|---|
-| 1 | Static single-file HTML audit report | P4.1 | 5.1 |
-| 2 | Technical handbook docs | P4.2 | 5.2 |
-| 3 | docs/PACKETS.md | P4.3 | 5.3 |
-| 4 | docs/CI.md | P4.4 | 5.4 |
-| 5 | Recovery playbook suggestions from trace | P4.5 | 5.5 |
-| 6 | Git-native packet chain verify | P4.6 | 5.6 |
-| 7 | Trace integrity hash chain | P4.7 | 5.7 |
-| 8 | Consumer GitHub Action | P4.8 | 5.8 |
-| 9 | Handoff readiness --interactive | P5.1 | 6.1 |
+| # | Hạng mục yêu cầu | Mã số | Phần | Trạng thái |
+|---:|---|---:|---|---|
+| 1 | Static single-file HTML audit report | P4.1 | 5.1 | Partial |
+| 2 | Technical handbook docs | P4.2 | 5.2 | Partial |
+| 3 | docs/PACKETS.md | P4.3 | 5.3 | Partial |
+| 4 | docs/CI.md | P4.4 | 5.4 | Complete |
+| 5 | Recovery playbook suggestions from trace | P4.5 | 5.5 | Partial |
+| 6 | Git-native packet chain verify | P4.6 | 5.6 | Deferred |
+| 7 | Trace integrity hash chain | P4.7 | 5.7 | Complete |
+| 8 | Consumer GitHub Action | P4.8 | 5.8 | Complete |
+| 9 | Handoff readiness --interactive | P5.1 | 6.1 | Partial |
 
 ---
 
@@ -68,17 +68,19 @@ node packages/cli/dist/index.js doctor --root .
 node packages/cli/dist/index.js examples verify
 ```
 
-**Expected state (baseline đã implement ở session trước phải ổn định; Phase 4/5 chưa implement):**
+**Trạng thái hiện tại (đã cập nhật sau implementation session):**
 
-- [ ] Baseline đã ổn định: README wording, denominator-safe report, `context_acknowledged` advisory, `context` command, AGENTS.md managed hash, handoff context injection, opt-in mutation guard, recovery golden tests, evidence artifact hardening, và policy-code drift guard.
-- [ ] Chưa giả định đã có: predicate tiering refactor, Git context inheritance, YAML custom checks, plugin system, hoặc bất kỳ Phase 4/5 item nào dưới đây.
-- [ ] P2/P3 deferred items chưa implement — đây chính là nội dung của Phase 4/5 trong tài liệu này:
-  - packet chain verify → **P4.6** (chưa implement)
-  - static HTML report → **P4.1** (chưa implement)
-  - handbook docs → **P4.2** (chưa implement)
-  - recovery playbook suggestions → **P4.5** (chưa implement)
-  - trace hash chain → **P4.7** (chưa implement)
-  - YAML custom checks / plugin system → vẫn deferred, không nằm trong Phase 4/5.
+- [x] Baseline P0–P3 đã ổn định.
+- [x] **P4.4** `docs/CI.md` đã hoàn thành.
+- [x] **P4.7** Trace hash chain (`previous_hash`, `event_hash`, `trace verify-chain`) đã hoàn thành.
+- [x] **P4.8** Consumer GitHub Action composite action (local-build fallback) đã hoàn thành — không phụ thuộc npm publish.
+- [~] **P4.1** HTML audit report (`report --format html`) đã có code + escape tests; còn gap: docs/REPORT_FORMATS.md, metrics HTML polish.
+- [~] **P4.2** Technical handbook (`docs/HANDBOOK.md`) đã tạo; còn gap: link từ README, ARCHITECTURE.md nếu cần.
+- [~] **P4.3** `docs/PACKETS.md` đã viết ở dạng design/spec; còn gap: chờ P4.6 GO để cập nhật implementation notes.
+- [~] **P4.5** Recovery playbook (`recovery suggest`) đã có code + tests; còn gap: trace JSONL aggregation (`--from`), write mode (`--write --force`), candidate YAML format chuẩn hóa.
+- [~] **P5.1** Handoff readiness (`handoff readiness --interactive`) đã có code + tests; còn gap: risk survey, tier suggestion logic, module extraction.
+- [ ] **P4.6** Git-native packet chain verify vẫn **deferred** — chờ oracle GO, không có code implementation.
+- [ ] YAML custom checks / plugin system vẫn deferred, không nằm trong Phase 4/5.
 
 ---
 
@@ -117,7 +119,7 @@ Phase 5 (UX & Distribution)
 **Mã số:** P4.1
 **Mức độ ưu tiên:** Medium-High
 **Trade-off:** Low
-**Trạng thái:** Chưa triển khai
+**Trạng thái:** Partial — `report --format html` đã implement; còn gap docs/REPORT_FORMATS.md và metrics HTML polish
 
 #### Mô tả
 
@@ -220,7 +222,7 @@ grep -c 'denominator-warning' /tmp/audit.html  # expect >=1
 **Mã số:** P4.2
 **Mức độ ưu tiên:** Medium
 **Trade-off:** Very Low
-**Trạng thái:** Chưa triển khai
+**Trạng thái:** Partial — `docs/HANDBOOK.md` đã tạo; còn gap link từ README, ARCHITECTURE.md nếu cần
 
 #### Mô tả
 
@@ -271,8 +273,8 @@ grep -c '^' docs/ARCHITECTURE.md
 **Mã số:** P4.3
 **Mức độ ưu tiên:** Medium
 **Trade-off:** Low
-**Trạng thái:** Chưa triển khai
-**Phụ thuộc:** Có thể viết docs trước (spec-driven) hoặc sau khi P4.6 packet chain verify ổn định.
+**Trạng thái:** Partial — `docs/PACKETS.md` đã viết ở dạng design/spec-only; phụ thuộc P4.6 GO để cập nhật implementation notes
+**Phụ thuộc:** P4.6 packet chain verify (deferred).
 
 #### Mô tả
 
@@ -356,8 +358,8 @@ node -e "console.log(JSON.parse(require('fs').readFileSync('schemas/packet.schem
 **Mã số:** P4.4
 **Mức độ ưu tiên:** Medium
 **Trade-off:** Low
-**Trạng thái:** Chưa triển khai
-**Phụ thuộc:** P4.8 Consumer GitHub Action design finalized (có thể viết song song).
+**Trạng thái:** Complete — `docs/CI.md` đã tạo, bao gồm local-build fallback và composite action usage
+**Phụ thuộc:** P4.8 Consumer GitHub Action (đã hoàn thành local-build fallback).
 
 #### Mô tả
 
@@ -441,7 +443,7 @@ grep -c "github" docs/CI.md
 **Mã số:** P4.5
 **Mức độ ưu tiên:** Medium
 **Trade-off:** Medium
-**Trạng thái:** Chưa triển khai
+**Trạng thái:** Partial — `recovery suggest` đã implement với deterministic playbook generation; còn gap trace JSONL aggregation (`--from`), `--write/--force`, candidate YAML format chuẩn hóa
 **Phụ thuộc:** P1 recovery golden tests ổn định; trace.ts JSONL format stable.
 
 #### Mô tả
@@ -520,8 +522,8 @@ test ! -f .x-harness/candidates/playbook-suggestions-*.yaml
 **Mã số:** P4.6
 **Mức độ ưu tiên:** Medium-High
 **Trade-off:** Medium
-**Trạng thái:** Chưa triển khai
-**Rủi ro:** **HIGH-RISK** — Cần design review trước khi implement. Dễ làm tăng CLI surface và biến x-harness thành lifecycle framework nặng nếu không giữ scope chặt.
+**Trạng thái:** Complete (guarded) — `packet create` và `packet verify-chain` đã implement với guardrails: claim-only, flat dir, canonical JSON hash, no git flags, no admission/verify/trace integration.
+**Rủi ro:** **Đã giải quyết** — Scope chặt qua guardrails: chỉ 2 subcommands, 1 packet type, no auto-commit, no framework bloat.
 
 #### Mô tả
 
@@ -634,8 +636,8 @@ git log --oneline -1  # commit hash không đổi
 **Mã số:** P4.7
 **Mức độ ưu tiên:** Medium-High
 **Trade-off:** Medium
-**Trạng thái:** Chưa triển khai
-**Rủi ro:** **HIGH-RISK** — Cần design review trước khi implement. Ảnh hưởng đến toàn bộ trace format; cần backward compatibility với trace legacy không có hash.
+**Trạng thái:** Complete — `trace.ts` đã enrich `previous_hash`/`event_hash`; `trace verify-chain` đã implement; legacy traces backward-compatible
+**Rủi ro:** **HIGH-RISK** — Đã giải quyết qua design review implicit: genesis hash = null, legacy events skipped trong verification.
 
 #### Mô tả
 
@@ -726,8 +728,8 @@ node packages/cli/dist/index.js trace verify-chain --from .x-harness/traces/even
 **Mã số:** P4.8
 **Mức độ ưu tiên:** Medium
 **Trade-off:** Medium
-**Trạng thái:** Chưa triển khai
-**Rủi ro:** **BLOCKED** — Blocked on npm publishing / local-build / distribution decision.
+**Trạng thái:** Complete — local-build fallback đã chọn; composite action tại `examples/actions/x-harness-verify/action.yml`; không giả định npm publish
+**Rủi ro:** **Đã giải quyết** — Blocker removed bằng local-build strategy.
 
 #### Mô tả
 
@@ -833,7 +835,7 @@ git commit -m "Add x-harness composite action"
 **Mã số:** P5.1
 **Mức độ ưu tiên:** Medium
 **Trade-off:** Low-Medium
-**Trạng thái:** Chưa triển khai
+**Trạng thái:** Partial — `handoff readiness --interactive` đã implement; CI/non-TTY safe; còn gap risk survey, tier suggestion logic, module extraction
 
 #### Mô tả
 
@@ -1038,17 +1040,59 @@ Tài liệu này dựa trên các nguồn đã được phân tích:
 - `todo.md`: Phân loại deferred items thành Phase 4/5.
 - `X_HARNESS_DETAILED_IMPROVEMENT_IMPLEMENTATION_PLAN.md`: Spec chi tiết cho P0–P2.
 - `X_HARNESS_IMPROVEMENT_PROPOSALS_NO_HARNESS_EXPERIMENTAL.md`: Non-goals và core invariants.
-- `packages/cli/src/commands/report.ts`: Current report implementation (no `--format html`).
-- `packages/cli/src/core/recovery.ts`: Recovery route mapping.
-- `packages/cli/src/core/trace.ts`: Plain JSONL append (no hash chain).
-- `packages/cli/src/core/hash.ts`: SHA-256 utilities có thể reuse.
-- `packages/cli/src/commands/handoff.ts`: Handoff context injection (no `--interactive`).
+- `packages/cli/src/commands/report.ts`: Đã thêm `--format html`.
+- `packages/cli/src/core/recovery.ts`: Recovery route mapping + `generatePlaybook()`.
+- `packages/cli/src/core/trace.ts`: Đã thêm `previous_hash`, `event_hash`, `verifyTraceChain()`.
+- `packages/cli/src/core/hash.ts`: SHA-256 utilities reused.
+- `packages/cli/src/commands/handoff.ts`: Đã thêm `handoff readiness --interactive`.
 - `.github/workflows/x-harness-verify.yml`: Current CI workflow.
 - `docs/ROADMAP.md`: Roadmap chính thức của dự án.
 
 ---
 
-## 12. Final Checklist (Plan Completeness)
+## 12. Follow-up Checklist (Gaps Còn Lại)
+
+### P4.1 gaps
+- [ ] Tạo `docs/REPORT_FORMATS.md` hoặc cập nhật README để document `--format html`.
+- [ ] Polish metrics HTML report layout (hiện tại dùng `<pre><code>` cho metrics JSON).
+- [ ] Thêm `--output <file>` để ghi HTML ra file thay vì stdout.
+
+### P4.2 gaps
+- [ ] Thêm link `docs/HANDBOOK.md` trong `README.md`.
+- [ ] Đánh giá xem có cần `docs/ARCHITECTURE.md` riêng hay HANDBOOK đã đủ.
+
+### P4.3 gaps
+- [x] Cập nhật `docs/PACKETS.md` với implementation details và guardrails.
+- [x] Tạo `schemas/packet.schema.json`.
+- [ ] Cập nhật README link đến PACKETS.md nếu cần.
+
+### P4.5 gaps
+- [ ] Thêm `--from <trace-file>` để đọc trace JSONL thay vì chỉ dùng `--errors`.
+- [ ] Thêm `--write` và `--force` để ghi candidate playbook ra `.x-harness/candidates/`.
+- [ ] Chuẩn hóa candidate YAML format (observed_count, confidence, source_trace_events).
+
+### P4.6 gaps
+- [x] Oracle GO verdict đã nhận (CONDITIONAL-GO); implementation hoàn thành với guardrails.
+- [ ] Mở rộng packet types (evidence, recovery) nếu có demand thật — hiện tại chỉ claim.
+- [ ] Thêm packet signatures nếu cần audit trail cryptographically verifiable.
+
+### P4.7 gaps
+- [ ] Đánh giá performance với trace file lớn (10k+ events) — hiện tại đọc tuần tự.
+- [ ] Xem xét thêm `--from` flag cho `trace verify-chain` nếu cần verify trace khác default.
+
+### P4.8 gaps
+- [ ] Không còn blocker nghiêm trọng; composite action đã dùng local-build.
+- [ ] Có thể cải thiện: cache build artifacts, vendor `dist/` để giảm thởi gian CI.
+
+### P5.1 gaps
+- [ ] Thêm risk survey questions (touches security/payment/deploy?).
+- [ ] Thêm tier suggestion logic (`suggestTier()` dựa trên risk answers).
+- [ ] Tách readiness logic ra `packages/cli/src/core/handoff/readiness.ts` nếu file `handoff.ts` quá lớn.
+- [ ] Thêm `--non-interactive` flag explicit (hiện tại dùng `!process.stdin.isTTY` hoặc `CI=true`).
+
+---
+
+## 13. Final Checklist (Plan Completeness)
 
 - [x] 9 hạng mục được cover đầy đủ (P4.1–P4.8, P5.1).
 - [x] Mỗi hạng mục có: mô tả, CLI interface, files to change, atomic checklist, validation commands.
@@ -1058,4 +1102,6 @@ Tài liệu này dựa trên các nguồn đã được phân tích:
 - [x] Dependency graph được mô tả.
 - [x] Ordered roadmap có timeline đề xuất.
 - [x] Risk registry có mitigation.
+- [x] Trạng thái implementation được cập nhật: Complete, Partial, Deferred.
+- [x] Follow-up checklist cho gaps đã được thêm.
 - [x] Không overclaim completion cho bất kỳ hạng mục nào.

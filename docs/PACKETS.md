@@ -1,6 +1,6 @@
 # Packets Design Specification
 
-> Status: design/spec only. Implementation deferred per oracle WAIT verdict.
+> Status: claim-only implementation available. `packet create` and `packet verify-chain` support claim packets with guarded constraints.
 
 ## Overview
 
@@ -58,17 +58,31 @@ A verify-chain command would validate:
 - Previous linkage consistency
 - No gaps or forks
 
-## Deferred implementation note (P4.6)
+## Implementation guardrails (P4.6)
 
-The following are **explicitly NOT implemented** in the current phase:
+The following guardrails are enforced in the current implementation:
 
-- `create` / `verify-chain` CLI subcommands for packets
-- `cg_packet` generation
-- `procedure_pack` authoring tools
-- `recovery_packet` generation beyond playbook suggestions
+- **Claim packet only** — `type: "claim"` is the only supported packet type.
+- **No git flags** — `packet create` does not auto-commit or auto-add.
+- **No admission/verify/trace integration** — packets are standalone artifacts.
+- **Flat directory** — all packets live in `.x-harness/packets/` (no subdirectories).
+- **Canonical JSON payload hash** — `payload_hash` is computed from sorted-key canonical JSON.
+- **Immutable by default** — attempting to overwrite an existing packet file fails.
+
+### Supported CLI commands
+
+```bash
+node packages/cli/dist/index.js packet create --card completion-card.yaml
+node packages/cli/dist/index.js packet verify-chain --task-id <task-id>
+```
+
+### Explicitly NOT implemented (non-goals)
+
+- `cg_packet`, `procedure_pack`, `recovery_packet` types
 - Packet signatures
-
-These remain design-only until the oracle grants a GO verdict for P4.6.
+- Evidence packet creation
+- Git auto-commit / auto-add flags
+- Admission/verify/trace module integration
 
 ## Relation to existing features
 

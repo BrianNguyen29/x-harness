@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://x-harness.dev/schemas/packet.schema.json",
+  "title": "x-harness Packet",
+  "description": "Schema for an x-harness claim packet",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "packet_id",
+    "task_id",
+    "type",
+    "created_at",
+    "previous_packet_id",
+    "payload",
+    "payload_hash"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Schema version of the packet format"
+    },
+    "packet_id": {
+      "type": "string",
+      "description": "Unique packet identifier"
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Task identifier that this packet belongs to"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["claim"],
+      "description": "Packet type — claim only for this implementation"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the packet was created"
+    },
+    "previous_packet_id": {
+      "type": ["string", "null"],
+      "description": "ID of the previous packet in the chain, or null for root"
+    },
+    "payload": {
+      "type": "object",
+      "description": "The packet payload (completion card content)"
+    },
+    "payload_hash": {
+      "type": "string",
+      "description": "SHA-256 hash of the canonical JSON payload"
+    }
+  },
+  "additionalProperties": false
+}
