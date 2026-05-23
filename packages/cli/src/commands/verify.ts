@@ -119,7 +119,6 @@ export function verifyCommand(): Command {
         }
       }
 
-      const startTime = Date.now();
       const errors: string[] = [];
       const notes: string[] = [];
       let claim: Record<string, unknown> | undefined;
@@ -172,7 +171,13 @@ export function verifyCommand(): Command {
         "policies",
         "admission.yaml"
       );
-      policyHash = await sha256File(policyPath);
+      try {
+        policyHash = await sha256File(policyPath);
+      } catch (err) {
+        errors.push(
+          `policy hash error: could not read ${policyPath} - ${err instanceof Error ? err.message : String(err)}`
+        );
+      }
 
       // Load and validate claim
       if (opts.claim) {
@@ -284,8 +289,6 @@ export function verifyCommand(): Command {
           : errors.length > 0
             ? "failed"
             : admission.outcome;
-      const _acceptance = acceptanceStatus(outcome);
-      const _verifyRuntimeMs = Date.now() - startTime;
 
       const recovery = suggestRecovery(errors, outcome);
       const blockingPredicate =

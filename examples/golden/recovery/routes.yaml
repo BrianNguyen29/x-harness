@@ -40,3 +40,7 @@ recovery_routing:
   admission_failed:
     next_action: "Resolve admission validation errors and rerun verification."
     owner: implementation-worker
+
+  state_read_write_missing:
+    next_action: "Declare state.read_set and state.write_set for the task."
+    owner: implementation-worker

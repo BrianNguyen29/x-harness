@@ -36,3 +36,11 @@ recovery_routing:
   verifier_not_read_only:
     next_action: "Rerun verification with a read-only verifier."
     owner: admission-verifier
+
+  state_read_write_missing:
+    next_action: "Declare state.read_set and state.write_set for the task."
+    owner: implementation-worker
+
+  admission_failed:
+    next_action: "Resolve admission validation errors and rerun verification."
+    owner: implementation-worker

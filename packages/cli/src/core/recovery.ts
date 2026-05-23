@@ -8,7 +8,8 @@ export type RecoveryPredicate =
   | "approval_missing"
   | "conflicting_scope"
   | "verifier_not_read_only"
-  | "admission_failed";
+  | "admission_failed"
+  | "state_read_write_missing";
 
 export interface RecoveryRoute {
   next_action: string;
@@ -59,6 +60,10 @@ const DEFAULT_ROUTES: Record<string, RecoveryRoute> = {
     next_action: "Resolve admission validation errors and rerun verification.",
     owner: "implementation-worker",
   },
+  state_read_write_missing: {
+    next_action: "Declare state.read_set and state.write_set for the task.",
+    owner: "implementation-worker",
+  },
 };
 
 export function getRecoveryRoute(
@@ -96,6 +101,15 @@ export function suggestRecovery(
     return {
       predicate: "build_failed",
       route: getRecoveryRoute("build_failed"),
+    };
+  if (
+    errorText.includes("state") ||
+    errorText.includes("read_set") ||
+    errorText.includes("write_set")
+  )
+    return {
+      predicate: "state_read_write_missing",
+      route: getRecoveryRoute("state_read_write_missing"),
     };
   if (
     errorText.includes("scope") ||

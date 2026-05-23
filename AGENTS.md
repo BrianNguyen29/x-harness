@@ -51,7 +51,7 @@ CLI commands (`packages/cli/src/index.ts`):
 - Advanced commands: `init`, `add`, `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `recovery`, `packet`
 
 CI order (`.github/workflows/x-harness-verify.yml`):
-`npm ci` → `typecheck` → `build` → `lint` → `format:check` → `test` → `doctor --root .` on Node 22.
+`npm ci` → `typecheck` → `build` → `lint` → `format:check` → `test` → `examples verify` → `doctor --root .` on Node 22.
 
 ## Verification & completion semantics
 

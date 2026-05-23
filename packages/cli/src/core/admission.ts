@@ -373,6 +373,10 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
 
   // Tier evidence floor
   if (input.tier === "deep") {
+    if (!commandEvidence || commandEvidence.length === 0) {
+      errors.push('tier "deep" requires evidence.command_evidence');
+      if (!blockingPredicate) blockingPredicate = "evidence_floor_not_met";
+    }
     if (!verificationArtifacts || verificationArtifacts.length === 0) {
       errors.push('tier "deep" requires verification_artifacts');
       if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
@@ -405,7 +409,7 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
       (state.write_set as unknown[]).length === 0
     ) {
       errors.push('tier "deep" requires state.write_set');
-      if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
+      if (!blockingPredicate) blockingPredicate = "state_read_write_missing";
     }
     if (
       !state ||
@@ -413,7 +417,7 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
       (state.read_set as unknown[]).length === 0
     ) {
       errors.push('tier "deep" requires state.read_set');
-      if (!blockingPredicate) blockingPredicate = "evidence_scope_missing";
+      if (!blockingPredicate) blockingPredicate = "state_read_write_missing";
     }
     if (verificationArtifacts && verificationArtifacts.length > 0) {
       const lowQuality = verificationArtifacts.filter(

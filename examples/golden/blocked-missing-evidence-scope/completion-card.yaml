@@ -11,6 +11,9 @@ state:
 evidence:
   files_changed:
     - src/auth.ts
+  command_evidence:
+    - command: npm test -- auth
+      exit_code: 0
   verification_artifacts:
     - kind: unit_test
       command: npm test -- auth

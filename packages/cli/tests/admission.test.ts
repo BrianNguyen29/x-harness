@@ -343,6 +343,7 @@ describe("admission", () => {
       state: { read_set: ["a.ts"], write_set: ["a.ts"] },
       evidence: {
         files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
       },
     });
     expect(result.outcome).toBe("failed");
@@ -366,6 +367,7 @@ describe("admission", () => {
       state: { read_set: ["a.ts"], write_set: ["a.ts"] },
       evidence: {
         files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
         verification_artifacts: [
           { kind: "unit_test", command: "npm test", status: "passed" },
         ],
@@ -390,6 +392,7 @@ describe("admission", () => {
       handoff: { next_action: "none", owner: "alice" },
       evidence: {
         files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
         verification_artifacts: [
           {
             kind: "unit_test",
@@ -422,6 +425,7 @@ describe("admission", () => {
       state: { read_set: ["a.ts"], write_set: ["a.ts"] },
       evidence: {
         files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
         verification_artifacts: [
           {
             kind: "unit_test",
@@ -454,6 +458,7 @@ describe("admission", () => {
       state: { read_set: ["a.ts"], write_set: ["a.ts"] },
       evidence: {
         files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
         verification_artifacts: [
           {
             kind: "unit_test",
@@ -493,6 +498,7 @@ describe("admission", () => {
       state: { read_set: ["a.ts"], write_set: ["a.ts"] },
       evidence: {
         files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
         verification_artifacts: [
           {
             kind: "unit_test",
@@ -634,6 +640,7 @@ describe("admission", () => {
       state: { read_set: ["a.ts"], write_set: ["a.ts"] },
       evidence: {
         files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
         verification_artifacts: [
           {
             kind: "unit_test",
@@ -865,5 +872,141 @@ describe("admission", () => {
     });
     expect(result.outcome).toBe("failed");
     expect(result.errors.some((e) => e.includes("handoff.owner"))).toBe(true);
+  });
+
+  // Deep tier command_evidence enforcement
+  it("rejects deep tier without command_evidence", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        files_changed: ["a.ts"],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(
+      result.errors.some(
+        (e) => e.includes("deep") && e.includes("command_evidence")
+      )
+    ).toBe(true);
+  });
+
+  it("accepts deep tier with command_evidence", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+  });
+
+  // Deep tier missing state tests
+  it("rejects deep tier missing state and uses state_read_write_missing predicate", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+      // No state provided
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("state.write_set"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("state.read_set"))).toBe(true);
+    expect(result.blocking_predicate).toBe("state_read_write_missing");
+  });
+
+  it("rejects deep tier with partial state and uses state_read_write_missing predicate", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"] }, // missing write_set
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("state.write_set"))).toBe(true);
+    expect(result.blocking_predicate).toBe("state_read_write_missing");
   });
 });

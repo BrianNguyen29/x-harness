@@ -222,7 +222,14 @@
       "required": ["outcome"],
       "properties": {
         "outcome": {
-          "enum": ["success", "failed", "blocked", "skipped", "timeout", "error"]
+          "enum": [
+            "success",
+            "failed",
+            "blocked",
+            "skipped",
+            "timeout",
+            "error"
+          ]
         }
       }
     },

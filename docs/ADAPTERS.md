@@ -51,14 +51,14 @@ x-harness adapters are thin conventions that make the harness usable inside spec
 
 - Location: `adapters/opencode/`
 - Use when: You use OpenCode as the agent platform.
-- Key files: `README.md`, `verify-agent.md`
+- Key files: `README.md`, `verify-agent.md`, `agents/x-harness-verify.md`, `agents/x-harness-recover.md`, `orchestrator_append.example.md`
 - Workflow: orchestrator dispatch -> worker completion -> verify-agent read-only gate.
 
 ### Antigravity
 
 - Location: `adapters/antigravity/`
 - Use when: You use Antigravity as the agent platform.
-- Key files: `rules/x-harness.md`, `workflows/x-harness-implementation.md`, `workflows/x-harness-verify.md`
+- Key files: `rules/x-harness.md`, `workflows/x-harness-implementation.md`, `workflows/x-harness-verify.md`, `workflows/x-harness-recover.md`
 
 ## Tier selection quick reference
 

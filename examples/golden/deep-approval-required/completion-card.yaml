@@ -13,6 +13,9 @@ evidence:
   files_changed:
     - src/auth/oauth.ts
     - src/auth/oauth.test.ts
+  command_evidence:
+    - command: npm test -- oauth
+      exit_code: 0
   verification_artifacts:
     - kind: unit_test
       command: npm test -- oauth

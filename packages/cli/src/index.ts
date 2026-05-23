@@ -12,6 +12,7 @@ import { examplesCommand } from "./commands/examples.js";
 import { contextCommand } from "./commands/context.js";
 import { recoveryCommand, recoverySuggestAction } from "./commands/recovery.js";
 import { packetCommand } from "./commands/packet.js";
+import { CliError, handleCliError } from "./core/exit.js";
 
 const program = new Command();
 program
@@ -90,6 +91,10 @@ actions.description("List all beginner-friendly actions");
 actions.action(() => {
   console.log("# x-harness Beginner Actions");
   console.log("");
+  console.log("Invoke using either:");
+  console.log("  - Installed CLI:  xh <action>");
+  console.log("  - Local source:   node packages/cli/dist/index.js <action>");
+  console.log("");
   console.log(
     "| Action       | Description                                              |"
   );
@@ -143,7 +148,7 @@ reset.action(async (opts: { confirm?: boolean }) => {
     console.log("This will delete:");
     console.log("  - .x-harness/tmp/");
     console.log("  - .x-harness/cache/");
-    throw new Error("reset aborted: --confirm required");
+    throw new CliError("reset aborted: --confirm required", 1);
   }
 
   // Delegate to clean --tmp --force behavior
@@ -151,7 +156,4 @@ reset.action(async (opts: { confirm?: boolean }) => {
 });
 program.addCommand(reset);
 
-program.parseAsync(process.argv).catch((err) => {
-  console.error(`x-harness error: ${err.message}`);
-  process.exit(1);
-});
+program.parseAsync(process.argv).catch(handleCliError);

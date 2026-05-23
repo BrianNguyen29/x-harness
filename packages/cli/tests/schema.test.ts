@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import * as path from "node:path";
 import * as fs from "node:fs";
+import * as os from "node:os";
 import { fileURLToPath } from "node:url";
 import { validate as validateClaim } from "../src/validators/claim.js";
 import { validate as validateEvidence } from "../src/validators/evidence.js";
@@ -8,7 +9,7 @@ import { validate as validateCompletionCard } from "../src/validators/completion
 import { validate as validateSubagentReturn } from "../src/validators/subagentReturn.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(path.join(__dirname, "..", ".."));
+const repoRoot = path.resolve(path.join(__dirname, "..", "..", ".."));
 
 describe("schema validators", () => {
   describe("claim schema", () => {
@@ -229,6 +230,20 @@ describe("schema validators", () => {
       "packet.schema.json",
     ];
 
+    // Helper to compare two schema files and return whether they match
+    function compareSchemaFiles(
+      rootPath: string,
+      runtimePath: string
+    ): { match: boolean; rootContent: string; runtimeContent: string } {
+      const rootContent = fs.readFileSync(rootPath, "utf-8");
+      const runtimeContent = fs.readFileSync(runtimePath, "utf-8");
+      return {
+        match: rootContent === runtimeContent,
+        rootContent,
+        runtimeContent,
+      };
+    }
+
     for (const schemaFile of syncedSchemas) {
       it(`${schemaFile} runtime copy matches root contract`, () => {
         const rootPath = path.join(repoRoot, "schemas", schemaFile);
@@ -249,13 +264,47 @@ describe("schema validators", () => {
           );
           return;
         }
-        const rootContent = fs.readFileSync(rootPath, "utf-8");
-        const runtimeContent = fs.readFileSync(runtimePath, "utf-8");
+        const { match, rootContent, runtimeContent } = compareSchemaFiles(
+          rootPath,
+          runtimePath
+        );
         expect(
-          runtimeContent,
-          `${schemaFile} should be byte-identical in root and runtime`
-        ).toBe(rootContent);
+          match,
+          `${schemaFile} should be byte-identical in root and runtime. ` +
+            `Diff: root has ${rootContent.length} chars, runtime has ${runtimeContent.length} chars`
+        ).toBe(true);
       });
     }
+
+    it("schema sync helper detects drift when schemas differ", () => {
+      // This test proves the comparison helper can detect drift
+      const testRoot = path.join(os.tmpdir(), "schema-test-root-" + Date.now());
+      const testRuntime = path.join(
+        os.tmpdir(),
+        "schema-test-runtime-" + Date.now()
+      );
+      fs.mkdirSync(testRoot, { recursive: true });
+      fs.mkdirSync(testRuntime, { recursive: true });
+
+      try {
+        const schemaName = "test-schema.json";
+        const rootPath = path.join(testRoot, schemaName);
+        const runtimePath = path.join(testRuntime, schemaName);
+
+        // Write identical content - should match
+        fs.writeFileSync(rootPath, '{"type": "object"}');
+        fs.writeFileSync(runtimePath, '{"type": "object"}');
+        const identical = compareSchemaFiles(rootPath, runtimePath);
+        expect(identical.match).toBe(true);
+
+        // Write different content - should NOT match (proves drift detection works)
+        fs.writeFileSync(runtimePath, '{"type": "array"}');
+        const different = compareSchemaFiles(rootPath, runtimePath);
+        expect(different.match).toBe(false);
+      } finally {
+        fs.rmSync(testRoot, { recursive: true, force: true });
+        fs.rmSync(testRuntime, { recursive: true, force: true });
+      }
+    });
   });
 });

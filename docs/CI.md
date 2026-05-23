@@ -33,6 +33,7 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm test
+      - run: node packages/cli/dist/index.js examples verify
       - run: node packages/cli/dist/index.js doctor --root .
 ```
 
@@ -43,7 +44,8 @@ jobs:
 3. Builds the CLI
 4. Runs lint and format checks
 5. Runs unit tests
-6. Runs `doctor` to validate workspace health
+6. Verifies all golden examples pass against their expected outcomes
+7. Runs `doctor` to validate workspace health
 
 ## Local-build fallback
 

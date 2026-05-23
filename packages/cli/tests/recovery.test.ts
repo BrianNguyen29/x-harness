@@ -168,14 +168,22 @@ describe("recovery", () => {
       expect(result.predicate).toBe("evidence_scope_missing");
     });
 
-    it("maps untested errors to evidence_scope_missing when test substring not present", () => {
-      // Note: "untested" contains "test", so the heuristic may misclassify.
-      // Using a phrasing with "scope" avoids the heuristic collision.
+    it("maps state errors to state_read_write_missing", () => {
       const result = suggestRecovery(
-        ["scope: regions not covered by verification"],
-        "blocked"
+        ['tier "deep" requires state.write_set'],
+        "failed"
       );
-      expect(result.predicate).toBe("evidence_scope_missing");
+      expect(result.predicate).toBe("state_read_write_missing");
+      expect(result.route).not.toBeNull();
+      expect(result.route!.owner).toBe("implementation-worker");
+    });
+
+    it("maps read_set errors to state_read_write_missing", () => {
+      const result = suggestRecovery(
+        ['tier "deep" requires state.read_set'],
+        "failed"
+      );
+      expect(result.predicate).toBe("state_read_write_missing");
     });
 
     it("maps evidence errors to evidence_missing", () => {

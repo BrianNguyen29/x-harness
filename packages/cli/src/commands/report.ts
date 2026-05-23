@@ -275,7 +275,14 @@ export function reportCommand(): Command {
           "policies",
           "admission.yaml"
         );
-        const policyHash = await sha256File(policyPath);
+        let policyHash: string | null = null;
+        try {
+          policyHash = await sha256File(policyPath);
+        } catch (err) {
+          console.error(
+            `warning: could not compute policy hash for ${policyPath}: ${err instanceof Error ? err.message : String(err)}`
+          );
+        }
 
         const admissionInput = {
           schema_version: String(card.schema_version ?? ""),

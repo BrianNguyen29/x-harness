@@ -18,13 +18,45 @@ function isNonInteractive(): boolean {
   );
 }
 
-async function askQuestion(question: string): Promise<boolean> {
+async function askQuestion(
+  question: string,
+  timeoutMs = 30000
+): Promise<boolean> {
   return new Promise((resolve) => {
-    process.stdout.write(`${question} [y/N]: `);
-    process.stdin.once("data", (data) => {
+    const timeout = setTimeout(() => {
+      process.stdout.write(" (timeout - assuming no)\n");
+      resolve(false);
+    }, timeoutMs);
+
+    const cleanup = () => {
+      clearTimeout(timeout);
+      process.stdin.removeListener("data", onData);
+      process.stdin.removeListener("end", onEnd);
+      process.stdin.removeListener("error", onError);
+    };
+
+    const onData = (data: Buffer) => {
+      cleanup();
       const answer = data.toString().trim().toLowerCase();
       resolve(answer === "y" || answer === "yes");
-    });
+    };
+
+    const onEnd = () => {
+      cleanup();
+      process.stdout.write(" (stdin closed - assuming no)\n");
+      resolve(false);
+    };
+
+    const onError = () => {
+      cleanup();
+      process.stdout.write(" (stdin error - assuming no)\n");
+      resolve(false);
+    };
+
+    process.stdout.write(`${question} [y/N]: `);
+    process.stdin.once("data", onData);
+    process.stdin.once("end", onEnd);
+    process.stdin.once("error", onError);
   });
 }
 

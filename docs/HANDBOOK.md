@@ -30,7 +30,7 @@ Agents produce completion candidates. The read-only verifier decides admission b
 |------|----------|----------------|
 | light | Quick fixes, docs | files_changed + command_evidence or manual_rationale |
 | standard | Normal features | files_changed + command_evidence (evidence_scope recommended) |
-| deep | Security-critical, architecture | files_changed + command_evidence + evidence_scope + untested_regions + remaining_risks + rollback_policy + execution_controls |
+| deep | Security-critical, architecture | files_changed + command_evidence + evidence_scope + untested_regions + remaining_risks + rollback_policy + execution_controls + state.read_set + state.write_set |
 
 ### Verifier is read-only
 
