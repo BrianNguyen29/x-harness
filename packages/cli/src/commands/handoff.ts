@@ -48,6 +48,55 @@ function suggestTier(survey: RiskSurvey): "light" | "standard" | "deep" {
   return "light";
 }
 
+export async function checkReadinessAction(opts: {
+  interactive?: boolean;
+  nonInteractive?: boolean;
+  json?: boolean;
+  root?: string;
+}): Promise<void> {
+  const root = path.resolve(opts.root ?? process.cwd());
+  const result = await checkReadiness(
+    opts.interactive ?? false,
+    opts.nonInteractive ?? false,
+    root
+  );
+  const { ready, checks } = result;
+
+  if (opts.json) {
+    console.log(
+      JSON.stringify(
+        {
+          ready,
+          checks,
+          readiness: result.readiness,
+        },
+        null,
+        2
+      )
+    );
+  } else {
+    console.log(`handoff readiness: ${ready ? "READY" : "NOT READY"}`);
+    for (const c of checks) {
+      console.log(`  [${c.passed ? "PASS" : "FAIL"}] ${c.name}: ${c.note}`);
+    }
+    if (result.readiness) {
+      console.log(`  suggested_tier: ${result.readiness.suggested_tier}`);
+      if (Object.keys(result.readiness.risk_flags).length > 0) {
+        console.log(
+          `  risk_flags: ${
+            Object.entries(result.readiness.risk_flags)
+              .filter(([, v]) => v)
+              .map(([k]) => k)
+              .join(", ") || "none"
+          }`
+        );
+      }
+    }
+  }
+
+  process.exit(ready ? 0 : 1);
+}
+
 async function askRiskSurvey(): Promise<RiskSurvey> {
   const touches_security = await askQuestion(
     "Does the task touch authentication, authorization, or security boundaries?"
@@ -332,58 +381,7 @@ handoff:
     .option("--non-interactive", "Explicitly skip interactive prompts", false)
     .option("--json", "Output JSON instead of text", false)
     .option("--root <path>", "Repository root", process.cwd())
-    .action(
-      async (opts: {
-        interactive?: boolean;
-        nonInteractive?: boolean;
-        json?: boolean;
-        root?: string;
-      }) => {
-        const root = path.resolve(opts.root ?? process.cwd());
-        const result = await checkReadiness(
-          opts.interactive ?? false,
-          opts.nonInteractive ?? false,
-          root
-        );
-        const { ready, checks } = result;
-
-        if (opts.json) {
-          console.log(
-            JSON.stringify(
-              {
-                ready,
-                checks,
-                readiness: result.readiness,
-              },
-              null,
-              2
-            )
-          );
-        } else {
-          console.log(`handoff readiness: ${ready ? "READY" : "NOT READY"}`);
-          for (const c of checks) {
-            console.log(
-              `  [${c.passed ? "PASS" : "FAIL"}] ${c.name}: ${c.note}`
-            );
-          }
-          if (result.readiness) {
-            console.log(`  suggested_tier: ${result.readiness.suggested_tier}`);
-            if (Object.keys(result.readiness.risk_flags).length > 0) {
-              console.log(
-                `  risk_flags: ${
-                  Object.entries(result.readiness.risk_flags)
-                    .filter(([, v]) => v)
-                    .map(([k]) => k)
-                    .join(", ") || "none"
-                }`
-              );
-            }
-          }
-        }
-
-        process.exit(ready ? 0 : 1);
-      }
-    );
+    .action(checkReadinessAction);
 
   return cmd;
 }

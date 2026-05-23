@@ -131,6 +131,24 @@ describe("trace hash chain", () => {
     expect(result.valid).toBe(true);
     expect(result.eventsChecked).toBe(0);
   });
+
+  it("hash includes all event fields except previous_hash and event_hash", async () => {
+    const event1 = {
+      event_id: "E1",
+      event_type: "verify_completed",
+      outcome: "success",
+      tier: "standard",
+      task_id: "TASK-1",
+    };
+    await appendTrace(event1, TEST_TRACE_DIR);
+
+    // Tamper with an extra field — should break chain
+    const events = await readTrace(TEST_TRACE_DIR);
+    const tamperedEvent = { ...events[0], tier: "deep" };
+    const result = verifyTraceChain([tamperedEvent]);
+    expect(result.valid).toBe(false);
+    expect(result.firstBrokenIndex).toBe(0);
+  });
 });
 
 describe("trace verify-chain CLI", () => {

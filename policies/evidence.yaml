@@ -1,5 +1,24 @@
 version: 1
+# Evidence floor labels — synchronized with admission.yaml and admission.ts
+# Note: admission.yaml is the authoritative manifest; this file is advisory.
+# Runtime enforcement is in packages/cli/src/core/admission.ts
 evidence_floor:
-  light: [claim_summary, verification_status]
-  standard: [claim_packet, evidence_packet, success_criteria_mapping]
-  deep: [claim_packet, evidence_packet, verification_checks, rollback_policy]
+  light:
+    required: [files_changed]
+    one_of: [command_evidence, manual_rationale]
+  standard:
+    required: [files_changed, command_evidence]
+    recommended: [evidence_scope_declared, untested_regions_declared]
+  deep:
+    required:
+      - files_changed
+      - command_evidence
+      - evidence_scope_declared
+      - untested_regions_declared
+      - remaining_risks_declared
+      - execution_controls_present
+      - rollback_policy_present
+    runtime_enforced:
+      - verification_artifacts
+      - state.read_set
+      - state.write_set

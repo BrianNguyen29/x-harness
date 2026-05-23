@@ -738,12 +738,15 @@ export function doctorCommand(): Command {
         note: policyResult.notes.join("; "),
       });
 
-      // Policy-code drift check (always run; --policy-drift can be used to surface it explicitly)
+      // Policy-code drift check (always run; --policy-drift makes the request explicit)
       const driftResult = await checkPolicyDrift(root);
+      const driftNote = opts.policyDrift
+        ? `[explicit] ${driftResult.notes.join("; ")}`
+        : driftResult.notes.join("; ");
       checks.push({
         name: "policy_drift",
         status: driftResult.ok ? "pass" : "fail",
-        note: driftResult.notes.join("; "),
+        note: driftNote,
       });
 
       // No Python core check

@@ -25,6 +25,7 @@ interface VerifyOptions {
   json?: boolean;
   verbose?: boolean;
   mutationGuard?: boolean;
+  staleGround?: boolean;
 }
 
 const DEFAULT_CARD_PATHS = [
@@ -85,6 +86,11 @@ export function verifyCommand(): Command {
       "Block verification if unexpected file mutations are detected",
       false
     )
+    .option(
+      "--stale-ground",
+      "Mark the task as having stale ground (blocks admission)",
+      false
+    )
     .action(async (opts: VerifyOptions) => {
       const guard = await runMutationGuard(
         opts.mutationGuard ?? false,
@@ -92,10 +98,13 @@ export function verifyCommand(): Command {
       );
       await guard.takeSnapshot();
 
-      // Test-only hook: deterministically inject a mutation after the
-      // guard snapshot so integration tests can verify blocked trace
-      // behavior without relying on timing races.
-      if (process.env.X_HARNESS_TEST_INJECT_MUTATION) {
+      // Test-only hook: gate by X_HARNESS_ENABLE_TEST_HOOKS to avoid accidental activation.
+      // When enabled, deterministically injects a mutation after the guard snapshot
+      // so integration tests can verify blocked trace behavior without timing races.
+      if (
+        process.env.X_HARNESS_ENABLE_TEST_HOOKS === "1" &&
+        process.env.X_HARNESS_TEST_INJECT_MUTATION
+      ) {
         fs.writeFileSync(
           process.env.X_HARNESS_TEST_INJECT_MUTATION,
           "test-mutation"
@@ -217,6 +226,15 @@ export function verifyCommand(): Command {
 
       // Admission checks
       const tier = (opts.tier as "light" | "standard" | "deep") ?? "standard";
+      // CLI flag overrides card field; card field is also accepted from completion card.
+      // Use explicit true check for CLI flag since false is the default and also a valid card value.
+      const staleGroundFromCard =
+        card &&
+        typeof (card as Record<string, unknown>).stale_ground === "boolean"
+          ? ((card as Record<string, unknown>).stale_ground as boolean)
+          : false;
+      const effectiveStaleGround =
+        opts.staleGround === true ? true : staleGroundFromCard;
       const admissionInput: Parameters<typeof runAdmission>[0] = card
         ? {
             schema_version: String(card.schema_version ?? ""),
@@ -234,9 +252,15 @@ export function verifyCommand(): Command {
             evidence: card.evidence as Record<string, unknown> | undefined,
             state: card.state as Record<string, unknown> | undefined,
             governance: card.governance as Record<string, unknown> | undefined,
-            staleGround: false,
+            staleGround: effectiveStaleGround,
           }
-        : { claim, evidence, subagentReturn, tier, staleGround: false };
+        : {
+            claim,
+            evidence,
+            subagentReturn,
+            tier,
+            staleGround: effectiveStaleGround,
+          };
 
       const admission = runAdmission(admissionInput);
 
@@ -244,7 +268,14 @@ export function verifyCommand(): Command {
       errors.push(...admission.errors);
       notes.push(...admission.notes);
 
-      const outcome = errors.length > 0 ? "failed" : admission.outcome;
+      // Preserve blocked/failed/skipped outcomes from admission; only fall back to
+      // "failed" when there are errors but admission had not yet decided.
+      const outcome =
+        admission.outcome !== "success" && admission.outcome !== "pending"
+          ? admission.outcome
+          : errors.length > 0
+            ? "failed"
+            : admission.outcome;
       const _acceptance = acceptanceStatus(outcome);
       const _verifyRuntimeMs = Date.now() - startTime;
 

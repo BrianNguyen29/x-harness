@@ -235,6 +235,10 @@
       "type": "boolean",
       "description": "Advisory-only flag indicating the worker acknowledged context constraints. Missing or false does not block admission."
     },
+    "stale_ground": {
+      "type": "boolean",
+      "description": "Indicates the task context may be stale. When true, admission is blocked unless the stale ground is resolved. CLI flag --stale-ground overrides this card field."
+    },
     "handoff": {
       "type": "object",
       "required": ["next_action", "owner"],

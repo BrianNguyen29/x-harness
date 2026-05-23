@@ -50,8 +50,8 @@ x-harness adapters are thin conventions that make the harness usable inside spec
 
 | Tier     | When to use                                         | Evidence required                                                                                             |
 | -------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| light    | Narrow, low-ceremony work                           | `files_changed` (or manual rationale)                                                                          |
-| standard | Bounded multi-step work                             | `files_changed` + `command_evidence` (verification artifacts)                                                  |
+| light    | Narrow, low-ceremony work                           | `files_changed` + (`command_evidence` or `manual_rationale`)                                                    |
+| standard | Bounded multi-step work                             | `files_changed` + `command_evidence` (verification artifacts)                                                   |
 | deep     | High-stakes, multi-source, high-cost-of-being-wrong | `files_changed` + `command_evidence` + `evidence_scope` + `untested_regions` + `remaining_risks` + `execution_controls` + `rollback_policy` + `state.read_set` + `state.write_set` |
 
 ## Agent roles

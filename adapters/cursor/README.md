@@ -17,19 +17,27 @@ Once copied, Cursor will automatically detect and apply these rules to all agent
 ## Files included
 
 - `rules/x-harness.mdc`: The main Cursor rule file. It uses frontmatter configurations (`alwaysApply: true`) to ensure Cursor always follows `x-harness` protocols.
-- `rules/claimgate.mdc`: (If present / legacy pointer) Backward-compatibility rule pointing to `x-harness.mdc`.
+
+## Beginner-Friendly Actions
+
+| Action       | Alias for              | Description                                              |
+| :----------- | :--------------------- | :------------------------------------------------------- |
+| **`check`**  | `verify`               | Run read-only verification against a completion card      |
+| **`prepare`** | `handoff readiness`   | Check if workspace is ready for agent task handoff        |
+| **`recover`** | `recovery suggest`    | Get recovery playbook suggestions from errors or trace     |
+| **`doctor`** | (standalone)           | Validate workspace health and configuration               |
 
 ## Workflow
 
 1. **Developer Handoff**: A task is dispatched to the Cursor Composer or agent.
 2. **Work Phase**: The agent performs the required changes, implements tests, and documents findings.
 3. **Card Creation**: The agent creates or updates the `completion-card.yaml` detailing claims and evidence.
-4. **Verification**: In this repository, the developer or agent triggers `node packages/cli/dist/index.js verify` to check the card.
+4. **Verification**: In this repository, the developer or agent triggers `node packages/cli/dist/index.js check` (or `verify`) to check the card.
 5. **Admission**: Completion is only accepted when verification succeeds.
 
 ## Constraints
 
-- **Verifier is read-only**: The verification agent must not write or edit files to fix validation issues during the verification stage. Run `node packages/cli/dist/index.js verify` to perform read-only verification.
+- **Verifier is read-only**: The verification agent must not write or edit files to fix validation issues during the verification stage. Run `node packages/cli/dist/index.js check` to perform read-only verification.
 - **Advisory-only rule**: Cursor rules act as a guide for the agent's behavior; they do not automatically execute verification or enforce policies.
 - **Strict Tier Labels**: The rules instruct Cursor to use only the canonical tiers (`light`, `standard`, `deep`).
 - **No heavy runtime required**: Fully local, offline-first.

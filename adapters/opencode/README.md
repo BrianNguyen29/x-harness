@@ -21,6 +21,15 @@ This copies the verify agent instructions, orchestrator snippets, and OpenCode J
 - `opencode.verify.example.json`: A template configuration detailing how to register the verifier agent task and commands in OpenCode.
 - `orchestrator_append.example.md`: Snippet to append to orchestrator handoffs, instructing the OpenCode dispatcher on handling outputs.
 
+## Beginner-Friendly Actions
+
+| Action       | Alias for              | Description                                              |
+| :----------- | :--------------------- | :------------------------------------------------------- |
+| **`check`**  | `verify`               | Run read-only verification against a completion card      |
+| **`prepare`** | `handoff readiness`   | Check if workspace is ready for agent task handoff        |
+| **`recover`** | `recovery suggest`    | Get recovery playbook suggestions from errors or trace     |
+| **`doctor`** | (standalone)           | Validate workspace health and configuration               |
+
 ## Workflow & Configurations
 
 ### 1. Set Up Worker and Verifier in OpenCode
@@ -31,7 +40,8 @@ You can use `opencode.example.json` and `opencode.verify.example.json` as guides
 - The worker executes standard instructions, writes changes to the source files, and exports `completion-card.yaml`.
 - The verifier loads `verify-agent.md`, mounts the workspace, and runs the read-only check command:
   ```bash
-  node packages/cli/dist/index.js verify --card completion-card.yaml
+  node packages/cli/dist/index.js check --card completion-card.yaml
+  # or: node packages/cli/dist/index.js verify --card completion-card.yaml
   ```
 
 ### 2. Output Analysis

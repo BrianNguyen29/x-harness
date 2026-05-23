@@ -309,5 +309,14 @@ describe("doctor command", () => {
     const check = report.checks.find((c: Check) => c.name === "policy_drift");
     expect(check).toBeDefined();
     expect(check.status).toBe("pass");
+    expect(check.note).toContain("[explicit]");
+  });
+
+  it("policy-drift note lacks [explicit] without the flag", async () => {
+    const { stdout } = await execaNode(["doctor", "--root", repoRoot]);
+    const report = JSON.parse(stdout);
+    const check = report.checks.find((c: Check) => c.name === "policy_drift");
+    expect(check).toBeDefined();
+    expect(check.note).not.toContain("[explicit]");
   });
 });

@@ -31,7 +31,8 @@
     "LICENSE"
   ],
   "bin": {
-    "x-harness": "./dist/index.js"
+    "x-harness": "./dist/index.js",
+    "xh": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",

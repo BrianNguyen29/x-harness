@@ -4,7 +4,9 @@ A deep-tier completion card that is withheld because it lacks evidence scope def
 
 ## Scenario
 
-An agent completes a deep-tier task but fails to declare the required evidence scopes (`evidence.verification_artifacts`, `evidence.untested_regions`, `evidence.remaining_risks`). Since deep-tier policies require these declarations, verification is blocked.
+An agent completes a deep-tier task. The card includes evidence files and even some `verification_artifacts`, but those artifacts are missing the required `verifies`/`does_not_verify` declarations that constitute the evidence **scope**. Deep-tier policies require each verification artifact to declare what it verifies or does not verify; without these scope declarations, verification is blocked.
+
+This is not about total absence of evidence fields — it is specifically about artifact-level scope declarations being absent or empty.
 
 ## Files
 

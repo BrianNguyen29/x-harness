@@ -6,10 +6,19 @@ This adapter provides system-agnostic conventions for integrating x-harness into
 
 1. Copy [AGENTS.md](AGENTS.md) into your project root.
 2. Ensure completion cards are written as `completion-card.yaml` before claiming completion.
-3. Run the verify gate read-only:
+3. Run the verify gate read-only using `check` (alias for `verify`):
    ```bash
-   node packages/cli/dist/index.js verify --card completion-card.yaml
+   node packages/cli/dist/index.js check --card completion-card.yaml
    ```
+
+## Beginner-Friendly Actions
+
+| Action       | Alias for              | Description                                              |
+| :----------- | :--------------------- | :------------------------------------------------------- |
+| **`check`**  | `verify`               | Run read-only verification against a completion card      |
+| **`prepare`** | `handoff readiness`   | Check if workspace is ready for agent task handoff        |
+| **`recover`** | `recovery suggest`    | Get recovery playbook suggestions from errors or trace     |
+| **`doctor`** | (standalone)           | Validate workspace health and configuration               |
 
 ## Workflow
 

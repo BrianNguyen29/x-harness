@@ -75,6 +75,21 @@ describe("handoff readiness", () => {
       )
     ).toBe(true);
   });
+
+  it("reports NOT READY when structural checks fail", async () => {
+    const { stdout, exitCode } = await execaNode([
+      "handoff",
+      "readiness",
+      "--root",
+      "/tmp/nonexistent-x-harness-readiness-test",
+      "--json",
+    ]);
+    expect(exitCode).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ready).toBe(false);
+    const checkNames = parsed.checks.map((c: { name: string }) => c.name);
+    expect(checkNames).toContain("agents_md_present");
+  });
 });
 
 describe("handoff readiness interactive mode behavior", () => {

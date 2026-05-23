@@ -2,7 +2,42 @@
   "agents": {
     "verify": {
       "mode": "read_only",
-      "instructions": "Run read-only verification; do not edit files."
+      "instructions": "Run read-only verification against the completion card. Inspect files, evidence, and trace events. Do not edit files or repair findings. Output admission.outcome and acceptance_status.",
+      "model": "claude-sonnet-4-20250514",
+      "temperature": 0.0
+    }
+  },
+  "verify_gate": {
+    "checks": [
+      "schema_valid",
+      "admission_checks",
+      "evidence_floor",
+      "canonical_consistency"
+    ],
+    "allowed_outcomes": ["success", "failed", "blocked", "skipped", "timeout", "error"],
+    "mutation_guard": {
+      "enabled": true,
+      "allowlist": [".x-harness/"]
+    }
+  },
+  "admission": {
+    "success_requires": [
+      "fix_status == fixed",
+      "verification.status == passed",
+      "admission.outcome == success",
+      "acceptance_status == accepted",
+      "evidence present and non-empty",
+      "owner present",
+      "accountable present",
+      "evidence_floor_met",
+      "no_unresolved_blocker"
+    ],
+    "reject_success_if": {
+      "fix_status": ["partial", "not_fixed"],
+      "verification_status": ["failed", "skipped", "blocked"],
+      "evidence_quality": ["missing", "weak"],
+      "timeout": true,
+      "error": true
     }
   }
 }

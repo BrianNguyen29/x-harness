@@ -18,16 +18,12 @@ function computeEventHash(
   event: TraceEvent,
   previousHash: string | null
 ): string {
-  // Deterministic hash of the event payload + chain linkage
+  // Hash canonical full event excluding previous_hash and event_hash itself.
+  // previousHash (the prior event's event_hash) is included as chain linkage.
+  const { previous_hash: _prev, event_hash: _h, ...rest } = event;
   const payload = {
-    event_id: event.event_id,
-    event_type: event.event_type,
+    ...rest,
     previous_hash: previousHash,
-    // Include key fields if present for stronger binding
-    task_id: event.task_id,
-    outcome: event.outcome,
-    acceptance_status: event.acceptance_status,
-    created_at: event.created_at,
   };
   return sha256String(JSON.stringify(payload));
 }

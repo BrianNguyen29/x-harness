@@ -23,13 +23,23 @@ This copies the `CLAUDE.md` instructions, the `agents/` role definitions, and th
 - `skills/handoff/SKILL.md`: Skills instruction for handoff creation.
 - `skills/recovery/SKILL.md`: Skills instruction for task recovery.
 
+## Beginner-Friendly Actions
+
+| Action       | Alias for              | Description                                              |
+| :----------- | :--------------------- | :------------------------------------------------------- |
+| **`check`**  | `verify`               | Run read-only verification against a completion card      |
+| **`prepare`** | `handoff readiness`   | Check if workspace is ready for agent task handoff        |
+| **`recover`** | `recovery suggest`    | Get recovery playbook suggestions from errors or trace     |
+| **`doctor`** | (standalone)           | Validate workspace health and configuration               |
+
 ## Workflow
 
 1. **Orchestrator** (user or parent agent) writes a task using a handoff template.
 2. **Implementation Worker** (Claude Code) performs edits, tests the changes, and generates the `completion-card.yaml`.
 3. **Admission Verifier** (Claude Code) runs read-only verification. In this repository, use:
    ```bash
-   node packages/cli/dist/index.js verify --card completion-card.yaml
+   node packages/cli/dist/index.js check --card completion-card.yaml
+   # or: node packages/cli/dist/index.js verify --card completion-card.yaml
    ```
 4. **Outcome**: Accepted (status code `0`) or Withheld (status code `1`). If withheld, the next actions are routed based on recovery rules.
 

@@ -141,6 +141,24 @@ describe("verify command", () => {
     expect(stdout).toContain("acceptance_status: accepted");
   });
 
+  it("prints failed quiet output with error info", async () => {
+    const { stdout, exitCode } = await execaNode([
+      "verify",
+      "--claim",
+      "tests/fixtures/claim-pass.yaml",
+      "--tier",
+      "standard",
+      "--task-id",
+      "TASK-FAIL-QUIET",
+    ]);
+    expect(exitCode).toBe(1);
+    const lines = stdout.split("\n").filter((l) => l.trim().length > 0);
+    expect(lines.length).toBeLessThanOrEqual(4);
+    expect(stdout).toContain("outcome:");
+    expect(stdout).toContain("acceptance_status:");
+    expect(stdout).toContain("checks:");
+  });
+
   it("prints verbose output with --verbose", async () => {
     const cardPath = path.join(
       repoRoot,
@@ -345,6 +363,7 @@ describe("verify command", () => {
           cwd: tmpDir,
           env: {
             ...process.env,
+            X_HARNESS_ENABLE_TEST_HOOKS: "1",
             X_HARNESS_TEST_INJECT_MUTATION: injectPath,
           },
         }
@@ -389,6 +408,58 @@ describe("verify command", () => {
       const lastEvent = events[events.length - 1];
       expect(lastEvent.outcome).toBe("blocked");
       expect(lastEvent.blocking_predicate).toBe("verifier_not_read_only");
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("blocks admission when --stale-ground is set", async () => {
+    const cardPath = path.join(
+      repoRoot,
+      "examples",
+      "00-minimal",
+      "completion-card.yaml"
+    );
+    const { stdout, exitCode } = await execaNode([
+      "verify",
+      "--card",
+      cardPath,
+      "--stale-ground",
+      "--json",
+    ]);
+    expect(exitCode).toBe(1);
+    const event = JSON.parse(stdout);
+    expect(event.ok).toBe(false);
+    expect(event.admission_outcome).toBe("blocked");
+    expect(event.acceptance_status).toBe("withheld");
+    expect(event.withheld_reason).toContain("stale_ground");
+  });
+
+  it("blocks admission when completion card has stale_ground: true", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "verify-stale-"));
+    try {
+      const cardSrc = path.join(
+        repoRoot,
+        "examples",
+        "00-minimal",
+        "completion-card.yaml"
+      );
+      const cardDst = path.join(tmpDir, "completion-card.yaml");
+      let cardContent = fs.readFileSync(cardSrc, "utf-8");
+      // Add stale_ground: true at the top of the card
+      cardContent = "stale_ground: true\n" + cardContent;
+      fs.writeFileSync(cardDst, cardContent, "utf-8");
+
+      const { stdout, exitCode } = await execaNodeCwd(
+        ["verify", "--card", cardDst, "--json"],
+        tmpDir
+      );
+      expect(exitCode).toBe(1);
+      const event = JSON.parse(stdout);
+      expect(event.ok).toBe(false);
+      expect(event.admission_outcome).toBe("blocked");
+      expect(event.acceptance_status).toBe("withheld");
+      expect(event.withheld_reason).toContain("stale_ground");
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }

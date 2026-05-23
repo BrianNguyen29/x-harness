@@ -23,8 +23,14 @@ This adapter integrates x-harness with Claude Code.
 ## Quick commands
 
 ```bash
-# Verify a completion card
-node packages/cli/dist/index.js verify --card completion-card.yaml
+# Verify a completion card (use check or verify)
+node packages/cli/dist/index.js check --card completion-card.yaml
+
+# Prepare workspace for handoff
+node packages/cli/dist/index.js prepare --json
+
+# Recover from errors
+node packages/cli/dist/index.js recover --errors "test failed"
 
 # Check repo health
 node packages/cli/dist/index.js doctor --root .

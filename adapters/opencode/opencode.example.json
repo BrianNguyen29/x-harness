@@ -1,7 +1,36 @@
 {
   "agents": {
     "orchestrator": {
-      "instructions": "Use x-harness handoff templates and canonical tiers."
+      "instructions": "Use x-harness handoff templates and canonical tiers (light, standard, deep). Dispatch tasks to worker agents, collect completion cards, and route to the verify agent for read-only admission gate.",
+      "model": "claude-sonnet-4-20250514",
+      "temperature": 0.3
+    },
+    "worker": {
+      "instructions": "Implement the assigned task following x-harness protocols. Produce a completion card with fix_status, evidence, verification checks, and handoff. Do not self-admit completion.",
+      "model": "claude-sonnet-4-20250514",
+      "temperature": 0.5
     }
+  },
+  "tier_defaults": {
+    "light": {
+      "evidence": ["files_changed"],
+      "verification": "basic"
+    },
+    "standard": {
+      "evidence": ["files_changed", "command_evidence"],
+      "verification": "standard"
+    },
+    "deep": {
+      "evidence": ["files_changed", "command_evidence", "evidence_scope", "untested_regions", "remaining_risks", "execution_controls", "rollback_policy", "state.read_set", "state.write_set"],
+      "verification": "comprehensive"
+    }
+  },
+  "handoff": {
+    "format": "yaml",
+    "tier_templates": [
+      "templates/SUBAGENT_TASK_light.md",
+      "templates/SUBAGENT_TASK_standard.md",
+      "templates/SUBAGENT_TASK_deep.md"
+    ]
   }
 }

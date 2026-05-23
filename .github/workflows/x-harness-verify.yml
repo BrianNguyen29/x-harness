@@ -25,3 +25,4 @@ jobs:
       - run: npm run format:check
       - run: npm test
       - run: node packages/cli/dist/index.js doctor --root .
+      - run: node packages/cli/dist/index.js examples verify

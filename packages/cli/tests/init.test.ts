@@ -95,6 +95,32 @@ describe("init command", () => {
     }
   });
 
+  it("merge preserves existing files and copies missing ones", async () => {
+    const tmpDir = mkdtempSync(path.join(tmpdir(), "x-harness-init-"));
+    try {
+      // First init
+      await execaNode(["init", tmpDir]);
+      const agentsPath = path.join(tmpDir, "AGENTS.md");
+
+      // Modify a file that will be overwritten if not for --merge
+      await fs.writeFile(agentsPath, "custom content", "utf-8");
+
+      // Second init with --merge should not overwrite the modified file
+      const { stdout, exitCode } = await execaNode(["init", tmpDir, "--merge"]);
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("init (minimal) complete");
+
+      // File should still have custom content (not overwritten)
+      const agentsContentAfter = await fs.readFile(agentsPath, "utf-8");
+      expect(agentsContentAfter).toBe("custom content");
+
+      // But missing files should be copied (e.g., X_HARNESS.md)
+      expect(await fs.pathExists(path.join(tmpDir, "X_HARNESS.md"))).toBe(true);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
   it("is registered in help", async () => {
     const { stdout, exitCode } = await execaNode(["--help"]);
     expect(exitCode).toBe(0);

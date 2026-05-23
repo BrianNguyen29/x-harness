@@ -38,12 +38,39 @@ npm install
 npm run build
 ```
 
-### Step 2: Run Your First Verification
+### Step 2: Four Canonical Actions
+
+`x-harness` exposes four beginner-friendly actions. Use these to interact with the harness:
+
+| Action       | Alias for              | Description                                              |
+| :----------- | :--------------------- | :------------------------------------------------------- |
+| **`check`**  | `verify`               | Run read-only verification against a completion card      |
+| **`prepare`** | `handoff readiness`   | Check if workspace is ready for agent task handoff        |
+| **`recover`** | `recovery suggest`    | Get recovery playbook suggestions from errors or trace     |
+| **`doctor`** | (standalone)           | Validate workspace health and configuration               |
+
+You can use either the alias or the full command:
+
+```bash
+# These are equivalent:
+node packages/cli/dist/index.js check --card completion-card.yaml
+node packages/cli/dist/index.js verify --card completion-card.yaml
+
+# These are equivalent:
+node packages/cli/dist/index.js prepare --json
+node packages/cli/dist/index.js handoff readiness --json
+
+# These are equivalent:
+node packages/cli/dist/index.js recover --errors "test failed"
+node packages/cli/dist/index.js recovery suggest --errors "test failed"
+```
+
+### Step 3: Run Your First Verification
 
 `x-harness` comes with pre-packaged reference scenarios called "Golden Examples". Let's run a verification against a successful task claim:
 
 ```bash
-node packages/cli/dist/index.js verify --card examples/golden/success-light/completion-card.yaml
+node packages/cli/dist/index.js check --card examples/golden/success-light/completion-card.yaml
 ```
 
 > **Expected Output:**
@@ -58,7 +85,7 @@ node packages/cli/dist/index.js verify --card examples/golden/success-light/comp
 Now, let's run verification on a card that is missing mandatory evidence scopes:
 
 ```bash
-node packages/cli/dist/index.js verify --card examples/golden/blocked-missing-evidence/completion-card.yaml
+node packages/cli/dist/index.js check --card examples/golden/blocked-missing-evidence/completion-card.yaml
 ```
 
 > **Expected Output:**
@@ -70,7 +97,7 @@ node packages/cli/dist/index.js verify --card examples/golden/blocked-missing-ev
 >
 > _Note: The CLI returns exit code `1` (fail-closed) because the card failed the required evidence floor rules._
 
-### Step 3: Initialize a New Workspace
+### Step 4: Initialize a New Workspace
 
 To start using `x-harness` in a separate development project, run the `init` command in the root of your project:
 
@@ -81,7 +108,7 @@ node packages/cli/dist/index.js init --minimal
 
 If the target directory already contains conflicting harness files, `init` stops with a blocked summary and exits non-zero. Re-run with `--force` only when you intentionally want to overwrite those files, or use `--merge` if/when you want non-destructive merge behavior.
 
-### Step 4: Dispatch a Task Handoff
+### Step 5: Dispatch a Task Handoff
 
 When assigning a task to an agent, generate a structured handoff prompt. For example, to dispatch a normal task:
 
@@ -91,7 +118,7 @@ node packages/cli/dist/index.js handoff standard --title "Fix Checkout Page Butt
 
 This generates a markdown file matching the `standard` tier containing explicit file sets, required evidence checklists, and rollback definitions.
 
-### Step 5: Validate Workspace Health
+### Step 6: Validate Workspace Health
 
 Run the diagnostics command at any time to verify that all schemas, policies, templates, and links are healthy:
 

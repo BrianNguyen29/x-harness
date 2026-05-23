@@ -115,6 +115,9 @@ export function initCommand(): Command {
           }
           if (opts.force) {
             await fs.remove(p.dest);
+          } else if (opts.merge) {
+            // Merge mode: preserve existing files, copy only missing ones
+            continue;
           }
         }
         await fs.copy(p.src, p.dest);
