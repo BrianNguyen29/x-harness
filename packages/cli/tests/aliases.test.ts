@@ -105,6 +105,70 @@ describe("alias registration", () => {
     });
   });
 
+  describe("actions command", () => {
+    it("actions output includes all 7 actions", async () => {
+      const { stdout } = await execaNode(["actions"]);
+      expect(stdout).toContain("prepare");
+      expect(stdout).toContain("check");
+      expect(stdout).toContain("recover");
+      expect(stdout).toContain("doctor");
+      expect(stdout).toContain("actions");
+      expect(stdout).toContain("status");
+      expect(stdout).toContain("reset");
+    });
+
+    it("actions --help shows actions description", async () => {
+      const { stdout } = await execaNode(["actions", "--help"]);
+      expect(stdout).toContain("actions");
+    });
+  });
+
+  describe("status command", () => {
+    it("status is an alias for report command", async () => {
+      // status and report should produce identical output
+      const statusResult = await execaNode(["status", "--json"]);
+      const reportResult = await execaNode(["report", "--json"]);
+
+      expect(statusResult.exitCode).toBe(reportResult.exitCode);
+      // Both should return JSON with total_events
+      const statusOut = JSON.parse(statusResult.stdout);
+      const reportOut = JSON.parse(reportResult.stdout);
+      expect(statusOut).toHaveProperty("total_events");
+      expect(reportOut).toHaveProperty("total_events");
+    });
+
+    it("status --help shows report alias info", async () => {
+      const { stdout } = await execaNode(["status", "--help"]);
+      // Should show that status is an alias for report
+      expect(stdout).toContain("report");
+    });
+  });
+
+  describe("reset command", () => {
+    it("reset without --confirm does not delete", async () => {
+      const { stdout, exitCode } = await execaNode(["reset"]);
+      // Should exit with error code 1 (safety check)
+      expect(exitCode).toBe(1);
+      expect(stdout).toContain("--confirm");
+      expect(stdout).toContain("requires --confirm");
+    });
+
+    it("reset --help shows reset description", async () => {
+      const { stdout } = await execaNode(["reset", "--help"]);
+      expect(stdout).toContain("reset");
+      expect(stdout).toContain("--confirm");
+    });
+
+    it("reset --confirm invokes clean behavior", async () => {
+      // reset --confirm should produce output matching clean --tmp --force
+      const resetResult = await execaNode(["reset", "--confirm"]);
+      expect(resetResult.exitCode).toBe(0);
+      // Should show the clean header indicating it delegated to clean --tmp --force
+      expect(resetResult.stdout).toContain("x-harness clean --tmp --force");
+      expect(resetResult.stdout).toContain("reset complete");
+    });
+  });
+
   describe("original commands still work", () => {
     it("verify command still works", async () => {
       const cardPath = path.join(
@@ -149,6 +213,26 @@ describe("alias registration", () => {
       expect(exitCode).toBe(0);
       const output = JSON.parse(stdout);
       expect(output).toHaveProperty("suggestions");
+    });
+
+    it("report command still works", async () => {
+      const { stdout, exitCode } = await execaNode(["report"]);
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("Report");
+    });
+
+    it("clean command still works", async () => {
+      const { stdout, exitCode } = await execaNode(["clean"]);
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("Nothing to clean");
+    });
+
+    it("doctor command still works", async () => {
+      const { stdout } = await execaNode(["doctor"]);
+      // doctor outputs JSON with "healthy" field when run in test environment
+      const output = JSON.parse(stdout);
+      expect(output).toHaveProperty("healthy");
+      expect(output).toHaveProperty("checks");
     });
   });
 });

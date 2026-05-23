@@ -10,6 +10,21 @@ interface CleanOptions {
   force?: boolean;
 }
 
+export async function cleanTmpAction(): Promise<void> {
+  const cwd = process.cwd();
+  console.log("# x-harness clean --tmp --force");
+  for (const dir of [".x-harness/tmp", ".x-harness/cache"]) {
+    const fullPath = path.join(cwd, dir);
+    if (await fs.pathExists(fullPath)) {
+      await fs.remove(fullPath);
+      console.log(`deleted: ${dir}/`);
+    } else {
+      console.log(`not found (skipping): ${dir}/`);
+    }
+  }
+  console.log("\nreset complete.");
+}
+
 const PROTECTED_PATHS = [
   "AGENTS.md",
   "X_HARNESS.md",

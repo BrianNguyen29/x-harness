@@ -38,16 +38,19 @@ npm install
 npm run build
 ```
 
-### Step 2: Four Canonical Actions
+### Step 2: Seven Canonical Actions
 
-`x-harness` exposes four beginner-friendly actions. Use these to interact with the harness:
+`x-harness` exposes seven beginner-friendly actions. Use these to interact with the harness:
 
 | Action       | Alias for              | Description                                              |
 | :----------- | :--------------------- | :------------------------------------------------------- |
-| **`check`**  | `verify`               | Run read-only verification against a completion card      |
 | **`prepare`** | `handoff readiness`   | Check if workspace is ready for agent task handoff        |
+| **`check`**  | `verify`               | Run read-only verification against a completion card      |
 | **`recover`** | `recovery suggest`    | Get recovery playbook suggestions from errors or trace     |
 | **`doctor`** | (standalone)           | Validate workspace health and configuration               |
+| **`actions`** | (standalone)           | List all beginner-friendly actions                        |
+| **`status`** | `report` (no --metrics) | Show trace summary or card metrics                      |
+| **`reset`**  | `clean --tmp --force` | Clean generated harness state (requires --confirm)        |
 
 You can use either the alias or the full command:
 
@@ -63,7 +66,16 @@ node packages/cli/dist/index.js handoff readiness --json
 # These are equivalent:
 node packages/cli/dist/index.js recover --errors "test failed"
 node packages/cli/dist/index.js recovery suggest --errors "test failed"
+
+# status shows trace summary:
+node packages/cli/dist/index.js status
+node packages/cli/dist/index.js report
+
+# reset cleans harness state safely:
+node packages/cli/dist/index.js reset --confirm
 ```
+
+**Slash commands for agent adapters:** When integrating with agent platforms (Claude Code, Cursor, etc.), use slash-facing syntax like `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset` to invoke these actions.
 
 ### Step 3: Run Your First Verification
 

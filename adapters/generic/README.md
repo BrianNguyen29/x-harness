@@ -15,10 +15,15 @@ This adapter provides system-agnostic conventions for integrating x-harness into
 
 | Action       | Alias for              | Description                                              |
 | :----------- | :--------------------- | :------------------------------------------------------- |
-| **`check`**  | `verify`               | Run read-only verification against a completion card      |
 | **`prepare`** | `handoff readiness`   | Check if workspace is ready for agent task handoff        |
+| **`check`**  | `verify`               | Run read-only verification against a completion card      |
 | **`recover`** | `recovery suggest`    | Get recovery playbook suggestions from errors or trace     |
 | **`doctor`** | (standalone)           | Validate workspace health and configuration               |
+| **`actions`** | (standalone)           | List all beginner-friendly actions                        |
+| **`status`** | `report` (no --metrics) | Show trace summary or card metrics                      |
+| **`reset`**  | `clean --tmp --force` | Clean generated harness state (requires --confirm)        |
+
+**Slash commands for agent adapters:** `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset`
 
 ## Workflow
 
