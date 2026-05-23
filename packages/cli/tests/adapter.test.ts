@@ -186,6 +186,45 @@ describe("adapter contract", () => {
             `${filePath} should mention read-only verifier`
           ).toBe(true);
         });
+
+        it("includes 7 beginner action table (prepare, check, recover, doctor, actions, status, reset)", () => {
+          const requiredActions = [
+            "prepare",
+            "check",
+            "recover",
+            "doctor",
+            "actions",
+            "status",
+            "reset",
+          ];
+          const hasAllActions = requiredActions.every((action) =>
+            content.includes(action)
+          );
+          expect(
+            hasAllActions,
+            `${filePath} should include all 7 beginner actions: ${requiredActions.join(", ")}`
+          ).toBe(true);
+        });
+
+        it("includes slash command notation for agent adapters", () => {
+          // Slash commands are /xh-check, /xh-prepare, /xh-recover, /xh-doctor, /xh-actions, /xh-status, /xh-reset
+          const slashCommands = [
+            "/xh-check",
+            "/xh-prepare",
+            "/xh-recover",
+            "/xh-doctor",
+            "/xh-actions",
+            "/xh-status",
+            "/xh-reset",
+          ];
+          const hasSlashCommands = slashCommands.some((cmd) =>
+            content.includes(cmd)
+          );
+          expect(
+            hasSlashCommands,
+            `${filePath} should include slash command notation (e.g., /xh-check)`
+          ).toBe(true);
+        });
       });
     }
   });
@@ -237,6 +276,21 @@ describe("adapter contract", () => {
             hasAdmission,
             `${filePath} should mention admission/acceptance semantics`
           ).toBe(true);
+        });
+
+        it("uses beginner action vocabulary when CLI commands are present", () => {
+          // Only check files that have bash code blocks with CLI commands
+          // If file has "verify --card" or "check --card", it should use check or both
+          const hasVerifyCard = content.includes("verify --card");
+          const hasCheckCard = content.includes("check --card");
+          // If file mentions x-harness CLI commands, it should use check (preferred) or both
+          if (hasVerifyCard || hasCheckCard) {
+            expect(
+              hasCheckCard || !hasVerifyCard,
+              `${filePath} should prefer 'check' over 'verify' for beginner action`
+            ).toBe(true);
+          }
+          // Pass if no CLI verify commands present (file may reference verification conceptually)
         });
       });
     }

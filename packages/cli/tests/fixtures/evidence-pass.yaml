@@ -1,3 +1,6 @@
 id: EVID-PASS
 files_changed:
   - src/pass.ts
+command_evidence:
+  - command: npm test
+    exit_code: 0

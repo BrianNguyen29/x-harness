@@ -6,6 +6,7 @@ accountable: bob
 evidence:
   files_changed:
     - src/pagination.ts
+  manual_rationale: Pagination off-by-one error fix
 claim:
   fix_status: fixed
   summary: Fixed pagination off-by-one error

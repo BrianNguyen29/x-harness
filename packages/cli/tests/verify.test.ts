@@ -464,4 +464,77 @@ describe("verify command", () => {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
   });
+
+  it("rejects mutation injection path outside cwd", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "verify-mg-safety-"));
+    try {
+      const { execFileSync } = await import("node:child_process");
+      execFileSync("git", ["init"], { cwd: tmpDir });
+      execFileSync("git", ["config", "user.email", "test@test.com"], {
+        cwd: tmpDir,
+      });
+      execFileSync("git", ["config", "user.name", "Test"], {
+        cwd: tmpDir,
+      });
+
+      const cardSrc = path.join(
+        repoRoot,
+        "examples",
+        "00-minimal",
+        "completion-card.yaml"
+      );
+      const cardDst = path.join(tmpDir, "completion-card.yaml");
+      fs.copyFileSync(cardSrc, cardDst);
+      execFileSync("git", ["add", "completion-card.yaml"], {
+        cwd: tmpDir,
+      });
+      execFileSync("git", ["commit", "-m", "init"], { cwd: tmpDir });
+
+      // Inject to a path OUTSIDE cwd - should be rejected
+      const outsidePath = path.join(os.tmpdir(), "should-not-be-created.txt");
+      if (fs.existsSync(outsidePath)) fs.unlinkSync(outsidePath);
+
+      const script = path.join(cliDir, "dist", "index.js");
+      const child = spawn(
+        "node",
+        [
+          script,
+          "verify",
+          "--card",
+          cardDst,
+          "--mutation-guard",
+          "--trace",
+          "--json",
+        ],
+        {
+          cwd: tmpDir,
+          env: {
+            ...process.env,
+            X_HARNESS_ENABLE_TEST_HOOKS: "1",
+            X_HARNESS_TEST_INJECT_MUTATION: outsidePath,
+          },
+        }
+      );
+
+      let stdout = "";
+      let exitCode = 1;
+      child.stdout.on("data", (chunk) => {
+        stdout += chunk.toString();
+      });
+      await new Promise<void>((resolve) => {
+        child.on("close", (code) => {
+          exitCode = code ?? 1;
+          resolve();
+        });
+      });
+
+      expect(exitCode).toBe(0);
+      const output = JSON.parse(stdout);
+      expect(output.ok).toBe(true);
+      // Verify the outside path was NOT created
+      expect(fs.existsSync(outsidePath)).toBe(false);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
 });

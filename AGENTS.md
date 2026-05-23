@@ -47,7 +47,8 @@ Root workspace scripts (`package.json`):
 - `npm run verify` — alias for `typecheck && test`
 
 CLI commands (`packages/cli/src/index.ts`):
-`init`, `add`, `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `doctor`, `recovery`, `packet`
+- Beginner actions: `check` (alias for verify), `prepare` (alias for handoff readiness), `recover` (alias for recovery suggest), `doctor`, `actions`, `status`, `reset`
+- Advanced commands: `init`, `add`, `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `recovery`, `packet`
 
 CI order (`.github/workflows/x-harness-verify.yml`):
 `npm ci` → `typecheck` → `build` → `lint` → `format:check` → `test` → `doctor --root .` on Node 22.

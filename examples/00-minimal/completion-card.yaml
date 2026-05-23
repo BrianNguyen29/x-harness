@@ -6,6 +6,7 @@ accountable: bob
 evidence:
   files_changed:
     - src/minimal.ts
+  manual_rationale: Minimal task completed successfully
 claim:
   fix_status: fixed
   summary: Minimal task completed successfully

@@ -8,7 +8,6 @@ import { validate as validateCompletionCard } from "../src/validators/completion
 describe("validators", () => {
   it("validates a valid claim", async () => {
     const result = await validateClaim({ id: "C1", fix_status: "fixed" });
-    console.log("claim result:", result);
     expect(result.valid).toBe(true);
   });
 
@@ -23,7 +22,6 @@ describe("validators", () => {
       id: "E1",
       files_changed: ["src/x.ts"],
     });
-    console.log("evidence result:", result);
     expect(result.valid).toBe(true);
   });
 
@@ -35,7 +33,6 @@ describe("validators", () => {
       confidence: "HIGH",
       handoff: { next_action: "none", owner: "alice" },
     });
-    console.log("subagent result:", result);
     expect(result.valid).toBe(true);
   });
 
@@ -57,7 +54,6 @@ describe("validators", () => {
       acceptance_status: "accepted",
       created_at: "2026-01-01T00:00:00Z",
     });
-    console.log("verify event result:", result);
     expect(result.valid).toBe(true);
   });
 

@@ -31,12 +31,26 @@ node packages/cli/dist/index.js doctor --root .
 
 You should see a JSON report detailing passing validations with `"healthy": true`.
 
-### 3. Verify a Golden Example
+### 3. Beginner Actions
 
-The repository comes built-in with reference examples demonstrating different completion scenarios. Run verification against the "Success (Light Tier)" golden example:
+`x-harness` provides seven beginner-friendly actions:
+
+| Action       | Description                                              |
+| :----------- | :------------------------------------------------------- |
+| **`check`**  | Run read-only verification against a completion card        |
+| **`prepare`** | Check if workspace is ready for agent task handoff        |
+| **`recover`** | Get recovery playbook suggestions from errors or trace     |
+| **`doctor`** | Validate workspace health and configuration                |
+| **`actions`** | List all beginner-friendly actions                        |
+| **`status`** | Show trace summary (alias for report without --metrics)  |
+| **`reset`**  | Clean generated harness state (requires --confirm)        |
+
+### 4. Verify a Golden Example
+
+The repository comes built-in with reference examples demonstrating different completion scenarios. Run verification against the "Success (Light Tier)" golden example using the `check` action:
 
 ```bash
-node packages/cli/dist/index.js verify --card examples/golden/success-light/completion-card.yaml
+node packages/cli/dist/index.js check --card examples/golden/success-light/completion-card.yaml
 ```
 
 **Expected Success Output:**
@@ -52,7 +66,7 @@ _(The command returns an exit code of `0` because verification was successful an
 Now, try verifying an example where standard tier verification is blocked due to missing evidence:
 
 ```bash
-node packages/cli/dist/index.js verify --card examples/golden/blocked-missing-evidence/completion-card.yaml
+node packages/cli/dist/index.js check --card examples/golden/blocked-missing-evidence/completion-card.yaml
 ```
 
 **Expected Withheld Output:**
@@ -65,7 +79,7 @@ checks: 1 passed, 1 failed
 
 _(The command returns a non-zero exit code `1` because the evidence floor policy was not met. The task remains withheld)._
 
-### 4. Initialize x-harness in Another Repository
+### 5. Initialize x-harness in Another Repository
 
 To integrate `x-harness` into a separate development project, run the `init` command in the root of that project:
 
@@ -82,16 +96,16 @@ node packages/cli/dist/index.js init --full
 
 If `init` finds conflicting harness files in the target workspace, it stops with a blocked summary and exits with a non-zero code instead of silently half-installing. Use `--force` only when you intend to overwrite those files.
 
-### 5. Verify Your Own Completion Cards
+### 6. Verify Your Own Completion Cards
 
-When working on a task, write your completion card to `completion-card.yaml` and execute the local verify gate:
+When working on a task, write your completion card to `completion-card.yaml` and execute the verify gate using `check`:
 
 ```bash
 # Default verify path looks for 'completion-card.yaml' in current directory
-node packages/cli/dist/index.js verify
+node packages/cli/dist/index.js check
 
 # Advanced check with full check notes and handoff routing
-node packages/cli/dist/index.js verify --card completion-card.yaml --verbose
+node packages/cli/dist/index.js check --card completion-card.yaml --verbose
 ```
 
 ---

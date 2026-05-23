@@ -16,7 +16,7 @@ Use this skill to verify a completion claim.
 - **Read-only**. Do not edit source files.
 - Inspect `completion-card.yaml`.
 - Inspect changed files and evidence if available.
-- Run `node packages/cli/dist/index.js verify` in this repository.
+- Run `node packages/cli/dist/index.js check` (or `verify`) in this repository.
 - Return one outcome:
   - `success`
   - `failed`

@@ -81,6 +81,12 @@
           "type": "array",
           "items": { "type": "string" }
         },
+        "command_evidence": {
+          "type": "array"
+        },
+        "manual_rationale": {
+          "type": "string"
+        },
         "verification_artifacts": {
           "type": "array",
           "items": {
@@ -216,15 +222,7 @@
       "required": ["outcome"],
       "properties": {
         "outcome": {
-          "enum": [
-            "pending",
-            "success",
-            "failed",
-            "blocked",
-            "skipped",
-            "timeout",
-            "error"
-          ]
+          "enum": ["success", "failed", "blocked", "skipped", "timeout", "error"]
         }
       }
     },
@@ -299,7 +297,9 @@
         "properties": {
           "admission": {
             "properties": {
-              "outcome": { "enum": ["blocked", "failed", "skipped"] }
+              "outcome": {
+                "enum": ["blocked", "failed", "skipped", "timeout", "error"]
+              }
             }
           }
         }

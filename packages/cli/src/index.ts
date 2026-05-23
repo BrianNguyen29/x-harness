@@ -143,7 +143,7 @@ reset.action(async (opts: { confirm?: boolean }) => {
     console.log("This will delete:");
     console.log("  - .x-harness/tmp/");
     console.log("  - .x-harness/cache/");
-    process.exit(1);
+    throw new Error("reset aborted: --confirm required");
   }
 
   // Delegate to clean --tmp --force behavior
@@ -151,4 +151,7 @@ reset.action(async (opts: { confirm?: boolean }) => {
 });
 program.addCommand(reset);
 
-program.parse(process.argv);
+program.parseAsync(process.argv).catch((err) => {
+  console.error(`x-harness error: ${err.message}`);
+  process.exit(1);
+});

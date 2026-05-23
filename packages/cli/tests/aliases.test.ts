@@ -153,6 +153,33 @@ describe("alias registration", () => {
       expect(stdout).toContain("requires --confirm");
     });
 
+    it("reset without --confirm goes through top-level error boundary with x-harness error prefix", async () => {
+      // Test that reset error is caught by top-level parseAsync.catch handler
+      // and printed with "x-harness error:" prefix to stderr
+      const { spawn } = await import("node:child_process");
+      const script = path.join(repoRoot, "packages", "cli", "dist", "index.js");
+      const child = spawn("node", [script, "reset"], {
+        cwd: repoRoot,
+      });
+
+      let stderr = "";
+      let exitCode = 1;
+      child.stderr.on("data", (chunk) => {
+        stderr += chunk.toString();
+      });
+      await new Promise<void>((resolve) => {
+        child.on("close", (code) => {
+          exitCode = code ?? 1;
+          resolve();
+        });
+      });
+
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain("x-harness error:");
+      expect(stderr).toContain("reset aborted");
+      expect(stderr).toContain("--confirm");
+    });
+
     it("reset --help shows reset description", async () => {
       const { stdout } = await execaNode(["reset", "--help"]);
       expect(stdout).toContain("reset");

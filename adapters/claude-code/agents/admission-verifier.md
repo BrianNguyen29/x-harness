@@ -18,8 +18,8 @@ Read-only inspector. Validate the completion card and run admission checks.
 ## Commands
 
 ```bash
-# Validate a completion card
-node packages/cli/dist/index.js verify --card completion-card.yaml --json
+# Validate a completion card (use check - primary beginner action)
+node packages/cli/dist/index.js check --card completion-card.yaml --json
 
 # Check repo health
 node packages/cli/dist/index.js doctor --root .

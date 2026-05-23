@@ -11,6 +11,9 @@ evidence:
     - tests/profile.integration.test.ts
     - tests/avatar.upload.test.ts
     - docs/api/v2/profile.md
+  command_evidence:
+    - command: npm test
+      exit_code: 0
 claim:
   fix_status: fixed
   summary: User profile API v2 implemented with avatar upload and validation

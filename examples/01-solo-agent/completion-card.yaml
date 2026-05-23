@@ -6,6 +6,7 @@ accountable: user-alice
 evidence:
   files_changed:
     - src/config.ts
+  manual_rationale: Config rule verified against spec
 claim:
   fix_status: fixed
   summary: Checked config rule and updated setting

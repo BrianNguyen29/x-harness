@@ -35,7 +35,12 @@ Use only `light`, `standard`, `deep`. Do not use `small`, `medium`, `large`.
 ## CLI commands
 
 ```bash
-node packages/cli/dist/index.js verify --card completion-card.yaml
+# Beginner actions (primary interface)
+node packages/cli/dist/index.js check --card completion-card.yaml
+node packages/cli/dist/index.js prepare --json
+node packages/cli/dist/index.js recover --errors "tests failed"
 node packages/cli/dist/index.js doctor --root .
-node packages/cli/dist/index.js report
+node packages/cli/dist/index.js actions
+node packages/cli/dist/index.js status
+node packages/cli/dist/index.js reset --confirm
 ```

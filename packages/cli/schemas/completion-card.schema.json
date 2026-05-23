@@ -81,6 +81,12 @@
           "type": "array",
           "items": { "type": "string" }
         },
+        "command_evidence": {
+          "type": "array"
+        },
+        "manual_rationale": {
+          "type": "string"
+        },
         "verification_artifacts": {
           "type": "array",
           "items": {
@@ -217,7 +223,6 @@
       "properties": {
         "outcome": {
           "enum": [
-            "pending",
             "success",
             "failed",
             "blocked",
@@ -299,7 +304,9 @@
         "properties": {
           "admission": {
             "properties": {
-              "outcome": { "enum": ["blocked", "failed", "skipped"] }
+              "outcome": {
+                "enum": ["blocked", "failed", "skipped", "timeout", "error"]
+              }
             }
           }
         }

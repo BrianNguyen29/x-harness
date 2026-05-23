@@ -6,6 +6,7 @@ accountable: bob
 evidence:
   files_changed:
     - src/utils/formatDate.ts
+  manual_rationale: Simple utility function for date formatting with graceful invalid-input handling
 claim:
   fix_status: fixed
   summary: Implemented formatDate() utility with graceful invalid-input handling

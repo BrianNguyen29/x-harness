@@ -13,6 +13,9 @@ evidence:
   files_changed:
     - src/product-form.tsx
     - src/product-form.test.tsx
+  command_evidence:
+    - command: npm test -- product-form
+      exit_code: 0
   verification_artifacts:
     - kind: unit_test
       command: npm test -- product-form

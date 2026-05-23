@@ -1,6 +1,20 @@
 # x-harness Adapter Guide
 
-x-harness adapters are thin conventions that make the harness usable inside specific agent platforms. Adapters are optional: the CLI (`x-harness verify`, `x-harness doctor`, `x-harness report`) is the source of truth.
+x-harness adapters are thin conventions that make the harness usable inside specific agent platforms. Adapters are optional: the CLI is the source of truth.
+
+## Beginner-friendly actions (primary interface)
+
+| Action       | Alias for              | Description                                              |
+| :----------- | :--------------------- | :------------------------------------------------------- |
+| **`prepare`** | `handoff readiness`   | Check if workspace is ready for agent task handoff        |
+| **`check`**  | `verify`               | Run read-only verification against a completion card        |
+| **`recover`** | `recovery suggest`     | Get recovery playbook suggestions from errors or trace     |
+| **`doctor`** | (standalone)           | Validate workspace health and configuration                |
+| **`actions`** | (standalone)           | List all beginner-friendly actions                        |
+| **`status`** | `report` (no --metrics)| Show trace summary or card metrics                       |
+| **`reset`**  | `clean --tmp --force`   | Clean generated harness state (requires --confirm)        |
+
+**Slash commands for agent adapters:** `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset`
 
 ## Default constraints (all adapters)
 

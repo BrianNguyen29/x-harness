@@ -36,7 +36,7 @@ handoff:
 ## Integration
 
 ```bash
-node packages/cli/dist/index.js verify --card completion-card.yaml
+node packages/cli/dist/index.js check --card completion-card.yaml
 # If blocked, use this agent to determine recovery path.
-# After recovery, re-run verify.
+# After recovery, re-run: node packages/cli/dist/index.js recover --errors "..." --outcome blocked
 ```

@@ -44,36 +44,65 @@ Pre-gate validation provides guidance but never overrides the verify gate.
 
 The CLI is invoked as `node packages/cli/dist/index.js <command> [options]`.
 
-### Core commands
+### Beginner-friendly actions (primary interface)
+
+| Action       | Alias for              | Description                                              |
+| :----------- | :--------------------- | :------------------------------------------------------- |
+| **`prepare`** | `handoff readiness`   | Check if workspace is ready for agent task handoff        |
+| **`check`**  | `verify`               | Run read-only verification against a completion card        |
+| **`recover`** | `recovery suggest`     | Get recovery playbook suggestions from errors or trace     |
+| **`doctor`** | (standalone)           | Validate workspace health and configuration                |
+| **`actions`** | (standalone)           | List all beginner-friendly actions                        |
+| **`status`** | `report` (no --metrics)| Show trace summary or card metrics                       |
+| **`reset`**  | `clean --tmp --force` | Clean generated harness state (requires --confirm)        |
+
+**Slash commands for agent adapters:** `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset`
+
+### Beginner action examples
+
+```bash
+# Verify a completion card (primary beginner action)
+node packages/cli/dist/index.js check --card completion-card.yaml
+# or: node packages/cli/dist/index.js verify --card completion-card.yaml
+
+# Check handoff readiness
+node packages/cli/dist/index.js prepare --json
+# or: node packages/cli/dist/index.js handoff readiness --json
+
+# Generate recovery playbook
+node packages/cli/dist/index.js recover --errors "tests failed" --outcome failed
+# or: node packages/cli/dist/index.js recovery suggest --errors "tests failed" --outcome failed
+
+# Check workspace health
+node packages/cli/dist/index.js doctor
+
+# Show trace summary
+node packages/cli/dist/index.js status
+
+# Reset harness state (safe cleanup)
+node packages/cli/dist/index.js reset --confirm
+
+# List all actions
+node packages/cli/dist/index.js actions
+```
+
+### Advanced commands
 
 ```bash
 # Initialize a workspace
 node packages/cli/dist/index.js init --minimal
 
-# Verify a completion card
-node packages/cli/dist/index.js verify --card completion-card.yaml
-
 # Generate a handoff template
 node packages/cli/dist/index.js handoff standard --title "Fix bug"
 
-# Check workspace health
-node packages/cli/dist/index.js doctor
-
 # Generate audit report
 node packages/cli/dist/index.js report --trace-dir .x-harness/traces
-```
 
-### Additional commands
-
-```bash
 # Add metadata helpers
 node packages/cli/dist/index.js add <claim|evidence|completion-card> [key=value]
 
 # Verify trace integrity
 node packages/cli/dist/index.js trace verify-chain
-
-# Generate recovery playbook
-node packages/cli/dist/index.js recovery suggest --errors "tests failed" --outcome failed
 
 # Create a claim packet from a completion card
 node packages/cli/dist/index.js packet create --card completion-card.yaml
@@ -89,9 +118,6 @@ node packages/cli/dist/index.js examples
 
 # Show canonical context
 node packages/cli/dist/index.js context [--verbose|--json|--refresh]
-
-# Check handoff readiness
-node packages/cli/dist/index.js handoff readiness --interactive
 ```
 
 ## File organization

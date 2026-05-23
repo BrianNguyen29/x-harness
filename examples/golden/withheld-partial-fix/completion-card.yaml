@@ -6,6 +6,7 @@ accountable: bob
 evidence:
   files_changed:
     - src/middleware/rateLimit.ts
+  manual_rationale: Basic in-memory rate limiter implemented, Redis integration pending
 claim:
   fix_status: partial
   summary: Implemented basic rate limiter; Redis sliding window not yet integrated

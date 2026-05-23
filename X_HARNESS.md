@@ -83,17 +83,25 @@ error:
 > **Local Development Only**: `x-harness` is not yet published to npm. Build locally with `npm run build`, then run:
 
 ```bash
-node packages/cli/dist/index.js init --minimal
-node packages/cli/dist/index.js verify
+# Beginner-friendly actions (primary interface)
+node packages/cli/dist/index.js check --card completion-card.yaml
+node packages/cli/dist/index.js prepare --json
+node packages/cli/dist/index.js recover --errors "tests failed"
 node packages/cli/dist/index.js doctor
-node packages/cli/dist/index.js report
+node packages/cli/dist/index.js actions
+node packages/cli/dist/index.js status
+node packages/cli/dist/index.js reset --confirm
+
+# Advanced commands
+node packages/cli/dist/index.js init --minimal
+node packages/cli/dist/index.js handoff standard --title "Fix bug"
 node packages/cli/dist/index.js report --metrics --card completion-card.yaml
-node packages/cli/dist/index.js recovery suggest --errors "tests failed" --outcome failed
 node packages/cli/dist/index.js packet create --card completion-card.yaml
-node packages/cli/dist/index.js packet verify-chain --task-id TASK-001
 ```
 
-The full command set is: `init`, `add`, `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `doctor`, `recovery`, `packet`.
+The full command set is:
+- Beginner actions: `check` (alias for verify), `prepare` (alias for handoff readiness), `recover` (alias for recovery suggest), `doctor`, `actions`, `status`, `reset`
+- Advanced commands: `init`, `add`, `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `recovery`, `packet`
 
 ## Repository Structure
 

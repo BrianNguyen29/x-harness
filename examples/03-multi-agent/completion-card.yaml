@@ -7,6 +7,9 @@ evidence:
   files_changed:
     - src/auth/login.ts
     - src/auth/reset.ts
+  command_evidence:
+    - command: npm test -- auth
+      exit_code: 0
 claim:
   fix_status: fixed
   summary: Implemented user auth flow with password reset

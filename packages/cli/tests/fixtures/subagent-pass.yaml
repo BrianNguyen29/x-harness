@@ -3,7 +3,11 @@ result:
   fix_status: fixed
   key_findings: []
 evidence:
-  files_changed: []
+  files_changed:
+    - src/pass.ts
+  command_evidence:
+    - command: npm test
+      exit_code: 0
   commands_ran: []
 verification:
   status: passed

@@ -24,9 +24,10 @@ Read-only verifier for OpenCode adapter.
 ## Commands
 
 ```bash
-node packages/cli/dist/index.js verify --card completion-card.yaml --json
+# Beginner actions (primary interface)
+node packages/cli/dist/index.js check --card completion-card.yaml --json
 node packages/cli/dist/index.js doctor --root .
-node packages/cli/dist/index.js report
+node packages/cli/dist/index.js status
 ```
 
 ## Output

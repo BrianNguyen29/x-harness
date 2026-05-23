@@ -101,14 +101,22 @@ export function verifyCommand(): Command {
       // Test-only hook: gate by X_HARNESS_ENABLE_TEST_HOOKS to avoid accidental activation.
       // When enabled, deterministically injects a mutation after the guard snapshot
       // so integration tests can verify blocked trace behavior without timing races.
+      // Safety: restrict injection path to within cwd to prevent arbitrary file writes.
       if (
         process.env.X_HARNESS_ENABLE_TEST_HOOKS === "1" &&
         process.env.X_HARNESS_TEST_INJECT_MUTATION
       ) {
-        fs.writeFileSync(
-          process.env.X_HARNESS_TEST_INJECT_MUTATION,
-          "test-mutation"
+        const injectPath = path.resolve(
+          process.cwd(),
+          process.env.X_HARNESS_TEST_INJECT_MUTATION
         );
+        if (injectPath.startsWith(process.cwd() + path.sep)) {
+          fs.writeFileSync(injectPath, "test-mutation");
+        } else {
+          console.error(
+            `test hook: rejected injection path ${injectPath} outside cwd (${process.cwd()})`
+          );
+        }
       }
 
       const startTime = Date.now();
@@ -271,7 +279,7 @@ export function verifyCommand(): Command {
       // Preserve blocked/failed/skipped outcomes from admission; only fall back to
       // "failed" when there are errors but admission had not yet decided.
       const outcome =
-        admission.outcome !== "success" && admission.outcome !== "pending"
+        admission.outcome !== "success"
           ? admission.outcome
           : errors.length > 0
             ? "failed"

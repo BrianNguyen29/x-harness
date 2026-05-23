@@ -4,8 +4,7 @@ export type VerifyOutcome =
   | "blocked"
   | "skipped"
   | "timeout"
-  | "error"
-  | "pending";
+  | "error";
 export type AcceptanceStatus = "accepted" | "withheld";
 export type Tier = "light" | "standard" | "deep";
 export type FixStatus = "fixed" | "not_fixed" | "partial";
@@ -188,6 +187,29 @@ function getFilesChanged(input: AdmissionInput): unknown[] | undefined {
   return undefined;
 }
 
+function getCommandEvidence(input: AdmissionInput): unknown[] | undefined {
+  if (
+    input.evidence &&
+    Array.isArray((input.evidence as Record<string, unknown>).command_evidence)
+  ) {
+    return (input.evidence as Record<string, unknown>)
+      .command_evidence as unknown[];
+  }
+  return undefined;
+}
+
+function getManualRationale(input: AdmissionInput): string | undefined {
+  if (
+    input.evidence &&
+    typeof (input.evidence as Record<string, unknown>).manual_rationale ===
+      "string"
+  ) {
+    return (input.evidence as Record<string, unknown>)
+      .manual_rationale as string;
+  }
+  return undefined;
+}
+
 function getRollbackPolicy(input: AdmissionInput): unknown[] | undefined {
   if (
     input.evidence &&
@@ -303,6 +325,8 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
   const executionControls = getExecutionControls(input);
   const state = getState(input);
   const governance = getGovernance(input);
+  const commandEvidence = getCommandEvidence(input);
+  const manualRationale = getManualRationale(input);
 
   // Evidence presence check
   if (evidenceArray !== undefined) {
@@ -332,6 +356,19 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
   if (!filesChanged || filesChanged.length === 0) {
     errors.push("evidence.files_changed is required and must be non-empty");
     if (!blockingPredicate) blockingPredicate = "evidence_missing";
+  }
+
+  // Light tier evidence floor: requires command_evidence OR manual_rationale
+  if (input.tier === "light") {
+    const hasCommandEvidence = commandEvidence && commandEvidence.length > 0;
+    const hasManualRationale =
+      manualRationale && manualRationale.trim().length > 0;
+    if (!hasCommandEvidence && !hasManualRationale) {
+      errors.push(
+        'tier "light" requires evidence.command_evidence or evidence.manual_rationale'
+      );
+      if (!blockingPredicate) blockingPredicate = "evidence_floor_not_met";
+    }
   }
 
   // Tier evidence floor
@@ -391,6 +428,11 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
   }
 
   if (input.tier === "standard") {
+    // Standard tier requires command_evidence
+    if (!commandEvidence || commandEvidence.length === 0) {
+      errors.push('tier "standard" requires evidence.command_evidence');
+      if (!blockingPredicate) blockingPredicate = "evidence_floor_not_met";
+    }
     if (!verificationArtifacts || verificationArtifacts.length === 0) {
       notes.push('tier "standard" recommends verification_artifacts');
     } else {
@@ -465,8 +507,12 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
       );
     }
 
-    // blocked/failed/skipped requires handoff.next_action + handoff.owner
-    if (["blocked", "failed", "skipped"].includes(admissionOutcome)) {
+    // blocked/failed/skipped/timeout/error requires handoff.next_action + handoff.owner
+    if (
+      ["blocked", "failed", "skipped", "timeout", "error"].includes(
+        admissionOutcome
+      )
+    ) {
       if (
         !handoff ||
         !handoff.next_action ||
@@ -488,10 +534,10 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
     }
   }
 
-  // Also check handoff required for verification blocked/failed/skipped
+  // Also check handoff required for verification blocked/failed/skipped/timeout/error
   if (
     verifyStatus !== undefined &&
-    ["blocked", "failed", "skipped"].includes(verifyStatus)
+    ["blocked", "failed", "skipped", "timeout", "error"].includes(verifyStatus)
   ) {
     if (
       !handoff ||

@@ -12,6 +12,12 @@
       "items": { "type": "string" },
       "minItems": 1
     },
+    "command_evidence": {
+      "type": "array"
+    },
+    "manual_rationale": {
+      "type": "string"
+    },
     "verification_artifacts": {
       "type": "array"
     },

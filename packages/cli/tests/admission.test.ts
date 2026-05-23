@@ -40,6 +40,7 @@ describe("admission", () => {
       },
       evidence: {
         files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
       },
     });
     expect(result.outcome).toBe("success");
@@ -107,6 +108,7 @@ describe("admission", () => {
       handoff: { next_action: "none", owner: "alice" },
       evidence: {
         files_changed: ["a.ts"],
+        manual_rationale: "simple doc fix",
       },
     });
     expect(result.outcome).toBe("success");
@@ -221,6 +223,7 @@ describe("admission", () => {
       pgv_risk: "HIGH",
       evidence: {
         files_changed: ["a.ts"],
+        manual_rationale: "simple doc fix",
       },
     });
     expect(result.outcome).toBe("success");
@@ -295,7 +298,12 @@ describe("admission", () => {
   it("passes admission with valid subagentReturn inputs", () => {
     const result = runAdmission({
       claim: { id: "C1" },
-      evidence: { id: "E1", owner: "alice", files_changed: ["a.ts"] },
+      evidence: {
+        id: "E1",
+        owner: "alice",
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
       subagentReturn: {
         result: { fix_status: "fixed" },
         verification: { status: "passed" },
@@ -526,6 +534,7 @@ describe("admission", () => {
       handoff: { next_action: "none", owner: "alice" },
       evidence: {
         files_changed: ["a.ts"],
+        manual_rationale: "simple doc fix",
       },
     });
     expect(result.outcome).toBe("success");
@@ -552,6 +561,7 @@ describe("admission", () => {
       context_acknowledged: false,
       evidence: {
         files_changed: ["a.ts"],
+        manual_rationale: "simple doc fix",
       },
     });
     expect(result.outcome).toBe("success");
@@ -578,6 +588,7 @@ describe("admission", () => {
       context_acknowledged: true,
       evidence: {
         files_changed: ["a.ts"],
+        manual_rationale: "simple doc fix",
       },
     });
     expect(result.outcome).toBe("success");
@@ -599,6 +610,7 @@ describe("admission", () => {
       handoff: { next_action: "none", owner: "alice" },
       evidence: {
         files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
         verification_artifacts: [{ kind: "unit_test", status: "passed" }],
       },
     });
@@ -656,6 +668,7 @@ describe("admission", () => {
       handoff: { next_action: "none", owner: "alice" },
       evidence: {
         files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
         verification_artifacts: [
           {
             kind: "unit_test",
@@ -672,5 +685,185 @@ describe("admission", () => {
     expect(result.notes.some((n) => n.includes("artifact metadata"))).toBe(
       false
     );
+  });
+
+  // Batch A contract fixes tests
+
+  it("rejects light tier without command_evidence or manual_rationale", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(
+      result.errors.some(
+        (e) =>
+          e.includes("light") &&
+          (e.includes("command_evidence") || e.includes("manual_rationale"))
+      )
+    ).toBe(true);
+  });
+
+  it("accepts light tier with command_evidence", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+  });
+
+  it("accepts light tier with manual_rationale", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        manual_rationale: "simple doc fix",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+  });
+
+  it("rejects standard tier without command_evidence", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(
+      result.errors.some(
+        (e) => e.includes("standard") && e.includes("command_evidence")
+      )
+    ).toBe(true);
+  });
+
+  it("rejects timeout without handoff.next_action", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "timeout", checks: [] },
+      handoff: { next_action: "", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        manual_rationale: "simple fix",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("handoff.next_action"))).toBe(
+      true
+    );
+  });
+
+  it("rejects timeout without handoff.owner", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "timeout", checks: [] },
+      handoff: { next_action: "review", owner: "" },
+      evidence: {
+        files_changed: ["a.ts"],
+        manual_rationale: "simple fix",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("handoff.owner"))).toBe(true);
+  });
+
+  it("rejects error without handoff.next_action", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "error", checks: [] },
+      handoff: { next_action: "", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        manual_rationale: "simple fix",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("handoff.next_action"))).toBe(
+      true
+    );
+  });
+
+  it("rejects admission outcome timeout without handoff", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "timeout" },
+      handoff: { next_action: "", owner: "" },
+      evidence: {
+        files_changed: ["a.ts"],
+        manual_rationale: "simple fix",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("handoff.next_action"))).toBe(
+      true
+    );
+  });
+
+  it("rejects admission outcome error without handoff", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "error" },
+      handoff: { next_action: "", owner: "" },
+      evidence: {
+        files_changed: ["a.ts"],
+        manual_rationale: "simple fix",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("handoff.owner"))).toBe(true);
   });
 });

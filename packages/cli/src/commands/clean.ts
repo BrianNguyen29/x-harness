@@ -101,35 +101,15 @@ export function cleanCommand(): Command {
       }
 
       // --archive-success: move accepted cards to archive
+      // Note: content check is deferred to execution time to avoid TOCTOU window
       if (opts.archiveSuccess) {
         const cardPath = path.join(cwd, "completion-card.yaml");
         if (await fs.pathExists(cardPath)) {
-          try {
-            const content = await fs.readFile(cardPath, "utf-8");
-            const YAML = await import("yaml");
-            const data = YAML.parse(content) as Record<string, unknown>;
-            if (
-              data.acceptance_status === "accepted" &&
-              (data.admission as Record<string, unknown>)?.outcome === "success"
-            ) {
-              const archiveDir = path.join(cwd, ".x-harness", "archive");
-              const archiveName = `completion-card-${Date.now()}.yaml`;
-              const archivePath = path.join(archiveDir, archiveName);
-              actions.push({
-                type: "move",
-                path: `${cardPath} -> ${archivePath}`,
-                note: "archive successful card",
-              });
-            } else {
-              console.log(
-                "Current completion card is not accepted; skipping archive."
-              );
-            }
-          } catch {
-            console.log(
-              "Could not parse completion-card.yaml; skipping archive."
-            );
-          }
+          actions.push({
+            type: "archive-accept",
+            path: cardPath,
+            note: "archive accepted card",
+          });
         } else {
           console.log("No completion-card.yaml found to archive.");
         }
@@ -179,6 +159,27 @@ export function cleanCommand(): Command {
             await fs.ensureDir(path.dirname(dest.trim()));
             await fs.move(src.trim(), dest.trim());
             console.log(`moved: ${a.path}`);
+          } else if (a.type === "archive-accept") {
+            // Re-verify content at move time to avoid TOCTOU window
+            const cardPath = a.path;
+            const content = await fs.readFile(cardPath, "utf-8");
+            const YAML = await import("yaml");
+            const data = YAML.parse(content) as Record<string, unknown>;
+            if (
+              data.acceptance_status !== "accepted" ||
+              (data.admission as Record<string, unknown>)?.outcome !== "success"
+            ) {
+              console.log(
+                "Current completion card is not accepted; skipping archive."
+              );
+              continue;
+            }
+            const archiveDir = path.join(cwd, ".x-harness", "archive");
+            const archiveName = `completion-card-${Date.now()}.yaml`;
+            const archivePath = path.join(archiveDir, archiveName);
+            await fs.ensureDir(archiveDir);
+            await fs.move(cardPath, archivePath);
+            console.log(`archived: ${cardPath} -> ${archivePath}`);
           }
         } catch (err) {
           console.error(

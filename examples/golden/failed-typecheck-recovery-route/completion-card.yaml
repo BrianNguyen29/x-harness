@@ -6,6 +6,9 @@ accountable: bob
 evidence:
   files_changed:
     - src/payment.ts
+  command_evidence:
+    - command: npm run typecheck
+      exit_code: 1
 claim:
   fix_status: fixed
   summary: Refactored payment module
