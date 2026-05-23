@@ -1,8 +1,14 @@
 import { describe, it, expect } from "vitest";
+import * as path from "node:path";
+import * as fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import { validate as validateClaim } from "../src/validators/claim.js";
 import { validate as validateEvidence } from "../src/validators/evidence.js";
 import { validate as validateCompletionCard } from "../src/validators/completionCard.js";
 import { validate as validateSubagentReturn } from "../src/validators/subagentReturn.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(path.join(__dirname, "..", ".."));
 
 describe("schema validators", () => {
   describe("claim schema", () => {
@@ -209,5 +215,47 @@ describe("schema validators", () => {
       const result = await validateCompletionCard(card);
       expect(result.valid).toBe(false);
     });
+  });
+
+  describe("cross-schema sync", () => {
+    // Schemas that should be byte-identical between root (published contract) and runtime copies
+    const syncedSchemas = [
+      "completion-card.schema.json",
+      "subagent-return.schema.json",
+      "verify-event.schema.json",
+      "pgv-advice.schema.json",
+      "claim.schema.json",
+      "evidence.schema.json",
+      "packet.schema.json",
+    ];
+
+    for (const schemaFile of syncedSchemas) {
+      it(`${schemaFile} runtime copy matches root contract`, () => {
+        const rootPath = path.join(repoRoot, "schemas", schemaFile);
+        const runtimePath = path.join(
+          repoRoot,
+          "packages",
+          "cli",
+          "schemas",
+          schemaFile
+        );
+        if (!fs.existsSync(rootPath)) {
+          // Schema only exists in runtime (e.g. runtime-only validator)
+          return;
+        }
+        if (!fs.existsSync(runtimePath)) {
+          expect.fail(
+            `${schemaFile} exists in root but not in packages/cli/schemas`
+          );
+          return;
+        }
+        const rootContent = fs.readFileSync(rootPath, "utf-8");
+        const runtimeContent = fs.readFileSync(runtimePath, "utf-8");
+        expect(
+          runtimeContent,
+          `${schemaFile} should be byte-identical in root and runtime`
+        ).toBe(rootContent);
+      });
+    }
   });
 });

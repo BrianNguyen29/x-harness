@@ -52,6 +52,10 @@ evidence_floor:
       - remaining_risks_declared
       - execution_controls_present
       - rollback_policy_present
+    runtime_enforced:
+      - verification_artifacts
+      - state.read_set
+      - state.write_set
 
 reject_success_if:
   fix_status:

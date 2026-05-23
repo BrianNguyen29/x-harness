@@ -70,7 +70,7 @@ Admission policy (`policies/admission.yaml`) requires:
 Evidence floor by tier:
 - **light**: `files_changed` + (`command_evidence` or `manual_rationale`)
 - **standard**: `files_changed` + `command_evidence`
-- **deep**: `files_changed` + `command_evidence` + `evidence_scope` + `untested_regions` + `remaining_risks` + `execution_controls` + `rollback_policy`
+- **deep** (runtime-enforced): `files_changed` + `command_evidence` + `evidence_scope_declared` + `untested_regions_declared` + `remaining_risks_declared` + `execution_controls_present` + `rollback_policy_present`. Deep also requires `verification_artifacts`, `state.read_set`, and `state.write_set` when state is provided.
 
 ## Where to look
 

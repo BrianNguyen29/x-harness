@@ -134,7 +134,15 @@ schemas/                          # Published contract (do not edit directly for
 
 policies/
   admission.yaml
+  cleanup.yaml
+  denominator.yaml
+  escalation.yaml
+  evidence.yaml
+  ownership.yaml
+  pgv.yaml
   recovery.yaml
+  rollback.yaml
+  stale-ground.yaml
 
 examples/
   00-minimal/

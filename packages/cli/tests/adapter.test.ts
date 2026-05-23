@@ -116,4 +116,80 @@ describe("adapter contract", () => {
       });
     }
   });
+
+  describe("adapter content contract", () => {
+    // Readme files to scan for content contract violations
+    const readmeFiles: { adapter: string; path: string }[] = [
+      { adapter: "generic", path: "adapters/generic/README.md" },
+      { adapter: "claude-code", path: "adapters/claude-code/README.md" },
+      { adapter: "cursor", path: "adapters/cursor/README.md" },
+      { adapter: "opencode", path: "adapters/opencode/README.md" },
+      { adapter: "antigravity", path: "adapters/antigravity/README.md" },
+    ];
+
+    const INVALID_GATE_OUTCOME_PHRASES = [
+      "verify_gate.outcome",
+      "verify-gate.outcome",
+    ];
+    const INVALID_ZOD_CLAIMS = [
+      "zod dependency",
+      "depends on zod",
+      "uses zod for",
+    ];
+    const REQUIRED_ADMISSION_SEMANTICS = [
+      "admission.outcome",
+      "acceptance_status",
+      // Fallback: adapters may use "accepted"/"withheld" as the semantic equivalent
+      "accepted",
+      "withheld",
+    ];
+    const READ_ONLY_VERIFIER_PHRASES = [
+      "read-only verifier",
+      "read only verifier",
+      "verifier is read-only",
+      "strict read-only",
+    ];
+
+    for (const { adapter, path: filePath } of readmeFiles) {
+      const fullPath = path.join(repoRoot, filePath);
+      if (!fs.existsSync(fullPath)) continue;
+
+      const content = fs.readFileSync(fullPath, "utf-8");
+      const lower = content.toLowerCase();
+
+      describe(adapter, () => {
+        for (const phrase of INVALID_GATE_OUTCOME_PHRASES) {
+          it(`does not use ${phrase} (use admission.outcome instead)`, () => {
+            expect(content).not.toContain(phrase);
+          });
+        }
+
+        for (const claim of INVALID_ZOD_CLAIMS) {
+          it(`does not claim ${claim}`, () => {
+            expect(lower).not.toContain(claim);
+          });
+        }
+
+        it("includes admission semantics (admission.outcome, acceptance_status, or accepted/withheld)", () => {
+          const hasAdmission = REQUIRED_ADMISSION_SEMANTICS.some((term) =>
+            content.includes(term)
+          );
+          expect(
+            hasAdmission,
+            `${filePath} should mention admission/acceptance semantics`
+          ).toBe(true);
+        });
+
+        it("mentions read-only verifier", () => {
+          const hasReadOnly = READ_ONLY_VERIFIER_PHRASES.some((phrase) =>
+            lower.includes(phrase.toLowerCase())
+          );
+          expect(
+            hasReadOnly,
+            `${filePath} should mention read-only verifier`
+          ).toBe(true);
+        });
+      });
+    }
+  });
 });

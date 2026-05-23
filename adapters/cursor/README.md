@@ -29,7 +29,8 @@ Once copied, Cursor will automatically detect and apply these rules to all agent
 
 ## Constraints
 
-- **Advisory-only rule**: Cursor rules act as a guide for the agent's behavior; they do not automatically execute verification or enforce policies. In this repository, run `node packages/cli/dist/index.js verify` to perform verification.
+- **Verifier is read-only**: The verification agent must not write or edit files to fix validation issues during the verification stage. Run `node packages/cli/dist/index.js verify` to perform read-only verification.
+- **Advisory-only rule**: Cursor rules act as a guide for the agent's behavior; they do not automatically execute verification or enforce policies.
 - **Strict Tier Labels**: The rules instruct Cursor to use only the canonical tiers (`light`, `standard`, `deep`).
 - **No heavy runtime required**: Fully local, offline-first.
 

@@ -64,6 +64,12 @@
     },
     "created_at": {
       "type": "string"
+    },
+    "previous_hash": {
+      "type": ["string", "null"]
+    },
+    "event_hash": {
+      "type": ["string", "null"]
     }
   }
 }
