@@ -1,0 +1,44 @@
+version: 1
+invariants:
+  - id: verify_gate_read_only
+    statement: "Verify gate must remain read-only."
+    protected_paths:
+      - packages/cli/src/core/mutation-guard.ts
+      - packages/cli/src/core/verify-pipeline.ts
+      - packages/cli/src/commands/verify.ts
+    forbidden_changes:
+      - disable_mutation_guard
+      - allow_verifier_write_source
+
+  - id: fail_closed
+    statement: "Admission must be fail-closed by default."
+    protected_paths:
+      - policies/admission.yaml
+      - packages/cli/src/core/admission.ts
+    forbidden_changes:
+      - treat_missing_evidence_as_success
+      - treat_unknown_as_success
+
+  - id: human_approval_not_bypassable
+    statement: "Human-only paths cannot be edited without intervention."
+    protected_paths:
+      - policies/authority.yaml
+      - components/registry.yaml
+      - schemas/**
+    forbidden_changes:
+      - bypass_intervention_validation
+      - auto_approve_human_only_changes
+
+  - id: pgv_advisory_only
+    statement: "PGV cannot become admission authority."
+    protected_paths:
+      - policies/pgv.yaml
+      - docs/PGV_ADVISORY.md
+    forbidden_changes:
+      - pgv_sets_accepted
+
+  - id: false_accept_zero
+    statement: "No candidate can be promoted if false_accept_count increases above zero."
+    forbidden_changes:
+      - allow_false_accept_regression
+    benchmark_required: true

@@ -1,0 +1,303 @@
+version: 1
+
+components:
+  - id: agent_contract
+    kind: contract
+    paths:
+      - AGENTS.md
+      - X_HARNESS.md
+      - docs/VERIFY_GATE.md
+      - docs/ADMISSION_POLICY.md
+      - docs/RUNTIME_CONTRACT.md
+      - docs/SCHEMAS.md
+      - docs/PHASE1_5_EXECUTION_PLAN.md
+      - X_HARNESS_PHASE1_5_IMPLEMENTATION_PLAN_V2_AGENT_READY.md
+    owner: maintainers
+    stability: stable
+    agent_edit: human_approved
+    tests:
+      - node packages/cli/dist/index.js context --check
+      - node packages/cli/dist/index.js doctor --root .
+
+  - id: completion_schema
+    kind: schema
+    paths:
+      - schemas/**
+      - packages/cli/schemas/**
+      - packages/cli/src/validators/*.ts
+    owner: maintainers
+    stability: stable
+    agent_edit: human_only
+    tests:
+      - npm -w packages/cli run test -- schema.test.ts validators.test.ts
+
+  - id: component_registry
+    kind: runtime
+    paths:
+      - components/registry.yaml
+      - schemas/components-registry.schema.json
+      - packages/cli/schemas/components-registry.schema.json
+      - packages/cli/src/core/components.ts
+      - packages/cli/src/commands/components.ts
+      - docs/COMPONENTS.md
+    owner: maintainers
+    stability: stable
+    agent_edit: human_approved
+    tests:
+      - npm -w packages/cli run test -- components.test.ts doctor.test.ts
+
+  - id: evidence_corpus
+    kind: runtime
+    paths:
+      - evidence/**
+      - docs/EVIDENCE.md
+      - docs/REPORT_FORMATS.md
+      - schemas/evidence-index.schema.json
+      - packages/cli/schemas/evidence-index.schema.json
+      - packages/cli/src/core/evidence-corpus.ts
+      - packages/cli/src/core/redaction.ts
+      - packages/cli/src/commands/evidence.ts
+      - packages/cli/src/commands/report.ts
+    owner: maintainers
+    stability: experimental
+    agent_edit: human_approved
+    tests:
+      - npm -w packages/cli run test -- evidence.test.ts report.test.ts schema.test.ts
+
+  - id: episode_packager
+    kind: runtime
+    paths:
+      - docs/EPISODES.md
+      - schemas/episode-manifest.schema.json
+      - packages/cli/schemas/episode-manifest.schema.json
+      - packages/cli/src/core/episode.ts
+      - packages/cli/src/commands/episode.ts
+      - packages/cli/src/commands/verify.ts
+      - packages/cli/tests/episode.test.ts
+    owner: maintainers
+    stability: experimental
+    agent_edit: human_approved
+    tests:
+      - npm -w packages/cli run test -- episode.test.ts verify.test.ts
+
+  - id: prediction_and_attribution
+    kind: runtime
+    paths:
+      - docs/PREDICTIONS.md
+      - docs/ATTRIBUTION.md
+      - schemas/attribution.schema.json
+      - packages/cli/schemas/attribution.schema.json
+      - packages/cli/src/core/attribution.ts
+      - packages/cli/src/commands/attribution.ts
+      - packages/cli/src/commands/prediction.ts
+      - packages/cli/tests/attribution.test.ts
+      - packages/cli/tests/prediction.test.ts
+    owner: maintainers
+    stability: experimental
+    agent_edit: human_approved
+    tests:
+      - npm -w packages/cli run test -- attribution.test.ts prediction.test.ts episode.test.ts
+
+  - id: admission_policy
+    kind: policy
+    paths:
+      - policies/admission.yaml
+      - packages/cli/src/core/admission.ts
+    owner: maintainers
+    stability: stable
+    agent_edit: human_only
+    tests:
+      - npm -w packages/cli run test -- admission.test.ts verify.test.ts
+
+  - id: intake_policy
+    kind: policy
+    paths:
+      - docs/INTAKE.md
+      - policies/intake.yaml
+      - packages/cli/src/core/intake.ts
+      - packages/cli/src/commands/intake.ts
+      - packages/cli/tests/intake.test.ts
+    owner: maintainers
+    stability: stable
+    agent_edit: human_approved
+    tests:
+      - npm -w packages/cli run test -- intake.test.ts admission.test.ts verify.test.ts
+
+  - id: governance_boundary
+    kind: policy
+    paths:
+      - docs/GOVERNANCE_BOUNDARY.md
+      - policies/authority.yaml
+      - packages/cli/src/core/authority.ts
+      - packages/cli/src/commands/governance.ts
+      - packages/cli/tests/authority-boundary.test.ts
+    owner: maintainers
+    stability: stable
+    agent_edit: human_only
+    tests:
+      - npm -w packages/cli run test -- authority-boundary.test.ts
+
+  - id: permissions_model
+    kind: policy
+    paths:
+      - docs/PERMISSIONS.md
+      - policies/permissions.yaml
+      - schemas/permissions.schema.json
+      - packages/cli/schemas/permissions.schema.json
+      - packages/cli/src/core/permissions.ts
+      - packages/cli/src/commands/permissions.ts
+      - packages/cli/tests/permissions.test.ts
+    owner: maintainers
+    stability: experimental
+    agent_edit: human_only
+    tests:
+      - npm -w packages/cli run test -- permissions.test.ts schema.test.ts doctor.test.ts components.test.ts
+
+  - id: benchmark_suite
+    kind: fixture
+    paths:
+      - docs/METRICS.md
+      - schemas/benchmark-report.schema.json
+      - packages/cli/schemas/benchmark-report.schema.json
+      - packages/cli/src/commands/benchmark.ts
+      - packages/cli/tests/benchmark.test.ts
+      - examples/adversarial/**
+    owner: maintainers
+    stability: experimental
+    agent_edit: human_approved
+    tests:
+      - npm -w packages/cli run test -- benchmark.test.ts schema.test.ts doctor.test.ts components.test.ts
+      - node packages/cli/dist/index.js benchmark --filter adversarial --json
+
+  - id: evolution_frozen_transfer
+    kind: runtime
+    paths:
+      - docs/EVOLUTION.md
+      - docs/FROZEN_TRANSFER.md
+      - tools/experimental/evolve/**
+      - schemas/evolution-constitution.schema.json
+      - packages/cli/schemas/evolution-constitution.schema.json
+      - schemas/frozen-manifest.schema.json
+      - packages/cli/schemas/frozen-manifest.schema.json
+      - packages/cli/src/core/evolution.ts
+      - packages/cli/src/core/frozen.ts
+      - packages/cli/src/commands/evolve.ts
+      - packages/cli/src/commands/frozen.ts
+      - packages/cli/tests/evolve.test.ts
+      - packages/cli/tests/frozen.test.ts
+    owner: maintainers
+    stability: experimental
+    agent_edit: human_approved
+    tests:
+      - npm -w packages/cli run test -- evolve.test.ts frozen.test.ts schema.test.ts doctor.test.ts components.test.ts
+      - node packages/cli/dist/index.js evolve evaluate --json
+      - node packages/cli/dist/index.js frozen verify dist/x-harness-frozen.tar.gz --json
+
+  - id: federation_exchange
+    kind: runtime
+    paths:
+      - docs/FEDERATION.md
+      - policies/federation.yaml
+      - schemas/federation-pattern.schema.json
+      - packages/cli/schemas/federation-pattern.schema.json
+      - packages/cli/src/core/federation.ts
+      - packages/cli/src/commands/federation.ts
+      - packages/cli/tests/federation.test.ts
+    owner: maintainers
+    stability: experimental
+    agent_edit: human_approved
+    tests:
+      - npm -w packages/cli run test -- federation.test.ts schema.test.ts doctor.test.ts components.test.ts
+      - node packages/cli/dist/index.js federation validate .x-harness/federation/patterns.jsonl --json
+
+  - id: optional_enterprise_controls
+    kind: runtime
+    paths:
+      - docs/ENTERPRISE_OPTIONAL.md
+      - policies/approval-risk.yaml
+      - policies/cost-budget.yaml
+      - schemas/agent-profile.schema.json
+      - schemas/approval-risk.schema.json
+      - schemas/cost-budget.schema.json
+      - packages/cli/schemas/agent-profile.schema.json
+      - packages/cli/schemas/approval-risk.schema.json
+      - packages/cli/schemas/cost-budget.schema.json
+      - packages/cli/src/core/agent-profile.ts
+      - packages/cli/src/core/approval-risk.ts
+      - packages/cli/src/core/cost-budget.ts
+      - packages/cli/src/commands/agent-profile.ts
+      - packages/cli/src/commands/approval-risk.ts
+      - packages/cli/src/commands/cost.ts
+      - packages/cli/tests/enterprise-optional.test.ts
+    owner: maintainers
+    stability: experimental
+    agent_edit: human_approved
+    tests:
+      - npm -w packages/cli run test -- enterprise-optional.test.ts schema.test.ts doctor.test.ts components.test.ts
+
+  - id: recovery_policy
+    kind: policy
+    paths:
+      - policies/recovery.yaml
+      - packages/cli/src/core/recovery.ts
+      - packages/cli/src/commands/recovery.ts
+    owner: maintainers
+    stability: stable
+    agent_edit: human_approved
+    tests:
+      - npm -w packages/cli run test -- recovery.test.ts recovery-playbook.test.ts
+
+  - id: verify_runtime
+    kind: runtime
+    paths:
+      - packages/cli/src/core/verify-pipeline.ts
+      - packages/cli/src/core/mutation-guard.ts
+      - packages/cli/src/commands/verify.ts
+    owner: maintainers
+    stability: stable
+    agent_edit: human_only
+    tests:
+      - npm -w packages/cli run test -- verify.test.ts mutation-guard.test.ts
+
+  - id: ci_release
+    kind: ci
+    paths:
+      - .github/workflows/*.yml
+      - .github/workflows/x-harness-verify.yml
+      - .github/workflows/release.yml
+      - .github/workflows/sbom.yml
+      - docs/CI.md
+      - docs/RELEASE_SECURITY.md
+      - package.json
+      - package-lock.json
+      - packages/cli/.gitignore
+      - packages/cli/package.json
+      - packages/cli/scripts/sync-package-assets.mjs
+      - packages/cli/src/core/assets.ts
+      - packages/cli/tests/release-pack.test.ts
+    owner: maintainers
+    stability: stable
+    agent_edit: human_only
+    tests:
+      - npm -w packages/cli run test -- ci-workflow.test.ts release-pack.test.ts
+      - npm -w packages/cli run pack:dry-run
+
+  - id: task_templates
+    kind: template
+    paths:
+      - templates/**
+    owner: maintainers
+    stability: stable
+    agent_edit: human_only
+    tests:
+      - npm -w packages/cli run test -- handoff.test.ts
+
+  - id: examples_and_golden
+    kind: fixture
+    paths:
+      - examples/**
+    owner: maintainers
+    stability: stable
+    agent_edit: agent_editable
+    tests:
+      - node packages/cli/dist/index.js examples verify

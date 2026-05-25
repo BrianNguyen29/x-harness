@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "intervention",
+  "type": "object",
+  "required": ["actor", "task", "scope", "decision", "reason", "expiration"],
+  "properties": {
+    "actor": {
+      "type": "string",
+      "description": "The agent or user who initiated the intervention"
+    },
+    "task": {
+      "type": "string",
+      "description": "Task ID or description this intervention applies to"
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["file", "directory", "path", "global"],
+      "description": "Granularity of the intervention scope"
+    },
+    "paths": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Specific paths affected by the intervention"
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["allow", "deny", "flag", "override"],
+      "description": "The governance decision made"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Human-readable rationale for the decision"
+    },
+    "expiration": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this intervention expires"
+    },
+    "authorizer": {
+      "type": "string",
+      "description": "Who authorized this intervention"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

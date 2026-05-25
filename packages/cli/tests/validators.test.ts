@@ -178,13 +178,7 @@ describe("validators", () => {
         acceptance_status: "withheld",
       };
       const result = await validateCompletionCard(card);
-      // acceptance_status=withheld when admission.outcome=success is structurally valid,
-      // but the task says to reject success-with-withheld. JSON Schema if/then handles
-      // accepted->success, not withheld->non-success. Let's check if the schema flags it.
-      // Actually the schema only enforces: if accepted then outcome=success.
-      // It does NOT enforce: if outcome=success then accepted.
-      // The admission logic enforces that. So schema should allow it, admission logic rejects.
-      expect(result.valid).toBe(true);
+      expect(result.valid).toBe(false);
     });
 
     it("rejects blocked without handoff next_action/owner", async () => {

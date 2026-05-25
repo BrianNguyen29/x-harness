@@ -17,6 +17,7 @@ Read-only verifier for OpenCode adapter.
 - **Canonical checks**:
   - `verification.status: passed` implies `claim.fix_status: fixed`.
   - `acceptance_status: accepted` only when `admission.outcome: success`.
+  - `admission.outcome: success` requires `acceptance_status: accepted`, `verification.status: passed`, and `claim.fix_status: fixed`.
   - Non-success outcomes require `handoff.next_action` and `handoff.owner`.
 - **PGV advisory-only**: Note PGV risk but never let it block a passing core admission.
 - **Outcome**: Only `success` + `accepted` counts as accepted. Everything else is withheld.
@@ -25,7 +26,7 @@ Read-only verifier for OpenCode adapter.
 
 ```bash
 # Beginner actions (primary interface)
-node packages/cli/dist/index.js check --card completion-card.yaml --json
+node packages/cli/dist/index.js check --card completion-card.yaml --strict --json
 node packages/cli/dist/index.js doctor --root .
 node packages/cli/dist/index.js status
 ```
@@ -41,10 +42,35 @@ node packages/cli/dist/index.js status
 
 ## Evidence scope checks
 
-- Light: optional `verification_artifacts`.
-- Standard: recommends `verifies`, `does_not_verify`, `untested_regions`.
-- Deep: requires the above plus `remaining_risks`, `state.read_set`, `state.write_set`.
+- Light: `files_changed` + `command_evidence` or `manual_rationale`.
+- Standard: `files_changed` + `command_evidence`; recommends `verifies`, `does_not_verify`, `untested_regions`; requires `done_checklist` and `prediction`.
+- Deep: `files_changed` + `command_evidence` + scoped `verification_artifacts` + `untested_regions` + `remaining_risks` + `rollback_policy` + `execution_controls` + `state.read_set/write_set` + `done_checklist` + `prediction`.
 
 ## Governance
 
 Deep tasks with `governance.requires_human_approval: true` require `approval_status: approved`.
+
+<!-- BEGIN X-HARNESS MANAGED CONTRACT: opencode-verify-agent-contract -->
+<!-- generated-by: x-harness -->
+<!-- contract-hash: ec6438371a039c93 -->
+
+## Generated Adapter Contract
+
+- Completion is admitted, not claimed.
+- Verifier is read-only.
+- Success is the only accepted outcome.
+- Canonical tiers: light, standard, deep.
+- PGV is advisory-only.
+
+## Evidence Floor
+
+- **light**: files_changed + (command_evidence or manual_rationale).
+- **standard**: files_changed + command_evidence + done_checklist + prediction.
+- **deep**: files_changed + command_evidence + evidence_scope_declared + untested_regions_declared + remaining_risks_declared + execution_controls_present + rollback_policy_present + done_checklist + prediction. Runtime-enforced: verification_artifacts, state.read_set, state.write_set.
+
+## Strict Evidence Provenance
+
+- verify --strict requires command_evidence entries to include command, exit_code, runner, and started_at for standard/deep cards.
+- verify --strict requires verification_artifacts entries to include command, exit_code, runner, and started_at for standard/deep cards.
+
+<!-- END X-HARNESS MANAGED CONTRACT: opencode-verify-agent-contract -->

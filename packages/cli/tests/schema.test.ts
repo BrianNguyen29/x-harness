@@ -7,6 +7,7 @@ import { validate as validateClaim } from "../src/validators/claim.js";
 import { validate as validateEvidence } from "../src/validators/evidence.js";
 import { validate as validateCompletionCard } from "../src/validators/completionCard.js";
 import { validate as validateSubagentReturn } from "../src/validators/subagentReturn.js";
+import { compileSchema, loadSchema } from "../src/core/schema.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(path.join(__dirname, "..", "..", ".."));
@@ -143,7 +144,7 @@ describe("schema validators", () => {
       claim: {
         fix_status: "fixed",
         summary: "done",
-        evidence: [],
+        evidence: ["e1"],
       },
       verification: {
         status: "passed",
@@ -189,6 +190,14 @@ describe("schema validators", () => {
           approval_status: "not_required",
           approver: undefined,
         },
+        intake: {
+          classification: "normal",
+          mapped_tier: "standard",
+          rationale: "Routine implementation",
+          signals: ["routine_implementation"],
+          negative_signals_considered: ["auth", "token"],
+          auto_escalated: false,
+        },
         context_acknowledged: true,
       };
       const result = await validateCompletionCard(card);
@@ -197,6 +206,19 @@ describe("schema validators", () => {
 
     it("rejects card with invalid tier", async () => {
       const card = { ...minimalCard, tier: "small" };
+      const result = await validateCompletionCard(card);
+      expect(result.valid).toBe(false);
+    });
+
+    it("rejects card with invalid intake mapped_tier", async () => {
+      const card = {
+        ...minimalCard,
+        intake: {
+          classification: "high_risk",
+          mapped_tier: "large",
+          rationale: "Invalid runtime tier",
+        },
+      };
       const result = await validateCompletionCard(card);
       expect(result.valid).toBe(false);
     });
@@ -216,18 +238,61 @@ describe("schema validators", () => {
       const result = await validateCompletionCard(card);
       expect(result.valid).toBe(false);
     });
+
+    it("rejects success admission with withheld acceptance", async () => {
+      const card = {
+        ...minimalCard,
+        admission: { outcome: "success" },
+        acceptance_status: "withheld",
+      };
+      const result = await validateCompletionCard(card);
+      expect(result.valid).toBe(false);
+    });
+
+    it("rejects success admission without passed verification", async () => {
+      const card = {
+        ...minimalCard,
+        verification: { status: "blocked", checks: [] },
+        admission: { outcome: "success" },
+        acceptance_status: "accepted",
+      };
+      const result = await validateCompletionCard(card);
+      expect(result.valid).toBe(false);
+    });
+
+    it("rejects empty claim evidence", async () => {
+      const card = {
+        ...minimalCard,
+        claim: { ...minimalCard.claim, evidence: [] },
+      };
+      const result = await validateCompletionCard(card);
+      expect(result.valid).toBe(false);
+    });
   });
 
   describe("cross-schema sync", () => {
     // Schemas that should be byte-identical between root (published contract) and runtime copies
     const syncedSchemas = [
+      "attribution.schema.json",
+      "agent-profile.schema.json",
+      "approval-risk.schema.json",
+      "benchmark-report.schema.json",
       "completion-card.schema.json",
+      "components-registry.schema.json",
+      "cost-budget.schema.json",
+      "evidence-index.schema.json",
+      "evolution-constitution.schema.json",
+      "episode-manifest.schema.json",
+      "frozen-manifest.schema.json",
+      "federation-pattern.schema.json",
+      "permissions.schema.json",
       "subagent-return.schema.json",
       "verify-event.schema.json",
       "pgv-advice.schema.json",
       "claim.schema.json",
       "evidence.schema.json",
       "packet.schema.json",
+      "intervention.schema.json",
     ];
 
     // Helper to compare two schema files and return whether they match
@@ -305,6 +370,38 @@ describe("schema validators", () => {
         fs.rmSync(testRoot, { recursive: true, force: true });
         fs.rmSync(testRuntime, { recursive: true, force: true });
       }
+    });
+  });
+
+  describe("benchmark report schema", () => {
+    it("accepts minimal benchmark report metrics", async () => {
+      const schema = await loadSchema("benchmark-report");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: true,
+        generated_at: "2026-05-24T00:00:00.000Z",
+        iterations: 1,
+        timeout_ms: 120000,
+        filter: "admission",
+        results: [],
+        integration: null,
+        metrics: {
+          false_accept_count: 0,
+          false_reject_count: 0,
+          expected_pass_count: 0,
+          expected_block_count: 0,
+          schema_validation_pass_rate: null,
+          policy_validation_pass_rate: null,
+          episode_packaging_success_rate: null,
+          mutation_guard_detection_rate: null,
+          permission_violation_detection_rate: null,
+          adversarial_false_accept_count: 0,
+          adversarial_block_rate: null,
+          runtime_ms: 0,
+        },
+      });
+      expect(validate.errors ?? []).toEqual([]);
+      expect(valid).toBe(true);
     });
   });
 });

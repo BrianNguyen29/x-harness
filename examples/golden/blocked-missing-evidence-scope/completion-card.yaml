@@ -8,6 +8,20 @@ state:
     - src/auth.ts
   write_set:
     - src/auth.ts
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Auth module refactored for OAuth2 PKCE
+  expected_effect: Auth flow works with PKCE
+  measurable_signal: npm test -- auth
+  falsification_method: Run auth tests without the fix; they should fail
+  horizon: same_verify
 evidence:
   files_changed:
     - src/auth.ts

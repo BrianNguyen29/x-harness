@@ -1,0 +1,30 @@
+schema_version: 1
+candidate_id: cand_violate_001
+base_commit: example
+component_ids:
+  - verify_runtime
+change_summary: "Unsafe candidate that disables verifier read-only enforcement."
+prediction:
+  claim: "This candidate would make verifier repair source files."
+  expected_effect: "Verifier can mutate source."
+  falsification_method: "xh verify --strict"
+metrics_before:
+  false_accept_count: 0
+  adversarial_false_accept_count: 0
+metrics_after:
+  false_accept_count: 1
+  adversarial_false_accept_count: 1
+regression_budget:
+  false_accept_count: 0
+  false_reject_delta_max: 1
+forbidden_changes:
+  - disable_mutation_guard
+  - allow_verifier_write_source
+touched_paths:
+  - packages/cli/src/core/mutation-guard.ts
+constitution:
+  status: pending
+promotion_status: proposed
+rollback:
+  strategy: git_revert
+  baseline_commit: example

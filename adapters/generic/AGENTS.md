@@ -5,7 +5,7 @@
 1. **Use light by default**. Prefer the smallest tier that preserves correctness.
 2. **Use standard for multi-step**. Use when the task involves research, review, synthesis, or bounded implementation across multiple files.
 3. **Use deep only for risk/control decisions**. Use when the cost of being wrong is high, the ground is stale, or rollback is non-trivial.
-4. **Write completion card before claiming completion**. A result with `fix_status: fixed` is only a candidate. Accepted completion requires a verified completion card.
+4. **Write completion card before claiming completion**. A completion card with `claim.fix_status: fixed` is only a candidate. Compatibility subagent returns may use `result.fix_status`. Accepted completion requires a verified completion card.
 5. **Verifier is read-only**. The verifier inspects files, evidence, and diffs. It must not edit source files or repair the work product while verifying.
 6. **Non-success verify -> withheld**. Any verify outcome other than `success` results in `acceptance_status: withheld`.
 7. **PGV advisory-only**. PGV risk levels are advisory. They never override verify and never grant admission authority by default.
@@ -27,11 +27,36 @@ All other outcomes are withheld: `failed`, `blocked`, `skipped`, `timeout`, and 
 
 ## Evidence scope (light/standard/deep)
 
-- **light**: `verification_artifacts` optional.
-- **standard**: `verification_artifacts`, `verifies`, `does_not_verify`, `untested_regions` recommended.
-- **deep**: The above required, plus `remaining_risks`, `state.read_set`, `state.write_set`, and `governance` if high-risk.
+- **light**: `files_changed` + (`command_evidence` or `manual_rationale`).
+- **standard**: `files_changed` + `command_evidence`; `verification_artifacts`, `verifies`, `does_not_verify`, and `untested_regions` are recommended. `done_checklist` and `prediction` are required for admission.
+- **deep**: `files_changed` + `command_evidence` + scoped `verification_artifacts` + `untested_regions` + `remaining_risks` + `rollback_policy` + `execution_controls` + `state.read_set/write_set`. `done_checklist` and `prediction` are required. Governance is required when high-risk or when human approval is declared.
 
 ## Authoritative hierarchy
 
 If chat says done but `completion-card.yaml` says withheld, treat completion as withheld.
 If `completion-card.yaml` claims accepted but verify output disagrees, verify output wins.
+
+<!-- BEGIN X-HARNESS MANAGED CONTRACT: generic-agents-contract -->
+<!-- generated-by: x-harness -->
+<!-- contract-hash: ec6438371a039c93 -->
+
+## Generated Adapter Contract
+
+- Completion is admitted, not claimed.
+- Verifier is read-only.
+- Success is the only accepted outcome.
+- Canonical tiers: light, standard, deep.
+- PGV is advisory-only.
+
+## Evidence Floor
+
+- **light**: files_changed + (command_evidence or manual_rationale).
+- **standard**: files_changed + command_evidence + done_checklist + prediction.
+- **deep**: files_changed + command_evidence + evidence_scope_declared + untested_regions_declared + remaining_risks_declared + execution_controls_present + rollback_policy_present + done_checklist + prediction. Runtime-enforced: verification_artifacts, state.read_set, state.write_set.
+
+## Strict Evidence Provenance
+
+- verify --strict requires command_evidence entries to include command, exit_code, runner, and started_at for standard/deep cards.
+- verify --strict requires verification_artifacts entries to include command, exit_code, runner, and started_at for standard/deep cards.
+
+<!-- END X-HARNESS MANAGED CONTRACT: generic-agents-contract -->

@@ -3,65 +3,43 @@ import * as path from "node:path";
 import fs from "fs-extra";
 import { loadSchema, compileSchema, readYamlOrJson } from "../core/schema.js";
 import { validateManagedBlock } from "../core/context.js";
+import {
+  CANONICAL_CONTRACT,
+  loadRuntimeContract,
+  MANAGED_CONTRACT_TARGETS,
+  validateManagedContractBlock,
+} from "../core/contract.js";
+import { validateComponentsRegistry } from "../core/components.js";
 
-// Known predicates/fields from the TypeScript admission engine (runtime source of truth)
-const KNOWN_SCHEMA_REQUIRED_FIELDS = [
-  "schema_version",
-  "task_id",
-  "tier",
-  "owner",
-  "accountable",
-  "claim",
-  "verification",
-  "admission",
-  "acceptance_status",
-  "handoff",
+// Known predicates/fields from the generated contract mirror. The mirror is
+// checked against file-first policy/schema artifacts by policy_drift.
+const KNOWN_SCHEMA_REQUIRED_FIELDS: string[] = [
+  ...CANONICAL_CONTRACT.schemaRequiredFields,
 ];
 
-const KNOWN_SUCCESS_PREDICATES = [
-  "claim.fix_status == fixed",
-  "verification.status == passed",
-  "admission.outcome == success",
-  "acceptance_status == accepted",
-  "claim.evidence present and non-empty",
-  "owner.present == true",
-  "accountable.present == true",
-  "evidence_floor_met",
-  "admission_mapping_valid",
-  "no_unresolved_blocker",
-  "no_active_recovery",
-  "verifier_read_only",
+const KNOWN_SUCCESS_PREDICATES: string[] = [
+  ...CANONICAL_CONTRACT.successPredicates,
 ];
 
 const KNOWN_TIER_EVIDENCE_LABELS: Record<string, string[]> = {
-  light: ["files_changed", "command_evidence", "manual_rationale"],
+  light: [
+    ...CANONICAL_CONTRACT.evidenceFloor.light.required,
+    ...CANONICAL_CONTRACT.evidenceFloor.light.oneOf,
+  ],
   standard: [
-    "files_changed",
-    "command_evidence",
-    "evidence_scope_declared",
-    "untested_regions_declared",
+    ...CANONICAL_CONTRACT.evidenceFloor.standard.required,
+    ...CANONICAL_CONTRACT.evidenceFloor.standard.recommended,
   ],
   deep: [
-    "files_changed",
-    "command_evidence",
-    "evidence_scope_declared",
-    "untested_regions_declared",
-    "remaining_risks_declared",
-    "execution_controls_present",
-    "rollback_policy_present",
+    ...CANONICAL_CONTRACT.evidenceFloor.deep.required,
+    ...CANONICAL_CONTRACT.evidenceFloor.deep.runtimeEnforced,
   ],
 };
 
-const KNOWN_OUTCOMES = [
-  "success",
-  "failed",
-  "blocked",
-  "skipped",
-  "timeout",
-  "error",
-];
+const KNOWN_OUTCOMES: string[] = [...CANONICAL_CONTRACT.outcomes];
 
 const KNOWN_REJECT_KEYS = [
+  "claim.fix_status",
   "fix_status",
   "verification_status",
   "evidence_quality",
@@ -81,22 +59,81 @@ const CRITICAL_ASSETS = [
   "docs/DENOMINATOR_POLICY.md",
   "docs/ROADMAP.md",
   "docs/ADAPTERS.md",
+  "docs/COMPONENTS.md",
+  "docs/SCHEMAS.md",
   "docs/RECOVERY.md",
   "docs/METRICS.md",
+  "docs/EVIDENCE.md",
+  "docs/EPISODES.md",
+  "docs/PACKETS.md",
+  "docs/PREDICTIONS.md",
+  "docs/ATTRIBUTION.md",
+  "docs/PERMISSIONS.md",
+  "docs/INTAKE.md",
+  "docs/GOVERNANCE_BOUNDARY.md",
+  "docs/CLEANUP.md",
+  "docs/EVOLUTION.md",
+  "docs/FROZEN_TRANSFER.md",
+  "docs/FEDERATION.md",
+  "docs/ENTERPRISE_OPTIONAL.md",
+  "docs/RELEASE_SECURITY.md",
   "templates/COMPLETION_CARD.md",
   "templates/SUBAGENT_TASK_light.md",
   "templates/SUBAGENT_TASK_standard.md",
   "templates/SUBAGENT_TASK_deep.md",
   "templates/HARNESS_CHANGE_CONTRACT.md",
+  "components/registry.yaml",
+  "schemas/attribution.schema.json",
+  "schemas/agent-profile.schema.json",
+  "schemas/approval-risk.schema.json",
+  "schemas/benchmark-report.schema.json",
+  "schemas/claim.schema.json",
   "schemas/completion-card.schema.json",
+  "schemas/components-registry.schema.json",
+  "schemas/cost-budget.schema.json",
+  "schemas/evidence.schema.json",
+  "schemas/evidence-index.schema.json",
+  "schemas/evolution-constitution.schema.json",
+  "schemas/episode-manifest.schema.json",
+  "schemas/frozen-manifest.schema.json",
+  "schemas/federation-pattern.schema.json",
+  "schemas/intervention.schema.json",
+  "schemas/packet.schema.json",
+  "schemas/permissions.schema.json",
   "schemas/subagent-return.schema.json",
   "schemas/verify-event.schema.json",
   "schemas/pgv-advice.schema.json",
   "policies/admission.yaml",
+  "policies/approval-risk.yaml",
+  "policies/authority.yaml",
+  "policies/cleanup.yaml",
+  "policies/cost-budget.yaml",
+  "policies/intake.yaml",
+  "policies/permissions.yaml",
+  "policies/federation.yaml",
+  "policies/recovery.yaml",
+  "tools/experimental/evolve/constitution.yaml",
+  "tools/experimental/evolve/evolution-budget.yaml",
 ];
 
 const CORE_SCHEMAS = [
+  "attribution",
+  "agent-profile",
+  "approval-risk",
+  "benchmark-report",
+  "claim",
   "completion-card",
+  "components-registry",
+  "cost-budget",
+  "evidence",
+  "evidence-index",
+  "evolution-constitution",
+  "episode-manifest",
+  "frozen-manifest",
+  "federation-pattern",
+  "intervention",
+  "packet",
+  "permissions",
   "subagent-return",
   "verify-event",
   "pgv-advice",
@@ -118,7 +155,59 @@ const DANGEROUS_PGV_PHRASES = [
   "PGV overrides verify",
 ];
 
-const INVALID_TIER_LABELS = ["small", "medium", "large"];
+const DOCTOR_SCAN_DIRS = ["docs", "templates", "adapters"];
+const DOCTOR_TIER_SCAN_DIRS = [
+  ...DOCTOR_SCAN_DIRS,
+  path.join("packages", "cli", "src"),
+];
+const DOCTOR_PGV_SCAN_DIRS = [
+  ...DOCTOR_SCAN_DIRS,
+  path.join("packages", "cli", "src", "core"),
+];
+
+function isDoctorTextFile(filePath: string): boolean {
+  return [".md", ".mdc", ".ts", ".json"].includes(path.extname(filePath));
+}
+
+async function walkDoctorFiles(
+  root: string,
+  dirs: string[]
+): Promise<string[]> {
+  const files: string[] = [];
+  for (const relDir of dirs) {
+    const dir = path.join(root, relDir);
+    if (!(await fs.pathExists(dir))) continue;
+    const walk = async (current: string) => {
+      const entries = await fs.readdir(current, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(current, entry.name);
+        if (entry.isDirectory()) {
+          await walk(fullPath);
+        } else if (entry.isFile() && isDoctorTextFile(fullPath)) {
+          files.push(fullPath);
+        }
+      }
+    };
+    await walk(dir);
+  }
+  return files.sort();
+}
+
+function isAllowedInvalidTierReference(line: string): boolean {
+  return (
+    /do not use\b.*\b(small|medium|large)\b/i.test(line) ||
+    /forbidden active aliases/i.test(line) ||
+    /invalid tier labels/i.test(line) ||
+    /risk.*\b(medium|large|small)\b/i.test(line) ||
+    /confidence.*\b(medium|large|small)\b/i.test(line) ||
+    /priority.*\b(medium|large|small)\b/i.test(line) ||
+    /context[_ -]?class.*\b(medium|large|small)\b/i.test(line) ||
+    /default_token_impact.*\b(medium|large|small)\b/i.test(line) ||
+    /runtime_impact.*\b(medium|large|small)\b/i.test(line)
+  );
+}
+
+const INVALID_TIER_LABELS = [...CANONICAL_CONTRACT.invalidTierLabels];
 
 async function checkSchemaCompile(
   _root: string
@@ -212,20 +301,16 @@ async function checkPgvWording(
 ): Promise<{ ok: boolean; notes: string[] }> {
   const notes: string[] = [];
   let ok = true;
-  const docsDir = path.join(root, "docs");
-  const coreDir = path.join(root, "packages", "cli", "src", "core");
-  const dirs = [docsDir, coreDir].filter((d) => fs.pathExistsSync(d));
+  const files = await walkDoctorFiles(root, DOCTOR_PGV_SCAN_DIRS);
 
-  for (const dir of dirs) {
-    const entries = await fs.readdir(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
-      const content = await fs.readFile(path.join(dir, entry.name), "utf-8");
-      for (const phrase of DANGEROUS_PGV_PHRASES) {
-        if (content.includes(phrase)) {
-          notes.push(`dangerous PGV wording in ${entry.name}: "${phrase}"`);
-          ok = false;
-        }
+  for (const filePath of files) {
+    const content = await fs.readFile(filePath, "utf-8");
+    for (const phrase of DANGEROUS_PGV_PHRASES) {
+      if (content.includes(phrase)) {
+        notes.push(
+          `dangerous PGV wording in ${path.relative(root, filePath)}: "${phrase}"`
+        );
+        ok = false;
       }
     }
   }
@@ -246,35 +331,27 @@ async function checkTierLabels(
     path.join(root, "docs", "METRICS.md"),
     path.join(root, "packages", "cli", "src", "core", "metrics.ts"),
     path.join(root, "packages", "cli", "src", "core", "context.ts"),
+    path.join(root, "packages", "cli", "src", "core", "contract.ts"),
     path.join(root, "packages", "cli", "src", "core", "recovery.ts"),
+    path.join(root, "packages", "cli", "src", "core", "attribution.ts"),
   ];
-  const dirs = [
-    path.join(root, "docs"),
-    path.join(root, "packages", "cli", "src"),
-  ].filter((d) => fs.pathExistsSync(d));
+  const files = await walkDoctorFiles(root, DOCTOR_TIER_SCAN_DIRS);
 
-  for (const dir of dirs) {
-    const walk = async (d: string) => {
-      const entries = await fs.readdir(d, { withFileTypes: true });
-      for (const entry of entries) {
-        const fullPath = path.join(d, entry.name);
-        if (entry.isDirectory()) {
-          await walk(fullPath);
-        } else if (entry.name.endsWith(".md") || entry.name.endsWith(".ts")) {
-          if (excludedFiles.includes(fullPath)) continue;
-          const content = await fs.readFile(fullPath, "utf-8");
-          for (const label of INVALID_TIER_LABELS) {
-            const regex = new RegExp(`\\b${label}\\b`, "i");
-            if (regex.test(content)) {
-              const rel = path.relative(root, fullPath);
-              notes.push(`invalid tier label "${label}" in ${rel}`);
-              ok = false;
-            }
-          }
+  for (const fullPath of files) {
+    if (excludedFiles.includes(fullPath)) continue;
+    const content = await fs.readFile(fullPath, "utf-8");
+    const lines = content.split("\n");
+    for (const line of lines) {
+      if (isAllowedInvalidTierReference(line)) continue;
+      for (const label of INVALID_TIER_LABELS) {
+        const regex = new RegExp(`\\b${label}\\b`, "i");
+        if (regex.test(line)) {
+          const rel = path.relative(root, fullPath);
+          notes.push(`invalid tier label "${label}" in ${rel}`);
+          ok = false;
         }
       }
-    };
-    await walk(dir);
+    }
   }
   if (ok) {
     notes.push("no invalid tier labels found (small/medium/large)");
@@ -313,6 +390,37 @@ async function checkContextFreshness(
     ok: result.valid,
     notes: [result.note],
   };
+}
+
+async function checkManagedContractBlocks(
+  root: string
+): Promise<{ ok: boolean; notes: string[] }> {
+  const notes: string[] = [];
+  let ok = true;
+  let contract: Awaited<ReturnType<typeof loadRuntimeContract>>;
+  try {
+    contract = await loadRuntimeContract(root);
+  } catch (err) {
+    return {
+      ok: false,
+      notes: [
+        `managed contract load error: ${err instanceof Error ? err.message : String(err)}`,
+      ],
+    };
+  }
+  for (const target of MANAGED_CONTRACT_TARGETS) {
+    const targetPath = path.join(root, target.path);
+    if (!(await fs.pathExists(targetPath))) {
+      notes.push(`${target.path} missing`);
+      ok = false;
+      continue;
+    }
+    const content = await fs.readFile(targetPath, "utf-8");
+    const validation = validateManagedContractBlock(content, target, contract);
+    notes.push(validation.note);
+    if (!validation.valid) ok = false;
+  }
+  return { ok, notes };
 }
 
 async function checkAdapters(
@@ -627,6 +735,10 @@ async function checkPolicyDrift(
       }
 
       const knownLabels = KNOWN_TIER_EVIDENCE_LABELS[tier];
+      const canonicalTier =
+        CANONICAL_CONTRACT.evidenceFloor[
+          tier as keyof typeof CANONICAL_CONTRACT.evidenceFloor
+        ];
       for (const key of ["required", "one_of", "recommended"] as const) {
         const labels = tierConfig[key] as string[] | undefined;
         if (!labels) continue;
@@ -640,6 +752,38 @@ async function checkPolicyDrift(
             notes.push(`evidence_floor.${tier} label known: ${label}`);
           } else {
             notes.push(`evidence_floor.${tier} label unknown: ${label}`);
+            ok = false;
+          }
+        }
+      }
+
+      for (const key of [
+        ["required", canonicalTier.required],
+        ["one_of", "oneOf" in canonicalTier ? canonicalTier.oneOf : []],
+        [
+          "runtime_enforced",
+          "runtimeEnforced" in canonicalTier
+            ? canonicalTier.runtimeEnforced
+            : [],
+        ],
+      ] as const) {
+        const [policyKey, expectedLabels] = key;
+        const labels = tierConfig[policyKey] as string[] | undefined;
+        if (!expectedLabels || expectedLabels.length === 0) continue;
+        if (!Array.isArray(labels)) {
+          notes.push(`evidence_floor.${tier}.${policyKey} missing`);
+          ok = false;
+          continue;
+        }
+        for (const expectedLabel of expectedLabels) {
+          if (labels.includes(expectedLabel)) {
+            notes.push(
+              `evidence_floor.${tier}.${policyKey} includes ${expectedLabel}`
+            );
+          } else {
+            notes.push(
+              `evidence_floor.${tier}.${policyKey} missing ${expectedLabel}`
+            );
             ok = false;
           }
         }
@@ -805,6 +949,16 @@ export function doctorCommand(): Command {
         note: evidenceScopeResult.notes.join("; "),
       });
 
+      // Component registry check
+      const componentRegistryResult = await validateComponentsRegistry(root);
+      checks.push({
+        name: "component_registry",
+        status: componentRegistryResult.ok ? "pass" : "fail",
+        note: componentRegistryResult.ok
+          ? `${componentRegistryResult.component_count} component(s); protected paths ${componentRegistryResult.protected_paths_covered}/${componentRegistryResult.protected_paths_checked} covered`
+          : componentRegistryResult.errors.join("; "),
+      });
+
       // Read-only verifier check
       const readOnlyResult = await checkReadOnlyVerifier(root);
       checks.push({
@@ -851,6 +1005,14 @@ export function doctorCommand(): Command {
         name: "context_freshness",
         status: contextFreshnessResult.ok ? "pass" : "fail",
         note: contextFreshnessResult.notes.join("; "),
+      });
+
+      // Managed runtime contract blocks in docs/templates/adapters
+      const managedContractResult = await checkManagedContractBlocks(root);
+      checks.push({
+        name: "managed_contract_blocks",
+        status: managedContractResult.ok ? "pass" : "fail",
+        note: managedContractResult.notes.join("; "),
       });
 
       const healthy = checks.every((c) => c.status === "pass");

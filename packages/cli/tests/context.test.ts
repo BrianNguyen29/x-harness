@@ -5,6 +5,7 @@ import fs from "fs-extra";
 import { fileURLToPath } from "node:url";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { MANAGED_CONTRACT_TARGETS } from "../src/core/contract.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -34,6 +35,79 @@ describe("context command", () => {
     expect(parsed).toHaveProperty("agents_note");
     expect(typeof parsed.hash).toBe("string");
     expect(typeof parsed.agents_fresh).toBe("boolean");
+  });
+
+  it("outputs generated canonical runtime contract", async () => {
+    const { stdout, exitCode } = await execaNode(["context", "--contract"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("# x-harness Generated Runtime Contract");
+    expect(stdout).toContain("claim.fix_status");
+    expect(stdout).toContain("result.fix_status");
+    expect(stdout).toContain("contract-hash:");
+  });
+
+  it("outputs generated contract JSON", async () => {
+    const { stdout, exitCode } = await execaNode([
+      "context",
+      "--contract",
+      "--json",
+    ]);
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.contract.fixStatus.completionCard).toContain(
+      "claim.fix_status"
+    );
+    expect(parsed.contract.fixStatus.subagentReturn).toContain(
+      "result.fix_status"
+    );
+    expect(parsed.markdown).toContain("Generated Runtime Contract");
+    expect(typeof parsed.hash).toBe("string");
+  });
+
+  it("refreshes managed contract blocks in docs/templates/adapters", async () => {
+    const repoRoot = path.resolve(path.join(__dirname, "..", "..", ".."));
+    const tmpDir = mkdtempSync(path.join(tmpdir(), "x-harness-contract-"));
+    try {
+      fs.mkdirSync(path.join(tmpDir, "policies"), { recursive: true });
+      fs.mkdirSync(path.join(tmpDir, "schemas"), { recursive: true });
+      fs.copyFileSync(
+        path.join(repoRoot, "policies", "admission.yaml"),
+        path.join(tmpDir, "policies", "admission.yaml")
+      );
+      fs.copyFileSync(
+        path.join(repoRoot, "schemas", "completion-card.schema.json"),
+        path.join(tmpDir, "schemas", "completion-card.schema.json")
+      );
+      for (const file of MANAGED_CONTRACT_TARGETS.map(
+        (target) => target.path
+      )) {
+        fs.mkdirSync(path.dirname(path.join(tmpDir, file)), {
+          recursive: true,
+        });
+        fs.writeFileSync(path.join(tmpDir, file), `# ${file}\n`, "utf-8");
+      }
+
+      const { stdout, exitCode } = await execaNode([
+        "context",
+        "--write-contract-assets",
+        "--root",
+        tmpDir,
+        "--json",
+      ]);
+      expect(exitCode).toBe(0);
+      const output = JSON.parse(stdout);
+      expect(output.written).toContain("docs/RUNTIME_CONTRACT.md");
+      expect(output.written).toContain("templates/COMPLETION_CARD.md");
+      expect(output.written).toContain("adapters/claude-code/README.md");
+      expect(
+        fs.readFileSync(
+          path.join(tmpDir, "docs", "RUNTIME_CONTRACT.md"),
+          "utf-8"
+        )
+      ).toContain("BEGIN X-HARNESS MANAGED CONTRACT: runtime-contract");
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it("json mode reports stale when AGENTS.md missing managed block", async () => {

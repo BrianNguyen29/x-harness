@@ -16,6 +16,17 @@ interface TraceAddOptions {
   evidenceId?: string;
 }
 
+const VALID_TRACE_OUTCOMES = [
+  "success",
+  "failed",
+  "blocked",
+  "skipped",
+  "timeout",
+  "error",
+];
+const VALID_TRACE_TIERS = ["light", "standard", "deep"];
+const VALID_ACCEPTANCE_STATUSES = ["accepted", "withheld"];
+
 export function traceCommand(): Command {
   const cmd = new Command("trace").description("Trace verify events");
 
@@ -37,6 +48,34 @@ export function traceCommand(): Command {
     .option("--claim-id <id>", "Claim ID")
     .option("--evidence-id <id>", "Evidence ID")
     .action(async (opts: TraceAddOptions) => {
+      if (!opts.tier || !VALID_TRACE_TIERS.includes(opts.tier)) {
+        console.error("invalid tier: must be one of light, standard, deep");
+        process.exit(2);
+      }
+      if (!opts.outcome || !VALID_TRACE_OUTCOMES.includes(opts.outcome)) {
+        console.error(
+          "invalid outcome: must be one of success, failed, blocked, skipped, timeout, error"
+        );
+        process.exit(2);
+      }
+      if (
+        !opts.acceptanceStatus ||
+        !VALID_ACCEPTANCE_STATUSES.includes(opts.acceptanceStatus)
+      ) {
+        console.error(
+          "invalid acceptance status: must be accepted or withheld"
+        );
+        process.exit(2);
+      }
+      if (
+        (opts.outcome === "success" && opts.acceptanceStatus !== "accepted") ||
+        (opts.outcome !== "success" && opts.acceptanceStatus !== "withheld")
+      ) {
+        console.error(
+          "invalid admission mapping: success requires accepted; non-success requires withheld"
+        );
+        process.exit(2);
+      }
       const event = {
         event_id: `VE-${Date.now()}`,
         event_type: "verify_completed",

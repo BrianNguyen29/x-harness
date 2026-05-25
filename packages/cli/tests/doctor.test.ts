@@ -120,6 +120,71 @@ describe("doctor command", () => {
     expect(check.status).toBe("pass");
   });
 
+  it("includes component registry coverage check", async () => {
+    const { stdout } = await execaNode(["doctor", "--root", repoRoot]);
+    const report = JSON.parse(stdout);
+    const check = report.checks.find(
+      (c: Check) => c.name === "component_registry"
+    );
+    expect(check).toBeDefined();
+    expect(check.status).toBe("pass");
+    expect(check.note).toContain("protected paths");
+    expect(check.note).toContain("covered");
+  });
+
+  it("fails when component registry does not cover protected paths", async () => {
+    const tmpDir = mkdtempSync(path.join(tmpdir(), "x-harness-doctor-"));
+    try {
+      for (const dir of [
+        "docs",
+        "templates",
+        "schemas",
+        "policies",
+        "adapters",
+        "components",
+      ]) {
+        fs.copySync(path.join(repoRoot, dir), path.join(tmpDir, dir));
+      }
+      for (const file of ["README.md", "AGENTS.md", "X_HARNESS.md"]) {
+        fs.copyFileSync(path.join(repoRoot, file), path.join(tmpDir, file));
+      }
+      await fs.writeFile(
+        path.join(tmpDir, "components", "registry.yaml"),
+        `version: 1
+components:
+  - id: docs_only
+    kind: docs
+    paths:
+      - docs/**
+    owner: maintainers
+    stability: stable
+    agent_edit: agent_editable
+    tests:
+      - npm test
+`,
+        "utf-8"
+      );
+
+      const { stdout, exitCode } = await execaNode([
+        "doctor",
+        "--root",
+        tmpDir,
+      ]);
+      expect(exitCode).toBe(1);
+      const report = JSON.parse(stdout);
+      const check = report.checks.find(
+        (c: Check) => c.name === "component_registry"
+      );
+      expect(check).toBeDefined();
+      expect(check.status).toBe("fail");
+      expect(check.note).toContain(
+        "protected path is not registered to any component"
+      );
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
   it("includes read-only verifier check", async () => {
     const { stdout } = await execaNode(["doctor", "--root", repoRoot]);
     const report = JSON.parse(stdout);
@@ -161,6 +226,17 @@ describe("doctor command", () => {
     expect(check).toBeDefined();
     expect(check.status).toBe("pass");
     expect(check.note).toContain("fresh");
+  });
+
+  it("includes managed contract block freshness check", async () => {
+    const { stdout } = await execaNode(["doctor", "--root", repoRoot]);
+    const report = JSON.parse(stdout);
+    const check = report.checks.find(
+      (c: Check) => c.name === "managed_contract_blocks"
+    );
+    expect(check).toBeDefined();
+    expect(check.status).toBe("pass");
+    expect(check.note).toContain("runtime-contract");
   });
 
   it("fails context freshness when AGENTS.md is missing", async () => {
@@ -218,6 +294,12 @@ describe("doctor command", () => {
     expect(check.status).toBe("pass");
     expect(check.note).toContain("policy section candidate_completion present");
     expect(check.note).toContain("success_requires predicate known");
+    expect(check.note).toContain(
+      "evidence_floor.standard.required includes done_checklist"
+    );
+    expect(check.note).toContain(
+      "evidence_floor.standard.required includes prediction"
+    );
   });
 
   it("fails policy drift when admission.yaml has unknown predicates", async () => {
@@ -291,6 +373,12 @@ describe("doctor command", () => {
       );
       expect(check.note).toContain(
         "evidence_floor.light label unknown: unknown_evidence_label"
+      );
+      expect(check.note).toContain(
+        "evidence_floor.standard.required missing done_checklist"
+      );
+      expect(check.note).toContain(
+        "evidence_floor.deep.required missing prediction"
       );
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });

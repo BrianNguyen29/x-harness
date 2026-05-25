@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "cost-budget",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "max_usd",
+    "actual_usd",
+    "token_usage",
+    "over_budget",
+    "status",
+    "recovery",
+    "policy_enabled",
+    "enforcement_enabled",
+    "admission_authority"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1"
+    },
+    "max_usd": {
+      "type": "number",
+      "minimum": 0
+    },
+    "actual_usd": {
+      "type": "number",
+      "minimum": 0
+    },
+    "token_usage": {
+      "type": "object",
+      "required": ["input", "output"],
+      "properties": {
+        "input": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "output": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "over_budget": {
+      "type": "boolean"
+    },
+    "status": {
+      "enum": ["within_budget", "over_budget"]
+    },
+    "recovery": {
+      "type": "string"
+    },
+    "policy_enabled": {
+      "type": "boolean"
+    },
+    "enforcement_enabled": {
+      "type": "boolean"
+    },
+    "admission_authority": {
+      "const": false
+    }
+  },
+  "additionalProperties": false
+}

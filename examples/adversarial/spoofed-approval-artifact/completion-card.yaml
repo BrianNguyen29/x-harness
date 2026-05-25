@@ -1,0 +1,60 @@
+schema_version: "1"
+task_id: TASK-ADV-SPOOFED-APPROVAL-001
+tier: deep
+owner: mallory
+accountable: alice
+governance:
+  risk_class: high
+  requires_human_approval: true
+  approval_required_for:
+    - production_secrets
+  approval_status: approved
+  approver: "unverified-local-string"
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Claims a high-risk secret change is approved.
+  expected_effect: Deep evidence floor should still withhold the card.
+  measurable_signal: xh verify reports withheld.
+  falsification_method: Run xh benchmark --filter adversarial --json.
+  horizon: same_verify
+evidence:
+  files_changed:
+    - infra/secrets-policy.yaml
+  command_evidence:
+    - command: npm test -- secrets-policy
+      exit_code: 0
+  verification_artifacts:
+    - kind: unit_test
+      command: npm test -- secrets-policy
+      status: passed
+      verifies:
+        - "secret policy parser loads"
+      does_not_verify:
+        - "approval artifact is authoritative"
+      confidence: low
+  untested_regions:
+    - "No approval provenance was verified."
+claim:
+  fix_status: fixed
+  summary: Claims secret policy approval was granted.
+  evidence:
+    - description: Claimed approval artifact
+      result: passed
+verification:
+  status: passed
+  checks:
+    - name: claimed-approval
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: mallory

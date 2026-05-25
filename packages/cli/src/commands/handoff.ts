@@ -2,6 +2,7 @@ import { Command } from "commander";
 import * as path from "node:path";
 import fs from "fs-extra";
 import { getCompactContextHeader } from "../core/context.js";
+import { renderFixStatusGuidance } from "../core/contract.js";
 
 interface HandoffOptions {
   title?: string;
@@ -380,11 +381,13 @@ ${contextHeader}## Task: ${title}
 ${task}
 
 ## Constraints
+
 - Do not self-admit completion.
 - Return a completion candidate with result, evidence, verification, confidence, and handoff.
+- ${renderFixStatusGuidance()}
 
 ## Return format
-Align with x-harness return schema:
+Align with the compatibility subagent return schema:
 \`\`\`yaml
 result:
   summary: <one-line outcome>

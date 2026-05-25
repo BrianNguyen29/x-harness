@@ -6,7 +6,7 @@
       "temperature": 0.3
     },
     "worker": {
-      "instructions": "Implement the assigned task following x-harness protocols. Produce a completion card with fix_status, evidence, verification checks, and handoff. Do not self-admit completion.",
+      "instructions": "Implement the assigned task following x-harness protocols. Produce a completion card with claim.fix_status, evidence, verification checks, and handoff. Do not self-admit completion.",
       "model": "claude-sonnet-4-20250514",
       "temperature": 0.5
     }

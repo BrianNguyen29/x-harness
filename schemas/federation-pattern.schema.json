@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "federation-pattern",
+  "description": "Validates anonymized federation pattern records. Raw source, logs, command output, and completion-card contents are not allowed.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/pattern"
+    },
+    {
+      "$ref": "#/$defs/envelope"
+    }
+  ],
+  "$defs": {
+    "pattern": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "pattern_id",
+        "tenant_hash",
+        "source_hash",
+        "pattern_class",
+        "signal",
+        "evidence_kind",
+        "component_hashes",
+        "benchmark_metrics",
+        "created_at",
+        "retention_expires_at",
+        "redaction",
+        "admission_authority"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1"
+        },
+        "pattern_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "tenant_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "pattern_class": {
+          "enum": ["failure", "observation"]
+        },
+        "signal": {
+          "type": "object",
+          "required": ["predicate_hash", "predicate_present"],
+          "properties": {
+            "predicate_hash": {
+              "type": ["string", "null"],
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "predicate_present": {
+              "type": "boolean"
+            },
+            "admission_outcome": {
+              "type": ["string", "null"],
+              "enum": [
+                "success",
+                "failed",
+                "blocked",
+                "skipped",
+                "timeout",
+                "error",
+                null
+              ]
+            },
+            "acceptance_status": {
+              "type": ["string", "null"],
+              "enum": ["accepted", "withheld", null]
+            },
+            "evidence_layer": {
+              "enum": ["raw", "redacted", "digest", "index"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "evidence_kind": {
+          "enum": [
+            "completion_card",
+            "command_evidence",
+            "episode_file",
+            "verification_artifact",
+            "trace_event",
+            "digest",
+            "other"
+          ]
+        },
+        "component_hashes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "benchmark_metrics": {
+          "type": ["object", "null"],
+          "properties": {
+            "false_accept_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "adversarial_false_accept_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "false_reject_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "runtime_ms": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "retention_expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "redaction": {
+          "type": "object",
+          "required": [
+            "mode",
+            "redacted_required",
+            "raw_content_included",
+            "secret_scan_replacements"
+          ],
+          "properties": {
+            "mode": {
+              "const": "anonymized-pattern"
+            },
+            "redacted_required": {
+              "const": true
+            },
+            "raw_content_included": {
+              "const": false
+            },
+            "secret_scan_replacements": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "admission_authority": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "envelope": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "created_at",
+        "record_count",
+        "patterns",
+        "admission_authority"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "record_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "patterns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pattern"
+          }
+        },
+        "admission_authority": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

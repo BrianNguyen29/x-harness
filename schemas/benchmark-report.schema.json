@@ -1,0 +1,331 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "benchmark-report",
+  "type": "object",
+  "required": ["ok", "generated_at", "metrics"],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "iterations": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "timeout_ms": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "filter": {
+      "enum": ["all", "latency", "admission", "adversarial"]
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["command", "iterations", "ok", "avg_ms", "samples"],
+        "properties": {
+          "command": {
+            "enum": ["verify", "doctor", "examples", "test"]
+          },
+          "iterations": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "min_ms": {
+            "type": "number"
+          },
+          "avg_ms": {
+            "type": "number"
+          },
+          "max_ms": {
+            "type": "number"
+          },
+          "exit_codes": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "samples": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["duration_ms", "exit_code", "timed_out"],
+              "properties": {
+                "duration_ms": {
+                  "type": "number"
+                },
+                "exit_code": {
+                  "type": "integer"
+                },
+                "timed_out": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "integration": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/integration_report"
+        }
+      ]
+    },
+    "metrics": {
+      "$ref": "#/$defs/metrics"
+    }
+  },
+  "$defs": {
+    "nullable_rate": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      ]
+    },
+    "metrics": {
+      "type": "object",
+      "required": [
+        "false_accept_count",
+        "false_reject_count",
+        "expected_pass_count",
+        "expected_block_count",
+        "adversarial_false_accept_count",
+        "runtime_ms"
+      ],
+      "properties": {
+        "false_accept_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "false_reject_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expected_pass_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expected_block_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "schema_validation_pass_rate": {
+          "$ref": "#/$defs/nullable_rate"
+        },
+        "policy_validation_pass_rate": {
+          "$ref": "#/$defs/nullable_rate"
+        },
+        "episode_packaging_success_rate": {
+          "$ref": "#/$defs/nullable_rate"
+        },
+        "mutation_guard_detection_rate": {
+          "$ref": "#/$defs/nullable_rate"
+        },
+        "permission_violation_detection_rate": {
+          "$ref": "#/$defs/nullable_rate"
+        },
+        "authority_violation_detection_rate": {
+          "$ref": "#/$defs/nullable_rate"
+        },
+        "adversarial_false_accept_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "adversarial_block_rate": {
+          "$ref": "#/$defs/nullable_rate"
+        },
+        "runtime_ms": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "integration_report": {
+      "type": "object",
+      "required": ["ok", "runtime_ms", "golden", "adversarial"],
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "runtime_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "golden": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/suite_report"
+            }
+          ]
+        },
+        "adversarial": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/suite_report"
+            }
+          ]
+        }
+      }
+    },
+    "suite_report": {
+      "type": "object",
+      "required": [
+        "suite",
+        "cases_total",
+        "expected_pass_count",
+        "expected_block_count",
+        "false_accept_count",
+        "false_reject_count",
+        "runtime_ms",
+        "cases"
+      ],
+      "properties": {
+        "suite": {
+          "enum": ["golden", "adversarial"]
+        },
+        "cases_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expected_pass_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expected_block_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "false_accept_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "false_reject_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "runtime_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/case_result"
+          }
+        }
+      }
+    },
+    "case_result": {
+      "type": "object",
+      "required": [
+        "suite",
+        "name",
+        "card_path",
+        "expected_acceptance_status",
+        "actual_acceptance_status",
+        "false_accept",
+        "false_reject",
+        "runtime_ms",
+        "errors",
+        "notes"
+      ],
+      "properties": {
+        "suite": {
+          "enum": ["golden", "adversarial"]
+        },
+        "name": {
+          "type": "string"
+        },
+        "card_path": {
+          "type": "string"
+        },
+        "expected_acceptance_status": {
+          "enum": ["accepted", "withheld"]
+        },
+        "actual_acceptance_status": {
+          "enum": ["accepted", "withheld"]
+        },
+        "outcome": {
+          "type": "string"
+        },
+        "accepted": {
+          "type": "boolean"
+        },
+        "false_accept": {
+          "type": "boolean"
+        },
+        "false_reject": {
+          "type": "boolean"
+        },
+        "blocking_predicate": {
+          "type": ["string", "null"]
+        },
+        "schema_valid": {
+          "type": "boolean"
+        },
+        "policy_valid": {
+          "type": "boolean"
+        },
+        "permission_violation_expected": {
+          "type": "boolean"
+        },
+        "permission_violation_detected": {
+          "type": "boolean"
+        },
+        "authority_violation_expected": {
+          "type": "boolean"
+        },
+        "authority_violation_detected": {
+          "type": "boolean"
+        },
+        "mutation_guard_expected": {
+          "type": "boolean"
+        },
+        "mutation_guard_detected": {
+          "type": "boolean"
+        },
+        "runtime_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

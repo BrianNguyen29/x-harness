@@ -14,7 +14,14 @@
       "evidence_floor",
       "canonical_consistency"
     ],
-    "allowed_outcomes": ["success", "failed", "blocked", "skipped", "timeout", "error"],
+    "allowed_outcomes": [
+      "success",
+      "failed",
+      "blocked",
+      "skipped",
+      "timeout",
+      "error"
+    ],
     "mutation_guard": {
       "enabled": true,
       "allowlist": [".x-harness/"]
@@ -22,7 +29,7 @@
   },
   "admission": {
     "success_requires": [
-      "fix_status == fixed",
+      "claim.fix_status == fixed",
       "verification.status == passed",
       "admission.outcome == success",
       "acceptance_status == accepted",
@@ -30,10 +37,15 @@
       "owner present",
       "accountable present",
       "evidence_floor_met",
-      "no_unresolved_blocker"
+      "admission_mapping_valid",
+      "no_unresolved_blocker",
+      "no_active_recovery",
+      "verifier_read_only",
+      "done_checklist_present_for_standard_or_deep",
+      "prediction_present_for_standard_or_deep"
     ],
     "reject_success_if": {
-      "fix_status": ["partial", "not_fixed"],
+      "claim.fix_status": ["partial", "not_fixed"],
       "verification_status": ["failed", "skipped", "blocked"],
       "evidence_quality": ["missing", "weak"],
       "timeout": true,

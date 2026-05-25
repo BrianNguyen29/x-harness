@@ -26,6 +26,8 @@ success_requires:
   - no_unresolved_blocker
   - no_active_recovery
   - verifier_read_only
+  - done_checklist_present_for_standard_or_deep
+  - prediction_present_for_standard_or_deep
 
 evidence_floor:
   light:
@@ -39,6 +41,8 @@ evidence_floor:
     required:
       - files_changed
       - command_evidence
+      - done_checklist
+      - prediction
     recommended:
       - evidence_scope_declared
       - untested_regions_declared
@@ -52,6 +56,8 @@ evidence_floor:
       - remaining_risks_declared
       - execution_controls_present
       - rollback_policy_present
+      - done_checklist
+      - prediction
     runtime_enforced:
       - verification_artifacts
       - state.read_set

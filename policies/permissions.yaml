@@ -1,0 +1,93 @@
+version: 1
+
+command_sets:
+  safe_readonly:
+    allow:
+      - "git status --porcelain"
+      - "git diff --name-only"
+      - "git diff --check"
+
+  safe_tests:
+    allow_patterns:
+      - "^npm test( .*)?$"
+      - "^pnpm test( .*)?$"
+      - "^npm run test( .*)?$"
+      - "^npm run typecheck$"
+      - "^tsc --noEmit$"
+      - "^pytest( .*)?$"
+      - "^go test ./\\.\\.\\.$"
+      - "^cargo test( .*)?$"
+
+  dangerous:
+    deny_patterns:
+      - "rm -rf"
+      - "curl .*\\|.*bash"
+      - "wget .*\\|.*sh"
+      - "npm publish"
+      - "pnpm publish"
+      - "kubectl apply"
+      - "terraform apply"
+      - "aws .*"
+      - "gcloud .*"
+      - "az .*"
+
+roles:
+  worker:
+    light:
+      allow_capabilities:
+        - read_files
+        - write_declared_files
+      allow_command_sets:
+        - safe_readonly
+        - safe_tests
+      deny_command_sets:
+        - dangerous
+    standard:
+      allow_capabilities:
+        - read_files
+        - write_declared_files
+        - run_tests
+      allow_command_sets:
+        - safe_readonly
+        - safe_tests
+      deny_command_sets:
+        - dangerous
+    deep:
+      allow_capabilities:
+        - read_files
+        - write_declared_files
+        - run_tests
+      allow_command_sets:
+        - safe_readonly
+        - safe_tests
+      require_approval:
+        - network
+        - dependency_install
+        - migration
+        - destructive_filesystem
+      deny_command_sets:
+        - dangerous
+
+  verifier:
+    all:
+      allow_capabilities:
+        - read_files
+        - read_evidence
+        - run_readonly_commands
+      allow_command_sets:
+        - safe_readonly
+        - safe_tests
+      deny_capabilities:
+        - write_source
+        - repair_code
+        - release_publish
+        - destructive_filesystem
+      deny_command_sets:
+        - dangerous
+
+  maintainer:
+    all:
+      allow_capabilities:
+        - approve_intervention
+        - change_policy
+        - publish_release

@@ -1,0 +1,98 @@
+version: 1
+
+intake_labels:
+  tiny:
+    runtime_tier: light
+    signals:
+      - comment_only
+      - documentation
+      - formatting
+      - non_functional
+
+  normal:
+    runtime_tier: standard
+    signals:
+      - routine_implementation
+      - standard_refactor
+      - standard_bug_fix
+      - dependency_update
+
+  high_risk:
+    runtime_tier: deep
+    signals:
+      - auth
+      - token
+      - session
+      - admission
+      - schema
+      - permissions
+      - ci
+      - release
+      - destructive_filesystem
+
+high_risk_signals:
+  auth:
+    description: Authentication or authorization logic changes
+    examples:
+      - login/logout flow
+      - permission checks
+      - role-based access
+
+  token:
+    description: Token handling, JWT, refresh tokens, OAuth
+    examples:
+      - refresh token race
+      - token validation
+      - token generation
+
+  session:
+    description: Session management and state
+    examples:
+      - session creation/destruction
+      - session fixation
+      - concurrent sessions
+
+  admission:
+    description: Admission policy or verifier logic
+    examples:
+      - verify gate changes
+      - admission policy changes
+
+  schema:
+    description: Schema or contract changes
+    examples:
+      - completion card schema
+      - return schema changes
+
+  permissions:
+    description: File or system permissions
+    examples:
+      - chmod changes
+      - ownership changes
+
+  ci:
+    description: CI/CD pipeline changes
+    examples:
+      - workflow modifications
+      - pipeline stages
+
+  release:
+    description: Release or deployment logic
+    examples:
+      - release scripts
+      - deployment hooks
+
+  destructive_filesystem:
+    description: Destructive file operations
+    examples:
+      - rm -rf patterns
+      - untracked file deletion
+
+runtime_tier_confirmation:
+  tiers: [light, standard, deep]
+  note: Runtime tiers remain light, standard, deep. Intake labels (tiny/normal/high_risk) are separate.
+
+escalation_conditions:
+  downgrade_without_intervention:
+    outcome: withheld
+    reason: Cannot downgrade tier without explicit intervention approval

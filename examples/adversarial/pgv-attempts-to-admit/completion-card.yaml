@@ -1,0 +1,32 @@
+schema_version: "1"
+task_id: TASK-ADV-PGV-ADMIT-001
+tier: standard
+owner: mallory
+accountable: alice
+evidence:
+  files_changed:
+    - src/profile.ts
+  command_evidence:
+    - command: npm test -- profile
+      exit_code: 0
+pgv_advice:
+  admission_authority: true
+  recommendation: accept
+  note: PGV attempts to grant admission authority, which must remain advisory-only.
+claim:
+  fix_status: fixed
+  summary: Claims PGV advice can admit completion without standard-tier closure.
+  evidence:
+    - description: PGV recommendation
+      result: passed
+verification:
+  status: passed
+  checks:
+    - name: pgv-recommended
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: mallory

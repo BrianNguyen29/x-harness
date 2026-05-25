@@ -1,9 +1,7 @@
 import { Command } from "commander";
 import * as path from "node:path";
 import fs from "fs-extra";
-import { fileURLToPath } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { resolveAssetRoot } from "../core/assets.js";
 
 interface InitOptions {
   minimal?: boolean;
@@ -40,9 +38,7 @@ export function initCommand(): Command {
     .action(async (target: string, opts: InitOptions) => {
       const mode = opts.full ? "full" : opts.standard ? "standard" : "minimal";
       const targetDir = path.resolve(target);
-      const rootDir = path.resolve(
-        path.join(__dirname, "..", "..", "..", "..")
-      );
+      const assetRoot = await resolveAssetRoot();
 
       const plan: { src: string; dest: string }[] = [];
 
@@ -71,7 +67,7 @@ export function initCommand(): Command {
           { src: "policies/admission.yaml", dest: "policies/admission.yaml" },
         ];
         for (const f of minimalFiles) {
-          const src = path.join(rootDir, f.src);
+          const src = path.join(assetRoot, f.src);
           if (await fs.pathExists(src)) {
             plan.push({ src, dest: path.join(targetDir, f.dest) });
           }
@@ -79,7 +75,7 @@ export function initCommand(): Command {
       } else {
         const assets = MODE_ASSETS[mode];
         for (const asset of assets) {
-          const src = path.join(rootDir, asset);
+          const src = path.join(assetRoot, asset);
           if (!(await fs.pathExists(src))) continue;
           const dest = path.join(targetDir, path.basename(asset));
           plan.push({ src, dest });
@@ -89,7 +85,7 @@ export function initCommand(): Command {
       // Copy adapter-specific files if requested
       if (opts.adapters) {
         for (const adapter of opts.adapters.split(",").map((a) => a.trim())) {
-          const src = path.join(rootDir, "adapters", adapter);
+          const src = path.join(assetRoot, "adapters", adapter);
           if (await fs.pathExists(src)) {
             plan.push({ src, dest: path.join(targetDir, "adapters", adapter) });
           }

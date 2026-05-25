@@ -25,15 +25,15 @@ This copies the `CLAUDE.md` instructions, the `agents/` role definitions, and th
 
 ## Beginner-Friendly Actions
 
-| Action       | Alias for              | Description                                              |
-| :----------- | :--------------------- | :------------------------------------------------------- |
-| **`prepare`** | `handoff readiness`   | Check if workspace is ready for agent task handoff        |
-| **`check`**  | `verify`               | Run read-only verification against a completion card      |
-| **`recover`** | `recovery suggest`    | Get recovery playbook suggestions from errors or trace     |
-| **`doctor`** | (standalone)           | Validate workspace health and configuration               |
-| **`actions`** | (standalone)           | List all beginner-friendly actions                        |
-| **`status`** | `report` (no --metrics) | Show trace summary or card metrics                      |
-| **`reset`**  | `clean --tmp --force` | Clean generated harness state (requires --confirm)        |
+| Action        | Alias for               | Description                                            |
+| :------------ | :---------------------- | :----------------------------------------------------- |
+| **`prepare`** | `handoff readiness`     | Check if workspace is ready for agent task handoff     |
+| **`check`**   | `verify`                | Run read-only verification against a completion card   |
+| **`recover`** | `recovery suggest`      | Get recovery playbook suggestions from errors or trace |
+| **`doctor`**  | (standalone)            | Validate workspace health and configuration            |
+| **`actions`** | (standalone)            | List all beginner-friendly actions                     |
+| **`status`**  | `report` (no --metrics) | Show trace summary or card metrics                     |
+| **`reset`**   | `clean --tmp --force`   | Clean generated harness state (requires --confirm)     |
 
 **Slash commands for agent adapters:** `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset`
 
@@ -43,8 +43,8 @@ This copies the `CLAUDE.md` instructions, the `agents/` role definitions, and th
 2. **Implementation Worker** (Claude Code) performs edits, tests the changes, and generates the `completion-card.yaml`.
 3. **Admission Verifier** (Claude Code) runs read-only verification. In this repository, use:
    ```bash
-   node packages/cli/dist/index.js check --card completion-card.yaml
-   # or: node packages/cli/dist/index.js verify --card completion-card.yaml
+   node packages/cli/dist/index.js check --card completion-card.yaml --strict
+   # or: node packages/cli/dist/index.js verify --card completion-card.yaml --strict
    ```
 4. **Outcome**: Accepted (status code `0`) or Withheld (status code `1`). If withheld, the next actions are routed based on recovery rules.
 
@@ -58,3 +58,28 @@ This copies the `CLAUDE.md` instructions, the `agents/` role definitions, and th
 ## When to use
 
 Use this adapter when you are running **Claude Code** as your primary developer or verification assistant. It instructs the LLM on how to follow `x-harness` completion rules and equips it with context-sensitive verification skills.
+
+<!-- BEGIN X-HARNESS MANAGED CONTRACT: claude-readme-contract -->
+<!-- generated-by: x-harness -->
+<!-- contract-hash: ec6438371a039c93 -->
+
+## Generated Adapter Contract
+
+- Completion is admitted, not claimed.
+- Verifier is read-only.
+- Success is the only accepted outcome.
+- Canonical tiers: light, standard, deep.
+- PGV is advisory-only.
+
+## Evidence Floor
+
+- **light**: files_changed + (command_evidence or manual_rationale).
+- **standard**: files_changed + command_evidence + done_checklist + prediction.
+- **deep**: files_changed + command_evidence + evidence_scope_declared + untested_regions_declared + remaining_risks_declared + execution_controls_present + rollback_policy_present + done_checklist + prediction. Runtime-enforced: verification_artifacts, state.read_set, state.write_set.
+
+## Strict Evidence Provenance
+
+- verify --strict requires command_evidence entries to include command, exit_code, runner, and started_at for standard/deep cards.
+- verify --strict requires verification_artifacts entries to include command, exit_code, runner, and started_at for standard/deep cards.
+
+<!-- END X-HARNESS MANAGED CONTRACT: claude-readme-contract -->

@@ -1,0 +1,28 @@
+schema_version: 1
+candidate_id: cand_pass_001
+base_commit: example
+component_ids:
+  - benchmark_suite
+change_summary: "Keep adversarial benchmark gate at false_accept_count zero."
+prediction:
+  claim: "This candidate preserves the zero false-accept gate."
+  expected_effect: "Adversarial benchmark remains green."
+  falsification_method: "xh benchmark --filter adversarial --json"
+metrics_before:
+  false_accept_count: 0
+  adversarial_false_accept_count: 0
+metrics_after:
+  false_accept_count: 0
+  adversarial_false_accept_count: 0
+regression_budget:
+  false_accept_count: 0
+  false_reject_delta_max: 1
+forbidden_changes: []
+touched_paths:
+  - docs/METRICS.md
+constitution:
+  status: pending
+promotion_status: proposed
+rollback:
+  strategy: git_revert
+  baseline_commit: example

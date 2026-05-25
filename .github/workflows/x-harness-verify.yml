@@ -10,7 +10,33 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  quality:
+    name: quality / ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: typecheck
+            command: npm run typecheck
+          - name: build
+            command: npm run build
+          - name: lint
+            command: npm run lint
+          - name: format
+            command: npm run format:check
+          - name: test
+            command: npm run build && npm run test
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: ${{ matrix.command }}
+
+  verify-gates:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -19,10 +45,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run typecheck
       - run: npm run build
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm test
+      - run: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
       - run: node packages/cli/dist/index.js doctor --root .
       - run: node packages/cli/dist/index.js examples verify
+      - run: node packages/cli/dist/index.js benchmark --filter adversarial --json

@@ -100,11 +100,38 @@ describe("recovery", () => {
     });
 
     it("returns null for unsupported predicates", () => {
-      // schema_invalid, stale_ground, and policy_drift have no dedicated recovery routes
+      // schema_invalid, policy_drift, and unknown_failure have no dedicated recovery routes
       expect(getRecoveryRoute("schema_invalid")).toBeNull();
-      expect(getRecoveryRoute("stale_ground")).toBeNull();
       expect(getRecoveryRoute("policy_drift")).toBeNull();
       expect(getRecoveryRoute("unknown_failure")).toBeNull();
+    });
+
+    it("returns route for stale_ground", () => {
+      const route = getRecoveryRoute("stale_ground");
+      expect(route).not.toBeNull();
+      expect(route!.owner).toBe("implementation-worker");
+      expect(route!.next_action).toContain("Refresh stale context");
+    });
+
+    it("returns route for Fpermission", () => {
+      const route = getRecoveryRoute("Fpermission");
+      expect(route).not.toBeNull();
+      expect(route!.owner).toBe("user");
+      expect(route!.next_action).toContain("human approval");
+    });
+
+    it("returns route for Fintervention", () => {
+      const route = getRecoveryRoute("Fintervention");
+      expect(route).not.toBeNull();
+      expect(route!.owner).toBe("implementation-worker");
+      expect(route!.next_action).toContain("intervention artifact");
+    });
+
+    it("returns route for evidence_provenance_missing", () => {
+      const route = getRecoveryRoute("evidence_provenance_missing");
+      expect(route).not.toBeNull();
+      expect(route!.owner).toBe("implementation-worker");
+      expect(route!.next_action).toContain("strict evidence provenance");
     });
   });
 
@@ -193,12 +220,56 @@ describe("recovery", () => {
       expect(result.route!.owner).toBe("implementation-worker");
     });
 
+    it("maps strict provenance errors to evidence_provenance_missing", () => {
+      const result = suggestRecovery(
+        [
+          "strict evidence provenance requires evidence.command_evidence[0].runner",
+        ],
+        "failed"
+      );
+      expect(result.predicate).toBe("evidence_provenance_missing");
+      expect(result.route).not.toBeNull();
+      expect(result.route!.owner).toBe("implementation-worker");
+    });
+
     it("falls back to admission_failed for unrecognized errors", () => {
       const result = suggestRecovery(
         ["something unexpected happened"],
         "failed"
       );
       expect(result.predicate).toBe("admission_failed");
+      expect(result.route).not.toBeNull();
+      expect(result.route!.owner).toBe("implementation-worker");
+    });
+
+    it("maps governance permission errors to Fpermission", () => {
+      const result = suggestRecovery(
+        ["governance permission violation: human_only path"],
+        "failed"
+      );
+      expect(result.predicate).toBe("Fpermission");
+      expect(result.route).not.toBeNull();
+      expect(result.route!.owner).toBe("user");
+    });
+
+    it("maps governance intervention errors to Fintervention", () => {
+      const result = suggestRecovery(
+        ["governance intervention required for authority boundary"],
+        "failed"
+      );
+      expect(result.predicate).toBe("Fintervention");
+      expect(result.route).not.toBeNull();
+      expect(result.route!.owner).toBe("implementation-worker");
+    });
+
+    it("keeps governance intervention route when the error mentions approval", () => {
+      const result = suggestRecovery(
+        [
+          "intake tier downgrade requires governance intervention approval: declared light, mapped deep",
+        ],
+        "failed"
+      );
+      expect(result.predicate).toBe("Fintervention");
       expect(result.route).not.toBeNull();
       expect(result.route!.owner).toBe("implementation-worker");
     });
@@ -249,6 +320,15 @@ describe("recovery", () => {
         "conflicting_scope",
         "verifier_not_read_only",
         "admission_failed",
+        "evidence_floor_not_met",
+        "state_read_write_missing",
+        "done_checklist_missing",
+        "prediction_missing",
+        "prediction_invalid",
+        "done_checklist_prediction_mismatch",
+        "stale_ground",
+        "Fpermission",
+        "Fintervention",
       ];
 
       for (const predicate of predicates) {
@@ -295,11 +375,10 @@ describe("recovery", () => {
       expect(route).toBeNull();
     });
 
-    it("stale_ground has no dedicated recovery route (handled in admission.ts)", () => {
-      // stale_ground is a fail-closed admission check, not a recovery route.
-      // It bypasses recovery routing and returns immediately.
+    it("stale_ground has a dedicated recovery route", () => {
       const route = getRecoveryRoute("stale_ground");
-      expect(route).toBeNull();
+      expect(route).not.toBeNull();
+      expect(route!.owner).toBe("implementation-worker");
     });
 
     it("policy_drift has no dedicated recovery route (unsupported)", () => {

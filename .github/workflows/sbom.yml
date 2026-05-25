@@ -1,0 +1,25 @@
+name: x-harness SBOM
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm sbom --workspace x-harness --sbom-format cyclonedx --sbom-type application > sbom.cdx.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: x-harness-sbom
+          path: sbom.cdx.json

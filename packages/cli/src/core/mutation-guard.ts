@@ -1,7 +1,11 @@
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
+import * as path from "node:path";
+import { promises as fs } from "node:fs";
 
 export interface GitSnapshot {
   statusMap: Map<string, string>;
+  contentHashMap?: Map<string, string | null>;
   repoRoot: string;
 }
 
@@ -36,37 +40,75 @@ export async function snapshotGitStatus(
   return new Promise((resolve, reject) => {
     execFile(
       "git",
-      ["status", "--porcelain"],
+      ["status", "--porcelain=v1", "-z", "--untracked-files=all"],
       { cwd: repoRoot },
-      (err, stdout) => {
+      async (err, stdout) => {
         if (err) {
           reject(err);
           return;
         }
         const statusMap = new Map<string, string>();
-        for (const line of stdout.trim().split("\n")) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-          // Porcelain format: XY path or XY path -> origPath
-          const status = trimmed.slice(0, 2);
-          const rest = trimmed.slice(3);
-          const filePath = rest.split(" -> ")[0] || rest;
+        const entries = stdout.split("\0").filter(Boolean);
+        for (let i = 0; i < entries.length; i += 1) {
+          const entry = entries[i] ?? "";
+          if (entry.length < 4) continue;
+          // Porcelain v1 -z format: "XY path\0"; rename/copy records include
+          // a second NUL-delimited source path that we skip.
+          const status = entry.slice(0, 2);
+          const filePath = entry.slice(3);
           statusMap.set(filePath, status);
+          if (status.includes("R") || status.includes("C")) i += 1;
         }
-        resolve({ statusMap, repoRoot });
+        try {
+          const contentHashMap = new Map<string, string | null>();
+          for (const filePath of statusMap.keys()) {
+            contentHashMap.set(
+              filePath,
+              await workingTreeContentHash(repoRoot, filePath)
+            );
+          }
+          resolve({ statusMap, contentHashMap, repoRoot });
+        } catch (hashErr) {
+          reject(hashErr);
+        }
       }
     );
   });
 }
 
-function isAllowlisted(filePath: string): boolean {
+async function workingTreeContentHash(
+  repoRoot: string,
+  filePath: string
+): Promise<string | null> {
+  const resolved = path.resolve(repoRoot, filePath);
+  const rootPrefix = repoRoot.endsWith(path.sep)
+    ? repoRoot
+    : `${repoRoot}${path.sep}`;
+  if (resolved !== repoRoot && !resolved.startsWith(rootPrefix)) return null;
+
+  try {
+    const stat = await fs.lstat(resolved);
+    if (stat.isSymbolicLink()) {
+      const target = await fs.readlink(resolved);
+      return createHash("sha256").update(`symlink:${target}`).digest("hex");
+    }
+    if (!stat.isFile()) return null;
+    const data = await fs.readFile(resolved);
+    return createHash("sha256").update(data).digest("hex");
+  } catch {
+    return null;
+  }
+}
+
+export function isMutationGuardAllowlistedPath(filePath: string): boolean {
   // Normalize path separators
   const normalized = filePath.replace(/\\/g, "/");
-  // Allow .x-harness/traces/ writes anywhere in repo,
-  // and allow the .x-harness/ directory itself when git reports it
-  // as a single untracked directory entry.
+  // Allow generated harness state under .x-harness/, including trace output
+  // and the directory itself when git reports it as a single untracked entry.
   return (
-    normalized.includes(".x-harness/traces/") ||
+    normalized === ".x-harness" ||
+    normalized.startsWith(".x-harness/") ||
+    normalized.includes("/.x-harness/") ||
     normalized.endsWith(".x-harness") ||
     normalized.endsWith(".x-harness/")
   );
@@ -76,6 +118,8 @@ export interface MutationDelta {
   path: string;
   beforeStatus: string | null;
   afterStatus: string | null;
+  beforeHash?: string | null;
+  afterHash?: string | null;
 }
 
 export function compareSnapshots(
@@ -90,8 +134,16 @@ export function compareSnapshots(
   for (const filePath of allPaths) {
     const beforeStatus = before.statusMap.get(filePath) ?? null;
     const afterStatus = after.statusMap.get(filePath) ?? null;
-    if (beforeStatus !== afterStatus) {
-      deltas.push({ path: filePath, beforeStatus, afterStatus });
+    const beforeHash = before.contentHashMap?.get(filePath) ?? null;
+    const afterHash = after.contentHashMap?.get(filePath) ?? null;
+    if (beforeStatus !== afterStatus || beforeHash !== afterHash) {
+      deltas.push({
+        path: filePath,
+        beforeStatus,
+        afterStatus,
+        beforeHash,
+        afterHash,
+      });
     }
   }
   return deltas;
@@ -100,7 +152,7 @@ export function compareSnapshots(
 export function filterUnexpectedDeltas(
   deltas: MutationDelta[]
 ): MutationDelta[] {
-  return deltas.filter((d) => !isAllowlisted(d.path));
+  return deltas.filter((d) => !isMutationGuardAllowlistedPath(d.path));
 }
 
 export interface GuardResult {

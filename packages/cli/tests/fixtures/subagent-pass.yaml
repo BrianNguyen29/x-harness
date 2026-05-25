@@ -12,6 +12,19 @@ evidence:
 verification:
   status: passed
   checks: []
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: "Subagent compatibility result is admission-ready."
+  expected_effect: "Verify accepts the standard compatibility return."
+  falsification_method: "Run verify with the subagent return."
+  horizon: "same_verify"
 confidence: HIGH
 handoff:
   next_action: "none"

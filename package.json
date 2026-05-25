@@ -18,6 +18,10 @@
     "build": "npm -w packages/cli run build",
     "dev": "npm -w packages/cli run dev",
     "test": "npm -w packages/cli run test",
+    "test:fast": "npm -w packages/cli run test:fast",
+    "test:smoke": "npm -w packages/cli run test:smoke",
+    "test:integration": "npm -w packages/cli run test:integration",
+    "test:release": "npm -w packages/cli run test:release",
     "test:watch": "npm -w packages/cli run test:watch",
     "test:coverage": "npm -w packages/cli run test:coverage",
     "typecheck": "npm -w packages/cli run typecheck",
@@ -26,7 +30,10 @@
     "lint:fix": "npm -w packages/cli run lint:fix",
     "format": "npm -w packages/cli run format",
     "format:check": "npm -w packages/cli run format:check",
+    "pack:dry-run": "npm -w packages/cli run pack:dry-run",
     "ci": "npm -w packages/cli run ci",
-    "verify": "npm run build && npm run typecheck && npm run test"
+    "release:local": "npm run build && npm run typecheck && npm run lint && npm run format:check && npm run test:release",
+    "verify": "npm run build && npm run typecheck && npm run test",
+    "verify:fast": "npm run build && npm run typecheck && npm run test:fast"
   }
 }

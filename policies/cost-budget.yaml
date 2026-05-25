@@ -1,0 +1,9 @@
+version: 1
+
+cost_budget:
+  enabled: false
+  max_usd: 5
+  max_input_tokens: 150000
+  max_output_tokens: 45000
+  over_budget_recovery: escalate_to_human
+  affects_admission: false
