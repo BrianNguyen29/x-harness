@@ -3,6 +3,20 @@ task_id: TASK-GOLDEN-TYPECHECK-001
 tier: standard
 owner: alice
 accountable: bob
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Payment module refactored
+  expected_effect: Payment module compiles without errors
+  measurable_signal: npm run typecheck
+  falsification_method: Run typecheck without the fix; it should pass
+  horizon: same_verify
 evidence:
   files_changed:
     - src/payment.ts

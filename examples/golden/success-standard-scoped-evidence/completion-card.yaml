@@ -9,6 +9,20 @@ state:
   write_set:
     - src/product-form.tsx
     - src/product-form.test.tsx
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Added product form validation with scoped evidence
+  expected_effect: Product form validates empty names and passes typecheck
+  measurable_signal: npm test -- product-form && npm run typecheck
+  falsification_method: Run tests without the fix; validation should not work
+  horizon: same_verify
 evidence:
   files_changed:
     - src/product-form.tsx

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "agent-profile",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "agent_id",
+    "measured_on",
+    "observed_failure_modes",
+    "required_extra_checks",
+    "benchmark_metrics",
+    "advisory_only",
+    "admission_authority"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1"
+    },
+    "agent_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "measured_on": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observed_failure_modes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_extra_checks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "benchmark_metrics": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "advisory_only": {
+      "const": true
+    },
+    "admission_authority": {
+      "const": false
+    }
+  },
+  "additionalProperties": false
+}

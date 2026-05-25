@@ -1,13 +1,10 @@
 import { Command } from "commander";
 import * as path from "node:path";
 import fs from "fs-extra";
-import { fileURLToPath } from "node:url";
 import { readYamlOrJson } from "../core/schema.js";
 import { runAdmission, acceptanceStatus } from "../core/admission.js";
 import { validate as validateCompletionCard } from "../validators/completionCard.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { resolveAssetPath } from "../core/assets.js";
 
 interface GoldenExample {
   name: string;
@@ -17,15 +14,7 @@ interface GoldenExample {
 }
 
 async function discoverGoldenExamples(): Promise<GoldenExample[]> {
-  const goldenDir = path.resolve(
-    __dirname,
-    "..",
-    "..",
-    "..",
-    "..",
-    "examples",
-    "golden"
-  );
+  const goldenDir = await resolveAssetPath(path.join("examples", "golden"));
   if (!(await fs.pathExists(goldenDir))) {
     return [];
   }
@@ -80,6 +69,16 @@ async function verifyExample(example: GoldenExample): Promise<{
       evidence: card.evidence as Record<string, unknown> | undefined,
       state: card.state as Record<string, unknown> | undefined,
       governance: card.governance as Record<string, unknown> | undefined,
+      intake: card.intake as Record<string, unknown> | undefined,
+      context_acknowledged:
+        typeof card.context_acknowledged === "boolean"
+          ? card.context_acknowledged
+          : undefined,
+      done_checklist: card.done_checklist as
+        | Record<string, unknown>
+        | undefined,
+      prediction: card.prediction as Record<string, unknown> | undefined,
+      isCardMode: true,
       staleGround: false,
     };
 
@@ -109,7 +108,9 @@ async function verifyExample(example: GoldenExample): Promise<{
     const actualOutput = lines.join("\n") + "\n";
 
     let outputMismatch: string | undefined;
-    if (await fs.pathExists(example.expectedOutputPath)) {
+    if (!(await fs.pathExists(example.expectedOutputPath))) {
+      outputMismatch = `Missing expected output snapshot: ${path.relative(process.cwd(), example.expectedOutputPath)}`;
+    } else {
       const expectedOutput = await fs.readFile(
         example.expectedOutputPath,
         "utf-8"

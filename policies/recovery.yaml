@@ -5,6 +5,10 @@ recovery_routing:
     next_action: "Attach validation evidence or explain why unavailable."
     owner: implementation-worker
 
+  evidence_floor_not_met:
+    next_action: "Attach the tier-required evidence floor and rerun verification."
+    owner: implementation-worker
+
   evidence_scope_missing:
     next_action: "Declare what each validation artifact verifies and does not verify."
     owner: implementation-worker
@@ -41,6 +45,34 @@ recovery_routing:
     next_action: "Declare state.read_set and state.write_set for the task."
     owner: implementation-worker
 
+  done_checklist_missing:
+    next_action: "Declare the done_checklist required for standard or deep admission."
+    owner: implementation-worker
+
+  prediction_missing:
+    next_action: "Declare the falsifiable prediction required for standard or deep admission."
+    owner: implementation-worker
+
+  prediction_invalid:
+    next_action: "Complete the required prediction fields and rerun verification."
+    owner: implementation-worker
+
+  done_checklist_prediction_mismatch:
+    next_action: "Align done_checklist.prediction_declared with the prediction block."
+    owner: implementation-worker
+
+  stale_ground:
+    next_action: "Refresh stale context or rule it out before requesting admission."
+    owner: implementation-worker
+
   admission_failed:
     next_action: "Resolve admission validation errors and rerun verification."
+    owner: implementation-worker
+
+  Fpermission:
+    next_action: "Request human approval for this protected path change before admission."
+    owner: user
+
+  Fintervention:
+    next_action: "Review intervention artifact for authority boundary violation and resolve."
     owner: implementation-worker

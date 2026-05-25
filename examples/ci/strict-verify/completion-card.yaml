@@ -1,0 +1,89 @@
+schema_version: "1"
+task_id: TASK-CI-STRICT-VERIFY-001
+tier: standard
+owner: ci
+accountable: maintainer
+context_acknowledged: true
+intake:
+  classification: normal
+  mapped_tier: standard
+  rationale: CI representative fixture covers routine verification without protected-path or release changes.
+  signals:
+    - routine_implementation
+  negative_signals_considered:
+    - auth
+    - token
+    - session
+    - ci
+    - release
+  auto_escalated: false
+state:
+  read_set:
+    - examples/ci/strict-verify/completion-card.yaml
+    - policies/admission.yaml
+    - schemas/completion-card.schema.json
+  write_set:
+    - examples/ci/strict-verify/completion-card.yaml
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+  notes:
+    - CI fixture intentionally validates strict verifier behavior, not a product feature.
+prediction:
+  claim: Strict verify accepts a representative standard completion card without mutating the repository.
+  expected_effect: verify --strict exits 0 and reports mutation guard passed.
+  measurable_signal: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
+  falsification_method: Run strict verify in CI; unexpected repository mutations or admission drift fail the command.
+  horizon: same_verify
+  confidence: high
+evidence:
+  files_changed:
+    - examples/ci/strict-verify/completion-card.yaml
+  command_evidence:
+    - command: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
+      exit_code: 0
+      runner: github-actions-node-22
+      started_at: "2026-05-25T00:00:00.000Z"
+      ended_at: "2026-05-25T00:00:01.000Z"
+  verification_artifacts:
+    - kind: custom
+      command: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
+      status: passed
+      exit_code: 0
+      runner: github-actions-node-22
+      started_at: "2026-05-25T00:00:00.000Z"
+      ended_at: "2026-05-25T00:00:01.000Z"
+      verifies:
+        - strict verifier accepts the representative card
+        - mutation guard runs in CI path
+      does_not_verify:
+        - downstream repository integration
+        - release packaging
+      confidence: high
+  untested_regions:
+    - downstream repository integration
+    - release packaging
+claim:
+  fix_status: fixed
+  summary: CI strict verify fixture is valid and representative.
+  evidence:
+    - description: Strict verify command exits successfully for this card.
+      command: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: strict-verify
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: ci

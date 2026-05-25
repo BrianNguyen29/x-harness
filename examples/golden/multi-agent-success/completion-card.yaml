@@ -3,6 +3,20 @@ task_id: TASK-GOLDEN-005
 tier: standard
 owner: orchestrator
 accountable: lead
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: User profile API v2 implemented with avatar upload and validation
+  expected_effect: All tests pass and API endpoints are functional
+  measurable_signal: npm test
+  falsification_method: Run tests without the implementation; they should fail
+  horizon: same_verify
 evidence:
   files_changed:
     - src/api/v2/profile.ts

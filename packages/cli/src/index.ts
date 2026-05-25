@@ -12,6 +12,28 @@ import { examplesCommand } from "./commands/examples.js";
 import { contextCommand } from "./commands/context.js";
 import { recoveryCommand, recoverySuggestAction } from "./commands/recovery.js";
 import { packetCommand } from "./commands/packet.js";
+import { intakeCommand } from "./commands/intake.js";
+import {
+  governanceCommand,
+  interventionCommand,
+} from "./commands/governance.js";
+import { predictionCommand } from "./commands/prediction.js";
+import { benchmarkCommand } from "./commands/benchmark.js";
+import { componentsCommand } from "./commands/components.js";
+import { evidenceCommand } from "./commands/evidence.js";
+import { episodeCommand } from "./commands/episode.js";
+import { attributionCommand } from "./commands/attribution.js";
+import { permissionsCommand } from "./commands/permissions.js";
+import { evolveCommand } from "./commands/evolve.js";
+import {
+  frozenCommand,
+  frozenExportCommand,
+  frozenImportCommand,
+} from "./commands/frozen.js";
+import { federationCommand } from "./commands/federation.js";
+import { approvalRiskCommand } from "./commands/approval-risk.js";
+import { agentProfileCommand } from "./commands/agent-profile.js";
+import { costCommand } from "./commands/cost.js";
 import { CliError, handleCliError } from "./core/exit.js";
 
 const program = new Command();
@@ -30,6 +52,24 @@ program.addCommand(examplesCommand());
 program.addCommand(contextCommand());
 program.addCommand(packetCommand());
 program.addCommand(doctorCommand());
+program.addCommand(intakeCommand());
+program.addCommand(governanceCommand());
+program.addCommand(interventionCommand());
+program.addCommand(predictionCommand());
+program.addCommand(benchmarkCommand());
+program.addCommand(componentsCommand());
+program.addCommand(evidenceCommand());
+program.addCommand(episodeCommand());
+program.addCommand(attributionCommand());
+program.addCommand(permissionsCommand());
+program.addCommand(evolveCommand());
+program.addCommand(frozenCommand());
+program.addCommand(frozenExportCommand());
+program.addCommand(frozenImportCommand());
+program.addCommand(federationCommand());
+program.addCommand(approvalRiskCommand());
+program.addCommand(agentProfileCommand());
+program.addCommand(costCommand());
 
 // Commands with beginner-friendly aliases
 const verify = verifyCommand();

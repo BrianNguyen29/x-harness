@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "frozen-manifest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "bundle_id",
+    "x_harness_version",
+    "created_at",
+    "source_commit",
+    "maturity_level",
+    "benchmark",
+    "included_components",
+    "files",
+    "signing"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "bundle_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "x_harness_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_commit": {
+      "type": "string",
+      "minLength": 1
+    },
+    "maturity_level": {
+      "type": "string",
+      "minLength": 1
+    },
+    "benchmark": {
+      "type": "object",
+      "required": [
+        "false_accept_count",
+        "adversarial_false_accept_count",
+        "episode_packaging_success_rate"
+      ],
+      "properties": {
+        "false_accept_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "adversarial_false_accept_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "episode_packaging_success_rate": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "included_components": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256", "size"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "signing": {
+      "type": "object",
+      "required": ["mode"],
+      "properties": {
+        "mode": {
+          "enum": ["unsigned", "sigstore"]
+        },
+        "signature_ref": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

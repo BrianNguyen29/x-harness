@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "failure-attribution",
+  "description": "Deterministic attribution for withheld or failed episode outcomes. Attribution is advisory and does not grant admission authority.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "episode_id",
+    "task_id",
+    "created_at",
+    "verdict",
+    "primary",
+    "candidates",
+    "unknown_rate_signal",
+    "admission_authority"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1"
+    },
+    "episode_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "verdict": {
+      "type": "object",
+      "required": ["admission_outcome", "acceptance_status"],
+      "properties": {
+        "admission_outcome": {
+          "enum": [
+            "success",
+            "failed",
+            "blocked",
+            "skipped",
+            "timeout",
+            "error"
+          ]
+        },
+        "acceptance_status": {
+          "enum": ["accepted", "withheld"]
+        },
+        "blocking_predicate": {
+          "type": ["string", "null"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "primary": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/candidate"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/candidate"
+      }
+    },
+    "unknown_rate_signal": {
+      "type": "object",
+      "required": ["is_unknown", "reason"],
+      "properties": {
+        "is_unknown": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "admission_authority": {
+      "const": false
+    }
+  },
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "required": [
+        "taxonomy",
+        "predicate",
+        "component_id",
+        "confidence",
+        "rationale"
+      ],
+      "properties": {
+        "taxonomy": {
+          "enum": [
+            "Ftask_spec",
+            "Fcontext",
+            "Ftool",
+            "Fmemory",
+            "Fstate",
+            "Fobservability",
+            "Fattribution",
+            "Fverification",
+            "Fpermission",
+            "Fentropy",
+            "Fintervention",
+            "Fmodel",
+            "Funknown"
+          ]
+        },
+        "predicate": {
+          "type": "string",
+          "minLength": 1
+        },
+        "component_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confidence": {
+          "enum": ["low", "medium", "high"]
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,26 @@
+schema_version: "1"
+task_id: TASK-ADV-MUTATION-GUARD-001
+tier: light
+owner: mallory
+accountable: alice
+evidence:
+  files_changed:
+    - src/mutation-probe.ts
+  manual_rationale: Claims verification is read-only while the benchmark injects a mutation.
+claim:
+  fix_status: fixed
+  summary: Claims verifier-side mutation should still be accepted.
+  evidence:
+    - description: mutation guard probe
+      result: passed
+verification:
+  status: passed
+  checks:
+    - name: mutation-guard-probe
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: mallory

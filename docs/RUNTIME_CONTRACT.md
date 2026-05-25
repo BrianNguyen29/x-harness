@@ -4,12 +4,23 @@ Canonical runtime labels: `light`, `standard`, `deep`.
 
 Forbidden active aliases: `small`, `medium`, `large`.
 
+Generated runtime contract:
+
+```bash
+node packages/cli/dist/index.js context --contract
+```
+
 Candidate completion:
 
 ```yaml
-result.fix_status: fixed
-verification.status: passed
+claim:
+  fix_status: fixed
+verification:
+  status: passed
 ```
+
+Compatibility sub-agent returns may still use `result.fix_status`; runtime
+completion cards use `claim.fix_status` as the canonical field.
 
 Accepted completion:
 
@@ -35,3 +46,57 @@ In multi-agent or long-running sessions, the following artifact precedence appli
 
 If chat says done but `completion-card.yaml` says withheld, treat completion as withheld.
 If `completion-card.yaml` claims accepted but verify output disagrees, verify output wins.
+
+<!-- BEGIN X-HARNESS MANAGED CONTRACT: runtime-contract -->
+<!-- generated-by: x-harness -->
+<!-- contract-hash: 17fb15a892d6764f -->
+
+# x-harness Generated Runtime Contract
+
+Generated from file-first source artifacts and the renderer mirror:
+
+- policies/admission.yaml
+- schemas/completion-card.schema.json
+- packages/cli/src/core/contract.ts
+
+## Canonical Rules
+
+- Completion is admitted, not claimed.
+- Verifier is read-only.
+- Success is the only accepted outcome.
+- Canonical tiers: light, standard, deep.
+- PGV is advisory-only.
+
+## Fix Status Fields
+
+Completion cards use claim.fix_status as the canonical fix-status field. Subagent returns may use result.fix_status only in compatibility return payloads.
+
+## Completion Candidate
+
+```yaml
+claim:
+  fix_status: fixed
+verification:
+  status: passed
+```
+
+## Accepted Completion
+
+```yaml
+admission:
+  outcome: success
+acceptance_status: accepted
+```
+
+## Evidence Floor
+
+- **light**: files_changed + (command_evidence or manual_rationale).
+- **standard**: files_changed + command_evidence + done_checklist + prediction.
+- **deep**: files_changed + command_evidence + evidence_scope_declared + untested_regions_declared + remaining_risks_declared + execution_controls_present + rollback_policy_present + done_checklist + prediction. Runtime-enforced: verification_artifacts, state.read_set, state.write_set.
+
+## Strict Evidence Provenance
+
+- verify --strict requires command_evidence entries to include command, exit_code, runner, and started_at for standard/deep cards.
+- verify --strict requires verification_artifacts entries to include command, exit_code, runner, and started_at for standard/deep cards.
+
+<!-- END X-HARNESS MANAGED CONTRACT: runtime-contract -->

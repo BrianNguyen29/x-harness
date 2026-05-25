@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "evolution-constitution",
+  "type": "object",
+  "required": ["version", "invariants"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "invariants": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "statement"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "protected_paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "forbidden_changes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "benchmark_required": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -6,13 +6,23 @@ import { computeMetrics } from "../core/metrics.js";
 import { readYamlOrJson } from "../core/schema.js";
 import { runAdmission } from "../core/admission.js";
 import { sha256File, sha256String } from "../core/hash.js";
+import {
+  buildEvidenceDigest,
+  readEvidenceIndex,
+  renderEvidenceDigestMarkdown,
+} from "../core/evidence-corpus.js";
 
 interface ReportOptions {
   traceDir?: string;
   json?: boolean;
   metrics?: boolean;
+  digest?: boolean;
   card?: string;
   format?: string;
+  taskId?: string;
+  index?: string;
+  write?: boolean;
+  outDir?: string;
 }
 
 function escapeHtml(input: string): string {
@@ -238,7 +248,7 @@ function renderHtmlMetricsReport(data: {
 export function reportCommand(): Command {
   return new Command("report")
     .description(
-      "Summarize trace events or compute metrics for a completion card"
+      "Summarize trace events, metrics, or replayable evidence digests"
     )
     .option("--trace-dir <dir>", "Trace directory", ".x-harness/traces")
     .option("--json", "Output JSON instead of Markdown", false)
@@ -257,8 +267,55 @@ export function reportCommand(): Command {
       "Path to completion card for --metrics",
       "completion-card.yaml"
     )
+    .option("--digest", "Render an evidence digest from an index", false)
+    .option("--task-id <id>", "Task id for --digest")
+    .option(
+      "--index <path>",
+      "Evidence index path for --digest",
+      "evidence/index.jsonl"
+    )
+    .option("--write", "Write digest markdown/json artifacts", false)
+    .option("--out-dir <path>", "Digest output directory", "evidence/digest")
     .action(async (opts: ReportOptions) => {
       const format = opts.json ? "json" : (opts.format ?? "markdown");
+      if (opts.digest) {
+        if (opts.metrics) {
+          console.error("Error: --digest cannot be combined with --metrics");
+          process.exit(2);
+        }
+        if (!opts.taskId) {
+          console.error("Error: --digest requires --task-id");
+          process.exit(2);
+        }
+        const indexPath = path.resolve(opts.index ?? "evidence/index.jsonl");
+        const entries = await readEvidenceIndex(indexPath);
+        const digest = buildEvidenceDigest({
+          taskId: opts.taskId,
+          entries,
+        });
+        const markdown = renderEvidenceDigestMarkdown(digest);
+
+        if (opts.write) {
+          const outDir = path.resolve(opts.outDir ?? "evidence/digest");
+          await fs.ensureDir(outDir);
+          await fs.writeFile(
+            path.join(outDir, `${opts.taskId}.md`),
+            markdown,
+            "utf-8"
+          );
+          await fs.writeJson(path.join(outDir, `${opts.taskId}.json`), digest, {
+            spaces: 2,
+          });
+        }
+
+        if (format === "json") {
+          console.log(JSON.stringify(digest, null, 2));
+        } else {
+          console.log(markdown);
+        }
+        return;
+      }
+
       if (opts.metrics) {
         const cardPath = path.resolve(opts.card ?? "completion-card.yaml");
         if (!(await fs.pathExists(cardPath))) {
@@ -298,6 +355,17 @@ export function reportCommand(): Command {
           evidence: card.evidence as Record<string, unknown> | undefined,
           state: card.state as Record<string, unknown> | undefined,
           governance: card.governance as Record<string, unknown> | undefined,
+          intake: card.intake as Record<string, unknown> | undefined,
+          context_acknowledged:
+            typeof card.context_acknowledged === "boolean"
+              ? card.context_acknowledged
+              : undefined,
+          done_checklist: card.done_checklist as
+            | Record<string, unknown>
+            | undefined,
+          prediction: card.prediction as Record<string, unknown> | undefined,
+          pgv_advice: card.pgv_advice as Record<string, unknown> | undefined,
+          isCardMode: true,
           staleGround: false,
         };
 

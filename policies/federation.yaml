@@ -1,0 +1,24 @@
+version: 1
+
+federation:
+  enabled: false
+  default_enabled: false
+  require_opt_in: true
+  require_redaction: true
+  tenant_boundary: required
+  retention_days: 30
+
+  data_sent:
+    - anonymized_failure_predicates
+    - anonymized_component_ids
+    - benchmark_metrics
+
+  data_never_sent:
+    - raw_source_code
+    - raw_logs
+    - secrets
+    - completion_card_contents
+
+  import:
+    default_dry_run: true
+    affects_admission: false

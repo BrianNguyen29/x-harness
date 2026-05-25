@@ -1,0 +1,42 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-MISSING-CHECKLIST-001
+tier: standard
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - src/api/client.ts
+    - src/api/client.test.ts
+  command_evidence:
+    - command: npm test -- api-client
+      exit_code: 0
+  verification_artifacts:
+    - kind: unit_test
+      command: npm test -- api-client
+      status: passed
+      verifies:
+        - "API client retries on 500 errors"
+      does_not_verify:
+        - "production API rate limits"
+      confidence: medium
+  untested_regions:
+    - "No integration test against live API."
+claim:
+  fix_status: fixed
+  summary: Added retry logic to API client
+  evidence:
+    - description: Source file src/api/client.ts
+      url: ./src/api/client.ts
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice

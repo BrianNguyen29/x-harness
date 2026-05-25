@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "approval-risk",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "task_id",
+    "risk_class",
+    "score",
+    "signals",
+    "required_approvals",
+    "personal_scoring",
+    "policy_enabled",
+    "admission_authority"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1"
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tier": {
+      "enum": ["light", "standard", "deep"]
+    },
+    "risk_class": {
+      "enum": ["low", "moderate", "elevated", "critical"]
+    },
+    "score": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "signals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_approvals": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "personal_scoring": {
+      "const": false
+    },
+    "policy_enabled": {
+      "type": "boolean"
+    },
+    "admission_authority": {
+      "const": false
+    }
+  },
+  "additionalProperties": false
+}

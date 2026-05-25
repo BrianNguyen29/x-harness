@@ -1,0 +1,52 @@
+schema_version: "1"
+task_id: TASK-ADV-MISSING-ARTIFACT-001
+tier: standard
+owner: mallory
+accountable: alice
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Claims tests passed without a changed-file artifact.
+  expected_effect: Admission should reject missing files_changed.
+  measurable_signal: xh verify withholds this card.
+  falsification_method: Run benchmark admission suite and check false_accept_count.
+  horizon: same_verify
+evidence:
+  command_evidence:
+    - command: npm test -- checkout
+      exit_code: 0
+  verification_artifacts:
+    - kind: unit_test
+      command: npm test -- checkout
+      status: passed
+      verifies:
+        - "checkout totals are recalculated"
+      does_not_verify:
+        - "changed files exist"
+      confidence: medium
+  untested_regions:
+    - "No artifact proves the modified file set."
+claim:
+  fix_status: fixed
+  summary: Claims checkout tests passed.
+  evidence:
+    - description: Test output
+      command: npm test -- checkout
+      result: passed
+verification:
+  status: passed
+  checks:
+    - name: claimed-test-pass
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: mallory

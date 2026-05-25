@@ -23,15 +23,15 @@ This will place the rules under `rules/` and execution workflows under `workflow
 
 ## Beginner-Friendly Actions
 
-| Action       | Alias for              | Description                                              |
-| :----------- | :--------------------- | :------------------------------------------------------- |
-| **`prepare`** | `handoff readiness`   | Check if workspace is ready for agent task handoff        |
-| **`check`**  | `verify`               | Run read-only verification against a completion card      |
-| **`recover`** | `recovery suggest`    | Get recovery playbook suggestions from errors or trace     |
-| **`doctor`** | (standalone)           | Validate workspace health and configuration               |
-| **`actions`** | (standalone)           | List all beginner-friendly actions                        |
-| **`status`** | `report` (no --metrics) | Show trace summary or card metrics                      |
-| **`reset`**  | `clean --tmp --force` | Clean generated harness state (requires --confirm)        |
+| Action        | Alias for               | Description                                            |
+| :------------ | :---------------------- | :----------------------------------------------------- |
+| **`prepare`** | `handoff readiness`     | Check if workspace is ready for agent task handoff     |
+| **`check`**   | `verify`                | Run read-only verification against a completion card   |
+| **`recover`** | `recovery suggest`      | Get recovery playbook suggestions from errors or trace |
+| **`doctor`**  | (standalone)            | Validate workspace health and configuration            |
+| **`actions`** | (standalone)            | List all beginner-friendly actions                     |
+| **`status`**  | `report` (no --metrics) | Show trace summary or card metrics                     |
+| **`reset`**   | `clean --tmp --force`   | Clean generated harness state (requires --confirm)     |
 
 **Slash commands for agent adapters:** `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset`
 
@@ -41,8 +41,8 @@ This will place the rules under `rules/` and execution workflows under `workflow
 2. **Execute & Test**: The implementation agent performs changes, tests execution, and writes a `completion-card.yaml`.
 3. **Trigger Verify Gate**: Run the verification utility in read-only mode:
    ```bash
-   node packages/cli/dist/index.js check --card completion-card.yaml
-   # or: node packages/cli/dist/index.js verify --card completion-card.yaml
+   node packages/cli/dist/index.js check --card completion-card.yaml --strict
+   # or: node packages/cli/dist/index.js verify --card completion-card.yaml --strict
    ```
 4. **Resolution**: If verification succeeds, mark as `accepted`. If it fails, routing guidelines from `x-harness-recover.md` are executed based on the blocking predicates.
 
@@ -56,3 +56,28 @@ This will place the rules under `rules/` and execution workflows under `workflow
 ## When to use
 
 Use this adapter when running the **Antigravity** agent framework to ensure that its development loops, verification checks, and recovery routines align seamlessly with the repository's x-harness policies.
+
+<!-- BEGIN X-HARNESS MANAGED CONTRACT: antigravity-readme-contract -->
+<!-- generated-by: x-harness -->
+<!-- contract-hash: ec6438371a039c93 -->
+
+## Generated Adapter Contract
+
+- Completion is admitted, not claimed.
+- Verifier is read-only.
+- Success is the only accepted outcome.
+- Canonical tiers: light, standard, deep.
+- PGV is advisory-only.
+
+## Evidence Floor
+
+- **light**: files_changed + (command_evidence or manual_rationale).
+- **standard**: files_changed + command_evidence + done_checklist + prediction.
+- **deep**: files_changed + command_evidence + evidence_scope_declared + untested_regions_declared + remaining_risks_declared + execution_controls_present + rollback_policy_present + done_checklist + prediction. Runtime-enforced: verification_artifacts, state.read_set, state.write_set.
+
+## Strict Evidence Provenance
+
+- verify --strict requires command_evidence entries to include command, exit_code, runner, and started_at for standard/deep cards.
+- verify --strict requires verification_artifacts entries to include command, exit_code, runner, and started_at for standard/deep cards.
+
+<!-- END X-HARNESS MANAGED CONTRACT: antigravity-readme-contract -->

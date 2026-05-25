@@ -44,14 +44,34 @@ describe("mutation-guard module", () => {
   it("compareSnapshots finds no delta for identical snapshots", () => {
     const before = {
       statusMap: new Map([["a.txt", "M "]]),
+      contentHashMap: new Map([["a.txt", "hash-a"]]),
       repoRoot: "/repo",
     };
     const after = {
       statusMap: new Map([["a.txt", "M "]]),
+      contentHashMap: new Map([["a.txt", "hash-a"]]),
       repoRoot: "/repo",
     };
     const deltas = compareSnapshots(before, after);
     expect(deltas).toHaveLength(0);
+  });
+
+  it("compareSnapshots detects dirty content changes without status changes", () => {
+    const before = {
+      statusMap: new Map([["a.txt", " M"]]),
+      contentHashMap: new Map([["a.txt", "before"]]),
+      repoRoot: "/repo",
+    };
+    const after = {
+      statusMap: new Map([["a.txt", " M"]]),
+      contentHashMap: new Map([["a.txt", "after"]]),
+      repoRoot: "/repo",
+    };
+    const deltas = compareSnapshots(before, after);
+    expect(deltas).toHaveLength(1);
+    expect(deltas[0].path).toBe("a.txt");
+    expect(deltas[0].beforeHash).toBe("before");
+    expect(deltas[0].afterHash).toBe("after");
   });
 
   it("compareSnapshots detects new untracked file", () => {
@@ -208,6 +228,32 @@ describe("mutation-guard module", () => {
       // No new changes
       const result = await guard.evaluate();
       expect(result.violated).toBe(false);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("runMutationGuard detects edits to pre-existing dirty files", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "mg-dirty-edit-"));
+    try {
+      const { execFileSync } = await import("node:child_process");
+      execFileSync("git", ["init"], { cwd: tmpDir });
+      execFileSync("git", ["config", "user.email", "test@test.com"], {
+        cwd: tmpDir,
+      });
+      execFileSync("git", ["config", "user.name", "Test"], { cwd: tmpDir });
+
+      const dirtyPath = path.join(tmpDir, "dirty.txt");
+      fs.writeFileSync(dirtyPath, "dirty-before");
+
+      const guard = await runMutationGuard(true, tmpDir);
+      await guard.takeSnapshot();
+
+      fs.writeFileSync(dirtyPath, "dirty-after");
+
+      const result = await guard.evaluate();
+      expect(result.violated).toBe(true);
+      expect(result.unexpectedDeltas?.[0].path).toBe("dirty.txt");
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }

@@ -42,6 +42,21 @@ describe("admission", () => {
         files_changed: ["a.ts"],
         command_evidence: [{ command: "npm test", exit_code: 0 }],
       },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
     });
     expect(result.outcome).toBe("success");
     expect(result.acceptance_status).toBe("accepted");
@@ -49,7 +64,7 @@ describe("admission", () => {
 
   it("withholds on stale ground", () => {
     const result = runAdmission({
-      claim: { fix_status: "fixed", summary: "done", evidence: [] },
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
       staleGround: true,
     });
     expect(result.outcome).toBe("blocked");
@@ -89,7 +104,7 @@ describe("admission", () => {
       tier: "standard",
       owner: "alice",
       accountable: "bob",
-      claim: { fix_status: "fixed", summary: "done", evidence: [] },
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
       verification: { status: "passed", checks: [] },
       handoff: { next_action: "none", owner: "alice" },
     });
@@ -97,13 +112,13 @@ describe("admission", () => {
     expect(result.errors.some((e) => e.includes("files_changed"))).toBe(true);
   });
 
-  it("allows light tier with files_changed", () => {
+  it("allows light tier with files_changed and manual_rationale", () => {
     const result = runAdmission({
       task_id: "T1",
       tier: "light",
       owner: "alice",
       accountable: "bob",
-      claim: { fix_status: "fixed", summary: "done", evidence: [] },
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
       verification: { status: "passed", checks: [] },
       handoff: { next_action: "none", owner: "alice" },
       evidence: {
@@ -125,6 +140,7 @@ describe("admission", () => {
       handoff: { next_action: "none", owner: "alice" },
       evidence: {
         files_changed: ["a.ts"],
+        manual_rationale: "simple doc fix",
       },
     });
     expect(result.outcome).toBe("failed");
@@ -231,6 +247,29 @@ describe("admission", () => {
     expect(result.notes.some((n) => n.includes("PGV"))).toBe(true);
   });
 
+  it("blocks PGV advice that attempts to grant admission authority", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      pgv_advice: { admission_authority: true },
+      evidence: {
+        files_changed: ["a.ts"],
+        manual_rationale: "simple doc fix",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.acceptance_status).toBe("withheld");
+    expect(result.errors.some((e) => e.includes("PGV"))).toBe(true);
+  });
+
   it("non-success outcome always withheld", () => {
     const result = runAdmission({
       task_id: "T1",
@@ -251,6 +290,56 @@ describe("admission", () => {
     expect(result.errors.some((e) => e.includes("non-success outcome"))).toBe(
       true
     );
+  });
+
+  it("rejects success outcome when verification did not pass", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "blocked", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "review", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        manual_rationale: "manual verification was blocked",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(
+      result.errors.some((e) =>
+        e.includes('success requires verification.status "passed"')
+      )
+    ).toBe(true);
+  });
+
+  it("rejects success outcome when acceptance is withheld", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "withheld",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        manual_rationale: "simple doc fix",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(
+      result.errors.some(
+        (e) =>
+          e.includes('admission.outcome is "success"') &&
+          e.includes('acceptance_status is "withheld"')
+      )
+    ).toBe(true);
   });
 
   it("rejects blocked without next_action/owner", () => {
@@ -309,6 +398,21 @@ describe("admission", () => {
         verification: { status: "passed" },
       },
       tier: "standard",
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
     });
     expect(result.outcome).toBe("success");
     expect(result.acceptance_status).toBe("accepted");
@@ -327,6 +431,64 @@ describe("admission", () => {
     expect(result.acceptance_status).toBe("withheld");
     expect(
       result.errors.some((e) => e.includes("canonical contradiction"))
+    ).toBe(true);
+  });
+
+  it("blocks standard subagentReturn compatibility without done_checklist and prediction", () => {
+    const result = runAdmission({
+      subagentReturn: {
+        result: { fix_status: "fixed" },
+        verification: { status: "passed" },
+        evidence: {
+          files_changed: ["a.ts"],
+          command_evidence: [{ command: "npm test", exit_code: 0 }],
+        },
+        handoff: { next_action: "none", owner: "alice" },
+      },
+      tier: "standard",
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.acceptance_status).toBe("withheld");
+    expect(result.errors.some((e) => e.includes("done_checklist"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("prediction"))).toBe(true);
+  });
+
+  it("fails when claim.fix_status and result.fix_status disagree", () => {
+    const result = runAdmission({
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      evidence: {
+        id: "E1",
+        owner: "alice",
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      subagentReturn: {
+        result: { fix_status: "partial" },
+        verification: { status: "passed" },
+      },
+      tier: "standard",
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.acceptance_status).toBe("withheld");
+    expect(
+      result.errors.some((e) =>
+        e.includes('claim.fix_status is "fixed" but result.fix_status')
+      )
     ).toBe(true);
   });
 
@@ -440,6 +602,21 @@ describe("admission", () => {
         rollback_policy: ["revert commit"],
         execution_controls: ["feature flag"],
       },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
     });
     expect(result.outcome).toBe("success");
     expect(result.acceptance_status).toBe("accepted");
@@ -472,6 +649,21 @@ describe("admission", () => {
         remaining_risks: ["prod untested"],
         rollback_policy: ["revert commit"],
         execution_controls: ["feature flag"],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
       },
       governance: {
         risk_class: "high",
@@ -512,6 +704,21 @@ describe("admission", () => {
         remaining_risks: ["prod untested"],
         rollback_policy: ["revert commit"],
         execution_controls: ["feature flag"],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
       },
       governance: {
         risk_class: "high",
@@ -619,6 +826,21 @@ describe("admission", () => {
         command_evidence: [{ command: "npm test", exit_code: 0 }],
         verification_artifacts: [{ kind: "unit_test", status: "passed" }],
       },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
     });
     expect(result.outcome).toBe("success");
     expect(result.acceptance_status).toBe("accepted");
@@ -655,6 +877,21 @@ describe("admission", () => {
         rollback_policy: ["revert commit"],
         execution_controls: ["feature flag"],
       },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
     });
     expect(result.outcome).toBe("success");
     expect(result.acceptance_status).toBe("accepted");
@@ -685,6 +922,21 @@ describe("admission", () => {
             started_at: "2026-05-22T10:00:00Z",
           },
         ],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
       },
     });
     expect(result.outcome).toBe("success");
@@ -937,6 +1189,21 @@ describe("admission", () => {
         rollback_policy: ["revert commit"],
         execution_controls: ["feature flag"],
       },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
     });
     expect(result.outcome).toBe("success");
     expect(result.acceptance_status).toBe("accepted");
@@ -1008,5 +1275,307 @@ describe("admission", () => {
     expect(result.outcome).toBe("failed");
     expect(result.errors.some((e) => e.includes("state.write_set"))).toBe(true);
     expect(result.blocking_predicate).toBe("state_read_write_missing");
+  });
+
+  // Done checklist and prediction tests for standard tier
+  it("blocks standard tier missing done_checklist", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("done_checklist"))).toBe(true);
+    expect(result.blocking_predicate).toBe("done_checklist_missing");
+  });
+
+  it("blocks standard tier missing prediction", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: false,
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("prediction"))).toBe(true);
+    expect(result.blocking_predicate).toBe("prediction_missing");
+  });
+
+  it("blocks standard tier with weak prediction missing required fields", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        // Missing required fields: claim, expected_effect, falsification_method, horizon
+        measurable_signal: "some metric",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("prediction.claim"))).toBe(
+      true
+    );
+    expect(
+      result.errors.some((e) => e.includes("prediction.expected_effect"))
+    ).toBe(true);
+    expect(
+      result.errors.some((e) => e.includes("prediction.falsification_method"))
+    ).toBe(true);
+    expect(result.errors.some((e) => e.includes("prediction.horizon"))).toBe(
+      true
+    );
+    expect(result.blocking_predicate).toBe("prediction_invalid");
+  });
+
+  it("accepts standard tier with valid done_checklist and prediction", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests and verify pass",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+  });
+
+  // Done checklist and prediction tests for deep tier
+  it("blocks deep tier missing done_checklist", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("done_checklist"))).toBe(true);
+    expect(result.blocking_predicate).toBe("done_checklist_missing");
+  });
+
+  it("blocks deep tier missing prediction", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: false,
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("prediction"))).toBe(true);
+    expect(result.blocking_predicate).toBe("prediction_missing");
+  });
+
+  // Cross-check test: done_checklist.prediction_declared=true but prediction missing
+  it("blocks when done_checklist.prediction_declared is true but prediction is missing", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true, // Says prediction is declared but...
+      },
+      // prediction is missing
+    });
+    expect(result.outcome).toBe("failed");
+    expect(
+      result.errors.some(
+        (e) =>
+          e.includes("done_checklist.prediction_declared") &&
+          e.includes("prediction is missing")
+      )
+    ).toBe(true);
+    expect(result.blocking_predicate).toBe(
+      "done_checklist_prediction_mismatch"
+    );
+  });
+
+  it("blocks intake tier downgrade without intervention approval", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["src/auth/session.ts"],
+        manual_rationale: "Fixture for downgrade guard",
+      },
+      intake: {
+        classification: "high_risk",
+        mapped_tier: "deep",
+        rationale: "Auth/session work must route to deep",
+        signals: ["auth", "session"],
+        auto_escalated: true,
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.blocking_predicate).toBe("Fintervention");
+    expect(result.errors.some((e) => e.includes("tier downgrade"))).toBe(true);
+  });
+
+  it("allows intake tier downgrade with approved governance intervention", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["src/auth/session.ts"],
+        manual_rationale: "Fixture for approved downgrade",
+      },
+      governance: {
+        requires_human_approval: true,
+        approval_required_for: ["tier_downgrade"],
+        approval_status: "approved",
+        approver: "maintainer",
+      },
+      intake: {
+        classification: "high_risk",
+        mapped_tier: "deep",
+        rationale: "Auth/session work must route to deep",
+        signals: ["auth", "session"],
+        auto_escalated: true,
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(
+      result.notes.some((note) => note.includes("tier downgrade approved"))
+    ).toBe(true);
   });
 });

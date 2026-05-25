@@ -1,0 +1,95 @@
+name: x-harness Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+
+      - name: Strict verify gate
+        run: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
+
+      - name: Workspace doctor
+        run: node packages/cli/dist/index.js doctor --root .
+
+      - name: Golden examples
+        run: node packages/cli/dist/index.js examples verify
+
+      - name: Adversarial benchmark gate
+        run: node packages/cli/dist/index.js benchmark --filter adversarial --json > benchmark-report.json
+
+      - name: npm pack dry run
+        run: npm -w packages/cli run pack:dry-run
+
+      - name: Build release package
+        run: |
+          mkdir -p .x-harness/release
+          npm pack --workspace x-harness --pack-destination .x-harness/release --json > .x-harness/release/npm-pack.json
+
+      - name: Generate SBOM
+        run: npm sbom --workspace x-harness --sbom-format cyclonedx --sbom-type application > .x-harness/release/sbom.cdx.json
+
+      - name: Packed CLI smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACK_FILE="$(find "$PWD/.x-harness/release" -name 'x-harness-*.tgz' -print -quit)"
+          TMP_REPO="$(mktemp -d)"
+          (cd "$TMP_REPO" && npm init -y)
+          npm --prefix "$TMP_REPO" install "$PACK_FILE"
+          "$TMP_REPO/node_modules/.bin/xh" init "$TMP_REPO/harness" --minimal
+          test -f "$TMP_REPO/harness/AGENTS.md"
+          cp "$PWD/examples/00-minimal/completion-card.yaml" "$TMP_REPO/harness/completion-card.yaml"
+          "$TMP_REPO/node_modules/.bin/xh" verify --card "$TMP_REPO/harness/completion-card.yaml" --json
+          "$TMP_REPO/node_modules/.bin/xh" doctor --root "$PWD"
+
+      - name: Frozen transfer compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACK_FILE="$(find "$PWD/.x-harness/release" -name 'x-harness-*.tgz' -print -quit)"
+          TMP_REPO="$(mktemp -d)"
+          (cd "$TMP_REPO" && npm init -y)
+          npm --prefix "$TMP_REPO" install "$PACK_FILE"
+          "$TMP_REPO/node_modules/.bin/xh" export --frozen --root "$PWD" --out "$TMP_REPO/x-harness-frozen.tar.gz" --json
+          "$TMP_REPO/node_modules/.bin/xh" frozen verify "$TMP_REPO/x-harness-frozen.tar.gz" --json
+          "$TMP_REPO/node_modules/.bin/xh" import "$TMP_REPO/x-harness-frozen.tar.gz" --frozen --target "$TMP_REPO/frozen-target" --merge --json
+          "$TMP_REPO/node_modules/.bin/xh" doctor --root "$TMP_REPO/frozen-target"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: x-harness-release-artifacts
+          path: |
+            benchmark-report.json
+            .x-harness/release/**
+
+      - name: Publish to npm with provenance
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: npm publish --workspace x-harness --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -7,7 +7,7 @@ evidence_floor:
     required: [files_changed]
     one_of: [command_evidence, manual_rationale]
   standard:
-    required: [files_changed, command_evidence]
+    required: [files_changed, command_evidence, done_checklist, prediction]
     recommended: [evidence_scope_declared, untested_regions_declared]
   deep:
     required:
@@ -18,6 +18,8 @@ evidence_floor:
       - remaining_risks_declared
       - execution_controls_present
       - rollback_policy_present
+      - done_checklist
+      - prediction
     runtime_enforced:
       - verification_artifacts
       - state.read_set

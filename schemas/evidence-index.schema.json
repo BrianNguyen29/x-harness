@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "evidence-index",
+  "description": "Validates an evidence index entry or an index envelope. Digest generation must be replayable from these records.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/entry"
+    },
+    {
+      "$ref": "#/$defs/envelope"
+    }
+  ],
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "task_id",
+        "evidence_id",
+        "layer",
+        "kind",
+        "path",
+        "sha256",
+        "size_bytes",
+        "redacted",
+        "created_at",
+        "admission_authority"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1"
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "layer": {
+          "enum": ["raw", "redacted", "digest", "index"]
+        },
+        "kind": {
+          "enum": [
+            "completion_card",
+            "command_evidence",
+            "episode_file",
+            "verification_artifact",
+            "trace_event",
+            "digest",
+            "other"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "redacted": {
+          "type": "boolean"
+        },
+        "redaction": {
+          "type": "object",
+          "required": ["mode", "patterns", "replacements"],
+          "properties": {
+            "mode": {
+              "enum": ["none", "secret-redaction"]
+            },
+            "patterns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "replacements": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "predicate": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "exit_code": {
+          "type": ["integer", "null"]
+        },
+        "verifies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "does_not_verify": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "admission_authority": {
+          "const": false
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "envelope": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "task_id",
+        "created_at",
+        "entry_count",
+        "index_hash",
+        "entries"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1"
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "entry_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "index_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/entry"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

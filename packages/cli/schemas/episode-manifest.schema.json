@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "episode-manifest",
+  "description": "Validates an x-harness episode manifest. Episodes are audit bundles and do not grant admission authority.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "episode_id",
+    "task_id",
+    "created_at",
+    "x_harness_version",
+    "previous_episode_id",
+    "git",
+    "policy_hashes",
+    "schema_hashes",
+    "verdict",
+    "mutation_guard",
+    "signing",
+    "bundle_refs",
+    "admission_authority",
+    "hashes_hash",
+    "manifest_hash"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1"
+    },
+    "episode_id": {
+      "type": "string",
+      "pattern": "^ep_[A-Za-z0-9_.-]+$"
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "x_harness_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "previous_episode_id": {
+      "type": ["string", "null"]
+    },
+    "git": {
+      "type": "object",
+      "required": [
+        "base_sha",
+        "head_sha",
+        "dirty_before_verify",
+        "dirty_after_verify"
+      ],
+      "properties": {
+        "base_sha": {
+          "type": ["string", "null"]
+        },
+        "head_sha": {
+          "type": ["string", "null"]
+        },
+        "dirty_before_verify": {
+          "type": "boolean"
+        },
+        "dirty_after_verify": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "policy_hashes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "null"],
+        "pattern": "^sha256:[a-f0-9]{64}$"
+      }
+    },
+    "schema_hashes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "null"],
+        "pattern": "^sha256:[a-f0-9]{64}$"
+      }
+    },
+    "verdict": {
+      "type": "object",
+      "required": ["admission_outcome", "acceptance_status"],
+      "properties": {
+        "admission_outcome": {
+          "enum": [
+            "success",
+            "failed",
+            "blocked",
+            "skipped",
+            "timeout",
+            "error"
+          ]
+        },
+        "acceptance_status": {
+          "enum": ["accepted", "withheld"]
+        },
+        "blocking_predicate": {
+          "type": ["string", "null"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "mutation_guard": {
+      "type": "object",
+      "required": ["enabled", "violated"],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "violated": {
+          "type": "boolean"
+        },
+        "skipped_reason": {
+          "type": "string"
+        },
+        "unexpected_delta_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": true
+    },
+    "signing": {
+      "type": "object",
+      "required": ["mode", "signature_ref"],
+      "properties": {
+        "mode": {
+          "const": "unsigned"
+        },
+        "signature_ref": {
+          "type": "null"
+        }
+      },
+      "additionalProperties": false
+    },
+    "bundle_refs": {
+      "type": "object",
+      "required": ["raw", "redacted"],
+      "properties": {
+        "raw": {
+          "type": ["string", "null"]
+        },
+        "redacted": {
+          "type": ["string", "null"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "admission_authority": {
+      "const": false
+    },
+    "hashes_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "manifest_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  },
+  "additionalProperties": false
+}

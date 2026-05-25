@@ -1,46 +1,18 @@
-import { createHash } from "node:crypto";
-
-const CANONICAL_RULES = [
-  "Completion is admitted, not claimed.",
-  "Verifier is read-only.",
-  "Success is the only accepted outcome.",
-  "Canonical tiers: light, standard, deep.",
-  "PGV is advisory-only.",
-];
+import {
+  getContractHash,
+  renderCanonicalContext,
+  renderCompactContextHeader,
+} from "./contract.js";
 
 const MANAGED_BEGIN = "<!-- BEGIN X-HARNESS MANAGED CONTEXT -->";
 const MANAGED_END = "<!-- END X-HARNESS MANAGED CONTEXT -->";
 
 export function getCanonicalContext(verbose = false): string {
-  if (!verbose) {
-    return CANONICAL_RULES.join("\n");
-  }
-  return [
-    "# x-harness Canonical Context",
-    "",
-    ...CANONICAL_RULES.map((r) => `- ${r}`),
-    "",
-    "## Rules",
-    "",
-    "### Completion is admitted, not claimed",
-    "Agents may propose completion but cannot self-admit. A result with `fix_status: fixed` is only a completion candidate.",
-    "",
-    "### Verifier is read-only",
-    "The verifier may inspect files, evidence, diffs, and trace events. It must not edit source files or repair the work product while verifying.",
-    "",
-    "### Success is the only accepted outcome",
-    "`admission.outcome: success` and `acceptance_status: accepted` are required for admission. All other outcomes are withheld.",
-    "",
-    "### Canonical tiers",
-    "Use only `light`, `standard`, and `deep`. Do not use `small`, `medium`, or `large` in active runtime handoffs.",
-    "",
-    "### PGV is advisory-only",
-    "Pre-gate validation (PGV) advice never overrides the verify gate and never grants admission authority by default.",
-  ].join("\n");
+  return renderCanonicalContext(verbose);
 }
 
 export function getContextHash(text: string): string {
-  return createHash("sha256").update(text, "utf-8").digest("hex").slice(0, 16);
+  return getContractHash(text);
 }
 
 export function generateManagedBlock(): string {
@@ -110,11 +82,30 @@ export function validateManagedBlock(agentsContent: string): {
   const currentContext = getCanonicalContext(true);
   const expectedHash = getContextHash(currentContext);
   const actualHash = hashMatch[1];
+  const actualContext = block
+    .split("\n")
+    .filter((line) => {
+      const trimmed = line.trim();
+      return (
+        trimmed !== MANAGED_BEGIN &&
+        trimmed !== MANAGED_END &&
+        !trimmed.startsWith("<!--")
+      );
+    })
+    .join("\n")
+    .trim();
 
   if (actualHash !== expectedHash) {
     return {
       valid: false,
       note: `AGENTS.md context hash stale: expected ${expectedHash}, found ${actualHash}`,
+    };
+  }
+
+  if (actualContext !== currentContext.trim()) {
+    return {
+      valid: false,
+      note: "AGENTS.md managed context body differs from canonical context",
     };
   }
 
@@ -125,13 +116,5 @@ export function validateManagedBlock(agentsContent: string): {
 }
 
 export function getCompactContextHeader(): string {
-  const lines = [
-    "## Context",
-    "",
-    ...CANONICAL_RULES.map((r) => `- ${r}`),
-    "",
-    "For full context run: `node packages/cli/dist/index.js context`",
-    "",
-  ];
-  return lines.join("\n");
+  return renderCompactContextHeader();
 }

@@ -1,0 +1,115 @@
+version: 1
+
+# Authority classes
+authority_classes:
+  agent_editable:
+    description: "Files and paths that agents can freely modify as part of implementation"
+    examples:
+      - "packages/cli/src/**/*.ts"
+      - "tests/**/*.ts"
+      - "docs/**/*.md"
+
+  agent_proposable_human_approved:
+    description: "Files agents may propose changes to, but require human approval before committing"
+    examples:
+      - "policies/admission.yaml"
+      - "policies/permissions.yaml"
+
+  human_only:
+    description: "Files and paths that only humans may directly modify"
+    examples:
+      - "schemas/**"
+      - "policies/admission.yaml"
+      - "policies/permissions.yaml"
+      - "policies/authority.yaml"
+      - "packages/cli/src/core/admission.ts"
+      - "packages/cli/src/core/mutation-guard.ts"
+      - ".github/workflows/*.yml"
+      - "package.json"
+      - "package-lock.json"
+
+# Protected path registry
+protected_paths:
+  - path: "schemas/**"
+    authority: human_only
+    rationale: "Schema definitions are authoritative contracts"
+
+  - path: "policies/admission.yaml"
+    authority: human_only
+    rationale: "Admission policy defines success criteria"
+
+  - path: "policies/permissions.yaml"
+    authority: human_only
+    rationale: "Permissions policy defines authority boundaries"
+
+  - path: "policies/authority.yaml"
+    authority: human_only
+    rationale: "Authority policy defines governance boundaries"
+
+  - path: "policies/recovery.yaml"
+    authority: agent_proposable_human_approved
+    rationale: "Recovery routing may be updated by agents with human approval"
+
+  - path: "packages/cli/src/core/admission.ts"
+    authority: human_only
+    rationale: "Core admission engine governs success criteria"
+
+  - path: "packages/cli/src/core/mutation-guard.ts"
+    authority: human_only
+    rationale: "Mutation guard prevents unauthorized file changes"
+
+  - path: "packages/cli/src/core/permissions.ts"
+    authority: human_only
+    rationale: "Permissions engine evaluates command and capability boundaries"
+
+  - path: "packages/cli/src/commands/permissions.ts"
+    authority: human_only
+    rationale: "Permissions command exposes policy decisions"
+
+  - path: ".github/workflows/*.yml"
+    authority: human_only
+    rationale: "CI/CD workflow gates must not be bypassed by agents"
+
+  - path: ".github/workflows/x-harness-verify.yml"
+    authority: human_only
+    rationale: "Primary verification workflow gate"
+
+  - path: "package.json"
+    authority: human_only
+    rationale: "Package manifest controls build/test commands"
+
+  - path: "package-lock.json"
+    authority: human_only
+    rationale: "Lockfile is generated from package.json changes"
+
+  - path: "packages/cli/src/core/authority.ts"
+    authority: human_only
+    rationale: "Authority classification logic"
+
+  - path: "packages/cli/src/validators/*.ts"
+    authority: human_only
+    rationale: "Validators enforce schema contracts"
+
+  - path: "packages/cli/src/commands/governance.ts"
+    authority: human_only
+    rationale: "Governance commands implement boundary reporting"
+
+  - path: "templates/**"
+    authority: human_only
+    rationale: "Task templates define agent workflows"
+
+# Report-only mode: enforcement deferred to PR 11+
+report_only: true
+
+# Enforced mode is opt-in. When enabled by policy or CLI flag, protected paths
+# require a verified approval artifact scoped to each protected path.
+authority_enforcement:
+  mode: report_only
+  admission_behavior: withhold
+  require_verified_intervention: true
+
+# Governance check behavior
+governance_check:
+  behavior: "warn"
+  exit_on_warnings: false
+  block_on_violations: false

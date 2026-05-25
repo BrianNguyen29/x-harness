@@ -9,7 +9,16 @@ export type RecoveryPredicate =
   | "conflicting_scope"
   | "verifier_not_read_only"
   | "admission_failed"
-  | "state_read_write_missing";
+  | "evidence_floor_not_met"
+  | "evidence_provenance_missing"
+  | "state_read_write_missing"
+  | "done_checklist_missing"
+  | "prediction_missing"
+  | "prediction_invalid"
+  | "done_checklist_prediction_mismatch"
+  | "stale_ground"
+  | "Fpermission"
+  | "Fintervention";
 
 export interface RecoveryRoute {
   next_action: string;
@@ -21,9 +30,19 @@ const DEFAULT_ROUTES: Record<string, RecoveryRoute> = {
     next_action: "Attach validation evidence or explain why unavailable.",
     owner: "implementation-worker",
   },
+  evidence_floor_not_met: {
+    next_action:
+      "Attach the tier-required evidence floor and rerun verification.",
+    owner: "implementation-worker",
+  },
   evidence_scope_missing: {
     next_action:
       "Declare what each validation artifact verifies and does not verify.",
+    owner: "implementation-worker",
+  },
+  evidence_provenance_missing: {
+    next_action:
+      "Attach strict evidence provenance fields and rerun verification.",
     owner: "implementation-worker",
   },
   typecheck_failed: {
@@ -64,6 +83,41 @@ const DEFAULT_ROUTES: Record<string, RecoveryRoute> = {
     next_action: "Declare state.read_set and state.write_set for the task.",
     owner: "implementation-worker",
   },
+  done_checklist_missing: {
+    next_action:
+      "Declare the done_checklist required for standard or deep admission.",
+    owner: "implementation-worker",
+  },
+  prediction_missing: {
+    next_action:
+      "Declare the falsifiable prediction required for standard or deep admission.",
+    owner: "implementation-worker",
+  },
+  prediction_invalid: {
+    next_action:
+      "Complete the required prediction fields and rerun verification.",
+    owner: "implementation-worker",
+  },
+  done_checklist_prediction_mismatch: {
+    next_action:
+      "Align done_checklist.prediction_declared with the prediction block.",
+    owner: "implementation-worker",
+  },
+  stale_ground: {
+    next_action:
+      "Refresh stale context or rule it out before requesting admission.",
+    owner: "implementation-worker",
+  },
+  Fpermission: {
+    next_action:
+      "Request human approval for this protected path change before admission.",
+    owner: "user",
+  },
+  Fintervention: {
+    next_action:
+      "Review intervention artifact for authority boundary violation and resolve.",
+    owner: "implementation-worker",
+  },
 };
 
 export function getRecoveryRoute(
@@ -83,6 +137,42 @@ export function suggestRecovery(
 
   // Heuristic: map error text to predicate
   const errorText = errors.join("; ").toLowerCase();
+  if (errorText.includes("stale_ground"))
+    return {
+      predicate: "stale_ground",
+      route: getRecoveryRoute("stale_ground"),
+    };
+  if (errorText.includes("done_checklist.prediction_declared"))
+    return {
+      predicate: "done_checklist_prediction_mismatch",
+      route: getRecoveryRoute("done_checklist_prediction_mismatch"),
+    };
+  if (errorText.includes("done_checklist"))
+    return {
+      predicate: "done_checklist_missing",
+      route: getRecoveryRoute("done_checklist_missing"),
+    };
+  if (errorText.includes("prediction.")) {
+    return {
+      predicate: "prediction_invalid",
+      route: getRecoveryRoute("prediction_invalid"),
+    };
+  }
+  if (errorText.includes("prediction"))
+    return {
+      predicate: "prediction_missing",
+      route: getRecoveryRoute("prediction_missing"),
+    };
+  if (errorText.includes("governance") && errorText.includes("permission"))
+    return {
+      predicate: "Fpermission",
+      route: getRecoveryRoute("Fpermission"),
+    };
+  if (errorText.includes("governance") && errorText.includes("intervention"))
+    return {
+      predicate: "Fintervention",
+      route: getRecoveryRoute("Fintervention"),
+    };
   if (errorText.includes("approval"))
     return {
       predicate: "approval_missing",
@@ -120,12 +210,21 @@ export function suggestRecovery(
       predicate: "evidence_scope_missing",
       route: getRecoveryRoute("evidence_scope_missing"),
     };
+  if (errorText.includes("evidence floor"))
+    return {
+      predicate: "evidence_floor_not_met",
+      route: getRecoveryRoute("evidence_floor_not_met"),
+    };
+  if (errorText.includes("evidence provenance"))
+    return {
+      predicate: "evidence_provenance_missing",
+      route: getRecoveryRoute("evidence_provenance_missing"),
+    };
   if (errorText.includes("evidence"))
     return {
       predicate: "evidence_missing",
       route: getRecoveryRoute("evidence_missing"),
     };
-
   return {
     predicate: "admission_failed",
     route: getRecoveryRoute("admission_failed"),
