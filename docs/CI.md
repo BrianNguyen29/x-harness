@@ -4,7 +4,18 @@
 
 ## GitHub Actions (recommended)
 
-The repository includes a reference workflow at `.github/workflows/x-harness-verify.yml`:
+The repository includes these public CI workflows:
+
+- `.github/workflows/x-harness-verify.yml` for build, lint, typecheck, tests,
+  strict verify, doctor, examples, and adversarial benchmark gates.
+- `.github/workflows/codeql.yml` for GitHub CodeQL JavaScript/TypeScript
+  scanning.
+- `.github/workflows/scorecard.yml` for OpenSSF Scorecard supply-chain checks.
+- `.github/workflows/sbom.yml` for CycloneDX SBOM generation.
+- `.github/workflows/release.yml` for tag-based package verification and npm
+  provenance publishing.
+
+The verify workflow is the main pull-request gate:
 
 ```yaml
 name: x-harness Verify

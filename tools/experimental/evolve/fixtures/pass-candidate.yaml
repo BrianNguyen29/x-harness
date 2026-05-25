@@ -19,7 +19,7 @@ regression_budget:
   false_reject_delta_max: 1
 forbidden_changes: []
 touched_paths:
-  - docs/METRICS.md
+  - docs/REPORT_FORMATS.md
 constitution:
   status: pending
 promotion_status: proposed

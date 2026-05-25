@@ -33,7 +33,7 @@ invariants:
     statement: "PGV cannot become admission authority."
     protected_paths:
       - policies/pgv.yaml
-      - docs/PGV_ADVISORY.md
+      - docs/RUNTIME_CONTRACT.md
     forbidden_changes:
       - pgv_sets_accepted
 

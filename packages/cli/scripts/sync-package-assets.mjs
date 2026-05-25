@@ -12,6 +12,10 @@ const requiredFiles = [
   "README.md",
   "CHANGELOG.md",
   "LICENSE",
+  "CODE_OF_CONDUCT.md",
+  "CONTRIBUTING.md",
+  "SECURITY.md",
+  "SUPPORT.md",
 ];
 
 const requiredDirs = [

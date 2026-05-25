@@ -1,6 +1,8 @@
 # ⚡ x-harness
 
 [![Verify](https://github.com/BrianNguyen29/x-harness/actions/workflows/x-harness-verify.yml/badge.svg)](https://github.com/BrianNguyen29/x-harness/actions/workflows/x-harness-verify.yml)
+[![CodeQL](https://github.com/BrianNguyen29/x-harness/actions/workflows/codeql.yml/badge.svg)](https://github.com/BrianNguyen29/x-harness/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/BrianNguyen29/x-harness/badge)](https://scorecard.dev/viewer/?uri=github.com/BrianNguyen29/x-harness)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js Version](https://img.shields.io/badge/Node.js-%3E%3D20-blue.svg)](package.json)
 [![Language: TypeScript](https://img.shields.io/badge/Language-TypeScript-blue.svg)](tsconfig.base.json)
@@ -295,7 +297,7 @@ Running `node packages/cli/dist/index.js verify --trace` logs a JSONL event deta
 │   templates/              # Markdown templates for tasks & completion cards
 │   schemas/                # JSON schemas for validating claims & cards
 │   policies/               # admission and recovery YAML policies
-│   docs/                   # Full reference documentation files
+│   docs/                   # Public user and contributor reference docs
 │   adapters/               # Platform-specific instructions and rules
 │   examples/               # Reference scenarios & golden test cases
 ```
@@ -306,9 +308,10 @@ Running `node packages/cli/dist/index.js verify --trace` logs a JSONL event deta
 
 | Document | Description |
 |----------|-------------|
-| [`docs/HANDBOOK.md`](docs/HANDBOOK.md) | Technical handbook: philosophy, tiers, CLI reference, evidence floors |
+| [`docs/README.md`](docs/README.md) | Public documentation index |
+| [`docs/QUICKSTART.md`](docs/QUICKSTART.md) | Quick start guide |
+| [`docs/FAQ.md`](docs/FAQ.md) | Frequently asked questions |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Architectural design, layer model, and validation flow |
-| [`docs/PRINCIPLES.md`](docs/PRINCIPLES.md) | Core design principles and philosophy |
 | [`docs/SCHEMAS.md`](docs/SCHEMAS.md) | JSON schema inventory and validation guide |
 | [`docs/ADMISSION_POLICY.md`](docs/ADMISSION_POLICY.md) | Fail-closed admission rules and evidence floors |
 | [`docs/VERIFY_GATE.md`](docs/VERIFY_GATE.md) | Read-only verification gate mechanics |
@@ -316,19 +319,10 @@ Running `node packages/cli/dist/index.js verify --trace` logs a JSONL event deta
 | [`docs/PACKETS.md`](docs/PACKETS.md) | Packet design spec and claim-only implementation guide |
 | [`docs/RECOVERY.md`](docs/RECOVERY.md) | Recovery routing and playbook generation |
 | [`docs/ADAPTERS.md`](docs/ADAPTERS.md) | Platform adapter guide (Generic, Claude Code, Cursor, OpenCode, Antigravity) |
-| [`docs/CI.md`](docs/CI.md) | CI integration guide and local-build composite action |
 | [`docs/REPORT_FORMATS.md`](docs/REPORT_FORMATS.md) | Report output formats: Markdown, JSON, HTML |
-| [`docs/METRICS.md`](docs/METRICS.md) | Metrics computation and interpretation |
-| [`docs/PGV_ADVISORY.md`](docs/PGV_ADVISORY.md) | Pre-gate validation advisory policy |
-| [`docs/CONTEXT_POLICY.md`](docs/CONTEXT_POLICY.md) | Context management and freshness policy |
-| [`docs/DENOMINATOR_POLICY.md`](docs/DENOMINATOR_POLICY.md) | Success denominator interpretation rules |
-| [`docs/MODES.md`](docs/MODES.md) | Operational modes and configuration |
-| [`docs/COMPARISON.md`](docs/COMPARISON.md) | Comparison with other agent frameworks |
-| [`docs/FAQ.md`](docs/FAQ.md) | Frequently asked questions |
-| [`docs/QUICKSTART.md`](docs/QUICKSTART.md) | Quick start guide |
+| [`docs/CI.md`](docs/CI.md) | CI integration guide and local-build composite action |
 | [`docs/CLEANUP.md`](docs/CLEANUP.md) | Cleanup and maintenance operations |
-| [`docs/TEMPLATE_AUTHORING.md`](docs/TEMPLATE_AUTHORING.md) | Template authoring guide |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Project roadmap and future plans |
+| [`docs/RELEASE_SECURITY.md`](docs/RELEASE_SECURITY.md) | Release, SBOM, and provenance checks |
 
 ---
 

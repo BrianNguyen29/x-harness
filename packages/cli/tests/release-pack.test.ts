@@ -85,6 +85,7 @@ describe("release packaging", () => {
       "adapters/generic/AGENTS.md",
       "examples/00-minimal/completion-card.yaml",
       "examples/golden/success-light/completion-card.yaml",
+      "docs/README.md",
       "docs/RELEASE_SECURITY.md",
       "components/registry.yaml",
       "policies/federation.yaml",
@@ -95,6 +96,10 @@ describe("release packaging", () => {
       "README.md",
       "CHANGELOG.md",
       "LICENSE",
+      "CODE_OF_CONDUCT.md",
+      "CONTRIBUTING.md",
+      "SECURITY.md",
+      "SUPPORT.md",
     ]) {
       expect(files.has(required), `packed file missing: ${required}`).toBe(
         true

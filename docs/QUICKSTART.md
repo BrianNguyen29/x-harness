@@ -117,4 +117,4 @@ To learn more about configuring and designing your agent verification workflow:
 - 📑 [docs/SCHEMAS.md](SCHEMAS.md) — Learn about completion cards, subagent returns, and events validation schemas.
 - 🚦 [docs/VERIFY_GATE.md](VERIFY_GATE.md) — Understand how the read-only admission verification policies operate.
 - 🔌 [docs/ADAPTERS.md](ADAPTERS.md) — Connect with Claude Code, Cursor, OpenCode, or Antigravity.
-- 🧠 [docs/PRINCIPLES.md](PRINCIPLES.md) — Explore the core design decisions behind file-first lightweight governance.
+- 📚 [docs/README.md](README.md) — Browse the public documentation index.

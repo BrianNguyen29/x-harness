@@ -38,7 +38,11 @@
     "X_HARNESS.md",
     "README.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "SUPPORT.md"
   ],
   "bin": {
     "x-harness": "./dist/index.js",
