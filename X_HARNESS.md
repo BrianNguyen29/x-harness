@@ -113,14 +113,15 @@ package.json
 tsconfig.base.json
 
 docs/
+  README.md
   QUICKSTART.md
   VERIFY_GATE.md
   RUNTIME_CONTRACT.md
   ADMISSION_POLICY.md
   SCHEMAS.md
   ADAPTERS.md
-  ROADMAP.md
-  ...
+  CI.md
+  RELEASE_SECURITY.md
   (See docs/ for additional reference pages)
 
 

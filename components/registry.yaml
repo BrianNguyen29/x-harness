@@ -10,8 +10,6 @@ components:
       - docs/ADMISSION_POLICY.md
       - docs/RUNTIME_CONTRACT.md
       - docs/SCHEMAS.md
-      - docs/PHASE1_5_EXECUTION_PLAN.md
-      - X_HARNESS_PHASE1_5_IMPLEMENTATION_PLAN_V2_AGENT_READY.md
     owner: maintainers
     stability: stable
     agent_edit: human_approved
@@ -39,7 +37,6 @@ components:
       - packages/cli/schemas/components-registry.schema.json
       - packages/cli/src/core/components.ts
       - packages/cli/src/commands/components.ts
-      - docs/COMPONENTS.md
     owner: maintainers
     stability: stable
     agent_edit: human_approved
@@ -50,7 +47,6 @@ components:
     kind: runtime
     paths:
       - evidence/**
-      - docs/EVIDENCE.md
       - docs/REPORT_FORMATS.md
       - schemas/evidence-index.schema.json
       - packages/cli/schemas/evidence-index.schema.json
@@ -67,7 +63,6 @@ components:
   - id: episode_packager
     kind: runtime
     paths:
-      - docs/EPISODES.md
       - schemas/episode-manifest.schema.json
       - packages/cli/schemas/episode-manifest.schema.json
       - packages/cli/src/core/episode.ts
@@ -83,8 +78,6 @@ components:
   - id: prediction_and_attribution
     kind: runtime
     paths:
-      - docs/PREDICTIONS.md
-      - docs/ATTRIBUTION.md
       - schemas/attribution.schema.json
       - packages/cli/schemas/attribution.schema.json
       - packages/cli/src/core/attribution.ts
@@ -112,7 +105,6 @@ components:
   - id: intake_policy
     kind: policy
     paths:
-      - docs/INTAKE.md
       - policies/intake.yaml
       - packages/cli/src/core/intake.ts
       - packages/cli/src/commands/intake.ts
@@ -126,7 +118,6 @@ components:
   - id: governance_boundary
     kind: policy
     paths:
-      - docs/GOVERNANCE_BOUNDARY.md
       - policies/authority.yaml
       - packages/cli/src/core/authority.ts
       - packages/cli/src/commands/governance.ts
@@ -140,7 +131,6 @@ components:
   - id: permissions_model
     kind: policy
     paths:
-      - docs/PERMISSIONS.md
       - policies/permissions.yaml
       - schemas/permissions.schema.json
       - packages/cli/schemas/permissions.schema.json
@@ -156,7 +146,7 @@ components:
   - id: benchmark_suite
     kind: fixture
     paths:
-      - docs/METRICS.md
+      - docs/REPORT_FORMATS.md
       - schemas/benchmark-report.schema.json
       - packages/cli/schemas/benchmark-report.schema.json
       - packages/cli/src/commands/benchmark.ts
@@ -172,8 +162,6 @@ components:
   - id: evolution_frozen_transfer
     kind: runtime
     paths:
-      - docs/EVOLUTION.md
-      - docs/FROZEN_TRANSFER.md
       - tools/experimental/evolve/**
       - schemas/evolution-constitution.schema.json
       - packages/cli/schemas/evolution-constitution.schema.json
@@ -196,7 +184,6 @@ components:
   - id: federation_exchange
     kind: runtime
     paths:
-      - docs/FEDERATION.md
       - policies/federation.yaml
       - schemas/federation-pattern.schema.json
       - packages/cli/schemas/federation-pattern.schema.json
@@ -213,7 +200,6 @@ components:
   - id: optional_enterprise_controls
     kind: runtime
     paths:
-      - docs/ENTERPRISE_OPTIONAL.md
       - policies/approval-risk.yaml
       - policies/cost-budget.yaml
       - schemas/agent-profile.schema.json
