@@ -4,6 +4,11 @@ Status: planning baseline
 Date: 2026-05-25
 Scope: rewrite the canonical x-harness CLI/runtime from TypeScript to Go while preserving the current file-first verification contract.
 
+Toolchain prerequisite: Phase 1 and later require a local Go toolchain capable
+of running `go build ./cmd/x-harness` and `go test ./...`. The initial module
+target is Go 1.22 and uses only the standard library until a later phase
+requires additional dependencies.
+
 ## 1. Executive Decision
 
 The Go rewrite should be implemented as a parity-first migration, not as a broad product expansion.
