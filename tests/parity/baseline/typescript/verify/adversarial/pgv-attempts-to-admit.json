@@ -1,0 +1,83 @@
+{
+  "acceptance_status": "withheld",
+  "admission_outcome": "failed",
+  "card_id": null,
+  "changed_files": {
+    "card_files": [
+      "src/profile.ts"
+    ],
+    "files": [
+      "src/profile.ts"
+    ],
+    "git_files": [],
+    "source": "card"
+  },
+  "checks": [
+    {
+      "name": "completion card valid",
+      "note": "completion card valid: examples/adversarial/pgv-attempts-to-admit/completion-card.yaml",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "tier \"standard\" recommends verification_artifacts",
+      "note": "tier \"standard\" recommends verification_artifacts",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "tier \"standard\" recommends evidence scope (verifies/does_not_verify)",
+      "note": "tier \"standard\" recommends evidence scope (verifies/does_not_verify)",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "tier \"standard\" recommends untested_regions",
+      "note": "tier \"standard\" recommends untested_regions",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "tier \"standard\" requires done_checklist",
+      "note": "tier \"standard\" requires done_checklist",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "tier \"standard\" requires prediction",
+      "note": "tier \"standard\" requires prediction",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "pgv_advice cannot grant admission authority; PGV is advisory-only",
+      "note": "pgv_advice cannot grant admission authority; PGV is advisory-only",
+      "severity": "error",
+      "status": "failed"
+    }
+  ],
+  "decision": {
+    "acceptance_status": "withheld",
+    "outcome": "failed"
+  },
+  "denominator_warning": "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
+  "episode": null,
+  "input_card_hash": "sha256:ccd354c9cc2516505529bf1c52e8f101847553b27b03bad85dfeb13454472e2d",
+  "ok": false,
+  "policy_hash": "sha256:5c08082dadbc591d27f6e9b8640fe4c430d17afba75e179abab1633110b231cc",
+  "recovery": {
+    "next_action": "Declare the done_checklist required for standard or deep admission.",
+    "owner": "implementation-worker",
+    "predicate": "done_checklist_missing"
+  },
+  "schema_version": 1,
+  "strict": false,
+  "task_id": "TASK-ADV-PGV-ADMIT-001",
+  "withheld_reason": "tier \"standard\" requires done_checklist; tier \"standard\" requires prediction; pgv_advice cannot grant admission authority; PGV is advisory-only"
+}

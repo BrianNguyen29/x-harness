@@ -44,15 +44,15 @@ npm run build
 
 `x-harness` exposes seven beginner-friendly actions. Use these to interact with the harness:
 
-| Action       | Alias for              | Description                                              |
-| :----------- | :--------------------- | :------------------------------------------------------- |
-| **`prepare`** | `handoff readiness`   | Check if workspace is ready for agent task handoff        |
-| **`check`**  | `verify`               | Run read-only verification against a completion card      |
-| **`recover`** | `recovery suggest`    | Get recovery playbook suggestions from errors or trace     |
-| **`doctor`** | (standalone)           | Validate workspace health and configuration               |
-| **`actions`** | (standalone)           | List all beginner-friendly actions                        |
-| **`status`** | `report` (no --metrics) | Show trace summary or card metrics                      |
-| **`reset`**  | `clean --tmp --force` | Clean generated harness state (requires --confirm)        |
+| Action        | Alias for               | Description                                            |
+| :------------ | :---------------------- | :----------------------------------------------------- |
+| **`prepare`** | `handoff readiness`     | Check if workspace is ready for agent task handoff     |
+| **`check`**   | `verify`                | Run read-only verification against a completion card   |
+| **`recover`** | `recovery suggest`      | Get recovery playbook suggestions from errors or trace |
+| **`doctor`**  | (standalone)            | Validate workspace health and configuration            |
+| **`actions`** | (standalone)            | List all beginner-friendly actions                     |
+| **`status`**  | `report` (no --metrics) | Show trace summary or card metrics                     |
+| **`reset`**   | `clean --tmp --force`   | Clean generated harness state (requires --confirm)     |
 
 You can use either the alias or the full command:
 
@@ -209,20 +209,21 @@ Task delegation in `x-harness` uses **only** the following three canonical tiers
 
 ### Core Commands
 
-| Command        | Usage                                                                                                | Description                                                                                |
-| :------------- | :--------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------- |
-| **`init`**     | `node packages/cli/dist/index.js init [target_dir] [--minimal / --standard / --full]`                | Installs the core harness assets, schemas, policies, and adapters. Default is `--minimal`. |
-| **`handoff`**  | `node packages/cli/dist/index.js handoff <light / standard / deep> [--title <text>] [--task <text>]` | Generates a clean markdown handoff task prompt structure.                                  |
-| **`add`**      | `node packages/cli/dist/index.js add <claim / evidence / completion-card> [key=value]`               | Adds a metadata helper file for compatibility modes.                                       |
-| **`verify`**   | `node packages/cli/dist/index.js verify [--card <path>] [--json] [--verbose] [--story-id <id>] [--trace] [--trace-dir <dir>] [--claim <path>] [--evidence <path>] [--subagent-return <path>] [--tier <tier>] [--task-id <id>] [--mutation-guard] [--stale-ground]` | Executes the read-only verification policy against a completion card. Supports tracing and detailed output. |
-| **`doctor`**   | `node packages/cli/dist/index.js doctor [--root <path>] [--policy-drift] [--json]`                   | Checks critical file presence, schemas compilation, policies, and wording. Use `--policy-drift` to surface policy-code drift checks explicitly. |
-| **`report`**   | `node packages/cli/dist/index.js report [--metrics] [--card <path>] [--json] [--format <html|markdown|json>]` | Summarizes verification events or calculates local card metrics. `--format html` renders an HTML audit report. |
-| **`trace`**    | `node packages/cli/dist/index.js trace add [--outcome <status>] [--task-id <id>] [--acceptance-status <status>] [--tier <tier>] [--claim-id <id>] [--evidence-id <id>]` | Manually appends verify events to the trace log. Supports full event metadata. |
-| **`clean`**    | `node packages/cli/dist/index.js clean [--tmp / --reset-card / --archive-success] [--force]`         | Defaults to a dry run; add `--force` to mutate tmp artifacts, reset a completion card, or archive accepted-card snapshots. |
-| **`context`**  | `node packages/cli/dist/index.js context [--verbose / --json / --refresh] [--root <path>]`            | Shows canonical context and refreshes the AGENTS.md managed block.                         |
-| **`examples`** | `node packages/cli/dist/index.js examples`                                                           | Lists or copies built-in test-cases showing successful and blocked runs.                   |
-| **`recovery`** | `node packages/cli/dist/index.js recovery suggest [--errors <text>] [--outcome <status>] [--from <trace-file>] [--write] [--force] [--json]` | Generates structured recovery playbook suggestions from errors or trace files. Supports JSON output and candidate writing. |
-| **`packet`**   | `node packages/cli/dist/index.js packet create --card <path>` or `packet verify-chain --task-id <id>` | Creates immutable claim packets from completion cards and verifies packet chain integrity.   |
+| Command         | Usage                                                                                                                                                                                                                                                              | Description                                                                                                                |
+| :-------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------- |
+| **`init`**      | `node packages/cli/dist/index.js init [target_dir] [--minimal / --standard / --full]`                                                                                                                                                                              | Installs the core harness assets, schemas, policies, and adapters. Default is `--minimal`.                                 |
+| **`handoff`**   | `node packages/cli/dist/index.js handoff <light / standard / deep> [--title <text>] [--task <text>]`                                                                                                                                                               | Generates a clean markdown handoff task prompt structure.                                                                  |
+| **`add`**       | `node packages/cli/dist/index.js add <claim / evidence / completion-card> [key=value]`                                                                                                                                                                             | Adds a metadata helper file for compatibility modes.                                                                       |
+| **`verify`**    | `node packages/cli/dist/index.js verify [--card <path>] [--json] [--verbose] [--story-id <id>] [--trace] [--trace-dir <dir>] [--claim <path>] [--evidence <path>] [--subagent-return <path>] [--tier <tier>] [--task-id <id>] [--mutation-guard] [--stale-ground]` | Executes the read-only verification policy against a completion card. Supports tracing and detailed output.                |
+| **`doctor`**    | `node packages/cli/dist/index.js doctor [--root <path>] [--policy-drift] [--json] [--format <json\|text>]`                                                                                                                                                         | Checks critical file presence, schemas compilation, policies, and wording. JSON remains the default output for automation. |
+| **`report`**    | `node packages/cli/dist/index.js report [--metrics] [--card <path>] [--json] [--format <html\|markdown\|json>]`                                                                                                                                                    | Summarizes verification events or calculates local card metrics. `--format html` renders an HTML audit report.             |
+| **`trace`**     | `node packages/cli/dist/index.js trace add [--outcome <status>] [--task-id <id>] [--acceptance-status <status>] [--tier <tier>] [--claim-id <id>] [--evidence-id <id>]`                                                                                            | Manually appends verify events to the trace log. Supports full event metadata.                                             |
+| **`clean`**     | `node packages/cli/dist/index.js clean [--tmp / --reset-card / --archive-success] [--force]`                                                                                                                                                                       | Defaults to a dry run; add `--force` to mutate tmp artifacts, reset a completion card, or archive accepted-card snapshots. |
+| **`context`**   | `node packages/cli/dist/index.js context [--verbose / --json / --refresh] [--root <path>]`                                                                                                                                                                         | Shows canonical context and refreshes the AGENTS.md managed block.                                                         |
+| **`examples`**  | `node packages/cli/dist/index.js examples`                                                                                                                                                                                                                         | Lists or copies built-in test-cases showing successful and blocked runs.                                                   |
+| **`recovery`**  | `node packages/cli/dist/index.js recovery suggest [--errors <text>] [--outcome <status>] [--from <trace-file>] [--write] [--force] [--json]`                                                                                                                       | Generates structured recovery playbook suggestions from errors or trace files. Supports JSON output and candidate writing. |
+| **`packet`**    | `node packages/cli/dist/index.js packet create --card <path>` or `packet verify-chain --task-id <id>`                                                                                                                                                              | Creates immutable claim packets from completion cards and verifies packet chain integrity.                                 |
+| **`benchmark`** | `node packages/cli/dist/index.js benchmark [--filter <all\|latency\|admission\|adversarial\|mutation-guard>] [--mutation-files <list>] [--mutation-concurrency <list>] [--json]`                                                                                   | Measures command latency, admission fixtures, and opt-in mutation guard git/non-git fallback latency.                      |
 
 ---
 
@@ -306,23 +307,23 @@ Running `node packages/cli/dist/index.js verify --trace` logs a JSONL event deta
 
 ## 📚 Documentation
 
-| Document | Description |
-|----------|-------------|
-| [`docs/README.md`](docs/README.md) | Public documentation index |
-| [`docs/QUICKSTART.md`](docs/QUICKSTART.md) | Quick start guide |
-| [`docs/FAQ.md`](docs/FAQ.md) | Frequently asked questions |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Architectural design, layer model, and validation flow |
-| [`docs/SCHEMAS.md`](docs/SCHEMAS.md) | JSON schema inventory and validation guide |
-| [`docs/ADMISSION_POLICY.md`](docs/ADMISSION_POLICY.md) | Fail-closed admission rules and evidence floors |
-| [`docs/VERIFY_GATE.md`](docs/VERIFY_GATE.md) | Read-only verification gate mechanics |
-| [`docs/RUNTIME_CONTRACT.md`](docs/RUNTIME_CONTRACT.md) | Runtime contract between components |
-| [`docs/PACKETS.md`](docs/PACKETS.md) | Packet design spec and claim-only implementation guide |
-| [`docs/RECOVERY.md`](docs/RECOVERY.md) | Recovery routing and playbook generation |
-| [`docs/ADAPTERS.md`](docs/ADAPTERS.md) | Platform adapter guide (Generic, Claude Code, Cursor, OpenCode, Antigravity) |
-| [`docs/REPORT_FORMATS.md`](docs/REPORT_FORMATS.md) | Report output formats: Markdown, JSON, HTML |
-| [`docs/CI.md`](docs/CI.md) | CI integration guide and local-build composite action |
-| [`docs/CLEANUP.md`](docs/CLEANUP.md) | Cleanup and maintenance operations |
-| [`docs/RELEASE_SECURITY.md`](docs/RELEASE_SECURITY.md) | Release, SBOM, and provenance checks |
+| Document                                               | Description                                                                  |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| [`docs/README.md`](docs/README.md)                     | Public documentation index                                                   |
+| [`docs/QUICKSTART.md`](docs/QUICKSTART.md)             | Quick start guide                                                            |
+| [`docs/FAQ.md`](docs/FAQ.md)                           | Frequently asked questions                                                   |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)         | Architectural design, layer model, and validation flow                       |
+| [`docs/SCHEMAS.md`](docs/SCHEMAS.md)                   | JSON schema inventory and validation guide                                   |
+| [`docs/ADMISSION_POLICY.md`](docs/ADMISSION_POLICY.md) | Fail-closed admission rules and evidence floors                              |
+| [`docs/VERIFY_GATE.md`](docs/VERIFY_GATE.md)           | Read-only verification gate mechanics                                        |
+| [`docs/RUNTIME_CONTRACT.md`](docs/RUNTIME_CONTRACT.md) | Runtime contract between components                                          |
+| [`docs/PACKETS.md`](docs/PACKETS.md)                   | Packet design spec and claim-only implementation guide                       |
+| [`docs/RECOVERY.md`](docs/RECOVERY.md)                 | Recovery routing and playbook generation                                     |
+| [`docs/ADAPTERS.md`](docs/ADAPTERS.md)                 | Platform adapter guide (Generic, Claude Code, Cursor, OpenCode, Antigravity) |
+| [`docs/REPORT_FORMATS.md`](docs/REPORT_FORMATS.md)     | Report output formats: Markdown, JSON, HTML                                  |
+| [`docs/CI.md`](docs/CI.md)                             | CI integration guide and local-build composite action                        |
+| [`docs/CLEANUP.md`](docs/CLEANUP.md)                   | Cleanup and maintenance operations                                           |
+| [`docs/RELEASE_SECURITY.md`](docs/RELEASE_SECURITY.md) | Release, SBOM, and provenance checks                                         |
 
 ---
 

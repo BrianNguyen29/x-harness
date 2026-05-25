@@ -1,15 +1,26 @@
 import { execFile } from "node:child_process";
+import * as os from "node:os";
 import { performance } from "node:perf_hooks";
 import * as path from "node:path";
 import fs from "fs-extra";
 import { Command } from "commander";
 import { checkPermission } from "../core/permissions.js";
 import { runVerifyPipeline } from "../core/verify-pipeline.js";
+import {
+  snapshotDirectoryTree,
+  snapshotGitStatus,
+} from "../core/mutation-guard.js";
 
 type BenchmarkName = "verify" | "doctor" | "examples" | "test:fast" | "test";
-type BenchmarkFilter = "all" | "latency" | "admission" | "adversarial";
+type BenchmarkFilter =
+  | "all"
+  | "latency"
+  | "admission"
+  | "adversarial"
+  | "mutation-guard";
 type ExpectedAcceptance = "accepted" | "withheld";
 type BenchmarkSuite = "golden" | "adversarial";
+type MutationGuardBenchmarkMode = "git" | "non-git";
 
 interface BenchmarkSample {
   duration_ms: number;
@@ -35,6 +46,8 @@ interface BenchmarkOptions {
   filter?: string;
   adversarial?: boolean;
   updateSnapshots?: boolean;
+  mutationFiles?: string;
+  mutationConcurrency?: string;
   json?: boolean;
 }
 
@@ -103,6 +116,23 @@ interface IntegrationBenchmarkReport {
   adversarial: BenchmarkSuiteReport | null;
 }
 
+interface MutationGuardBenchmarkCase {
+  mode: MutationGuardBenchmarkMode;
+  file_count: number;
+  concurrency: number;
+  duration_ms: number;
+  hashed_paths: number;
+  ok: boolean;
+}
+
+interface MutationGuardBenchmarkReport {
+  ok: boolean;
+  file_counts: number[];
+  concurrency: number[];
+  runtime_ms: number;
+  cases: MutationGuardBenchmarkCase[];
+}
+
 const DEFAULT_COMMANDS: BenchmarkName[] = [
   "verify",
   "doctor",
@@ -167,18 +197,41 @@ function parseTimeoutMs(value?: string): number {
   return Number.parseInt(normalized, 10);
 }
 
+function parsePositiveIntList(
+  value: string | undefined,
+  option: string
+): number[] {
+  const normalized = value?.trim();
+  if (!normalized) return [];
+  const values = normalized
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (values.length === 0) {
+    throw new Error(`${option} must include at least one positive integer`);
+  }
+  const parsed = values.map((item) => {
+    if (!/^[1-9]\d*$/.test(item)) {
+      throw new Error(`${option} must contain only positive integers`);
+    }
+    return Number.parseInt(item, 10);
+  });
+  return [...new Set(parsed)];
+}
+
 function parseFilter(value?: string): BenchmarkFilter {
   const normalized = value?.trim() || "all";
   if (
     normalized === "all" ||
     normalized === "latency" ||
     normalized === "admission" ||
-    normalized === "adversarial"
+    normalized === "adversarial" ||
+    normalized === "mutation-guard"
   ) {
     return normalized;
   }
   throw new Error(
-    "--filter must be one of: all, latency, admission, adversarial"
+    "--filter must be one of: all, latency, admission, adversarial, mutation-guard"
   );
 }
 
@@ -264,6 +317,27 @@ async function runOnce(
     exit_code: sample.exitCode,
     timed_out: sample.timedOut,
   };
+}
+
+async function execFileOk(
+  file: string,
+  args: string[],
+  cwd: string
+): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    execFile(file, args, { cwd }, (error, _stdout, stderr) => {
+      if (error) {
+        reject(
+          new Error(
+            stderr.trim() ||
+              (error instanceof Error ? error.message : String(error))
+          )
+        );
+        return;
+      }
+      resolve();
+    });
+  });
 }
 
 function roundMs(value: number): number {
@@ -706,6 +780,112 @@ async function runIntegrationBenchmark(
   };
 }
 
+async function writeMutationGuardFixture(
+  root: string,
+  fileCount: number
+): Promise<void> {
+  for (let i = 0; i < fileCount; i += 1) {
+    const dir = path.join(root, `group-${Math.floor(i / 100)}`);
+    await fs.ensureDir(dir);
+    await fs.writeFile(
+      path.join(dir, `file-${i}.txt`),
+      `mutation guard benchmark file ${i}\n`,
+      "utf-8"
+    );
+  }
+}
+
+async function withHashConcurrency<T>(
+  concurrency: number,
+  fn: () => Promise<T>
+): Promise<T> {
+  const previous = process.env.X_HARNESS_MUTATION_GUARD_HASH_CONCURRENCY;
+  process.env.X_HARNESS_MUTATION_GUARD_HASH_CONCURRENCY = String(concurrency);
+  try {
+    return await fn();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.X_HARNESS_MUTATION_GUARD_HASH_CONCURRENCY;
+    } else {
+      process.env.X_HARNESS_MUTATION_GUARD_HASH_CONCURRENCY = previous;
+    }
+  }
+}
+
+async function measureMutationGuardSnapshot(
+  mode: MutationGuardBenchmarkMode,
+  fixtureRoot: string,
+  fileCount: number,
+  concurrency: number
+): Promise<MutationGuardBenchmarkCase> {
+  const started = performance.now();
+  const snapshot = await withHashConcurrency(concurrency, () =>
+    mode === "git"
+      ? snapshotGitStatus(fixtureRoot)
+      : snapshotDirectoryTree(fixtureRoot)
+  );
+  const hashedPaths = snapshot.contentHashMap?.size ?? 0;
+  return {
+    mode,
+    file_count: fileCount,
+    concurrency,
+    duration_ms: roundMs(performance.now() - started),
+    hashed_paths: hashedPaths,
+    ok: hashedPaths === fileCount,
+  };
+}
+
+async function runMutationGuardBenchmark(
+  fileCounts: number[],
+  concurrencyLevels: number[]
+): Promise<MutationGuardBenchmarkReport> {
+  const started = performance.now();
+  const tmpRoot = await fs.mkdtemp(
+    path.join(os.tmpdir(), "x-harness-mutation-bench-")
+  );
+  const cases: MutationGuardBenchmarkCase[] = [];
+  try {
+    for (const fileCount of fileCounts) {
+      const gitFixture = path.join(tmpRoot, `git-${fileCount}`);
+      const nonGitFixture = path.join(tmpRoot, `nongit-${fileCount}`);
+      await fs.ensureDir(gitFixture);
+      await fs.ensureDir(nonGitFixture);
+      await execFileOk("git", ["init"], gitFixture);
+      await writeMutationGuardFixture(gitFixture, fileCount);
+      await writeMutationGuardFixture(nonGitFixture, fileCount);
+
+      for (const concurrency of concurrencyLevels) {
+        cases.push(
+          await measureMutationGuardSnapshot(
+            "git",
+            gitFixture,
+            fileCount,
+            concurrency
+          )
+        );
+        cases.push(
+          await measureMutationGuardSnapshot(
+            "non-git",
+            nonGitFixture,
+            fileCount,
+            concurrency
+          )
+        );
+      }
+    }
+  } finally {
+    await fs.remove(tmpRoot);
+  }
+
+  return {
+    ok: cases.every((item) => item.ok),
+    file_counts: fileCounts,
+    concurrency: concurrencyLevels,
+    runtime_ms: roundMs(performance.now() - started),
+    cases,
+  };
+}
+
 function detectionMetricsOk(metrics: BenchmarkMetrics): boolean {
   return [
     metrics.mutation_guard_detection_rate,
@@ -717,7 +897,8 @@ function detectionMetricsOk(metrics: BenchmarkMetrics): boolean {
 function renderMarkdown(
   results: BenchmarkResult[],
   integration: IntegrationBenchmarkReport | null,
-  metrics: BenchmarkMetrics
+  metrics: BenchmarkMetrics,
+  mutationGuardBenchmark: MutationGuardBenchmarkReport | null
 ): void {
   console.log("# x-harness Latency Report");
   console.log("");
@@ -735,30 +916,46 @@ function renderMarkdown(
     }
   }
 
-  if (!integration) return;
-  console.log("");
-  console.log("# x-harness Integration Benchmark");
-  console.log("");
-  console.log(`- false_accept_count: ${metrics.false_accept_count}`);
-  console.log(
-    `- adversarial_false_accept_count: ${metrics.adversarial_false_accept_count}`
-  );
-  console.log(`- false_reject_count: ${metrics.false_reject_count}`);
-  console.log(
-    `- adversarial_block_rate: ${metrics.adversarial_block_rate ?? "n/a"}`
-  );
-  console.log(
-    `- authority_violation_detection_rate: ${metrics.authority_violation_detection_rate ?? "n/a"}`
-  );
-  console.log("");
-  console.log(
-    "| suite | cases | expected_pass | expected_block | false_accept | false_reject | runtime_ms |"
-  );
-  console.log("| :-- | --: | --: | --: | --: | --: | --: |");
-  for (const suite of [integration.golden, integration.adversarial]) {
-    if (!suite) continue;
+  if (integration) {
+    console.log("");
+    console.log("# x-harness Integration Benchmark");
+    console.log("");
+    console.log(`- false_accept_count: ${metrics.false_accept_count}`);
     console.log(
-      `| ${suite.suite} | ${suite.cases_total} | ${suite.expected_pass_count} | ${suite.expected_block_count} | ${suite.false_accept_count} | ${suite.false_reject_count} | ${suite.runtime_ms} |`
+      `- adversarial_false_accept_count: ${metrics.adversarial_false_accept_count}`
+    );
+    console.log(`- false_reject_count: ${metrics.false_reject_count}`);
+    console.log(
+      `- adversarial_block_rate: ${metrics.adversarial_block_rate ?? "n/a"}`
+    );
+    console.log(
+      `- authority_violation_detection_rate: ${metrics.authority_violation_detection_rate ?? "n/a"}`
+    );
+    console.log("");
+    console.log(
+      "| suite | cases | expected_pass | expected_block | false_accept | false_reject | runtime_ms |"
+    );
+    console.log("| :-- | --: | --: | --: | --: | --: | --: |");
+    for (const suite of [integration.golden, integration.adversarial]) {
+      if (!suite) continue;
+      console.log(
+        `| ${suite.suite} | ${suite.cases_total} | ${suite.expected_pass_count} | ${suite.expected_block_count} | ${suite.false_accept_count} | ${suite.false_reject_count} | ${suite.runtime_ms} |`
+      );
+    }
+  }
+
+  if (!mutationGuardBenchmark) return;
+  console.log("");
+  console.log("# x-harness Mutation Guard Benchmark");
+  console.log("");
+  console.log(`- runtime_ms: ${mutationGuardBenchmark.runtime_ms}`);
+  console.log(
+    "| mode | files | concurrency | duration_ms | hashed_paths | ok |"
+  );
+  console.log("| :-- | --: | --: | --: | --: | :-- |");
+  for (const item of mutationGuardBenchmark.cases) {
+    console.log(
+      `| ${item.mode} | ${item.file_count} | ${item.concurrency} | ${item.duration_ms} | ${item.hashed_paths} | ${item.ok ? "yes" : "no"} |`
     );
   }
 }
@@ -782,6 +979,16 @@ export function benchmarkCommand(): Command {
     )
     .option("--adversarial", "Include adversarial examples corpus", false)
     .option(
+      "--mutation-files <list>",
+      "Comma-separated file counts for mutation-guard benchmark",
+      "100,1000,5000"
+    )
+    .option(
+      "--mutation-concurrency <list>",
+      "Comma-separated hash concurrency levels for mutation-guard benchmark",
+      "1,4,16,64"
+    )
+    .option(
       "--update-snapshots",
       "Reserved for human-approved benchmark boundary updates",
       false
@@ -792,6 +999,8 @@ export function benchmarkCommand(): Command {
       let iterations: number;
       let timeoutMs: number;
       let filter: BenchmarkFilter;
+      let mutationFileCounts: number[];
+      let mutationConcurrency: number[];
       try {
         if (opts.updateSnapshots) {
           throw new Error(
@@ -802,6 +1011,14 @@ export function benchmarkCommand(): Command {
         iterations = parseIterations(opts.iterations);
         timeoutMs = parseTimeoutMs(opts.timeoutMs);
         filter = parseFilter(opts.filter);
+        mutationFileCounts = parsePositiveIntList(
+          opts.mutationFiles,
+          "--mutation-files"
+        ) || [100, 1000, 5000];
+        mutationConcurrency = parsePositiveIntList(
+          opts.mutationConcurrency,
+          "--mutation-concurrency"
+        ) || [1, 4, 16, 64];
       } catch (err) {
         console.error(err instanceof Error ? err.message : String(err));
         process.exit(2);
@@ -816,6 +1033,7 @@ export function benchmarkCommand(): Command {
       }
 
       const includeLatency = filter === "all" || filter === "latency";
+      const includeMutationGuard = filter === "mutation-guard";
       const includeAdversarial =
         filter === "adversarial" || opts.adversarial === true;
       const includeGolden =
@@ -835,9 +1053,16 @@ export function benchmarkCommand(): Command {
         includeGolden,
         includeAdversarial
       );
+      const mutationGuardBenchmark = includeMutationGuard
+        ? await runMutationGuardBenchmark(
+            mutationFileCounts,
+            mutationConcurrency
+          )
+        : null;
       const metrics = computeMetrics(results, integration);
       const ok =
         results.every((result) => result.ok) &&
+        (mutationGuardBenchmark?.ok ?? true) &&
         metrics.false_accept_count === 0 &&
         metrics.adversarial_false_accept_count === 0 &&
         metrics.false_reject_count === 0 &&
@@ -854,6 +1079,7 @@ export function benchmarkCommand(): Command {
               filter,
               results,
               integration,
+              mutation_guard_benchmark: mutationGuardBenchmark,
               metrics,
             },
             null,
@@ -861,7 +1087,7 @@ export function benchmarkCommand(): Command {
           )
         );
       } else {
-        renderMarkdown(results, integration, metrics);
+        renderMarkdown(results, integration, metrics, mutationGuardBenchmark);
       }
 
       process.exit(ok ? 0 : 1);

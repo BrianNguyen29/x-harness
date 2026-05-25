@@ -1,0 +1,53 @@
+{
+  "acceptance_status": "withheld",
+  "admission_outcome": "failed",
+  "card_id": null,
+  "changed_files": {
+    "card_files": [
+      "src/middleware/rateLimit.ts"
+    ],
+    "files": [
+      "src/middleware/rateLimit.ts"
+    ],
+    "git_files": [],
+    "source": "card"
+  },
+  "checks": [
+    {
+      "name": "completion card valid",
+      "note": "completion card valid: examples/golden/withheld-partial-fix/completion-card.yaml",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "admission checks passed",
+      "note": "admission checks passed",
+      "severity": "info",
+      "status": "passed"
+    }
+  ],
+  "decision": {
+    "acceptance_status": "withheld",
+    "outcome": "failed"
+  },
+  "denominator_warning": "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
+  "episode": null,
+  "input_card_hash": "sha256:6be133b60238f89d30ba0d2c0eb9b0c94763eb18ce19ca96b622ad74b0240013",
+  "ok": false,
+  "policy_hash": "sha256:5c08082dadbc591d27f6e9b8640fe4c430d17afba75e179abab1633110b231cc",
+  "recovery": {
+    "next_action": "Resolve admission validation errors and rerun verification.",
+    "owner": "implementation-worker",
+    "predicate": "admission_failed"
+  },
+  "schema_version": 1,
+  "strict": false,
+  "task_id": "TASK-GOLDEN-004",
+  "withheld_reason": null
+}

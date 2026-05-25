@@ -1,0 +1,49 @@
+{
+  "acceptance_status": "accepted",
+  "admission_outcome": "success",
+  "card_id": null,
+  "changed_files": {
+    "card_files": [
+      "src/utils/formatDate.ts"
+    ],
+    "files": [
+      "src/utils/formatDate.ts"
+    ],
+    "git_files": [],
+    "source": "card"
+  },
+  "checks": [
+    {
+      "name": "completion card valid",
+      "note": "completion card valid: examples/golden/success-light/completion-card.yaml",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "admission checks passed",
+      "note": "admission checks passed",
+      "severity": "info",
+      "status": "passed"
+    }
+  ],
+  "decision": {
+    "acceptance_status": "accepted",
+    "outcome": "success"
+  },
+  "denominator_warning": "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
+  "episode": null,
+  "input_card_hash": "sha256:e3ce0edc94970bccc4e064ba6bcc72b7bf69f17171060b45beb910f30468da4f",
+  "ok": true,
+  "policy_hash": "sha256:5c08082dadbc591d27f6e9b8640fe4c430d17afba75e179abab1633110b231cc",
+  "recovery": null,
+  "schema_version": 1,
+  "strict": false,
+  "task_id": "TASK-GOLDEN-001",
+  "withheld_reason": null
+}

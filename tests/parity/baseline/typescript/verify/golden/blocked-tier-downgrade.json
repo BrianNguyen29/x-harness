@@ -1,0 +1,53 @@
+{
+  "acceptance_status": "withheld",
+  "admission_outcome": "failed",
+  "card_id": null,
+  "changed_files": {
+    "card_files": [
+      "src/auth/session.ts"
+    ],
+    "files": [
+      "src/auth/session.ts"
+    ],
+    "git_files": [],
+    "source": "card"
+  },
+  "checks": [
+    {
+      "name": "completion card valid",
+      "note": "completion card valid: examples/golden/blocked-tier-downgrade/completion-card.yaml",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "intake tier downgrade requires governance intervention approval",
+      "note": "intake tier downgrade requires governance intervention approval: declared light, mapped deep",
+      "severity": "error",
+      "status": "failed"
+    }
+  ],
+  "decision": {
+    "acceptance_status": "withheld",
+    "outcome": "failed"
+  },
+  "denominator_warning": "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
+  "episode": null,
+  "input_card_hash": "sha256:0a11997d7428d3b99fda3070ce53544853bee537df6c261cd9ef1b85f5119f89",
+  "ok": false,
+  "policy_hash": "sha256:5c08082dadbc591d27f6e9b8640fe4c430d17afba75e179abab1633110b231cc",
+  "recovery": {
+    "next_action": "Review intervention artifact for authority boundary violation and resolve.",
+    "owner": "implementation-worker",
+    "predicate": "Fintervention"
+  },
+  "schema_version": 1,
+  "strict": false,
+  "task_id": "TASK-GOLDEN-TIER-DOWNGRADE-001",
+  "withheld_reason": "intake tier downgrade requires governance intervention approval: declared light, mapped deep"
+}

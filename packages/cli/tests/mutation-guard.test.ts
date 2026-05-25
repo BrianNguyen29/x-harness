@@ -8,6 +8,7 @@ import {
   snapshotGitStatus,
   snapshotDirectoryTree,
   mutationGuardHashConcurrency,
+  loadMutationGuardIgnorePolicy,
   compareSnapshots,
   filterUnexpectedDeltas,
   runMutationGuard,
@@ -81,6 +82,53 @@ describe("mutation-guard module", () => {
       expect(snapshot.statusMap.has(".x-harness/traces/events.jsonl")).toBe(
         false
       );
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("snapshotDirectoryTree applies .gitignore and mutation guard policy ignores", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "mg-ignore-"));
+    try {
+      fs.mkdirSync(path.join(tmpDir, "policies"), { recursive: true });
+      fs.mkdirSync(path.join(tmpDir, "ignored-dir"), { recursive: true });
+      fs.mkdirSync(path.join(tmpDir, "policy-dir"), { recursive: true });
+      fs.mkdirSync(path.join(tmpDir, "logs"), { recursive: true });
+      fs.writeFileSync(
+        path.join(tmpDir, ".gitignore"),
+        "ignored-dir/\n*.log\n"
+      );
+      fs.writeFileSync(
+        path.join(tmpDir, "policies", "mutation-guard.yaml"),
+        [
+          "version: 1",
+          "fallback_ignore:",
+          "  dirs:",
+          "    - policy-dir",
+          "  paths:",
+          "    - ignored-file.txt",
+          "  patterns:",
+          "    - logs/**",
+          "",
+        ].join("\n")
+      );
+      fs.writeFileSync(path.join(tmpDir, "tracked.txt"), "keep");
+      fs.writeFileSync(path.join(tmpDir, "ignored-dir", "a.txt"), "ignore");
+      fs.writeFileSync(path.join(tmpDir, "policy-dir", "a.txt"), "ignore");
+      fs.writeFileSync(path.join(tmpDir, "ignored-file.txt"), "ignore");
+      fs.writeFileSync(path.join(tmpDir, "logs", "app.txt"), "ignore");
+      fs.writeFileSync(path.join(tmpDir, "debug.log"), "ignore");
+
+      const policy = await loadMutationGuardIgnorePolicy(tmpDir);
+      expect(policy.patterns).toContain("ignored-dir/");
+      expect(policy.patterns).toContain("policy-dir/");
+
+      const snapshot = await snapshotDirectoryTree(tmpDir);
+      expect([...snapshot.statusMap.keys()].sort()).toEqual([
+        ".gitignore",
+        "policies/mutation-guard.yaml",
+        "tracked.txt",
+      ]);
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }

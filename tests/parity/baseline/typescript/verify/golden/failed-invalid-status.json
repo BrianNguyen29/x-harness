@@ -1,0 +1,92 @@
+{
+  "acceptance_status": "withheld",
+  "admission_outcome": "failed",
+  "card_id": null,
+  "changed_files": null,
+  "checks": [
+    {
+      "name": "tier \"standard\" recommends verification_artifacts",
+      "note": "tier \"standard\" recommends verification_artifacts",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "tier \"standard\" recommends evidence scope (verifies/does_not_verify)",
+      "note": "tier \"standard\" recommends evidence scope (verifies/does_not_verify)",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "tier \"standard\" recommends untested_regions",
+      "note": "tier \"standard\" recommends untested_regions",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "completion card validation failed",
+      "note": "completion card validation failed: /admission/outcome must be equal to constant",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "tier \"standard\" requires evidence packet",
+      "note": "tier \"standard\" requires evidence packet",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "evidence.files_changed is required and must be non-empty",
+      "note": "evidence.files_changed is required and must be non-empty",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "tier \"standard\" requires evidence.command_evidence",
+      "note": "tier \"standard\" requires evidence.command_evidence",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "tier \"standard\" requires done_checklist",
+      "note": "tier \"standard\" requires done_checklist",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "tier \"standard\" requires prediction",
+      "note": "tier \"standard\" requires prediction",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "claim.fix_status or result.fix_status is required",
+      "note": "claim.fix_status or result.fix_status is required",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "verification.status is required",
+      "note": "verification.status is required",
+      "severity": "error",
+      "status": "failed"
+    }
+  ],
+  "decision": {
+    "acceptance_status": "withheld",
+    "outcome": "failed"
+  },
+  "denominator_warning": "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
+  "episode": null,
+  "input_card_hash": "sha256:47867064ad79d6c4ff5393dd67792fc3cce059e1bd36755a96870b7dda46aa15",
+  "ok": false,
+  "policy_hash": "sha256:5c08082dadbc591d27f6e9b8640fe4c430d17afba75e179abab1633110b231cc",
+  "recovery": {
+    "next_action": "Attach validation evidence or explain why unavailable.",
+    "owner": "implementation-worker",
+    "predicate": "evidence_missing"
+  },
+  "schema_version": 1,
+  "strict": false,
+  "task_id": "TASK-UNKNOWN",
+  "withheld_reason": "completion card validation failed: /admission/outcome must be equal to constant; tier \"standard\" requires evidence packet; evidence.files_changed is required and must be non-empty; tier \"standard\" requires evidence.command_evidence; tier \"standard\" requires done_checklist; tier \"standard\" requires prediction; claim.fix_status or result.fix_status is required; verification.status is required"
+}

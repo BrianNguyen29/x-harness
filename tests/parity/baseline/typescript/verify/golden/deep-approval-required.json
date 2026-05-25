@@ -1,0 +1,61 @@
+{
+  "acceptance_status": "withheld",
+  "admission_outcome": "failed",
+  "card_id": null,
+  "changed_files": {
+    "card_files": [
+      "src/auth/oauth.test.ts",
+      "src/auth/oauth.ts"
+    ],
+    "files": [
+      "src/auth/oauth.test.ts",
+      "src/auth/oauth.ts"
+    ],
+    "git_files": [],
+    "source": "card"
+  },
+  "checks": [
+    {
+      "name": "completion card valid",
+      "note": "completion card valid: examples/golden/deep-approval-required/completion-card.yaml",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "tier \"deep\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
+      "note": "tier \"deep\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "deep task requires human approval before admission",
+      "note": "deep task requires human approval before admission",
+      "severity": "error",
+      "status": "failed"
+    }
+  ],
+  "decision": {
+    "acceptance_status": "withheld",
+    "outcome": "failed"
+  },
+  "denominator_warning": "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
+  "episode": null,
+  "input_card_hash": "sha256:c635db077c9905b666be84b54664218b53c14c2b2f320b57c6e9d82992381e50",
+  "ok": false,
+  "policy_hash": "sha256:5c08082dadbc591d27f6e9b8640fe4c430d17afba75e179abab1633110b231cc",
+  "recovery": {
+    "next_action": "Request human approval before admission.",
+    "owner": "user",
+    "predicate": "approval_missing"
+  },
+  "schema_version": 1,
+  "strict": false,
+  "task_id": "TASK-GOLDEN-APPROVAL-001",
+  "withheld_reason": "deep task requires human approval before admission"
+}

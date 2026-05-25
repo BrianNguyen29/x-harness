@@ -118,6 +118,38 @@ describe("benchmark command", () => {
     expect(mutationCase.blocking_predicate).toBe("verifier_not_read_only");
   });
 
+  it("benchmarks mutation guard git and non-git fallback snapshots", async () => {
+    const { stdout, exitCode } = await execaNode([
+      "benchmark",
+      "--filter",
+      "mutation-guard",
+      "--mutation-files",
+      "3",
+      "--mutation-concurrency",
+      "1,2",
+      "--json",
+    ]);
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(true);
+    expect(parsed.results).toHaveLength(0);
+    expect(parsed.integration).toBeNull();
+    expect(parsed.mutation_guard_benchmark.ok).toBe(true);
+    expect(parsed.mutation_guard_benchmark.file_counts).toEqual([3]);
+    expect(parsed.mutation_guard_benchmark.concurrency).toEqual([1, 2]);
+    expect(parsed.mutation_guard_benchmark.cases).toHaveLength(4);
+    expect(
+      parsed.mutation_guard_benchmark.cases.every(
+        (item: { hashed_paths: number }) => item.hashed_paths === 3
+      )
+    ).toBe(true);
+    expect(
+      parsed.mutation_guard_benchmark.cases.map(
+        (item: { mode: string }) => item.mode
+      )
+    ).toContain("non-git");
+  });
+
   it("rejects benchmark snapshot updates without human approval workflow", async () => {
     const { stderr, exitCode } = await execaNode([
       "benchmark",
@@ -161,5 +193,18 @@ describe("benchmark command", () => {
     expect(badTimeout.stderr).toContain(
       "--timeout-ms must be a positive integer"
     );
+  });
+
+  it("rejects malformed mutation guard benchmark options", async () => {
+    const { stderr, exitCode } = await execaNode([
+      "benchmark",
+      "--filter",
+      "mutation-guard",
+      "--mutation-files",
+      "0,nope",
+      "--json",
+    ]);
+    expect(exitCode).toBe(2);
+    expect(stderr).toContain("--mutation-files");
   });
 });

@@ -413,6 +413,34 @@ components:
     expect(Array.isArray(report.checks)).toBe(true);
   });
 
+  it("supports --format text while preserving JSON as the default", async () => {
+    const defaultResult = await execaNode(["doctor", "--root", repoRoot]);
+    expect(JSON.parse(defaultResult.stdout).healthy).toBe(true);
+
+    const { stdout, exitCode } = await execaNode([
+      "doctor",
+      "--root",
+      repoRoot,
+      "--format",
+      "text",
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("# x-harness Doctor Report");
+    expect(stdout).toContain("| required_files | pass |");
+  });
+
+  it("rejects unknown doctor output formats", async () => {
+    const { stderr, exitCode } = await execaNode([
+      "doctor",
+      "--root",
+      repoRoot,
+      "--format",
+      "xml",
+    ]);
+    expect(exitCode).toBe(2);
+    expect(stderr).toContain("--format must be one of: json, text");
+  });
+
   it("policy-drift note lacks [explicit] without the flag", async () => {
     const { stdout } = await execaNode(["doctor", "--root", repoRoot]);
     const report = JSON.parse(stdout);

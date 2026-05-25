@@ -1,0 +1,9 @@
+version: 1
+
+fallback_ignore:
+  dirs:
+    - .git
+    - node_modules
+    - .x-harness
+  paths: []
+  patterns: []

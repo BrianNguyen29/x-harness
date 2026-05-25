@@ -102,6 +102,7 @@ const CRITICAL_ASSETS = [
   "policies/permissions.yaml",
   "policies/federation.yaml",
   "policies/recovery.yaml",
+  "policies/mutation-guard.yaml",
   "tools/experimental/evolve/constitution.yaml",
   "tools/experimental/evolve/evolution-budget.yaml",
 ];
@@ -128,6 +129,38 @@ const CORE_SCHEMAS = [
   "verify-event",
   "pgv-advice",
 ];
+
+type DoctorFormat = "json" | "text";
+
+interface DoctorReport {
+  healthy: boolean;
+  present_count: number;
+  missing_count: number;
+  present: string[];
+  missing: string[];
+  checks: { name: string; status: "pass" | "fail"; note: string }[];
+  notes: string[];
+}
+
+function parseDoctorFormat(value: string | undefined): DoctorFormat {
+  const format = value ?? "json";
+  if (format === "json" || format === "text") return format;
+  throw new Error("--format must be one of: json, text");
+}
+
+function printDoctorText(report: DoctorReport): void {
+  console.log("# x-harness Doctor Report");
+  console.log("");
+  console.log(`healthy: ${report.healthy ? "true" : "false"}`);
+  console.log(`present_count: ${report.present_count}`);
+  console.log(`missing_count: ${report.missing_count}`);
+  console.log("");
+  console.log("| check | status | note |");
+  console.log("| :-- | :-- | :-- |");
+  for (const check of report.checks) {
+    console.log(`| ${check.name} | ${check.status} | ${check.note} |`);
+  }
+}
 
 const ADAPTERS = [
   "adapters/generic",
@@ -831,8 +864,25 @@ export function doctorCommand(): Command {
     .option("--root <path>", "Repository root", process.cwd())
     .option("--policy-drift", "Run policy-code drift checks", false)
     .option("--json", "Output JSON report", false)
+    .option(
+      "--format <format>",
+      "Output format: json or text (default: json)",
+      "json"
+    )
     .action(
-      async (opts: { root: string; policyDrift: boolean; json: boolean }) => {
+      async (opts: {
+        root: string;
+        policyDrift: boolean;
+        json: boolean;
+        format: string;
+      }) => {
+        let format: DoctorFormat;
+        try {
+          format = opts.json ? "json" : parseDoctorFormat(opts.format);
+        } catch (err) {
+          console.error(err instanceof Error ? err.message : String(err));
+          process.exit(2);
+        }
         const root = path.resolve(opts.root);
         const missing: string[] = [];
         const present: string[] = [];
@@ -1012,7 +1062,7 @@ export function doctorCommand(): Command {
 
         const healthy = checks.every((c) => c.status === "pass");
 
-        const report = {
+        const report: DoctorReport = {
           healthy,
           present_count: present.length,
           missing_count: missing.length,
@@ -1022,7 +1072,11 @@ export function doctorCommand(): Command {
           notes,
         };
 
-        console.log(JSON.stringify(report, null, 2));
+        if (format === "text") {
+          printDoctorText(report);
+        } else {
+          console.log(JSON.stringify(report, null, 2));
+        }
         process.exit(healthy ? 0 : 1);
       }
     );

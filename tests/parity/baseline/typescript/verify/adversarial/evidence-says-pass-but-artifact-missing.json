@@ -1,0 +1,61 @@
+{
+  "acceptance_status": "withheld",
+  "admission_outcome": "failed",
+  "card_id": null,
+  "changed_files": {
+    "card_files": [],
+    "files": [],
+    "git_files": [],
+    "source": "card"
+  },
+  "checks": [
+    {
+      "name": "completion card valid",
+      "note": "completion card valid: examples/adversarial/evidence-says-pass-but-artifact-missing/completion-card.yaml",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "tier \"standard\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
+      "note": "tier \"standard\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "evidence.files_changed is required and must be non-empty",
+      "note": "evidence.files_changed is required and must be non-empty",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "done_checklist.evidence_attached is true but evidence.files_changed is missing",
+      "note": "done_checklist.evidence_attached is true but evidence.files_changed is missing",
+      "severity": "error",
+      "status": "failed"
+    }
+  ],
+  "decision": {
+    "acceptance_status": "withheld",
+    "outcome": "failed"
+  },
+  "denominator_warning": "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
+  "episode": null,
+  "input_card_hash": "sha256:4dd6ac89bd95f1ac90dcd004736d318cb95491e636690bbabc7a9f102fee1b81",
+  "ok": false,
+  "policy_hash": "sha256:5c08082dadbc591d27f6e9b8640fe4c430d17afba75e179abab1633110b231cc",
+  "recovery": {
+    "next_action": "Attach validation evidence or explain why unavailable.",
+    "owner": "implementation-worker",
+    "predicate": "evidence_missing"
+  },
+  "schema_version": 1,
+  "strict": false,
+  "task_id": "TASK-ADV-MISSING-ARTIFACT-001",
+  "withheld_reason": "evidence.files_changed is required and must be non-empty; done_checklist.evidence_attached is true but evidence.files_changed is missing"
+}

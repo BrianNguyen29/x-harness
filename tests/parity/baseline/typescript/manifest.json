@@ -1,0 +1,358 @@
+{
+  "schema_version": 1,
+  "source_implementation": "typescript",
+  "source_command": "node packages/cli/dist/index.js",
+  "normalization": {
+    "dynamic_fields": [
+      "(^|_)duration_ms$",
+      "(^|_)runtime_ms$",
+      "^min_ms$",
+      "^avg_ms$",
+      "^max_ms$",
+      "^started_at$",
+      "^created_at$",
+      "^generated_at$",
+      "^event_id$",
+      "^timestamp$"
+    ]
+  },
+  "cases": [
+    {
+      "id": "verify:golden:blocked-missing-done-checklist",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/blocked-missing-done-checklist/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "output": "verify/golden/blocked-missing-done-checklist.json"
+    },
+    {
+      "id": "verify:golden:blocked-missing-evidence",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/blocked-missing-evidence/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "output": "verify/golden/blocked-missing-evidence.json"
+    },
+    {
+      "id": "verify:golden:blocked-missing-evidence-scope",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/blocked-missing-evidence-scope/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "output": "verify/golden/blocked-missing-evidence-scope.json"
+    },
+    {
+      "id": "verify:golden:blocked-tier-downgrade",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/blocked-tier-downgrade/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "output": "verify/golden/blocked-tier-downgrade.json"
+    },
+    {
+      "id": "verify:golden:blocked-weak-prediction",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/blocked-weak-prediction/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "output": "verify/golden/blocked-weak-prediction.json"
+    },
+    {
+      "id": "verify:golden:deep-approval-required",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/deep-approval-required/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "output": "verify/golden/deep-approval-required.json"
+    },
+    {
+      "id": "verify:golden:failed-invalid-status",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/failed-invalid-status/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "output": "verify/golden/failed-invalid-status.json"
+    },
+    {
+      "id": "verify:golden:failed-typecheck-recovery-route",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/failed-typecheck-recovery-route/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "output": "verify/golden/failed-typecheck-recovery-route.json"
+    },
+    {
+      "id": "verify:golden:multi-agent-success",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/multi-agent-success/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/golden/multi-agent-success.json"
+    },
+    {
+      "id": "verify:golden:success-light",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/success-light/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/golden/success-light.json"
+    },
+    {
+      "id": "verify:golden:success-standard-scoped-evidence",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/success-standard-scoped-evidence/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/golden/success-standard-scoped-evidence.json"
+    },
+    {
+      "id": "verify:golden:withheld-partial-fix",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/withheld-partial-fix/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "output": "verify/golden/withheld-partial-fix.json"
+    },
+    {
+      "id": "verify:adversarial:evidence-says-pass-but-artifact-missing",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/adversarial/evidence-says-pass-but-artifact-missing/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "output": "verify/adversarial/evidence-says-pass-but-artifact-missing.json"
+    },
+    {
+      "id": "verify:adversarial:hidden-dangerous-command",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/adversarial/hidden-dangerous-command/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "output": "verify/adversarial/hidden-dangerous-command.json"
+    },
+    {
+      "id": "verify:adversarial:lying-command-exit-code",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/adversarial/lying-command-exit-code/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "output": "verify/adversarial/lying-command-exit-code.json"
+    },
+    {
+      "id": "verify:adversarial:pgv-attempts-to-admit",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/adversarial/pgv-attempts-to-admit/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "output": "verify/adversarial/pgv-attempts-to-admit.json"
+    },
+    {
+      "id": "verify:adversarial:spoofed-approval-artifact",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/adversarial/spoofed-approval-artifact/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "output": "verify/adversarial/spoofed-approval-artifact.json"
+    },
+    {
+      "id": "verify:adversarial:spoofed-protected-approval",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/adversarial/spoofed-protected-approval/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/adversarial/spoofed-protected-approval.json"
+    },
+    {
+      "id": "verify:adversarial:verifier-mutates-source",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/adversarial/verifier-mutates-source/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/adversarial/verifier-mutates-source.json"
+    },
+    {
+      "id": "doctor:json",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "doctor",
+        "--root",
+        ".",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "doctor/root-json.json"
+    },
+    {
+      "id": "examples:verify:json",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "examples",
+        "verify",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "examples/verify-json.json"
+    },
+    {
+      "id": "context:contract",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "context",
+        "--contract"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "context/contract.txt"
+    },
+    {
+      "id": "benchmark:adversarial",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "benchmark",
+        "--filter",
+        "adversarial",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "benchmark/adversarial-json.json"
+    },
+    {
+      "id": "benchmark:mutation-guard",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "benchmark",
+        "--filter",
+        "mutation-guard",
+        "--mutation-files",
+        "100,1000,5000",
+        "--mutation-concurrency",
+        "1,4,16,64",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "benchmark/mutation-guard-json.json"
+    }
+  ]
+}

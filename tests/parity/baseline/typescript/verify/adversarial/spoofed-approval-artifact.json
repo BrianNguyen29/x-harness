@@ -1,0 +1,101 @@
+{
+  "acceptance_status": "withheld",
+  "admission_outcome": "failed",
+  "card_id": null,
+  "changed_files": {
+    "card_files": [
+      "infra/secrets-policy.yaml"
+    ],
+    "files": [
+      "infra/secrets-policy.yaml"
+    ],
+    "git_files": [],
+    "source": "card"
+  },
+  "checks": [
+    {
+      "name": "completion card valid",
+      "note": "completion card valid: examples/adversarial/spoofed-approval-artifact/completion-card.yaml",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "tier \"deep\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
+      "note": "tier \"deep\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "tier \"deep\" requires remaining_risks",
+      "note": "tier \"deep\" requires remaining_risks",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "tier \"deep\" requires rollback_policy",
+      "note": "tier \"deep\" requires rollback_policy",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "tier \"deep\" requires execution_controls",
+      "note": "tier \"deep\" requires execution_controls",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "tier \"deep\" requires state.write_set",
+      "note": "tier \"deep\" requires state.write_set",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "tier \"deep\" requires state.read_set",
+      "note": "tier \"deep\" requires state.read_set",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "done_checklist.read_write_sets_declared is true but state is missing",
+      "note": "done_checklist.read_write_sets_declared is true but state is missing",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "done_checklist.risk_and_rollback_declared is true but evidence.remaining_risks is missing",
+      "note": "done_checklist.risk_and_rollback_declared is true but evidence.remaining_risks is missing",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
+      "name": "done_checklist.risk_and_rollback_declared is true but evidence.rollback_policy is missing",
+      "note": "done_checklist.risk_and_rollback_declared is true but evidence.rollback_policy is missing",
+      "severity": "error",
+      "status": "failed"
+    }
+  ],
+  "decision": {
+    "acceptance_status": "withheld",
+    "outcome": "failed"
+  },
+  "denominator_warning": "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
+  "episode": null,
+  "input_card_hash": "sha256:603370d47cd27b228219a2b9a1c97f2fef0b38e73dff1a62c2f2b1198d9340d6",
+  "ok": false,
+  "policy_hash": "sha256:5c08082dadbc591d27f6e9b8640fe4c430d17afba75e179abab1633110b231cc",
+  "recovery": {
+    "next_action": "Declare what each validation artifact verifies and does not verify.",
+    "owner": "implementation-worker",
+    "predicate": "evidence_scope_missing"
+  },
+  "schema_version": 1,
+  "strict": false,
+  "task_id": "TASK-ADV-SPOOFED-APPROVAL-001",
+  "withheld_reason": "tier \"deep\" requires remaining_risks; tier \"deep\" requires rollback_policy; tier \"deep\" requires execution_controls; tier \"deep\" requires state.write_set; tier \"deep\" requires state.read_set; done_checklist.read_write_sets_declared is true but state is missing; done_checklist.risk_and_rollback_declared is true but evidence.remaining_risks is missing; done_checklist.risk_and_rollback_declared is true but evidence.rollback_policy is missing"
+}

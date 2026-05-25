@@ -1,0 +1,157 @@
+{
+  "checks": [
+    {
+      "name": "required_files",
+      "note": "all required files present",
+      "status": "pass"
+    },
+    {
+      "name": "schema_compile",
+      "note": "schema attribution compiles; schema agent-profile compiles; schema approval-risk compiles; schema benchmark-report compiles; schema claim compiles; schema completion-card compiles; schema components-registry compiles; schema cost-budget compiles; schema evidence compiles; schema evidence-index compiles; schema evolution-constitution compiles; schema episode-manifest compiles; schema frozen-manifest compiles; schema federation-pattern compiles; schema intervention compiles; schema packet compiles; schema permissions compiles; schema subagent-return compiles; schema verify-event compiles; schema pgv-advice compiles",
+      "status": "pass"
+    },
+    {
+      "name": "policy_keys",
+      "note": "admission.yaml has candidate_completion; admission.yaml has success_requires; admission.yaml has reject_success_if; admission.yaml has outcome_mapping",
+      "status": "pass"
+    },
+    {
+      "name": "policy_drift",
+      "note": "policy section candidate_completion present; policy section success_requires present; policy section reject_success_if present; policy section outcome_mapping present; policy section evidence_floor present; candidate_completion.required field known: schema_version; candidate_completion.required field known: task_id; candidate_completion.required field known: tier; candidate_completion.required field known: owner; candidate_completion.required field known: accountable; candidate_completion.required field known: claim.fix_status; candidate_completion.required field known: verification.status; candidate_completion.required field known: claim.evidence; candidate_completion.required field known: handoff.next_action; candidate_completion.required field known: handoff.owner; success_requires predicate known: claim.fix_status == fixed; success_requires predicate known: verification.status == passed; success_requires predicate known: admission.outcome == success; success_requires predicate known: acceptance_status == accepted; success_requires predicate known: claim.evidence present and non-empty; success_requires predicate known: owner.present == true; success_requires predicate known: accountable.present == true; success_requires predicate known: evidence_floor_met; success_requires predicate known: admission_mapping_valid; success_requires predicate known: no_unresolved_blocker; success_requires predicate known: no_active_recovery; success_requires predicate known: verifier_read_only; success_requires predicate known: done_checklist_present_for_standard_or_deep; success_requires predicate known: prediction_present_for_standard_or_deep; evidence_floor.light label known: files_changed; evidence_floor.light label known: command_evidence; evidence_floor.light label known: manual_rationale; evidence_floor.light.required includes files_changed; evidence_floor.light.one_of includes command_evidence; evidence_floor.light.one_of includes manual_rationale; evidence_floor.standard label known: files_changed; evidence_floor.standard label known: command_evidence; evidence_floor.standard label known: done_checklist; evidence_floor.standard label known: prediction; evidence_floor.standard label known: evidence_scope_declared; evidence_floor.standard label known: untested_regions_declared; evidence_floor.standard.required includes files_changed; evidence_floor.standard.required includes command_evidence; evidence_floor.standard.required includes done_checklist; evidence_floor.standard.required includes prediction; evidence_floor.deep label known: files_changed; evidence_floor.deep label known: command_evidence; evidence_floor.deep label known: evidence_scope_declared; evidence_floor.deep label known: untested_regions_declared; evidence_floor.deep label known: remaining_risks_declared; evidence_floor.deep label known: execution_controls_present; evidence_floor.deep label known: rollback_policy_present; evidence_floor.deep label known: done_checklist; evidence_floor.deep label known: prediction; evidence_floor.deep.required includes files_changed; evidence_floor.deep.required includes command_evidence; evidence_floor.deep.required includes evidence_scope_declared; evidence_floor.deep.required includes untested_regions_declared; evidence_floor.deep.required includes remaining_risks_declared; evidence_floor.deep.required includes execution_controls_present; evidence_floor.deep.required includes rollback_policy_present; evidence_floor.deep.required includes done_checklist; evidence_floor.deep.required includes prediction; evidence_floor.deep.runtime_enforced includes verification_artifacts; evidence_floor.deep.runtime_enforced includes state.read_set; evidence_floor.deep.runtime_enforced includes state.write_set; outcome_mapping key known: success; outcome_mapping key known: failed; outcome_mapping key known: blocked; outcome_mapping key known: skipped; outcome_mapping key known: timeout; outcome_mapping key known: error; reject_success_if key known: fix_status; reject_success_if key known: verification_status; reject_success_if key known: evidence_quality; reject_success_if key known: approval_required_but_missing; reject_success_if key known: timeout; reject_success_if key known: error",
+      "status": "pass"
+    },
+    {
+      "name": "no_python_core",
+      "note": "no Python files in packages/cli/src",
+      "status": "pass"
+    },
+    {
+      "name": "pgv_authority_wording",
+      "note": "no dangerous PGV authority wording found",
+      "status": "pass"
+    },
+    {
+      "name": "tier_labels",
+      "note": "no invalid tier labels found (small/medium/large)",
+      "status": "pass"
+    },
+    {
+      "name": "agents_size",
+      "note": "AGENTS.md is 133 lines (<= 150)",
+      "status": "pass"
+    },
+    {
+      "name": "adapters_present",
+      "note": "adapter present: adapters/generic; adapter present: adapters/claude-code; adapter present: adapters/cursor; adapter present: adapters/opencode; adapter present: adapters/antigravity",
+      "status": "pass"
+    },
+    {
+      "name": "local_markdown_links",
+      "note": "no broken local markdown links found",
+      "status": "pass"
+    },
+    {
+      "name": "evidence_scope_support",
+      "note": "schema supports verification_artifacts; schema supports untested_regions; schema supports remaining_risks",
+      "status": "pass"
+    },
+    {
+      "name": "component_registry",
+      "note": "19 component(s); protected paths 17/17 covered",
+      "status": "pass"
+    },
+    {
+      "name": "read_only_verifier",
+      "note": "VERIFY_GATE.md states verifier is read-only; AGENTS.md states verifier is read-only",
+      "status": "pass"
+    },
+    {
+      "name": "no_heavy_runtime",
+      "note": "no mandatory MCP/required heavy runtime wording found",
+      "status": "pass"
+    },
+    {
+      "name": "templates_inventory",
+      "note": "6 template(s) present: COMPLETION_CARD.md, HARNESS_CHANGE_CONTRACT.md, SUBAGENT_TASK_deep.md, SUBAGENT_TASK_light.md, SUBAGENT_TASK_standard.md, VERIFY_REPORT.md",
+      "status": "pass"
+    },
+    {
+      "name": "cleanup_policy",
+      "note": "cleanup policy present",
+      "status": "pass"
+    },
+    {
+      "name": "context_freshness",
+      "note": "AGENTS.md managed context block is fresh",
+      "status": "pass"
+    },
+    {
+      "name": "managed_contract_blocks",
+      "note": "docs/RUNTIME_CONTRACT.md managed contract block runtime-contract is fresh; docs/ADMISSION_POLICY.md managed contract block admission-evidence-floor is fresh; templates/VERIFY_REPORT.md managed contract block verify-report-contract is fresh; templates/COMPLETION_CARD.md managed contract block completion-card-template-contract is fresh; templates/SUBAGENT_TASK_light.md managed contract block subagent-light-template-contract is fresh; templates/SUBAGENT_TASK_standard.md managed contract block subagent-standard-template-contract is fresh; templates/SUBAGENT_TASK_deep.md managed contract block subagent-deep-template-contract is fresh; templates/HARNESS_CHANGE_CONTRACT.md managed contract block harness-change-template-contract is fresh; adapters/generic/README.md managed contract block generic-adapter-contract is fresh; adapters/generic/AGENTS.md managed contract block generic-agents-contract is fresh; adapters/claude-code/README.md managed contract block claude-readme-contract is fresh; adapters/claude-code/CLAUDE.md managed contract block claude-contract is fresh; adapters/claude-code/agents/admission-verifier.md managed contract block claude-admission-verifier-contract is fresh; adapters/claude-code/agents/implementation-worker.md managed contract block claude-implementation-worker-contract is fresh; adapters/claude-code/skills/handoff/SKILL.md managed contract block claude-handoff-skill-contract is fresh; adapters/claude-code/skills/verify/SKILL.md managed contract block claude-verify-skill-contract is fresh; adapters/claude-code/skills/recovery/SKILL.md managed contract block claude-recovery-skill-contract is fresh; adapters/cursor/README.md managed contract block cursor-readme-contract is fresh; adapters/cursor/rules/x-harness.mdc managed contract block cursor-rules-contract is fresh; adapters/opencode/README.md managed contract block opencode-readme-contract is fresh; adapters/opencode/orchestrator_append.example.md managed contract block opencode-orchestrator-append-contract is fresh; adapters/opencode/verify-agent.md managed contract block opencode-verify-agent-redirect-contract is fresh; adapters/opencode/agents/x-harness-verify.md managed contract block opencode-verify-agent-contract is fresh; adapters/opencode/agents/x-harness-recover.md managed contract block opencode-recover-agent-contract is fresh; adapters/antigravity/README.md managed contract block antigravity-readme-contract is fresh; adapters/antigravity/rules/x-harness.md managed contract block antigravity-rules-contract is fresh; adapters/antigravity/workflows/x-harness-implementation.md managed contract block antigravity-implementation-workflow-contract is fresh; adapters/antigravity/workflows/x-harness-verify.md managed contract block antigravity-verify-workflow-contract is fresh; adapters/antigravity/workflows/x-harness-recover.md managed contract block antigravity-recover-workflow-contract is fresh",
+      "status": "pass"
+    }
+  ],
+  "healthy": true,
+  "missing": [],
+  "missing_count": 0,
+  "notes": [],
+  "present": [
+    "README.md",
+    "AGENTS.md",
+    "X_HARNESS.md",
+    "docs/README.md",
+    "docs/QUICKSTART.md",
+    "docs/FAQ.md",
+    "docs/VERIFY_GATE.md",
+    "docs/RUNTIME_CONTRACT.md",
+    "docs/ADMISSION_POLICY.md",
+    "docs/ADAPTERS.md",
+    "docs/SCHEMAS.md",
+    "docs/RECOVERY.md",
+    "docs/PACKETS.md",
+    "docs/CLEANUP.md",
+    "docs/CI.md",
+    "docs/ARCHITECTURE.md",
+    "docs/REPORT_FORMATS.md",
+    "docs/RELEASE_SECURITY.md",
+    "templates/COMPLETION_CARD.md",
+    "templates/SUBAGENT_TASK_light.md",
+    "templates/SUBAGENT_TASK_standard.md",
+    "templates/SUBAGENT_TASK_deep.md",
+    "templates/HARNESS_CHANGE_CONTRACT.md",
+    "components/registry.yaml",
+    "schemas/attribution.schema.json",
+    "schemas/agent-profile.schema.json",
+    "schemas/approval-risk.schema.json",
+    "schemas/benchmark-report.schema.json",
+    "schemas/claim.schema.json",
+    "schemas/completion-card.schema.json",
+    "schemas/components-registry.schema.json",
+    "schemas/cost-budget.schema.json",
+    "schemas/evidence.schema.json",
+    "schemas/evidence-index.schema.json",
+    "schemas/evolution-constitution.schema.json",
+    "schemas/episode-manifest.schema.json",
+    "schemas/frozen-manifest.schema.json",
+    "schemas/federation-pattern.schema.json",
+    "schemas/intervention.schema.json",
+    "schemas/packet.schema.json",
+    "schemas/permissions.schema.json",
+    "schemas/subagent-return.schema.json",
+    "schemas/verify-event.schema.json",
+    "schemas/pgv-advice.schema.json",
+    "policies/admission.yaml",
+    "policies/approval-risk.yaml",
+    "policies/authority.yaml",
+    "policies/cleanup.yaml",
+    "policies/cost-budget.yaml",
+    "policies/intake.yaml",
+    "policies/permissions.yaml",
+    "policies/federation.yaml",
+    "policies/recovery.yaml",
+    "policies/mutation-guard.yaml",
+    "tools/experimental/evolve/constitution.yaml",
+    "tools/experimental/evolve/evolution-budget.yaml"
+  ],
+  "present_count": 56
+}

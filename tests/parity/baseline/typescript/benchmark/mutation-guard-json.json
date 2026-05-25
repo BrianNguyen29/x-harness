@@ -1,0 +1,233 @@
+{
+  "filter": "mutation-guard",
+  "generated_at": "<dynamic-string>",
+  "integration": null,
+  "iterations": 1,
+  "metrics": {
+    "adversarial_block_rate": null,
+    "adversarial_false_accept_count": 0,
+    "authority_violation_detection_rate": null,
+    "episode_packaging_success_rate": null,
+    "expected_block_count": 0,
+    "expected_pass_count": 0,
+    "false_accept_count": 0,
+    "false_reject_count": 0,
+    "mutation_guard_detection_rate": null,
+    "permission_violation_detection_rate": null,
+    "policy_validation_pass_rate": null,
+    "runtime_ms": "<dynamic-number>",
+    "schema_validation_pass_rate": null
+  },
+  "mutation_guard_benchmark": {
+    "cases": [
+      {
+        "concurrency": 1,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 100,
+        "hashed_paths": 100,
+        "mode": "git",
+        "ok": true
+      },
+      {
+        "concurrency": 1,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 100,
+        "hashed_paths": 100,
+        "mode": "non-git",
+        "ok": true
+      },
+      {
+        "concurrency": 4,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 100,
+        "hashed_paths": 100,
+        "mode": "git",
+        "ok": true
+      },
+      {
+        "concurrency": 4,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 100,
+        "hashed_paths": 100,
+        "mode": "non-git",
+        "ok": true
+      },
+      {
+        "concurrency": 16,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 100,
+        "hashed_paths": 100,
+        "mode": "git",
+        "ok": true
+      },
+      {
+        "concurrency": 16,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 100,
+        "hashed_paths": 100,
+        "mode": "non-git",
+        "ok": true
+      },
+      {
+        "concurrency": 64,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 100,
+        "hashed_paths": 100,
+        "mode": "git",
+        "ok": true
+      },
+      {
+        "concurrency": 64,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 100,
+        "hashed_paths": 100,
+        "mode": "non-git",
+        "ok": true
+      },
+      {
+        "concurrency": 1,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 1000,
+        "hashed_paths": 1000,
+        "mode": "git",
+        "ok": true
+      },
+      {
+        "concurrency": 1,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 1000,
+        "hashed_paths": 1000,
+        "mode": "non-git",
+        "ok": true
+      },
+      {
+        "concurrency": 4,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 1000,
+        "hashed_paths": 1000,
+        "mode": "git",
+        "ok": true
+      },
+      {
+        "concurrency": 4,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 1000,
+        "hashed_paths": 1000,
+        "mode": "non-git",
+        "ok": true
+      },
+      {
+        "concurrency": 16,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 1000,
+        "hashed_paths": 1000,
+        "mode": "git",
+        "ok": true
+      },
+      {
+        "concurrency": 16,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 1000,
+        "hashed_paths": 1000,
+        "mode": "non-git",
+        "ok": true
+      },
+      {
+        "concurrency": 64,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 1000,
+        "hashed_paths": 1000,
+        "mode": "git",
+        "ok": true
+      },
+      {
+        "concurrency": 64,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 1000,
+        "hashed_paths": 1000,
+        "mode": "non-git",
+        "ok": true
+      },
+      {
+        "concurrency": 1,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 5000,
+        "hashed_paths": 5000,
+        "mode": "git",
+        "ok": true
+      },
+      {
+        "concurrency": 1,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 5000,
+        "hashed_paths": 5000,
+        "mode": "non-git",
+        "ok": true
+      },
+      {
+        "concurrency": 4,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 5000,
+        "hashed_paths": 5000,
+        "mode": "git",
+        "ok": true
+      },
+      {
+        "concurrency": 4,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 5000,
+        "hashed_paths": 5000,
+        "mode": "non-git",
+        "ok": true
+      },
+      {
+        "concurrency": 16,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 5000,
+        "hashed_paths": 5000,
+        "mode": "git",
+        "ok": true
+      },
+      {
+        "concurrency": 16,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 5000,
+        "hashed_paths": 5000,
+        "mode": "non-git",
+        "ok": true
+      },
+      {
+        "concurrency": 64,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 5000,
+        "hashed_paths": 5000,
+        "mode": "git",
+        "ok": true
+      },
+      {
+        "concurrency": 64,
+        "duration_ms": "<dynamic-number>",
+        "file_count": 5000,
+        "hashed_paths": 5000,
+        "mode": "non-git",
+        "ok": true
+      }
+    ],
+    "concurrency": [
+      1,
+      4,
+      16,
+      64
+    ],
+    "file_counts": [
+      100,
+      1000,
+      5000
+    ],
+    "ok": true,
+    "runtime_ms": "<dynamic-number>"
+  },
+  "ok": true,
+  "results": [],
+  "timeout_ms": 120000
+}

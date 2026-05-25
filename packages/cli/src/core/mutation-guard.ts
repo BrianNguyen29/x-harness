@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import * as path from "node:path";
 import { promises as fs } from "node:fs";
+import YAML from "yaml";
 
 export interface GitSnapshot {
   statusMap: Map<string, string>;
@@ -10,7 +11,15 @@ export interface GitSnapshot {
 }
 
 const DEFAULT_HASH_CONCURRENCY = 16;
-const FALLBACK_IGNORED_DIRS = new Set([".git", "node_modules", ".x-harness"]);
+const DEFAULT_FALLBACK_IGNORE_PATTERNS = [
+  ".git/",
+  "node_modules/",
+  ".x-harness/",
+];
+
+export interface MutationGuardIgnorePolicy {
+  patterns: string[];
+}
 
 export function mutationGuardHashConcurrency(): number {
   const raw = process.env.X_HARNESS_MUTATION_GUARD_HASH_CONCURRENCY;
@@ -198,21 +207,146 @@ function fallbackStatusPath(root: string, filePath: string): string {
   return path.relative(root, filePath).replace(/\\/g, "/");
 }
 
+function normalizeIgnorePattern(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.startsWith("#") || trimmed.startsWith("!")) {
+    return null;
+  }
+  return trimmed.replace(/\\/g, "/").replace(/^\/+/, "");
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function globToRegExp(pattern: string): RegExp {
+  const normalized = pattern.replace(/\\/g, "/").replace(/^\/+/, "");
+  let source = "";
+  for (let i = 0; i < normalized.length; i += 1) {
+    const char = normalized[i];
+    if (char === "*") {
+      if (normalized[i + 1] === "*") {
+        source += ".*";
+        i += 1;
+      } else {
+        source += "[^/]*";
+      }
+    } else {
+      source += escapeRegExp(char);
+    }
+  }
+  return new RegExp(`^${source}$`);
+}
+
+function matchesIgnorePattern(relativePath: string, pattern: string): boolean {
+  const normalizedPath = relativePath.replace(/\\/g, "/");
+  const normalizedPattern = pattern.replace(/\\/g, "/").replace(/^\/+/, "");
+  if (!normalizedPattern) return false;
+
+  if (normalizedPattern.endsWith("/")) {
+    const dirPattern = normalizedPattern.slice(0, -1);
+    if (!dirPattern.includes("/")) {
+      return normalizedPath.split("/").includes(dirPattern);
+    }
+    return (
+      normalizedPath === dirPattern ||
+      normalizedPath.startsWith(`${dirPattern}/`)
+    );
+  }
+
+  if (normalizedPattern.includes("*")) {
+    return globToRegExp(normalizedPattern).test(normalizedPath);
+  }
+
+  if (!normalizedPattern.includes("/")) {
+    return normalizedPath.split("/").includes(normalizedPattern);
+  }
+
+  return (
+    normalizedPath === normalizedPattern ||
+    normalizedPath.startsWith(`${normalizedPattern}/`)
+  );
+}
+
+function isIgnoredByPolicy(
+  relativePath: string,
+  policy: MutationGuardIgnorePolicy
+): boolean {
+  return policy.patterns.some((pattern) =>
+    matchesIgnorePattern(relativePath, pattern)
+  );
+}
+
+function collectPolicyPatterns(policy: unknown): string[] {
+  if (!policy || typeof policy !== "object") return [];
+  const record = policy as Record<string, unknown>;
+  const fallback = record.fallback_ignore as
+    | Record<string, unknown>
+    | undefined;
+  if (!fallback || typeof fallback !== "object") return [];
+  const patterns: string[] = [];
+  for (const dir of Array.isArray(fallback.dirs) ? fallback.dirs : []) {
+    if (typeof dir !== "string") continue;
+    const normalized = normalizeIgnorePattern(
+      dir.endsWith("/") ? dir : `${dir}/`
+    );
+    if (normalized) patterns.push(normalized);
+  }
+  for (const key of ["paths", "patterns"]) {
+    for (const item of Array.isArray(fallback[key]) ? fallback[key] : []) {
+      if (typeof item !== "string") continue;
+      const normalized = normalizeIgnorePattern(item);
+      if (normalized) patterns.push(normalized);
+    }
+  }
+  return patterns;
+}
+
+export async function loadMutationGuardIgnorePolicy(
+  root: string
+): Promise<MutationGuardIgnorePolicy> {
+  const patterns = [...DEFAULT_FALLBACK_IGNORE_PATTERNS];
+  const gitignorePath = path.join(root, ".gitignore");
+  try {
+    const gitignore = await fs.readFile(gitignorePath, "utf-8");
+    for (const line of gitignore.split(/\r?\n/)) {
+      const pattern = normalizeIgnorePattern(line);
+      if (pattern) patterns.push(pattern);
+    }
+  } catch {
+    // Optional input.
+  }
+
+  const policyPath = path.join(root, "policies", "mutation-guard.yaml");
+  try {
+    const policy = YAML.parse(await fs.readFile(policyPath, "utf-8"));
+    patterns.push(...collectPolicyPatterns(policy));
+  } catch {
+    // Optional input.
+  }
+
+  return { patterns: [...new Set(patterns)] };
+}
+
 async function collectFallbackSnapshotPaths(
   root: string,
+  policy: MutationGuardIgnorePolicy,
   current = root
 ): Promise<string[]> {
   const entries = await fs.readdir(current, { withFileTypes: true });
   const paths: string[] = [];
   for (const entry of entries) {
-    if (entry.isDirectory() && FALLBACK_IGNORED_DIRS.has(entry.name)) {
+    const fullPath = path.join(current, entry.name);
+    const relativePath = fallbackStatusPath(root, fullPath);
+    if (isIgnoredByPolicy(relativePath, policy)) {
       continue;
     }
-    const fullPath = path.join(current, entry.name);
     if (entry.isDirectory()) {
-      paths.push(...(await collectFallbackSnapshotPaths(root, fullPath)));
+      paths.push(
+        ...(await collectFallbackSnapshotPaths(root, policy, fullPath))
+      );
     } else if (entry.isFile() || entry.isSymbolicLink()) {
-      paths.push(fallbackStatusPath(root, fullPath));
+      paths.push(relativePath);
     }
   }
   return paths.sort();
@@ -222,7 +356,8 @@ export async function snapshotDirectoryTree(
   root: string
 ): Promise<GitSnapshot> {
   const resolvedRoot = path.resolve(root);
-  const paths = await collectFallbackSnapshotPaths(resolvedRoot);
+  const policy = await loadMutationGuardIgnorePolicy(resolvedRoot);
+  const paths = await collectFallbackSnapshotPaths(resolvedRoot, policy);
   const statusMap = new Map(paths.map((filePath) => [filePath, "F "]));
   const contentHashMap = await contentHashesForPaths(resolvedRoot, paths);
   return { statusMap, contentHashMap, repoRoot: resolvedRoot };
