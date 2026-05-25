@@ -6,12 +6,34 @@ import {
   isGitAvailable,
   getRepoRoot,
   snapshotGitStatus,
+  snapshotDirectoryTree,
+  mutationGuardHashConcurrency,
   compareSnapshots,
   filterUnexpectedDeltas,
   runMutationGuard,
 } from "../src/core/mutation-guard.js";
 
 describe("mutation-guard module", () => {
+  it("uses a bounded concurrency setting from the environment", () => {
+    const previous = process.env.X_HARNESS_MUTATION_GUARD_HASH_CONCURRENCY;
+    try {
+      process.env.X_HARNESS_MUTATION_GUARD_HASH_CONCURRENCY = "2";
+      expect(mutationGuardHashConcurrency()).toBe(2);
+
+      process.env.X_HARNESS_MUTATION_GUARD_HASH_CONCURRENCY = "128";
+      expect(mutationGuardHashConcurrency()).toBe(64);
+
+      process.env.X_HARNESS_MUTATION_GUARD_HASH_CONCURRENCY = "0";
+      expect(mutationGuardHashConcurrency()).toBe(16);
+    } finally {
+      if (previous === undefined) {
+        delete process.env.X_HARNESS_MUTATION_GUARD_HASH_CONCURRENCY;
+      } else {
+        process.env.X_HARNESS_MUTATION_GUARD_HASH_CONCURRENCY = previous;
+      }
+    }
+  });
+
   it("detects git availability", async () => {
     const available = await isGitAvailable();
     expect(available).toBe(true);
@@ -39,6 +61,29 @@ describe("mutation-guard module", () => {
     const snapshot = await snapshotGitStatus(repoRoot!);
     expect(snapshot.statusMap).toBeInstanceOf(Map);
     expect(snapshot.repoRoot).toBe(repoRoot);
+  });
+
+  it("snapshotDirectoryTree captures non-git files and ignores harness state", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "mg-tree-"));
+    try {
+      fs.mkdirSync(path.join(tmpDir, ".x-harness", "traces"), {
+        recursive: true,
+      });
+      fs.writeFileSync(path.join(tmpDir, "tracked.txt"), "hello");
+      fs.writeFileSync(
+        path.join(tmpDir, ".x-harness", "traces", "events.jsonl"),
+        "{}\n"
+      );
+
+      const snapshot = await snapshotDirectoryTree(tmpDir);
+      expect(snapshot.repoRoot).toBe(tmpDir);
+      expect(snapshot.statusMap.has("tracked.txt")).toBe(true);
+      expect(snapshot.statusMap.has(".x-harness/traces/events.jsonl")).toBe(
+        false
+      );
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it("compareSnapshots finds no delta for identical snapshots", () => {
@@ -254,6 +299,37 @@ describe("mutation-guard module", () => {
       const result = await guard.evaluate();
       expect(result.violated).toBe(true);
       expect(result.unexpectedDeltas?.[0].path).toBe("dirty.txt");
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("runMutationGuard uses directory fallback in non-git workspaces", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "mg-nongit-"));
+    try {
+      fs.writeFileSync(path.join(tmpDir, "baseline.txt"), "before");
+
+      const guard = await runMutationGuard(true, tmpDir);
+      await guard.takeSnapshot();
+
+      fs.writeFileSync(path.join(tmpDir, "baseline.txt"), "after");
+      fs.writeFileSync(path.join(tmpDir, "new.txt"), "new");
+      fs.mkdirSync(path.join(tmpDir, ".x-harness", "traces"), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(tmpDir, ".x-harness", "traces", "events.jsonl"),
+        "{}\n"
+      );
+
+      const result = await guard.evaluate();
+      expect(result.enabled).toBe(true);
+      expect(result.skippedReason).toBeUndefined();
+      expect(result.violated).toBe(true);
+      expect(result.unexpectedDeltas?.map((d) => d.path).sort()).toEqual([
+        "baseline.txt",
+        "new.txt",
+      ]);
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }

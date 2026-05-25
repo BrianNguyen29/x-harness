@@ -13,6 +13,7 @@ export type RecoveryPredicate =
   | "evidence_provenance_missing"
   | "state_read_write_missing"
   | "done_checklist_missing"
+  | "done_checklist_mismatch"
   | "prediction_missing"
   | "prediction_invalid"
   | "done_checklist_prediction_mismatch"
@@ -88,6 +89,11 @@ const DEFAULT_ROUTES: Record<string, RecoveryRoute> = {
       "Declare the done_checklist required for standard or deep admission.",
     owner: "implementation-worker",
   },
+  done_checklist_mismatch: {
+    next_action:
+      "Align done_checklist claims with state, evidence, artifacts, and prediction.",
+    owner: "implementation-worker",
+  },
   prediction_missing: {
     next_action:
       "Declare the falsifiable prediction required for standard or deep admission.",
@@ -146,6 +152,11 @@ export function suggestRecovery(
     return {
       predicate: "done_checklist_prediction_mismatch",
       route: getRecoveryRoute("done_checklist_prediction_mismatch"),
+    };
+  if (errorText.includes("done_checklist") && errorText.includes("but"))
+    return {
+      predicate: "done_checklist_mismatch",
+      route: getRecoveryRoute("done_checklist_mismatch"),
     };
   if (errorText.includes("done_checklist"))
     return {

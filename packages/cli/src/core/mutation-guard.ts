@@ -9,6 +9,36 @@ export interface GitSnapshot {
   repoRoot: string;
 }
 
+const DEFAULT_HASH_CONCURRENCY = 16;
+const FALLBACK_IGNORED_DIRS = new Set([".git", "node_modules", ".x-harness"]);
+
+export function mutationGuardHashConcurrency(): number {
+  const raw = process.env.X_HARNESS_MUTATION_GUARD_HASH_CONCURRENCY;
+  if (!raw) return DEFAULT_HASH_CONCURRENCY;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_HASH_CONCURRENCY;
+  return Math.min(parsed, 64);
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(Math.max(concurrency, 1), items.length);
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await mapper(items[index]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 export async function isGitAvailable(): Promise<boolean> {
   return new Promise((resolve) => {
     execFile("git", ["--version"], (err) => {
@@ -60,13 +90,9 @@ export async function snapshotGitStatus(
           if (status.includes("R") || status.includes("C")) i += 1;
         }
         try {
-          const contentHashMap = new Map<string, string | null>();
-          for (const filePath of statusMap.keys()) {
-            contentHashMap.set(
-              filePath,
-              await workingTreeContentHash(repoRoot, filePath)
-            );
-          }
+          const contentHashMap = await contentHashesForPaths(repoRoot, [
+            ...statusMap.keys(),
+          ]);
           resolve({ statusMap, contentHashMap, repoRoot });
         } catch (hashErr) {
           reject(hashErr);
@@ -74,6 +100,19 @@ export async function snapshotGitStatus(
       }
     );
   });
+}
+
+async function contentHashesForPaths(
+  repoRoot: string,
+  filePaths: string[]
+): Promise<Map<string, string | null>> {
+  const entries = await mapWithConcurrency(
+    filePaths,
+    mutationGuardHashConcurrency(),
+    async (filePath) =>
+      [filePath, await workingTreeContentHash(repoRoot, filePath)] as const
+  );
+  return new Map(entries);
 }
 
 async function workingTreeContentHash(
@@ -155,6 +194,40 @@ export function filterUnexpectedDeltas(
   return deltas.filter((d) => !isMutationGuardAllowlistedPath(d.path));
 }
 
+function fallbackStatusPath(root: string, filePath: string): string {
+  return path.relative(root, filePath).replace(/\\/g, "/");
+}
+
+async function collectFallbackSnapshotPaths(
+  root: string,
+  current = root
+): Promise<string[]> {
+  const entries = await fs.readdir(current, { withFileTypes: true });
+  const paths: string[] = [];
+  for (const entry of entries) {
+    if (entry.isDirectory() && FALLBACK_IGNORED_DIRS.has(entry.name)) {
+      continue;
+    }
+    const fullPath = path.join(current, entry.name);
+    if (entry.isDirectory()) {
+      paths.push(...(await collectFallbackSnapshotPaths(root, fullPath)));
+    } else if (entry.isFile() || entry.isSymbolicLink()) {
+      paths.push(fallbackStatusPath(root, fullPath));
+    }
+  }
+  return paths.sort();
+}
+
+export async function snapshotDirectoryTree(
+  root: string
+): Promise<GitSnapshot> {
+  const resolvedRoot = path.resolve(root);
+  const paths = await collectFallbackSnapshotPaths(resolvedRoot);
+  const statusMap = new Map(paths.map((filePath) => [filePath, "F "]));
+  const contentHashMap = await contentHashesForPaths(resolvedRoot, paths);
+  return { statusMap, contentHashMap, repoRoot: resolvedRoot };
+}
+
 export interface GuardResult {
   enabled: boolean;
   skippedReason?: string;
@@ -177,38 +250,43 @@ export async function runMutationGuard(
     };
   }
 
+  let snapshotFn: () => Promise<GitSnapshot>;
   const gitAvailable = await isGitAvailable();
-  if (!gitAvailable) {
-    return {
-      takeSnapshot: async () => ({ statusMap: new Map(), repoRoot: cwd }),
-      evaluate: async () => ({
-        enabled: true,
-        skippedReason: "git not available",
-        violated: false,
-      }),
-    };
-  }
-
-  const repoRoot = await getRepoRoot(cwd);
-  if (!repoRoot) {
-    return {
-      takeSnapshot: async () => ({ statusMap: new Map(), repoRoot: cwd }),
-      evaluate: async () => ({
-        enabled: true,
-        skippedReason: "not a git repository",
-        violated: false,
-      }),
-    };
+  if (gitAvailable) {
+    const repoRoot = await getRepoRoot(cwd);
+    if (repoRoot) {
+      snapshotFn = () => snapshotGitStatus(repoRoot);
+    } else {
+      const fallbackRoot = path.resolve(cwd);
+      snapshotFn = () => snapshotDirectoryTree(fallbackRoot);
+    }
+  } else {
+    const fallbackRoot = path.resolve(cwd);
+    snapshotFn = () => snapshotDirectoryTree(fallbackRoot);
   }
 
   let beforeSnapshot: GitSnapshot | undefined;
+  let snapshotError: string | undefined;
 
   return {
     takeSnapshot: async () => {
-      beforeSnapshot = await snapshotGitStatus(repoRoot);
-      return beforeSnapshot;
+      try {
+        beforeSnapshot = await snapshotFn();
+        snapshotError = undefined;
+        return beforeSnapshot;
+      } catch (err) {
+        snapshotError = err instanceof Error ? err.message : String(err);
+        return { statusMap: new Map(), repoRoot: path.resolve(cwd) };
+      }
     },
     evaluate: async () => {
+      if (snapshotError) {
+        return {
+          enabled: true,
+          skippedReason: `snapshot failed: ${snapshotError}`,
+          violated: false,
+        };
+      }
       if (!beforeSnapshot) {
         return {
           enabled: true,
@@ -216,7 +294,16 @@ export async function runMutationGuard(
           violated: false,
         };
       }
-      const afterSnapshot = await snapshotGitStatus(repoRoot);
+      let afterSnapshot: GitSnapshot;
+      try {
+        afterSnapshot = await snapshotFn();
+      } catch (err) {
+        return {
+          enabled: true,
+          skippedReason: `snapshot failed: ${err instanceof Error ? err.message : String(err)}`,
+          violated: false,
+        };
+      }
       const deltas = compareSnapshots(beforeSnapshot, afterSnapshot);
       const unexpectedDeltas = filterUnexpectedDeltas(deltas);
       return {

@@ -41,10 +41,12 @@ passed, failed, blocked, skipped, timeout, error
 
 ## Read-only mutation guard (Phase 3.1)
 
-The verify command supports an opt-in `--mutation-guard` flag. When enabled, verify snapshots the repository git status before and after its work and compares the delta. This does not require a clean worktree.
+The verify command supports an opt-in `--mutation-guard` flag. `--strict` enables the same guard automatically. When enabled, verify snapshots the repository state before and after its work and compares the delta. This does not require a clean worktree.
 
 Behavior:
-- If git is unavailable or the working directory is not inside a git repository, the guard is skipped with a note.
+- In git workspaces, the guard uses `git status --porcelain=v1 -z --untracked-files=all` and content hashes for dirty/untracked files.
+- In non-git workspaces, the guard falls back to a directory snapshot with bounded-concurrency content hashing.
+- If no baseline can be established, strict verification is fail-closed because read-only verification cannot be proven.
 - Writes under `.x-harness/` (including trace output in `.x-harness/traces/`) are allowlisted and do not trigger the guard.
 - If any unexpected file change is detected, verify produces a `blocked` outcome with `blocking_predicate: verifier_not_read_only` and recovery routed to `admission-verifier`.
 - Without `--mutation-guard`, existing behavior is unchanged.

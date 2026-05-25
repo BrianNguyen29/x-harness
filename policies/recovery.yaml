@@ -49,6 +49,10 @@ recovery_routing:
     next_action: "Declare the done_checklist required for standard or deep admission."
     owner: implementation-worker
 
+  done_checklist_mismatch:
+    next_action: "Align done_checklist claims with state, evidence, artifacts, and prediction."
+    owner: implementation-worker
+
   prediction_missing:
     next_action: "Declare the falsifiable prediction required for standard or deep admission."
     owner: implementation-worker

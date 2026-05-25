@@ -137,7 +137,7 @@ This generates a markdown file matching the `standard` tier containing explicit 
 Run the diagnostics command at any time to verify that all schemas, policies, templates, and links are healthy:
 
 ```bash
-node packages/cli/dist/index.js doctor
+node packages/cli/dist/index.js doctor --json
 ```
 
 ---
@@ -215,7 +215,7 @@ Task delegation in `x-harness` uses **only** the following three canonical tiers
 | **`handoff`**  | `node packages/cli/dist/index.js handoff <light / standard / deep> [--title <text>] [--task <text>]` | Generates a clean markdown handoff task prompt structure.                                  |
 | **`add`**      | `node packages/cli/dist/index.js add <claim / evidence / completion-card> [key=value]`               | Adds a metadata helper file for compatibility modes.                                       |
 | **`verify`**   | `node packages/cli/dist/index.js verify [--card <path>] [--json] [--verbose] [--story-id <id>] [--trace] [--trace-dir <dir>] [--claim <path>] [--evidence <path>] [--subagent-return <path>] [--tier <tier>] [--task-id <id>] [--mutation-guard] [--stale-ground]` | Executes the read-only verification policy against a completion card. Supports tracing and detailed output. |
-| **`doctor`**   | `node packages/cli/dist/index.js doctor [--root <path>] [--policy-drift]`                            | Checks critical file presence, schemas compilation, policies, and wording. Use `--policy-drift` to surface policy-code drift checks explicitly. |
+| **`doctor`**   | `node packages/cli/dist/index.js doctor [--root <path>] [--policy-drift] [--json]`                   | Checks critical file presence, schemas compilation, policies, and wording. Use `--policy-drift` to surface policy-code drift checks explicitly. |
 | **`report`**   | `node packages/cli/dist/index.js report [--metrics] [--card <path>] [--json] [--format <html|markdown|json>]` | Summarizes verification events or calculates local card metrics. `--format html` renders an HTML audit report. |
 | **`trace`**    | `node packages/cli/dist/index.js trace add [--outcome <status>] [--task-id <id>] [--acceptance-status <status>] [--tier <tier>] [--claim-id <id>] [--evidence-id <id>]` | Manually appends verify events to the trace log. Supports full event metadata. |
 | **`clean`**    | `node packages/cli/dist/index.js clean [--tmp / --reset-card / --archive-success] [--force]`         | Defaults to a dry run; add `--force` to mutate tmp artifacts, reset a completion card, or archive accepted-card snapshots. |

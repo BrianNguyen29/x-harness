@@ -40,7 +40,14 @@ describe("admission", () => {
       },
       evidence: {
         files_changed: ["a.ts"],
-        command_evidence: [{ command: "npm test", exit_code: 0 }],
+        command_evidence: [
+          {
+            command: "npm test",
+            exit_code: 0,
+            runner: "local-vitest",
+            started_at: "2026-05-25T00:00:00.000Z",
+          },
+        ],
       },
       done_checklist: {
         source_of_truth_read: true,
@@ -1513,6 +1520,205 @@ describe("admission", () => {
     expect(result.blocking_predicate).toBe(
       "done_checklist_prediction_mismatch"
     );
+  });
+
+  it("blocks when done_checklist claims evidence is missing but evidence is present", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: false,
+        evidence_attached: false,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors).toContain(
+      "done_checklist.evidence_attached is false but evidence is present"
+    );
+    expect(result.blocking_predicate).toBe("done_checklist_mismatch");
+  });
+
+  it("blocks when checklist declares read/write sets but present state is incomplete", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"] },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors).toContain(
+      "done_checklist.read_write_sets_declared is true but state.write_set is missing"
+    );
+    expect(result.blocking_predicate).toBe("done_checklist_mismatch");
+  });
+
+  it("blocks strict mode when checklist declares read/write sets but state is missing", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      strict: true,
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [
+          {
+            command: "npm test",
+            exit_code: 0,
+            runner: "local-vitest",
+            started_at: "2026-05-25T00:00:00.000Z",
+          },
+        ],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors).toContain(
+      "done_checklist.read_write_sets_declared is true but state is missing"
+    );
+    expect(result.blocking_predicate).toBe("done_checklist_mismatch");
+  });
+
+  it("blocks when checklist declares scoped artifacts but artifacts lack scope", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      strict: true,
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [
+          {
+            command: "npm test",
+            exit_code: 0,
+            runner: "local-vitest",
+            started_at: "2026-05-25T00:00:00.000Z",
+          },
+        ],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            status: "passed",
+            command: "npm test",
+            exit_code: 0,
+            runner: "local-vitest",
+            started_at: "2026-05-25T00:00:00.000Z",
+          },
+        ],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: false,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors).toContain(
+      "done_checklist.scope_explained is true but verification_artifacts lacks verifies/does_not_verify scope"
+    );
+    expect(result.errors).toContain(
+      "done_checklist.coverage_gap_declared is true but no untested_regions or artifact does_not_verify scope is present"
+    );
+    expect(result.blocking_predicate).toBe("done_checklist_mismatch");
+  });
+
+  it("cross-checks optional done_checklist honesty on light tier", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        manual_rationale: "manual smoke check",
+      },
+      done_checklist: {
+        evidence_attached: false,
+        prediction_declared: false,
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors).toContain(
+      "done_checklist.evidence_attached is false but evidence is present"
+    );
+    expect(result.blocking_predicate).toBe("done_checklist_mismatch");
   });
 
   it("blocks intake tier downgrade without intervention approval", () => {
