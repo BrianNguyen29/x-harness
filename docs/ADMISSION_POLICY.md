@@ -22,6 +22,8 @@ Required: `files_changed`, `command_evidence`.
 Recommended: `evidence_scope_declared`, `untested_regions_declared`.
 Completion-card mode also requires `done_checklist` and a falsifiable `prediction`.
 
+`done_checklist` is cross-checked against declared evidence, prediction, verification artifacts, and state where applicable. Optional checklist blocks on `light` cards are also checked for honesty if present. In strict or deep mode, `read_write_sets_declared: true` must be backed by `state.read_set` and `state.write_set`.
+
 ### deep
 
 Required: `files_changed`, `command_evidence`, `evidence_scope_declared`, `untested_regions_declared`, `remaining_risks_declared`.

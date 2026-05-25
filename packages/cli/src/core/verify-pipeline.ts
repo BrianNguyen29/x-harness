@@ -115,8 +115,7 @@ async function getTraceDirGuardViolation(
   cwd: string,
   traceDir?: string
 ): Promise<string | null> {
-  const repoRoot = await getRepoRoot(cwd);
-  if (!repoRoot) return null;
+  const repoRoot = (await getRepoRoot(cwd)) ?? path.resolve(cwd);
 
   const requestedDir = path.resolve(cwd, traceDir ?? ".x-harness/traces");
   const repoPrefix = repoRoot.endsWith(path.sep)

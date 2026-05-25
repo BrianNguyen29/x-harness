@@ -400,6 +400,19 @@ components:
     expect(check.note).toContain("[explicit]");
   });
 
+  it("supports --json flag explicitly", async () => {
+    const { stdout, exitCode } = await execaNode([
+      "doctor",
+      "--root",
+      repoRoot,
+      "--json",
+    ]);
+    expect(exitCode).toBe(0);
+    const report = JSON.parse(stdout);
+    expect(report.healthy).toBe(true);
+    expect(Array.isArray(report.checks)).toBe(true);
+  });
+
   it("policy-drift note lacks [explicit] without the flag", async () => {
     const { stdout } = await execaNode(["doctor", "--root", repoRoot]);
     const report = JSON.parse(stdout);

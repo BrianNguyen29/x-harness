@@ -323,6 +323,7 @@ describe("recovery", () => {
         "evidence_floor_not_met",
         "state_read_write_missing",
         "done_checklist_missing",
+        "done_checklist_mismatch",
         "prediction_missing",
         "prediction_invalid",
         "done_checklist_prediction_mismatch",

@@ -830,194 +830,200 @@ export function doctorCommand(): Command {
     )
     .option("--root <path>", "Repository root", process.cwd())
     .option("--policy-drift", "Run policy-code drift checks", false)
-    .action(async (opts: { root: string; policyDrift: boolean }) => {
-      const root = path.resolve(opts.root);
-      const missing: string[] = [];
-      const present: string[] = [];
-      const notes: string[] = [];
-      const checks: { name: string; status: "pass" | "fail"; note: string }[] =
-        [];
+    .option("--json", "Output JSON report", false)
+    .action(
+      async (opts: { root: string; policyDrift: boolean; json: boolean }) => {
+        const root = path.resolve(opts.root);
+        const missing: string[] = [];
+        const present: string[] = [];
+        const notes: string[] = [];
+        const checks: {
+          name: string;
+          status: "pass" | "fail";
+          note: string;
+        }[] = [];
 
-      // Required file check
-      for (const asset of CRITICAL_ASSETS) {
-        const assetPath = path.join(root, asset);
-        if (await fs.pathExists(assetPath)) {
-          present.push(asset);
-        } else {
-          missing.push(asset);
+        // Required file check
+        for (const asset of CRITICAL_ASSETS) {
+          const assetPath = path.join(root, asset);
+          if (await fs.pathExists(assetPath)) {
+            present.push(asset);
+          } else {
+            missing.push(asset);
+          }
         }
-      }
-      checks.push({
-        name: "required_files",
-        status: missing.length === 0 ? "pass" : "fail",
-        note:
-          missing.length === 0
-            ? "all required files present"
-            : `missing: ${missing.join(", ")}`,
-      });
-
-      // Schema compile check
-      const schemaResult = await checkSchemaCompile(root);
-      checks.push({
-        name: "schema_compile",
-        status: schemaResult.ok ? "pass" : "fail",
-        note: schemaResult.notes.join("; "),
-      });
-
-      // Policy key check
-      const policyResult = await checkPolicyKeys(root);
-      checks.push({
-        name: "policy_keys",
-        status: policyResult.ok ? "pass" : "fail",
-        note: policyResult.notes.join("; "),
-      });
-
-      // Policy-code drift check (always run; --policy-drift makes the request explicit)
-      const driftResult = await checkPolicyDrift(root);
-      const driftNote = opts.policyDrift
-        ? `[explicit] ${driftResult.notes.join("; ")}`
-        : driftResult.notes.join("; ");
-      checks.push({
-        name: "policy_drift",
-        status: driftResult.ok ? "pass" : "fail",
-        note: driftNote,
-      });
-
-      // No Python core check
-      const pythonResult = await checkNoPythonCore(root);
-      checks.push({
-        name: "no_python_core",
-        status: pythonResult.ok ? "pass" : "fail",
-        note: pythonResult.notes.join("; "),
-      });
-
-      // PGV authority wording check
-      const pgvResult = await checkPgvWording(root);
-      checks.push({
-        name: "pgv_authority_wording",
-        status: pgvResult.ok ? "pass" : "fail",
-        note: pgvResult.notes.join("; "),
-      });
-
-      // Tier label check
-      const tierResult = await checkTierLabels(root);
-      checks.push({
-        name: "tier_labels",
-        status: tierResult.ok ? "pass" : "fail",
-        note: tierResult.notes.join("; "),
-      });
-
-      // AGENTS size check
-      const agentsResult = await checkAgentsSize(root);
-      checks.push({
-        name: "agents_size",
-        status: agentsResult.ok ? "pass" : "fail",
-        note: agentsResult.notes.join("; "),
-      });
-
-      // Adapter presence check
-      const adapterResult = await checkAdapters(root);
-      checks.push({
-        name: "adapters_present",
-        status: adapterResult.ok ? "pass" : "fail",
-        note: adapterResult.notes.join("; "),
-      });
-
-      // Local markdown link check
-      const linkResult = await checkLocalMarkdownLinks(root);
-      checks.push({
-        name: "local_markdown_links",
-        status: linkResult.ok ? "pass" : "fail",
-        note: linkResult.notes.join("; "),
-      });
-
-      // Evidence scope support check
-      const evidenceScopeResult = await checkEvidenceScopeSupport(root);
-      checks.push({
-        name: "evidence_scope_support",
-        status: evidenceScopeResult.ok ? "pass" : "fail",
-        note: evidenceScopeResult.notes.join("; "),
-      });
-
-      // Component registry check
-      const componentRegistryResult = await validateComponentsRegistry(root);
-      checks.push({
-        name: "component_registry",
-        status: componentRegistryResult.ok ? "pass" : "fail",
-        note: componentRegistryResult.ok
-          ? `${componentRegistryResult.component_count} component(s); protected paths ${componentRegistryResult.protected_paths_covered}/${componentRegistryResult.protected_paths_checked} covered`
-          : componentRegistryResult.errors.join("; "),
-      });
-
-      // Read-only verifier check
-      const readOnlyResult = await checkReadOnlyVerifier(root);
-      checks.push({
-        name: "read_only_verifier",
-        status: readOnlyResult.ok ? "pass" : "fail",
-        note: readOnlyResult.notes.join("; "),
-      });
-
-      // No heavy runtime check
-      const runtimeResult = await checkNoHeavyRuntime(root);
-      checks.push({
-        name: "no_heavy_runtime",
-        status: runtimeResult.ok ? "pass" : "fail",
-        note: runtimeResult.notes.join("; "),
-      });
-
-      // Templates inventory check
-      const templatesResult = await checkTemplatesInventory(root);
-      checks.push({
-        name: "templates_inventory",
-        status: templatesResult.ok ? "pass" : "fail",
-        note: templatesResult.notes.join("; "),
-      });
-
-      // Cleanup policy check (advisory-only)
-      const cleanupPath = path.join(root, "policies", "cleanup.yaml");
-      if (await fs.pathExists(cleanupPath)) {
         checks.push({
-          name: "cleanup_policy",
-          status: "pass",
-          note: "cleanup policy present",
+          name: "required_files",
+          status: missing.length === 0 ? "pass" : "fail",
+          note:
+            missing.length === 0
+              ? "all required files present"
+              : `missing: ${missing.join(", ")}`,
         });
-      } else {
+
+        // Schema compile check
+        const schemaResult = await checkSchemaCompile(root);
         checks.push({
-          name: "cleanup_policy",
-          status: "pass",
-          note: "cleanup policy optional; not required for v0.1",
+          name: "schema_compile",
+          status: schemaResult.ok ? "pass" : "fail",
+          note: schemaResult.notes.join("; "),
         });
+
+        // Policy key check
+        const policyResult = await checkPolicyKeys(root);
+        checks.push({
+          name: "policy_keys",
+          status: policyResult.ok ? "pass" : "fail",
+          note: policyResult.notes.join("; "),
+        });
+
+        // Policy-code drift check (always run; --policy-drift makes the request explicit)
+        const driftResult = await checkPolicyDrift(root);
+        const driftNote = opts.policyDrift
+          ? `[explicit] ${driftResult.notes.join("; ")}`
+          : driftResult.notes.join("; ");
+        checks.push({
+          name: "policy_drift",
+          status: driftResult.ok ? "pass" : "fail",
+          note: driftNote,
+        });
+
+        // No Python core check
+        const pythonResult = await checkNoPythonCore(root);
+        checks.push({
+          name: "no_python_core",
+          status: pythonResult.ok ? "pass" : "fail",
+          note: pythonResult.notes.join("; "),
+        });
+
+        // PGV authority wording check
+        const pgvResult = await checkPgvWording(root);
+        checks.push({
+          name: "pgv_authority_wording",
+          status: pgvResult.ok ? "pass" : "fail",
+          note: pgvResult.notes.join("; "),
+        });
+
+        // Tier label check
+        const tierResult = await checkTierLabels(root);
+        checks.push({
+          name: "tier_labels",
+          status: tierResult.ok ? "pass" : "fail",
+          note: tierResult.notes.join("; "),
+        });
+
+        // AGENTS size check
+        const agentsResult = await checkAgentsSize(root);
+        checks.push({
+          name: "agents_size",
+          status: agentsResult.ok ? "pass" : "fail",
+          note: agentsResult.notes.join("; "),
+        });
+
+        // Adapter presence check
+        const adapterResult = await checkAdapters(root);
+        checks.push({
+          name: "adapters_present",
+          status: adapterResult.ok ? "pass" : "fail",
+          note: adapterResult.notes.join("; "),
+        });
+
+        // Local markdown link check
+        const linkResult = await checkLocalMarkdownLinks(root);
+        checks.push({
+          name: "local_markdown_links",
+          status: linkResult.ok ? "pass" : "fail",
+          note: linkResult.notes.join("; "),
+        });
+
+        // Evidence scope support check
+        const evidenceScopeResult = await checkEvidenceScopeSupport(root);
+        checks.push({
+          name: "evidence_scope_support",
+          status: evidenceScopeResult.ok ? "pass" : "fail",
+          note: evidenceScopeResult.notes.join("; "),
+        });
+
+        // Component registry check
+        const componentRegistryResult = await validateComponentsRegistry(root);
+        checks.push({
+          name: "component_registry",
+          status: componentRegistryResult.ok ? "pass" : "fail",
+          note: componentRegistryResult.ok
+            ? `${componentRegistryResult.component_count} component(s); protected paths ${componentRegistryResult.protected_paths_covered}/${componentRegistryResult.protected_paths_checked} covered`
+            : componentRegistryResult.errors.join("; "),
+        });
+
+        // Read-only verifier check
+        const readOnlyResult = await checkReadOnlyVerifier(root);
+        checks.push({
+          name: "read_only_verifier",
+          status: readOnlyResult.ok ? "pass" : "fail",
+          note: readOnlyResult.notes.join("; "),
+        });
+
+        // No heavy runtime check
+        const runtimeResult = await checkNoHeavyRuntime(root);
+        checks.push({
+          name: "no_heavy_runtime",
+          status: runtimeResult.ok ? "pass" : "fail",
+          note: runtimeResult.notes.join("; "),
+        });
+
+        // Templates inventory check
+        const templatesResult = await checkTemplatesInventory(root);
+        checks.push({
+          name: "templates_inventory",
+          status: templatesResult.ok ? "pass" : "fail",
+          note: templatesResult.notes.join("; "),
+        });
+
+        // Cleanup policy check (advisory-only)
+        const cleanupPath = path.join(root, "policies", "cleanup.yaml");
+        if (await fs.pathExists(cleanupPath)) {
+          checks.push({
+            name: "cleanup_policy",
+            status: "pass",
+            note: "cleanup policy present",
+          });
+        } else {
+          checks.push({
+            name: "cleanup_policy",
+            status: "pass",
+            note: "cleanup policy optional; not required for v0.1",
+          });
+        }
+
+        // Context freshness check
+        const contextFreshnessResult = await checkContextFreshness(root);
+        checks.push({
+          name: "context_freshness",
+          status: contextFreshnessResult.ok ? "pass" : "fail",
+          note: contextFreshnessResult.notes.join("; "),
+        });
+
+        // Managed runtime contract blocks in docs/templates/adapters
+        const managedContractResult = await checkManagedContractBlocks(root);
+        checks.push({
+          name: "managed_contract_blocks",
+          status: managedContractResult.ok ? "pass" : "fail",
+          note: managedContractResult.notes.join("; "),
+        });
+
+        const healthy = checks.every((c) => c.status === "pass");
+
+        const report = {
+          healthy,
+          present_count: present.length,
+          missing_count: missing.length,
+          present,
+          missing,
+          checks,
+          notes,
+        };
+
+        console.log(JSON.stringify(report, null, 2));
+        process.exit(healthy ? 0 : 1);
       }
-
-      // Context freshness check
-      const contextFreshnessResult = await checkContextFreshness(root);
-      checks.push({
-        name: "context_freshness",
-        status: contextFreshnessResult.ok ? "pass" : "fail",
-        note: contextFreshnessResult.notes.join("; "),
-      });
-
-      // Managed runtime contract blocks in docs/templates/adapters
-      const managedContractResult = await checkManagedContractBlocks(root);
-      checks.push({
-        name: "managed_contract_blocks",
-        status: managedContractResult.ok ? "pass" : "fail",
-        note: managedContractResult.notes.join("; "),
-      });
-
-      const healthy = checks.every((c) => c.status === "pass");
-
-      const report = {
-        healthy,
-        present_count: present.length,
-        missing_count: missing.length,
-        present,
-        missing,
-        checks,
-        notes,
-      };
-
-      console.log(JSON.stringify(report, null, 2));
-      process.exit(healthy ? 0 : 1);
-    });
+    );
 }

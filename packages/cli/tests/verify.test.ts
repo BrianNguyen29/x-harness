@@ -580,7 +580,7 @@ handoff:
     }
   });
 
-  it("blocks strict verification when mutation guard cannot establish a git baseline", async () => {
+  it("uses mutation guard fallback for strict verification in non-git workspaces", async () => {
     const tmpDir = fs.mkdtempSync(
       path.join(os.tmpdir(), "verify-strict-nogit-")
     );
@@ -593,16 +593,94 @@ handoff:
       );
       const cardDst = path.join(tmpDir, "completion-card.yaml");
       fs.copyFileSync(cardSrc, cardDst);
+      fs.mkdirSync(path.join(tmpDir, "policies"), { recursive: true });
+      fs.copyFileSync(
+        path.join(repoRoot, "policies", "admission.yaml"),
+        path.join(tmpDir, "policies", "admission.yaml")
+      );
 
       const { stdout, exitCode } = await execaNodeCwd(
         ["verify", "--card", cardDst, "--strict", "--json"],
         tmpDir
       );
+      expect(exitCode).toBe(0);
+      const output = JSON.parse(stdout);
+      expect(output.ok).toBe(true);
+      expect(output.strict).toBe(true);
+      expect(output.admission_outcome).toBe("success");
+      expect(
+        output.checks.some((c: { note: string }) =>
+          c.note.includes("mutation guard passed")
+        )
+      ).toBe(true);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("blocks unexpected mutations through --strict in non-git workspaces", async () => {
+    const script = path.join(cliDir, "dist", "index.js");
+    const tmpDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "verify-strict-nongit-mg-")
+    );
+    try {
+      const cardSrc = path.join(
+        repoRoot,
+        "examples",
+        "00-minimal",
+        "completion-card.yaml"
+      );
+      const cardDst = path.join(tmpDir, "completion-card.yaml");
+      fs.copyFileSync(cardSrc, cardDst);
+      fs.mkdirSync(path.join(tmpDir, "policies"), { recursive: true });
+      fs.copyFileSync(
+        path.join(repoRoot, "policies", "admission.yaml"),
+        path.join(tmpDir, "policies", "admission.yaml")
+      );
+
+      const injectPath = path.join(tmpDir, "unexpected.txt");
+      const child = spawn(
+        "node",
+        [script, "verify", "--card", cardDst, "--strict", "--json"],
+        {
+          cwd: tmpDir,
+          env: {
+            ...process.env,
+            X_HARNESS_ENABLE_TEST_HOOKS: "1",
+            X_HARNESS_TEST_INJECT_MUTATION: injectPath,
+          },
+        }
+      );
+
+      let stdout = "";
+      let childExited = false;
+      let exitCode = 1;
+      child.stdout.on("data", (chunk: Buffer) => {
+        stdout += chunk.toString();
+      });
+      child.on("close", (code) => {
+        childExited = true;
+        exitCode = code ?? 1;
+      });
+
+      await new Promise<void>((resolve) => {
+        const interval = setInterval(() => {
+          if (childExited) {
+            clearInterval(interval);
+            resolve();
+          }
+        }, 50);
+      });
+
       expect(exitCode).toBe(1);
       const output = JSON.parse(stdout);
       expect(output.admission_outcome).toBe("blocked");
       expect(output.recovery.predicate).toBe("verifier_not_read_only");
-      expect(output.withheld_reason).toContain("mutation guard blocked");
+      expect(
+        output.checks.some((c: { note: string }) =>
+          c.note.includes("mutation guard blocked")
+        )
+      ).toBe(true);
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }

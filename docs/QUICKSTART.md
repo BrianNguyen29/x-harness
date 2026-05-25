@@ -26,7 +26,7 @@ npm run build
 Use the `doctor` command to verify that all schemas compile, YAML policies are valid, and required templates are present:
 
 ```bash
-node packages/cli/dist/index.js doctor --root .
+node packages/cli/dist/index.js doctor --root . --json
 ```
 
 You should see a JSON report detailing passing validations with `"healthy": true`.
