@@ -851,11 +851,11 @@ Acceptance gate:
 
 Deliverables:
 
-- `examples verify`
-- trace append and verify-chain
-- report metrics parity
-- handoff generation
-- beginner aliases
+- [x] `examples verify`
+- [x] trace append and verify-chain
+- [x] report metrics parity
+- [x] handoff generation
+- [x] beginner aliases
 
 Acceptance gate:
 
