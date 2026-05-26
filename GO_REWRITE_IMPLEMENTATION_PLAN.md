@@ -969,7 +969,7 @@ Acceptance gate:
 ### CI and Release
 
 - [ ] Add Go CI job.
-- [ ] Add dual-run parity job.
+- [x] Add dual-run parity harness (partial: Go vs TS baseline script).
 - [ ] Add race test job.
 - [ ] Add release build matrix.
 - [ ] Add checksum generation.
@@ -1020,6 +1020,6 @@ Start with this slice:
 7. Admission decision parity for golden fixtures. *(done)*
 8. `doctor --format json`. *(done)*
 9. Mutation guard Git snapshot. *(done)*
-10. Dual-run parity test harness.
+10. Dual-run parity test harness. *(done)*
 
 This slice proves the rewrite can preserve the core contract before investing in the full command surface.
