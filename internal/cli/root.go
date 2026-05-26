@@ -83,6 +83,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleHandoff(args[1:], stdout, stderr)
 	case "prepare":
 		return handlePrepare(args[1:], stdout, stderr)
+	case "trace":
+		return handleTrace(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}
