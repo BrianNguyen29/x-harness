@@ -93,38 +93,35 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 }
 
 func runWithMutationGuard(root string, strict bool, doc map[string]any, validator *schema.Validator, stderr io.Writer) VerifyResult {
-	if !mutationguard.IsGitAvailable() {
-		mg := &mutationguard.Result{Enabled: true, SkippedReason: "git not available", Violated: strict}
-		schemaErr := validator.Validate(doc)
-		result := buildVerifyResult(doc, schemaErr, mg)
-		if strict {
-			fmt.Fprintln(stderr, "mutation_guard_error: git not available in strict mode")
-			result.OK = false
-			result.AdmissionOutcome = "blocked"
-			result.AcceptanceStatus = "withheld"
-		}
-		return result
-	}
+	var useGit bool
+	var gitRoot string
+	var gitErr error
 
-	gitRoot, err := mutationguard.FindGitRoot(root)
-	if err != nil {
-		mg := &mutationguard.Result{Enabled: true, SkippedReason: "cannot find git root", Violated: strict}
-		schemaErr := validator.Validate(doc)
-		result := buildVerifyResult(doc, schemaErr, mg)
-		if strict {
-			fmt.Fprintf(stderr, "mutation_guard_error: cannot find git root in strict mode: %v\n", err)
-			result.OK = false
-			result.AdmissionOutcome = "blocked"
-			result.AcceptanceStatus = "withheld"
+	if mutationguard.IsGitAvailable() {
+		gitRoot, gitErr = mutationguard.FindGitRoot(root)
+		if gitErr == nil {
+			useGit = true
 		}
-		return result
 	}
 
 	var schemaErr error
-	mgResult, guardErr := mutationguard.Guard(gitRoot, func() error {
-		schemaErr = validator.Validate(doc)
-		return nil
-	})
+	var mgResult *mutationguard.Result
+	var guardErr error
+
+	if useGit {
+		mgResult, guardErr = mutationguard.Guard(gitRoot, func() error {
+			schemaErr = validator.Validate(doc)
+			return nil
+		})
+	} else {
+		mgResult, guardErr = mutationguard.GuardFallback(root, func() error {
+			schemaErr = validator.Validate(doc)
+			return nil
+		})
+		if guardErr != nil && gitErr != nil {
+			guardErr = fmt.Errorf("git: %v; fallback: %v", gitErr, guardErr)
+		}
+	}
 
 	if guardErr != nil {
 		mg := &mutationguard.Result{Enabled: true, SkippedReason: guardErr.Error(), Violated: strict}

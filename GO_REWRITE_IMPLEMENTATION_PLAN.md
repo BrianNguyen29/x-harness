@@ -940,9 +940,9 @@ Acceptance gate:
 
 - [x] Port Git status snapshot.
 - [x] Port dirty/untracked content hashing.
-- [ ] Port non-Git fallback snapshot.
-- [ ] Port ignore policy.
-- [ ] Port concurrency limit.
+- [x] Port non-Git fallback snapshot.
+- [x] Port ignore policy.
+- [x] Port concurrency limit.
 - [x] Port allowlist.
 - [ ] Add mutation injection test hook.
 - [ ] Add mutation guard benchmark.
