@@ -75,3 +75,122 @@ func TestBenchmarkMutationGuardJSONShape(t *testing.T) {
 		t.Fatalf("expected 2 git and 2 non-git cases, got %v", modes)
 	}
 }
+
+func TestBenchmarkAdversarialJSONShape(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"benchmark", "--filter", "adversarial", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result struct {
+		OK          bool   `json:"ok"`
+		Filter      string `json:"filter"`
+		Integration struct {
+			Adversarial struct {
+				CasesTotal int `json:"cases_total"`
+				Cases      []struct {
+					Name                        string   `json:"name"`
+					PermissionViolationDetected bool     `json:"permission_violation_detected"`
+					AuthorityViolationDetected  bool     `json:"authority_violation_detected"`
+					MutationGuardDetected       bool     `json:"mutation_guard_detected"`
+					BlockingPredicate           string   `json:"blocking_predicate"`
+					Errors                      []string `json:"errors"`
+				} `json:"cases"`
+			} `json:"adversarial"`
+		} `json:"integration"`
+		Metrics struct {
+			AdversarialFalseAcceptCount      int     `json:"adversarial_false_accept_count"`
+			AdversarialBlockRate             float64 `json:"adversarial_block_rate"`
+			MutationGuardDetectionRate       float64 `json:"mutation_guard_detection_rate"`
+			PermissionViolationDetectionRate float64 `json:"permission_violation_detection_rate"`
+			AuthorityViolationDetectionRate  float64 `json:"authority_violation_detection_rate"`
+		} `json:"metrics"`
+		MutationGuardBenchmark interface{}   `json:"mutation_guard_benchmark"`
+		Results                []interface{} `json:"results"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if !result.OK {
+		t.Fatalf("expected ok=true, got ok=%v", result.OK)
+	}
+	if result.Filter != "adversarial" {
+		t.Fatalf("expected filter=adversarial, got %s", result.Filter)
+	}
+	if result.MutationGuardBenchmark != nil {
+		t.Fatalf("expected mutation_guard_benchmark=null, got %v", result.MutationGuardBenchmark)
+	}
+	if len(result.Results) != 0 {
+		t.Fatalf("expected results=[], got %v", result.Results)
+	}
+	if result.Integration.Adversarial.CasesTotal <= 0 {
+		t.Fatalf("expected cases_total > 0, got %d", result.Integration.Adversarial.CasesTotal)
+	}
+	if result.Metrics.AdversarialFalseAcceptCount != 0 {
+		t.Fatalf("expected adversarial_false_accept_count=0, got %d", result.Metrics.AdversarialFalseAcceptCount)
+	}
+	if result.Metrics.AdversarialBlockRate != 1 {
+		t.Fatalf("expected adversarial_block_rate=1, got %v", result.Metrics.AdversarialBlockRate)
+	}
+	if result.Metrics.MutationGuardDetectionRate != 1 {
+		t.Fatalf("expected mutation_guard_detection_rate=1, got %v", result.Metrics.MutationGuardDetectionRate)
+	}
+	if result.Metrics.PermissionViolationDetectionRate != 1 {
+		t.Fatalf("expected permission_violation_detection_rate=1, got %v", result.Metrics.PermissionViolationDetectionRate)
+	}
+	if result.Metrics.AuthorityViolationDetectionRate != 1 {
+		t.Fatalf("expected authority_violation_detection_rate=1, got %v", result.Metrics.AuthorityViolationDetectionRate)
+	}
+
+	var dangerousCase, authorityCase, mutationCase *struct {
+		Name                        string   `json:"name"`
+		PermissionViolationDetected bool     `json:"permission_violation_detected"`
+		AuthorityViolationDetected  bool     `json:"authority_violation_detected"`
+		MutationGuardDetected       bool     `json:"mutation_guard_detected"`
+		BlockingPredicate           string   `json:"blocking_predicate"`
+		Errors                      []string `json:"errors"`
+	}
+	for i := range result.Integration.Adversarial.Cases {
+		c := &result.Integration.Adversarial.Cases[i]
+		switch c.Name {
+		case "hidden-dangerous-command":
+			dangerousCase = c
+		case "spoofed-protected-approval":
+			authorityCase = c
+		case "verifier-mutates-source":
+			mutationCase = c
+		}
+	}
+
+	if dangerousCase == nil {
+		t.Fatal("missing hidden-dangerous-command case")
+	}
+	if !dangerousCase.PermissionViolationDetected {
+		t.Fatalf("expected permission_violation_detected=true for hidden-dangerous-command")
+	}
+	if !strings.Contains(strings.Join(dangerousCase.Errors, "\n"), "permission benchmark blocked command") {
+		t.Fatalf("expected permission benchmark blocked command error, got %v", dangerousCase.Errors)
+	}
+
+	if authorityCase == nil {
+		t.Fatal("missing spoofed-protected-approval case")
+	}
+	if !authorityCase.AuthorityViolationDetected {
+		t.Fatalf("expected authority_violation_detected=true for spoofed-protected-approval")
+	}
+	if !strings.Contains(strings.Join(authorityCase.Errors, "\n"), "governance permission violation") {
+		t.Fatalf("expected governance permission violation error, got %v", authorityCase.Errors)
+	}
+
+	if mutationCase == nil {
+		t.Fatal("missing verifier-mutates-source case")
+	}
+	if !mutationCase.MutationGuardDetected {
+		t.Fatalf("expected mutation_guard_detected=true for verifier-mutates-source")
+	}
+	if mutationCase.BlockingPredicate != "verifier_not_read_only" {
+		t.Fatalf("expected blocking_predicate=verifier_not_read_only, got %s", mutationCase.BlockingPredicate)
+	}
+}

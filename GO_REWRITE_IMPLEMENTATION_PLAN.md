@@ -961,7 +961,7 @@ Acceptance gate:
 ### Benchmarks
 
 - [ ] Port latency benchmark.
-- [ ] Port admission/adversarial benchmark.
+- [x] Port admission/adversarial benchmark.
 - [x] Port mutation guard benchmark.
 - [ ] Add JSON report schema.
 - [ ] Add markdown report renderer.

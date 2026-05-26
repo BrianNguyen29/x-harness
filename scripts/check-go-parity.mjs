@@ -61,6 +61,7 @@ function isSupported(caseId) {
     "doctor:json",
     "context:contract",
     "benchmark:mutation-guard",
+    "benchmark:adversarial",
     "examples:verify:json",
   ];
   if (!supportedPrefixes.some((p) => caseId.startsWith(p))) {
@@ -75,7 +76,7 @@ function isSupported(caseId) {
 }
 
 function skipReason(caseId) {
-  if (caseId.startsWith("benchmark:")) {
+  if (caseId.startsWith("benchmark:") && caseId !== "benchmark:mutation-guard" && caseId !== "benchmark:adversarial") {
     return "Go benchmark command not yet implemented";
   }
   return "unsupported case";
@@ -188,6 +189,124 @@ function compareBenchmarkMutationGuardJson(tsOutput, goOutput, tsExit, goExit) {
       }
     }
   }
+  return errors;
+}
+
+function compareBenchmarkAdversarialJson(tsOutput, goOutput, tsExit, goExit) {
+  const errors = [];
+  if (tsExit !== goExit) {
+    errors.push(`exit code mismatch: ts=${tsExit}, go=${goExit}`);
+  }
+  if (tsOutput.ok !== goOutput.ok) {
+    errors.push(`ok mismatch: ts=${tsOutput.ok}, go=${goOutput.ok}`);
+  }
+  if (tsOutput.filter !== goOutput.filter) {
+    errors.push(`filter mismatch: ts=${tsOutput.filter}, go=${goOutput.filter}`);
+  }
+
+  const tsInt = tsOutput.integration;
+  const goInt = goOutput.integration;
+  if (!tsInt || !goInt) {
+    errors.push(`integration missing`);
+    return errors;
+  }
+  const tsAdv = tsInt.adversarial;
+  const goAdv = goInt.adversarial;
+  if (!tsAdv || !goAdv) {
+    errors.push(`integration.adversarial missing`);
+    return errors;
+  }
+  if (tsAdv.cases_total !== goAdv.cases_total) {
+    errors.push(`cases_total mismatch: ts=${tsAdv.cases_total}, go=${goAdv.cases_total}`);
+  }
+  if (tsAdv.expected_pass_count !== goAdv.expected_pass_count) {
+    errors.push(`expected_pass_count mismatch`);
+  }
+  if (tsAdv.expected_block_count !== goAdv.expected_block_count) {
+    errors.push(`expected_block_count mismatch`);
+  }
+  if (tsAdv.false_accept_count !== goAdv.false_accept_count) {
+    errors.push(`false_accept_count mismatch`);
+  }
+  if (tsAdv.false_reject_count !== goAdv.false_reject_count) {
+    errors.push(`false_reject_count mismatch`);
+  }
+  if (!Array.isArray(goAdv.cases) || goAdv.cases.length !== tsAdv.cases.length) {
+    errors.push(`cases array length mismatch`);
+    return errors;
+  }
+
+  const tsMetrics = tsOutput.metrics;
+  const goMetrics = goOutput.metrics;
+  if (tsMetrics.adversarial_false_accept_count !== goMetrics.adversarial_false_accept_count) {
+    errors.push(`metrics.adversarial_false_accept_count mismatch`);
+  }
+  if (tsMetrics.adversarial_block_rate !== goMetrics.adversarial_block_rate) {
+    errors.push(`metrics.adversarial_block_rate mismatch: ts=${tsMetrics.adversarial_block_rate}, go=${goMetrics.adversarial_block_rate}`);
+  }
+  if (tsMetrics.mutation_guard_detection_rate !== goMetrics.mutation_guard_detection_rate) {
+    errors.push(`metrics.mutation_guard_detection_rate mismatch`);
+  }
+  if (tsMetrics.permission_violation_detection_rate !== goMetrics.permission_violation_detection_rate) {
+    errors.push(`metrics.permission_violation_detection_rate mismatch`);
+  }
+  if (tsMetrics.authority_violation_detection_rate !== goMetrics.authority_violation_detection_rate) {
+    errors.push(`metrics.authority_violation_detection_rate mismatch`);
+  }
+
+  for (let i = 0; i < tsAdv.cases.length; i++) {
+    const tc = tsAdv.cases[i];
+    const gc = goAdv.cases[i];
+    if (tc.name !== gc.name) {
+      errors.push(`case[${i}].name mismatch`);
+    }
+    if (tc.suite !== gc.suite) {
+      errors.push(`case[${i}].suite mismatch`);
+    }
+    if (tc.expected_acceptance_status !== gc.expected_acceptance_status) {
+      errors.push(`case[${i}].expected_acceptance_status mismatch`);
+    }
+    if (tc.actual_acceptance_status !== gc.actual_acceptance_status) {
+      errors.push(`case[${i}].actual_acceptance_status mismatch`);
+    }
+    if (tc.outcome !== gc.outcome) {
+      errors.push(`case[${i}].outcome mismatch: ts=${tc.outcome}, go=${gc.outcome}`);
+    }
+    if (tc.accepted !== gc.accepted) {
+      errors.push(`case[${i}].accepted mismatch`);
+    }
+    if (tc.false_accept !== gc.false_accept) {
+      errors.push(`case[${i}].false_accept mismatch`);
+    }
+    if (tc.false_reject !== gc.false_reject) {
+      errors.push(`case[${i}].false_reject mismatch`);
+    }
+    if (tc.schema_valid !== gc.schema_valid) {
+      errors.push(`case[${i}].schema_valid mismatch`);
+    }
+    if (tc.policy_valid !== gc.policy_valid) {
+      errors.push(`case[${i}].policy_valid mismatch`);
+    }
+    if (tc.permission_violation_expected !== gc.permission_violation_expected) {
+      errors.push(`case[${i}].permission_violation_expected mismatch`);
+    }
+    if (tc.permission_violation_detected !== gc.permission_violation_detected) {
+      errors.push(`case[${i}].permission_violation_detected mismatch`);
+    }
+    if (tc.authority_violation_expected !== gc.authority_violation_expected) {
+      errors.push(`case[${i}].authority_violation_expected mismatch`);
+    }
+    if (tc.authority_violation_detected !== gc.authority_violation_detected) {
+      errors.push(`case[${i}].authority_violation_detected mismatch`);
+    }
+    if (tc.mutation_guard_expected !== gc.mutation_guard_expected) {
+      errors.push(`case[${i}].mutation_guard_expected mismatch`);
+    }
+    if (tc.mutation_guard_detected !== gc.mutation_guard_detected) {
+      errors.push(`case[${i}].mutation_guard_detected mismatch`);
+    }
+  }
+
   return errors;
 }
 
@@ -310,6 +429,8 @@ function main() {
           errors = compareDoctorJson(tsOutput, goOutput, tsExit, goExit);
         } else if (caseId === "benchmark:mutation-guard") {
           errors = compareBenchmarkMutationGuardJson(tsOutput, goOutput, tsExit, goExit);
+        } else if (caseId === "benchmark:adversarial") {
+          errors = compareBenchmarkAdversarialJson(tsOutput, goOutput, tsExit, goExit);
         } else if (caseId === "examples:verify:json") {
           errors = compareExamplesVerifyJson(tsOutput, goOutput, tsExit, goExit);
         } else {
