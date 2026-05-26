@@ -2,6 +2,7 @@ package admission
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/BrianNguyen29/x-harness/internal/loader"
@@ -162,6 +163,46 @@ func TestFailedTypecheckRecoveryRoute(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("expected command evidence exit_code error, got %v", result.Errors)
+	}
+}
+
+func TestHiddenDangerousCommand(t *testing.T) {
+	path := filepath.Join("..", "..", "examples", "adversarial", "hidden-dangerous-command", "completion-card.yaml")
+	var doc map[string]any
+	if err := loader.LoadDocument(path, &doc); err != nil {
+		t.Fatalf("failed to load card: %v", err)
+	}
+	result := Run(doc)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed, got %s", result.Outcome)
+	}
+	if result.AcceptanceStatus != "withheld" {
+		t.Fatalf("expected withheld, got %s", result.AcceptanceStatus)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if strings.Contains(e, "shell metacharacter") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected shell metacharacter error, got %v", result.Errors)
+	}
+}
+
+func TestLyingCommandExitCode(t *testing.T) {
+	path := filepath.Join("..", "..", "examples", "adversarial", "lying-command-exit-code", "completion-card.yaml")
+	var doc map[string]any
+	if err := loader.LoadDocument(path, &doc); err != nil {
+		t.Fatalf("failed to load card: %v", err)
+	}
+	result := Run(doc)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed, got %s", result.Outcome)
+	}
+	if result.AcceptanceStatus != "withheld" {
+		t.Fatalf("expected withheld, got %s", result.AcceptanceStatus)
 	}
 }
 

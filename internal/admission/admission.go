@@ -103,6 +103,18 @@ func Run(doc map[string]any) Result {
 		applyFinding(e.message, e.predicate, false)
 	}
 
+	// Command safety
+	cmdResult := evaluateCommandSafety(doc)
+	for _, e := range cmdResult.errors {
+		applyFinding(e.message, e.predicate, false)
+	}
+
+	// Artifact status consistency
+	artResult := evaluateArtifactStatus(doc)
+	for _, e := range artResult.errors {
+		applyFinding(e.message, e.predicate, false)
+	}
+
 	// Done checklist + prediction for standard/deep
 	if tier == "standard" || tier == "deep" {
 		if doc["done_checklist"] == nil {
@@ -506,4 +518,76 @@ func intLikeValue(v any) (int, bool) {
 	default:
 		return 0, false
 	}
+}
+
+func evaluateCommandSafety(doc map[string]any) evidenceResult {
+	result := evidenceResult{errors: []evidenceFinding{}, notes: []string{}}
+	evidence := mapValue(doc, "evidence")
+
+	for _, item := range sliceInMap(evidence, "command_evidence") {
+		record, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		command := stringInMap(record, "command")
+		if token := shellMetacharacter(command); token != "" {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("evidence.command_evidence command contains denied shell metacharacter %s: %q", token, command),
+				predicate: "admission_failed",
+			})
+		}
+	}
+
+	for _, item := range sliceInMap(evidence, "verification_artifacts") {
+		record, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		command := stringInMap(record, "command")
+		if token := shellMetacharacter(command); token != "" {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("evidence.verification_artifacts command contains denied shell metacharacter %s: %q", token, command),
+				predicate: "admission_failed",
+			})
+		}
+	}
+
+	return result
+}
+
+func evaluateArtifactStatus(doc map[string]any) evidenceResult {
+	result := evidenceResult{errors: []evidenceFinding{}, notes: []string{}}
+	evidence := mapValue(doc, "evidence")
+
+	for _, item := range sliceInMap(evidence, "verification_artifacts") {
+		record, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		status := stringInMap(record, "status")
+		if status == "" || status == "passed" {
+			continue
+		}
+		command := stringInMap(record, "command")
+		msg := fmt.Sprintf("evidence.verification_artifacts status %q is not passed", status)
+		if command != "" {
+			msg += fmt.Sprintf(" for command %q", command)
+		}
+		result.errors = append(result.errors, evidenceFinding{
+			message:   msg,
+			predicate: "admission_failed",
+		})
+	}
+
+	return result
+}
+
+func shellMetacharacter(command string) string {
+	tokens := []string{"&&", "||", ";", "|", "`", "$(", ">", "<"}
+	for _, token := range tokens {
+		if strings.Contains(command, token) {
+			return token
+		}
+	}
+	return ""
 }

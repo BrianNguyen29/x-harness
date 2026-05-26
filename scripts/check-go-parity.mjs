@@ -69,8 +69,6 @@ function isSupported(caseId) {
   }
   // Known divergences: Go does not yet implement these specific TS checks
   const knownDivergences = [
-    "verify:adversarial:hidden-dangerous-command",
-    "verify:adversarial:lying-command-exit-code",
   ];
   return !knownDivergences.includes(caseId);
 }
