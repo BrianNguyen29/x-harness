@@ -85,6 +85,52 @@ func TestRecoverSuccessOutcomeReturnsEmpty(t *testing.T) {
 	}
 }
 
+func TestRecoverySuggestJSON(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"recovery", "suggest", "--errors", "missing evidence", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result struct {
+		Suggestions []struct {
+			Predicate string `json:"predicate"`
+			Route     struct {
+				NextAction string `json:"next_action"`
+				Owner      string `json:"owner"`
+			} `json:"route"`
+		} `json:"suggestions"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON, got error: %v\noutput: %s", err, stdout.String())
+	}
+	if len(result.Suggestions) != 1 {
+		t.Fatalf("expected 1 suggestion, got %d: %+v", len(result.Suggestions), result)
+	}
+	if result.Suggestions[0].Predicate != "evidence_missing" {
+		t.Fatalf("expected evidence_missing, got %s", result.Suggestions[0].Predicate)
+	}
+}
+
+func TestRecoveryUnsupportedSubcommand(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"recovery", "plan"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+}
+
+func TestRecoveryMissingSubcommand(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"recovery"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+}
+
 func TestRecoverDeterministicHeuristic(t *testing.T) {
 	var stdout1 bytes.Buffer
 	var stdout2 bytes.Buffer

@@ -244,6 +244,14 @@ func suggestRecovery(errorText string) (string, recoveryRoute) {
 	return "admission_failed", defaultRoutes["admission_failed"]
 }
 
+func handleRecovery(args []string, stdout io.Writer, stderr io.Writer) int {
+	if len(args) == 0 || args[0] != "suggest" {
+		WriteLine(stderr, "usage: recovery suggest [options]")
+		return ExitUsage
+	}
+	return handleRecover(args[1:], stdout, stderr)
+}
+
 func renderPlaybookMarkdown(w io.Writer, suggestions []playbookSuggestion) {
 	WriteLine(w, "# Recovery Playbook (Review Required)")
 	WriteLine(w, "")
