@@ -93,6 +93,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleReset(args[1:], stdout, stderr)
 	case "add":
 		return handleAdd(args[1:], stdout, stderr)
+	case "init":
+		return handleInit(args[1:], stdout, stderr)
 	case "recovery":
 		return handleRecovery(args[1:], stdout, stderr)
 	default:
