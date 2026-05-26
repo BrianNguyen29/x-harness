@@ -271,6 +271,22 @@ func TestVerifyMutationGuardSkipInNonGit(t *testing.T) {
 	}
 }
 
+func TestActionsListsBeginnerActions(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"actions"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
+	}
+	out := stdout.String()
+	expected := []string{"prepare", "check", "recover", "doctor", "actions", "status", "reset"}
+	for _, name := range expected {
+		if !strings.Contains(out, name) {
+			t.Fatalf("actions output missing %q:\n%s", name, out)
+		}
+	}
+}
+
 func TestUnknownCommandReturnsUsage(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
