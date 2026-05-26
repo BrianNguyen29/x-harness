@@ -897,66 +897,66 @@ Acceptance gate:
 
 ### Foundation
 
-- [ ] Create Go module.
-- [ ] Add root command and version.
-- [ ] Add command registration.
-- [ ] Add output rendering helpers.
-- [ ] Add typed CLI errors and exit codes.
-- [ ] Add repo root discovery.
-- [ ] Add asset locator.
+- [x] Create Go module.
+- [x] Add root command and version.
+- [x] Add command registration.
+- [x] Add output rendering helpers.
+- [x] Add typed CLI errors and exit codes.
+- [x] Add repo root discovery.
+- [x] Add asset locator.
 
 ### Contract
 
-- [ ] Port canonical contract model.
+- [x] Port canonical contract model.
 - [ ] Port managed block rendering.
 - [ ] Port managed block validation.
-- [ ] Port runtime contract rendering.
+- [x] Port runtime contract rendering.
 - [ ] Add contract drift tests.
 
 ### Schema and Policy
 
-- [ ] Add YAML/JSON reader.
-- [ ] Add JSON Schema compiler.
-- [ ] Add completion card validation.
+- [x] Add YAML/JSON reader.
+- [x] Add JSON Schema compiler.
+- [x] Add completion card validation.
 - [ ] Add subagent return validation.
 - [ ] Add policy loaders.
 - [ ] Add schema parity fixtures.
 
 ### Verify
 
-- [ ] Port source loading.
-- [ ] Port admission input builder.
-- [ ] Port evidence floor.
+- [x] Port source loading (minimal).
+- [x] Port admission input builder (minimal).
+- [x] Port evidence floor (light/standard/deep).
 - [ ] Port strict provenance.
-- [ ] Port done checklist and prediction checks.
-- [ ] Port contradiction checks.
-- [ ] Port governance checks.
-- [ ] Port admission decision.
+- [x] Port done checklist and prediction checks.
+- [x] Port contradiction checks.
+- [x] Port governance checks (deep approval, tier downgrade).
+- [x] Port admission decision.
 - [ ] Port recovery routing.
 - [ ] Port trace event creation.
-- [ ] Port verify output renderers.
+- [x] Port verify output renderers (minimal text + JSON).
 
 ### Mutation Guard
 
-- [ ] Port Git status snapshot.
-- [ ] Port dirty/untracked content hashing.
+- [x] Port Git status snapshot.
+- [x] Port dirty/untracked content hashing.
 - [ ] Port non-Git fallback snapshot.
 - [ ] Port ignore policy.
 - [ ] Port concurrency limit.
-- [ ] Port allowlist.
+- [x] Port allowlist.
 - [ ] Add mutation injection test hook.
 - [ ] Add mutation guard benchmark.
 
 ### Doctor
 
-- [ ] Port critical assets list.
-- [ ] Port schema checks.
-- [ ] Port policy checks.
-- [ ] Port managed block checks.
+- [x] Port critical assets list.
+- [x] Port schema checks.
+- [x] Port policy checks.
+- [x] Port managed block checks.
 - [ ] Port tier alias checks.
 - [ ] Port component registry check.
-- [ ] Add `--format json|text`.
-- [ ] Preserve `--json`.
+- [x] Add `--format json|text`.
+- [x] Preserve `--json`.
 
 ### Benchmarks
 
@@ -1011,15 +1011,15 @@ The rewrite is complete only when:
 
 Start with this slice:
 
-1. Go module and CLI skeleton.
-2. Asset locator.
-3. YAML/JSON loader.
-4. Contract model and `context --contract`.
-5. Completion card schema validation.
-6. Minimal `verify --card`.
-7. Admission decision parity for golden fixtures.
-8. `doctor --format json`.
-9. Mutation guard Git snapshot.
+1. Go module and CLI skeleton. *(done)*
+2. Asset locator. *(done)*
+3. YAML/JSON loader. *(done)*
+4. Contract model and `context --contract`. *(done)*
+5. Completion card schema validation. *(done)*
+6. Minimal `verify --card`. *(done)*
+7. Admission decision parity for golden fixtures. *(done)*
+8. `doctor --format json`. *(done)*
+9. Mutation guard Git snapshot. *(done)*
 10. Dual-run parity test harness.
 
 This slice proves the rewrite can preserve the core contract before investing in the full command surface.

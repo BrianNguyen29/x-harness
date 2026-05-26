@@ -10,6 +10,7 @@ dist/
 build/
 lib/
 *.tsbuildinfo
+x-harness
 
 # Coverage
 coverage/
@@ -49,3 +50,4 @@ trace/
 
 # x-harness local state
 .x-harness/
+.codegraph/

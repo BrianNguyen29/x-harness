@@ -69,6 +69,12 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 	case "actions":
 		printActions(stdout)
 		return ExitOK
+	case "context":
+		return handleContext(args[1:], stdout, stderr)
+	case "verify", "check":
+		return handleVerify(args[1:], stdout, stderr)
+	case "doctor":
+		return handleDoctor(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}
