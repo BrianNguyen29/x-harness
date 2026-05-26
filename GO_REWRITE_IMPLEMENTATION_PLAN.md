@@ -944,7 +944,7 @@ Acceptance gate:
 - [x] Port ignore policy.
 - [x] Port concurrency limit.
 - [x] Port allowlist.
-- [ ] Add mutation injection test hook.
+- [x] Add mutation injection test hook.
 - [ ] Add mutation guard benchmark.
 
 ### Doctor

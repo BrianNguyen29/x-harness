@@ -3,6 +3,9 @@ package cli
 import (
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/BrianNguyen29/x-harness/internal/admission"
 	"github.com/BrianNguyen29/x-harness/internal/assets"
@@ -92,6 +95,44 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	return ExitError
 }
 
+func injectTestMutation(root string, stderr io.Writer) {
+	if os.Getenv("X_HARNESS_ENABLE_TEST_HOOKS") != "1" {
+		return
+	}
+	injectPath := os.Getenv("X_HARNESS_TEST_INJECT_MUTATION")
+	if injectPath == "" {
+		return
+	}
+
+	var resolved string
+	if filepath.IsAbs(injectPath) {
+		resolved = injectPath
+	} else {
+		resolved = filepath.Join(root, injectPath)
+	}
+
+	absResolved, err := filepath.Abs(resolved)
+	if err != nil {
+		fmt.Fprintf(stderr, "test hook: failed to resolve injection path: %v\n", err)
+		return
+	}
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		fmt.Fprintf(stderr, "test hook: failed to resolve root: %v\n", err)
+		return
+	}
+
+	rootPrefix := absRoot + string(filepath.Separator)
+	if absResolved != absRoot && !strings.HasPrefix(absResolved, rootPrefix) {
+		fmt.Fprintf(stderr, "test hook: rejected injection path %s outside root (%s)\n", absResolved, absRoot)
+		return
+	}
+
+	if err := os.WriteFile(absResolved, []byte("test-mutation"), 0644); err != nil {
+		fmt.Fprintf(stderr, "test hook: failed to write injection file: %v\n", err)
+	}
+}
+
 func runWithMutationGuard(root string, strict bool, doc map[string]any, validator *schema.Validator, stderr io.Writer) VerifyResult {
 	var useGit bool
 	var gitRoot string
@@ -110,11 +151,13 @@ func runWithMutationGuard(root string, strict bool, doc map[string]any, validato
 
 	if useGit {
 		mgResult, guardErr = mutationguard.Guard(gitRoot, func() error {
+			injectTestMutation(gitRoot, stderr)
 			schemaErr = validator.Validate(doc)
 			return nil
 		})
 	} else {
 		mgResult, guardErr = mutationguard.GuardFallback(root, func() error {
+			injectTestMutation(root, stderr)
 			schemaErr = validator.Validate(doc)
 			return nil
 		})
