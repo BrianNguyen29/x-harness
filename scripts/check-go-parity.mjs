@@ -60,6 +60,7 @@ function isSupported(caseId) {
     "verify:adversarial:",
     "doctor:json",
     "context:contract",
+    "benchmark:mutation-guard",
   ];
   if (!supportedPrefixes.some((p) => caseId.startsWith(p))) {
     return false;
@@ -130,6 +131,64 @@ function compareContextContract(tsOutput, goOutput, tsExit, goExit) {
   for (const fact of expectedFacts) {
     if (!goOutput.includes(fact)) {
       errors.push(`missing contract fact: ${fact}`);
+    }
+  }
+  return errors;
+}
+
+function compareBenchmarkMutationGuardJson(tsOutput, goOutput, tsExit, goExit) {
+  const errors = [];
+  if (tsExit !== goExit) {
+    errors.push(`exit code mismatch: ts=${tsExit}, go=${goExit}`);
+  }
+  if (tsOutput.ok !== goOutput.ok) {
+    errors.push(`ok mismatch: ts=${tsOutput.ok}, go=${goOutput.ok}`);
+  }
+  if (tsOutput.filter !== goOutput.filter) {
+    errors.push(`filter mismatch: ts=${tsOutput.filter}, go=${goOutput.filter}`);
+  }
+  if (tsOutput.integration !== goOutput.integration) {
+    errors.push(`integration mismatch: ts=${tsOutput.integration}, go=${goOutput.integration}`);
+  }
+  if (!Array.isArray(goOutput.results) || goOutput.results.length !== 0) {
+    errors.push(`results mismatch: expected empty array`);
+  }
+  const tsMgb = tsOutput.mutation_guard_benchmark;
+  const goMgb = goOutput.mutation_guard_benchmark;
+  if (!tsMgb || !goMgb) {
+    errors.push(`mutation_guard_benchmark missing`);
+    return errors;
+  }
+  if (tsMgb.ok !== goMgb.ok) {
+    errors.push(`mutation_guard_benchmark.ok mismatch`);
+  }
+  if (JSON.stringify(tsMgb.file_counts) !== JSON.stringify(goMgb.file_counts)) {
+    errors.push(`file_counts mismatch: ts=${JSON.stringify(tsMgb.file_counts)}, go=${JSON.stringify(goMgb.file_counts)}`);
+  }
+  if (JSON.stringify(tsMgb.concurrency) !== JSON.stringify(goMgb.concurrency)) {
+    errors.push(`concurrency mismatch: ts=${JSON.stringify(tsMgb.concurrency)}, go=${JSON.stringify(goMgb.concurrency)}`);
+  }
+  if (tsMgb.cases.length !== goMgb.cases.length) {
+    errors.push(`cases length mismatch: ts=${tsMgb.cases.length}, go=${goMgb.cases.length}`);
+  } else {
+    for (let i = 0; i < tsMgb.cases.length; i++) {
+      const tc = tsMgb.cases[i];
+      const gc = goMgb.cases[i];
+      if (tc.mode !== gc.mode) {
+        errors.push(`case[${i}].mode mismatch: ts=${tc.mode}, go=${gc.mode}`);
+      }
+      if (tc.file_count !== gc.file_count) {
+        errors.push(`case[${i}].file_count mismatch: ts=${tc.file_count}, go=${gc.file_count}`);
+      }
+      if (tc.concurrency !== gc.concurrency) {
+        errors.push(`case[${i}].concurrency mismatch: ts=${tc.concurrency}, go=${gc.concurrency}`);
+      }
+      if (tc.hashed_paths !== gc.hashed_paths) {
+        errors.push(`case[${i}].hashed_paths mismatch: ts=${tc.hashed_paths}, go=${gc.hashed_paths}`);
+      }
+      if (tc.ok !== gc.ok) {
+        errors.push(`case[${i}].ok mismatch: ts=${tc.ok}, go=${gc.ok}`);
+      }
     }
   }
   return errors;
@@ -214,6 +273,8 @@ function main() {
           errors = compareVerifyJson(tsOutput, goOutput, tsExit, goExit);
         } else if (caseId.startsWith("doctor:")) {
           errors = compareDoctorJson(tsOutput, goOutput, tsExit, goExit);
+        } else if (caseId === "benchmark:mutation-guard") {
+          errors = compareBenchmarkMutationGuardJson(tsOutput, goOutput, tsExit, goExit);
         } else {
           errors = [];
         }

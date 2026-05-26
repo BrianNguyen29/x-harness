@@ -945,7 +945,7 @@ Acceptance gate:
 - [x] Port concurrency limit.
 - [x] Port allowlist.
 - [x] Add mutation injection test hook.
-- [ ] Add mutation guard benchmark.
+- [x] Add mutation guard benchmark.
 
 ### Doctor
 
@@ -962,7 +962,7 @@ Acceptance gate:
 
 - [ ] Port latency benchmark.
 - [ ] Port admission/adversarial benchmark.
-- [ ] Port mutation guard benchmark.
+- [x] Port mutation guard benchmark.
 - [ ] Add JSON report schema.
 - [ ] Add markdown report renderer.
 

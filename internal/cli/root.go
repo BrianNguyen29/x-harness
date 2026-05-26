@@ -75,6 +75,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleVerify(args[1:], stdout, stderr)
 	case "doctor":
 		return handleDoctor(args[1:], stdout, stderr)
+	case "benchmark":
+		return handleBenchmark(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}
