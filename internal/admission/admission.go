@@ -80,9 +80,9 @@ func Run(doc map[string]any) Result {
 				if !hasApprovedTierDowngrade(governance) {
 					applyFinding(
 						fmt.Sprintf("intake tier downgrade requires governance intervention approval: declared %s, mapped %s", tier, mappedTier),
-					"Fintervention",
-					false,
-				)
+						"Fintervention",
+						false,
+					)
 				} else {
 					notes = append(notes, fmt.Sprintf("intake tier downgrade approved by governance intervention: declared %s, mapped %s", tier, mappedTier))
 				}
@@ -281,8 +281,6 @@ func evaluateEvidenceFloor(doc map[string]any, tier string) evidenceResult {
 	filesChanged := sliceInMap(evidence, "files_changed")
 	commandEvidence := sliceInMap(evidence, "command_evidence")
 	manualRationale := stringInMap(evidence, "manual_rationale")
-	doneChecklist := doc["done_checklist"]
-	prediction := doc["prediction"]
 	verificationArtifacts := sliceInMap(evidence, "verification_artifacts")
 	untestedRegions := sliceInMap(evidence, "untested_regions")
 	remainingRisks := sliceInMap(evidence, "remaining_risks")
@@ -294,8 +292,6 @@ func evaluateEvidenceFloor(doc map[string]any, tier string) evidenceResult {
 	hasFilesChanged := len(filesChanged) > 0
 	hasCommandEvidence := len(commandEvidence) > 0
 	hasManualRationale := strings.TrimSpace(manualRationale) != ""
-	hasDoneChecklist := doneChecklist != nil
-	hasPrediction := prediction != nil
 	hasVerificationArtifacts := len(verificationArtifacts) > 0
 	hasUntestedRegions := len(untestedRegions) > 0
 	hasRemainingRisks := len(remainingRisks) > 0
@@ -303,6 +299,23 @@ func evaluateEvidenceFloor(doc map[string]any, tier string) evidenceResult {
 	hasExecutionControls := len(executionControls) > 0
 	hasReadSet := len(readSet) > 0
 	hasWriteSet := len(writeSet) > 0
+	hasScopeDeclared := verificationArtifactsHaveScope(verificationArtifacts)
+
+	for _, item := range commandEvidence {
+		record, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		exitCode, ok := intLikeValue(record["exit_code"])
+		if !ok || exitCode == 0 {
+			continue
+		}
+		message := fmt.Sprintf("evidence.command_evidence has non-zero exit_code %d", exitCode)
+		if command := stringInMap(record, "command"); strings.TrimSpace(command) != "" {
+			message += fmt.Sprintf(" for command %q", command)
+		}
+		result.errors = append(result.errors, evidenceFinding{message: message, predicate: "admission_failed"})
+	}
 
 	switch tier {
 	case "light":
@@ -319,12 +332,6 @@ func evaluateEvidenceFloor(doc map[string]any, tier string) evidenceResult {
 		if !hasCommandEvidence {
 			result.errors = append(result.errors, evidenceFinding{message: "standard tier evidence floor requires command_evidence", predicate: "admission_failed"})
 		}
-		if !hasDoneChecklist {
-			result.errors = append(result.errors, evidenceFinding{message: "standard tier evidence floor requires done_checklist", predicate: "admission_failed"})
-		}
-		if !hasPrediction {
-			result.errors = append(result.errors, evidenceFinding{message: "standard tier evidence floor requires prediction", predicate: "admission_failed"})
-		}
 	case "deep":
 		if !hasFilesChanged {
 			result.errors = append(result.errors, evidenceFinding{message: "deep tier evidence floor requires files_changed", predicate: "admission_failed"})
@@ -332,14 +339,11 @@ func evaluateEvidenceFloor(doc map[string]any, tier string) evidenceResult {
 		if !hasCommandEvidence {
 			result.errors = append(result.errors, evidenceFinding{message: "deep tier evidence floor requires command_evidence", predicate: "admission_failed"})
 		}
-		if !hasDoneChecklist {
-			result.errors = append(result.errors, evidenceFinding{message: "deep tier evidence floor requires done_checklist", predicate: "admission_failed"})
-		}
-		if !hasPrediction {
-			result.errors = append(result.errors, evidenceFinding{message: "deep tier evidence floor requires prediction", predicate: "admission_failed"})
-		}
 		if !hasVerificationArtifacts {
 			result.errors = append(result.errors, evidenceFinding{message: "deep tier evidence floor requires verification_artifacts", predicate: "admission_failed"})
+		}
+		if !hasScopeDeclared {
+			result.errors = append(result.errors, evidenceFinding{message: "deep tier evidence floor requires evidence scope declared (verifies/does_not_verify)", predicate: "admission_failed"})
 		}
 		if !hasUntestedRegions {
 			result.errors = append(result.errors, evidenceFinding{message: "deep tier evidence floor requires untested_regions", predicate: "admission_failed"})
@@ -458,4 +462,48 @@ func sliceInMap(m map[string]any, key string) []any {
 		}
 	}
 	return nil
+}
+
+func verificationArtifactsHaveScope(artifacts []any) bool {
+	for _, item := range artifacts {
+		artifact, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if len(sliceInMap(artifact, "verifies")) > 0 || len(sliceInMap(artifact, "does_not_verify")) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func intLikeValue(v any) (int, bool) {
+	switch n := v.(type) {
+	case int:
+		return n, true
+	case int8:
+		return int(n), true
+	case int16:
+		return int(n), true
+	case int32:
+		return int(n), true
+	case int64:
+		return int(n), true
+	case uint:
+		return int(n), true
+	case uint8:
+		return int(n), true
+	case uint16:
+		return int(n), true
+	case uint32:
+		return int(n), true
+	case uint64:
+		return int(n), true
+	case float32:
+		return int(n), true
+	case float64:
+		return int(n), true
+	default:
+		return 0, false
+	}
 }

@@ -123,6 +123,48 @@ func TestBlockedMissingEvidence(t *testing.T) {
 	}
 }
 
+func TestBlockedMissingEvidenceScope(t *testing.T) {
+	doc := loadGolden(t, "blocked-missing-evidence-scope")
+	result := Run(doc)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed, got %s", result.Outcome)
+	}
+	if result.AcceptanceStatus != "withheld" {
+		t.Fatalf("expected withheld, got %s", result.AcceptanceStatus)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if e == "deep tier evidence floor requires evidence scope declared (verifies/does_not_verify)" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected evidence scope error, got %v", result.Errors)
+	}
+}
+
+func TestFailedTypecheckRecoveryRoute(t *testing.T) {
+	doc := loadGolden(t, "failed-typecheck-recovery-route")
+	result := Run(doc)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed, got %s", result.Outcome)
+	}
+	if result.AcceptanceStatus != "withheld" {
+		t.Fatalf("expected withheld, got %s", result.AcceptanceStatus)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if e == "evidence.command_evidence has non-zero exit_code 1 for command \"npm run typecheck\"" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected command evidence exit_code error, got %v", result.Errors)
+	}
+}
+
 func TestStaleGroundBlocks(t *testing.T) {
 	doc := map[string]any{
 		"schema_version": "1",
@@ -182,7 +224,7 @@ func TestAcceptanceStatusMapping(t *testing.T) {
 				"owner":          "a",
 				"accountable":    "b",
 				"evidence": map[string]any{
-					"files_changed": []any{"f"},
+					"files_changed":    []any{"f"},
 					"manual_rationale": "rationale",
 				},
 				"claim": map[string]any{

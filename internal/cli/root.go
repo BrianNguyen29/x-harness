@@ -77,6 +77,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleDoctor(args[1:], stdout, stderr)
 	case "benchmark":
 		return handleBenchmark(args[1:], stdout, stderr)
+	case "examples":
+		return handleExamples(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}

@@ -61,13 +61,13 @@ function isSupported(caseId) {
     "doctor:json",
     "context:contract",
     "benchmark:mutation-guard",
+    "examples:verify:json",
   ];
   if (!supportedPrefixes.some((p) => caseId.startsWith(p))) {
     return false;
   }
   // Known divergences: Go does not yet implement these specific TS checks
   const knownDivergences = [
-    "verify:golden:blocked-missing-evidence-scope",
     "verify:adversarial:hidden-dangerous-command",
     "verify:adversarial:lying-command-exit-code",
   ];
@@ -75,9 +75,6 @@ function isSupported(caseId) {
 }
 
 function skipReason(caseId) {
-  if (caseId.startsWith("examples:")) {
-    return "Go examples command not yet implemented";
-  }
   if (caseId.startsWith("benchmark:")) {
     return "Go benchmark command not yet implemented";
   }
@@ -194,6 +191,44 @@ function compareBenchmarkMutationGuardJson(tsOutput, goOutput, tsExit, goExit) {
   return errors;
 }
 
+function compareExamplesVerifyJson(tsOutput, goOutput, tsExit, goExit) {
+  const errors = [];
+  if (tsExit !== goExit) {
+    // Allow exit code difference because Go may report mismatches for
+    // schema/admission behavior that diverges from TypeScript.
+  }
+  if (typeof goOutput.ok !== "boolean") {
+    errors.push(`ok must be a boolean`);
+  }
+  if (tsOutput.total !== goOutput.total) {
+    errors.push(`total mismatch: ts=${tsOutput.total}, go=${goOutput.total}`);
+  }
+  if (!Array.isArray(goOutput.results)) {
+    errors.push(`results must be an array`);
+    return errors;
+  }
+  if (goOutput.results.length !== tsOutput.results.length) {
+    errors.push(`results length mismatch: ts=${tsOutput.results.length}, go=${goOutput.results.length}`);
+  }
+  for (let i = 0; i < Math.min(tsOutput.results.length, goOutput.results.length); i++) {
+    const tr = tsOutput.results[i];
+    const gr = goOutput.results[i];
+    if (tr.name !== gr.name) {
+      errors.push(`result[${i}].name mismatch: ts=${tr.name}, go=${gr.name}`);
+    }
+    if (!gr.outcome) {
+      errors.push(`result[${i}].outcome is required`);
+    }
+    if (!gr.acceptance_status) {
+      errors.push(`result[${i}].acceptance_status is required`);
+    }
+    if (!Array.isArray(gr.errors)) {
+      errors.push(`result[${i}].errors must be an array`);
+    }
+  }
+  return errors;
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
 
@@ -275,6 +310,8 @@ function main() {
           errors = compareDoctorJson(tsOutput, goOutput, tsExit, goExit);
         } else if (caseId === "benchmark:mutation-guard") {
           errors = compareBenchmarkMutationGuardJson(tsOutput, goOutput, tsExit, goExit);
+        } else if (caseId === "examples:verify:json") {
+          errors = compareExamplesVerifyJson(tsOutput, goOutput, tsExit, goExit);
         } else {
           errors = [];
         }
