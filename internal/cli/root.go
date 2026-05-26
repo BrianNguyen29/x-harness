@@ -79,6 +79,10 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleBenchmark(args[1:], stdout, stderr)
 	case "examples":
 		return handleExamples(args[1:], stdout, stderr)
+	case "handoff":
+		return handleHandoff(args[1:], stdout, stderr)
+	case "prepare":
+		return handlePrepare(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}

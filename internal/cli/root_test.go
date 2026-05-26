@@ -43,7 +43,7 @@ func TestVersionOutput(t *testing.T) {
 func TestKnownCommandStubReturnsUsage(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"handoff"}, &stdout, &stderr)
+	code := Run([]string{"report"}, &stdout, &stderr)
 	if code != ExitUsage {
 		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
 	}
