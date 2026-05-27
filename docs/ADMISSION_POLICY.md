@@ -6,7 +6,7 @@ Success requires claim or completion card, evidence, owner, accountable, mapped 
 
 Reject success if canonical `claim.fix_status` is `partial` or `not_fixed`, if verification failed/skipped/blocked, if evidence is missing or weak, if stale ground remains, or if timeout/error occurred.
 
-**Note:** `no_active_recovery` and `no_active_veto` are policy manifest entries; they are advisory documentation and not independently runtime-enforced predicates in admission.ts. Recovery routing is handled by `policies/recovery.yaml`.
+**Note:** `no_active_recovery` and `no_active_veto` are policy manifest entries; they are advisory documentation and not independently runtime-enforced predicates in the admission engines. Recovery routing is handled by `policies/recovery.yaml`.
 
 ## Evidence floor
 
@@ -43,7 +43,7 @@ Completion-card mode also requires `done_checklist` and a falsifiable `predictio
 
 ## Source of truth
 
-The TypeScript admission engine (`packages/cli/src/core/admission.ts`) is the runtime source of truth for admission decisions. `policies/admission.yaml` is a synchronized manifest and human-readable documentation of the policy. Changes to admission behavior must be made in the TypeScript engine first; the YAML should then be updated to match. The `doctor` command includes a `policy_drift` check that validates the YAML remains synchronized with the code.
+The Go admission engine (`internal/admission`) is the native implementation, and the TypeScript engine (`packages/cli/src/core/admission.ts`) remains the compatibility baseline during the dual-run window. `policies/admission.yaml` is a synchronized manifest and human-readable documentation of the policy. Changes to admission behavior must keep Go, TypeScript compatibility, fixtures, and the YAML manifest aligned. The `doctor` and parity checks validate schema/policy health and Go-vs-TypeScript drift.
 
 ## Policy file status
 

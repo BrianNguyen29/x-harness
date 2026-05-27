@@ -49,15 +49,16 @@ This keeps the `npm install` experience identical for consumers.
 
 ## Fallback / Compatibility Window
 
-- **Phase 8 foundation**: Go release binaries are built and uploaded as release artifacts with checksums. They are not yet injected into the npm tarball.
-- **Phase 8–9 wrapper implementation**: Go binary is included in the npm tarball but the JS launcher defaults to Go only when `X_HARNESS_GO=1` is set. Default remains Node.
-- **Phase 10**: JS launcher defaults to Go when the binary is present. Node fallback is automatic.
+- **Phase 8 foundation (complete)**: Go release binaries are built and uploaded as release artifacts with checksums.
+- **Phase 8–9 wrapper implementation (current)**: The npm package ships `bin/x-harness.js`. The launcher defaults to Node compatibility mode and uses a packaged Go binary only when `X_HARNESS_GO=1` is set.
+- **Next release-candidate step**: Inject signed Go release binaries into `go-binaries/` before `npm pack` and smoke-test the opt-in path from the generated tarball.
+- **Phase 10**: JS launcher defaults to Go when the binary is present. Node fallback remains automatic.
 - **Phase 11+**: Node fallback is removed; package becomes a thin wrapper around the Go binary.
 
 During the compatibility window:
 - All existing `xh <command>` invocations continue to work.
 - The Node CLI remains the compatibility baseline for verification gates while Go parity checks run in CI.
-- Go parity checks (`npm run parity:check-go`) must remain green before advancing phases.
+- Go parity checks (`npm run parity:check-go`) and packed wrapper smoke tests must remain green before advancing phases.
 
 ## Asset Layout
 
@@ -78,7 +79,7 @@ x-harness/
   ...
 ```
 
-The Go binaries are built by the release workflow (`.github/workflows/release.yml`) and injected into the package before `npm pack`.
+The Go binaries are built by the release workflow (`.github/workflows/release.yml`). Injection into the npm tarball remains the next release-candidate hardening step; until then, the wrapper safely falls back to the Node CLI unless `X_HARNESS_GO=1` and a matching local binary are present.
 
 ## Security / Checksum Behavior
 

@@ -6,7 +6,13 @@ import (
 	"strings"
 )
 
-const Version = "0.1.0"
+var Version = "0.1.0"
+
+func SetVersion(v string) {
+	if v != "" {
+		Version = v
+	}
+}
 
 type CommandInfo struct {
 	Name        string

@@ -16,10 +16,11 @@ Before publish, the release workflow runs:
 - `go vet ./...`
 - `go build ./cmd/x-harness`
 - `npm run parity:check-go`
-- `node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json`
-- `node packages/cli/dist/index.js doctor --root .`
-- `node packages/cli/dist/index.js examples verify`
-- `node packages/cli/dist/index.js benchmark --filter adversarial --json`
+- `./x-harness verify --card examples/ci/strict-verify/completion-card.yaml --strict --json`
+- `./x-harness doctor --root .`
+- `./x-harness examples verify`
+- `./x-harness benchmark --filter adversarial --json`
+- TypeScript compatibility smoke/parity through `npm run parity:check-go`
 - `npm -w packages/cli run pack:dry-run`
 - Packed CLI smoke test from the generated `.tgz`
 - Frozen transfer compatibility from the generated `.tgz`

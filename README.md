@@ -212,7 +212,7 @@ Task delegation in `x-harness` uses **only** the following three canonical tiers
 
 `x-harness` now has a Go-native CLI rewrite in active parity mode, with the TypeScript CLI retained as the compatibility baseline until the native binary becomes primary.
 
-The table below keeps TypeScript compatibility invocations for parity documentation. For the Go binary, replace `node packages/cli/dist/index.js` with `./x-harness`.
+The Go binary is the native source-checkout path. TypeScript compatibility remains available through `node packages/cli/dist/index.js` and is still used as the parity baseline during the dual-run window.
 
 ### Core Commands
 
@@ -221,16 +221,16 @@ The table below keeps TypeScript compatibility invocations for parity documentat
 | **`init`**      | `node packages/cli/dist/index.js init [target_dir] [--minimal / --standard / --full]`                                                                                                                                                                              | Installs the core harness assets, schemas, policies, and adapters. Default is `--minimal`.                                 |
 | **`handoff`**   | `node packages/cli/dist/index.js handoff <light / standard / deep> [--title <text>] [--task <text>]`                                                                                                                                                               | Generates a clean markdown handoff task prompt structure.                                                                  |
 | **`add`**       | `node packages/cli/dist/index.js add <claim / evidence / completion-card> [key=value]`                                                                                                                                                                             | Adds a metadata helper file for compatibility modes.                                                                       |
-| **`verify`**    | `node packages/cli/dist/index.js verify [--card <path>] [--json] [--verbose] [--story-id <id>] [--trace] [--trace-dir <dir>] [--claim <path>] [--evidence <path>] [--subagent-return <path>] [--tier <tier>] [--task-id <id>] [--mutation-guard] [--stale-ground]` | Executes the read-only verification policy against a completion card. Supports tracing and detailed output.                |
-| **`doctor`**    | `node packages/cli/dist/index.js doctor [--root <path>] [--policy-drift] [--json] [--format <json\|text>]`                                                                                                                                                         | Checks critical file presence, schemas compilation, policies, and wording. JSON remains the default output for automation. |
-| **`report`**    | `node packages/cli/dist/index.js report [--metrics] [--card <path>] [--json] [--format <html\|markdown\|json>]`                                                                                                                                                    | Summarizes verification events or calculates local card metrics. `--format html` renders an HTML audit report.             |
+| **`verify`**    | `./x-harness verify [--card <path>] [--json] [--verbose] [--trace] [--trace-dir <dir>] [--subagent-return <path>] [--tier <tier>] [--task-id <id>] [--mutation-guard] [--strict]`                                                                                 | Executes the read-only verification policy against a completion card or compatibility subagent return. Supports tracing.   |
+| **`doctor`**    | `./x-harness doctor [--root <path>] [--json] [--format <json\|text>]`                                                                                                                                                                                              | Checks critical file presence, schemas compilation, policies, and wording. JSON remains the default output for automation. |
+| **`report`**    | `./x-harness report [--metrics] [--card <path>] [--json] [--format <markdown\|json>]`                                                                                                                                                                              | Summarizes verification events or calculates local card metrics. HTML remains available through the TypeScript CLI.        |
 | **`trace`**     | `node packages/cli/dist/index.js trace add [--outcome <status>] [--task-id <id>] [--acceptance-status <status>] [--tier <tier>] [--claim-id <id>] [--evidence-id <id>]`                                                                                            | Manually appends verify events to the trace log. Supports full event metadata.                                             |
 | **`clean`**     | `node packages/cli/dist/index.js clean [--tmp / --reset-card / --archive-success] [--force]`                                                                                                                                                                       | Defaults to a dry run; add `--force` to mutate tmp artifacts, reset a completion card, or archive accepted-card snapshots. |
 | **`context`**   | `node packages/cli/dist/index.js context [--verbose / --json / --refresh] [--root <path>]`                                                                                                                                                                         | Shows canonical context and refreshes the AGENTS.md managed block.                                                         |
 | **`examples`**  | `node packages/cli/dist/index.js examples`                                                                                                                                                                                                                         | Lists or copies built-in test-cases showing successful and blocked runs.                                                   |
 | **`recovery`**  | `node packages/cli/dist/index.js recovery suggest [--errors <text>] [--outcome <status>] [--from <trace-file>] [--write] [--force] [--json]`                                                                                                                       | Generates structured recovery playbook suggestions from errors or trace files. Supports JSON output and candidate writing. |
 | **`packet`**    | `node packages/cli/dist/index.js packet create --card <path>` or `packet verify-chain --task-id <id>`                                                                                                                                                              | Creates immutable claim packets from completion cards and verifies packet chain integrity.                                 |
-| **`benchmark`** | `node packages/cli/dist/index.js benchmark [--filter <all\|latency\|admission\|adversarial\|mutation-guard>] [--mutation-files <list>] [--mutation-concurrency <list>] [--json]`                                                                                   | Measures command latency, admission fixtures, and opt-in mutation guard git/non-git fallback latency.                      |
+| **`benchmark`** | `./x-harness benchmark [--filter <latency\|adversarial\|mutation-guard>] [--commands <list>] [--iterations <n>] [--mutation-files <list>] [--mutation-concurrency <list>] [--json]`                                                                               | Measures command latency, adversarial fixtures, and mutation guard git/non-git fallback latency.                           |
 
 ---
 
@@ -275,11 +275,11 @@ Common recovery paths include routing back to the `implementation-worker` for te
 
 ### Traces
 
-Running `node packages/cli/dist/index.js verify --trace` logs a JSONL event detailing the verification runtime parameters. These events can be aggregated using `node packages/cli/dist/index.js report` to track task success rates and blocked items over time.
+Running `./x-harness verify --trace` logs a JSONL event detailing the verification runtime parameters. These events can be aggregated using `./x-harness report` to track task success rates and blocked items over time.
 
 ### Deterministic Offline Metrics
 
-`node packages/cli/dist/index.js report --metrics` calculates metrics under five categories:
+`./x-harness report --metrics` calculates metrics under five categories:
 
 1. **Verification Strength**: Count of artifacts, kind of oracles (unit tests, typecheck), and count of untested/remaining risks.
 2. **State Consistency**: Checks if owners are declared and if card status maps to admission outcome.

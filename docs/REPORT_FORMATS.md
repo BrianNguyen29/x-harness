@@ -2,6 +2,8 @@
 
 x-harness supports multiple output formats for the `report` command.
 
+Source checkouts can use the Go binary (`./x-harness`) or the TypeScript compatibility entrypoint (`node packages/cli/dist/index.js`). The npm wrapper currently defaults to TypeScript compatibility and can opt into a packaged Go binary with `X_HARNESS_GO=1`.
+
 ## Supported formats
 
 | Format | CLI flag | Use case |
@@ -13,7 +15,8 @@ x-harness supports multiple output formats for the `report` command.
 ## Markdown (default)
 
 ```bash
-node packages/cli/dist/index.js report --trace-dir .x-harness/traces
+./x-harness report --trace-dir .x-harness/traces
+# compatibility: node packages/cli/dist/index.js report --trace-dir .x-harness/traces
 ```
 
 Produces a structured Markdown report with sections for:
@@ -26,7 +29,8 @@ Produces a structured Markdown report with sections for:
 ## JSON
 
 ```bash
-node packages/cli/dist/index.js report --trace-dir .x-harness/traces --json
+./x-harness report --trace-dir .x-harness/traces --json
+# compatibility: node packages/cli/dist/index.js report --trace-dir .x-harness/traces --json
 ```
 
 Produces a JSON object with exact counts, outcome breakdowns, and the latest event.
@@ -36,6 +40,8 @@ Produces a JSON object with exact counts, outcome breakdowns, and the latest eve
 ```bash
 node packages/cli/dist/index.js report --trace-dir .x-harness/traces --format html
 ```
+
+HTML rendering is currently provided by the TypeScript compatibility CLI. The Go CLI supports Markdown and JSON report rendering.
 
 Produces a single self-contained HTML file with:
 - Inline CSS (no external assets)
@@ -55,7 +61,8 @@ node packages/cli/dist/index.js report --trace-dir .x-harness/traces --format ht
 ## Metrics report
 
 ```bash
-node packages/cli/dist/index.js report --metrics --card completion-card.yaml --format html
+./x-harness report --metrics --card completion-card.yaml --json
+# HTML compatibility: node packages/cli/dist/index.js report --metrics --card completion-card.yaml --format html
 ```
 
 When `--metrics` is combined with `--format html`, the report renders a self-contained HTML page with structured sections for:

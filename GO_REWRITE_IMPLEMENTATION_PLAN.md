@@ -893,13 +893,13 @@ Remaining Phase 8 hardening:
 - [x] fuzz smoke targets in CI
 - [x] signed Go release artifacts
 - [x] cross-platform smoke execution beyond Linux amd64
-- [ ] npm wrapper implementation after compatibility review
+- [x] npm wrapper implementation after compatibility review
 
 Acceptance gate:
 
 - full dual-run CI passes
 - release artifacts pass smoke tests
-- Go CLI is ready to become primary
+- Go CLI is ready to become primary after at least one release-candidate cycle
 
 ## 15. Work Breakdown Checklist
 
@@ -1013,6 +1013,14 @@ model/renderer APIs.
 - [x] Add markdown report renderer.
 - [x] Implement npm wrapper binary shim after compatibility review.
 - [x] Decide whether to refactor context/contract code into `internal/contract/` or update the architecture target permanently.
+
+### Next Release-Candidate Priorities
+
+- [x] Inject signed Go release binaries into `packages/cli/go-binaries/` before `npm pack` and smoke-test `X_HARNESS_GO=1` from the packed tarball.
+- [x] Update release workflow to build, sign, and inject Go binaries before npm pack; add `X_HARNESS_GO=1` packed smoke step.
+- [ ] Run one full release-candidate cycle with dual-run CI, Go parity, package dry-run, release binary smoke tests, and cross-platform smoke results retained as evidence. *(workflow support complete; actual signed RC cycle requires a tag push on GitHub)*
+- [x] Decide/document when the npm wrapper should default to Go instead of Node compatibility mode. *(criteria documented in `docs/RELEASE_CANDIDATE.md`)*
+- [x] After a stable Go-primary release, freeze TypeScript as compatibility/legacy source and document the maintenance policy. *(policy documented in `docs/TYPESCRIPT_MAINTENANCE.md`)*
 
 ## 16. Risk Register
 

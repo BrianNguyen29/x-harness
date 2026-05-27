@@ -107,8 +107,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: node packages/cli/dist/index.js examples verify
-      - run: node packages/cli/dist/index.js doctor --root .
+      - run: go build ./cmd/x-harness
+      - run: ./x-harness examples verify
+      - run: ./x-harness doctor --root .
+      - run: npm run parity:check-go
 ```
 
 ### What the workflow does
@@ -169,12 +171,15 @@ Example:
 node packages/cli/dist/index.js handoff readiness --json
 ```
 
+Some interactive helper flows remain TypeScript-compatibility only during the Go parity window.
+
 ## Verification in CI
 
 To verify a completion card in CI:
 
 ```bash
-node packages/cli/dist/index.js verify --card completion-card.yaml --trace
+./x-harness verify --card completion-card.yaml --trace
+# compatibility: node packages/cli/dist/index.js verify --card completion-card.yaml --trace
 ```
 
 The `--trace` flag appends the verify event to `.x-harness/traces/events.jsonl`.
@@ -184,7 +189,8 @@ The `--trace` flag appends the verify event to `.x-harness/traces/events.jsonl`.
 To check trace integrity:
 
 ```bash
-node packages/cli/dist/index.js trace verify-chain
+./x-harness trace verify-chain
+# compatibility: node packages/cli/dist/index.js trace verify-chain
 ```
 
 This exits `0` if the chain is valid, `1` if tampering is detected.

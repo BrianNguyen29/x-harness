@@ -57,7 +57,8 @@ Behavior:
 Latency can be measured with:
 
 ```bash
-node packages/cli/dist/index.js benchmark --filter mutation-guard --json
+./x-harness benchmark --filter mutation-guard --json
+# compatibility: node packages/cli/dist/index.js benchmark --filter mutation-guard --json
 ```
 
 By default this measures git and non-git fallback snapshots with `100`, `1000`, and `5000` files across concurrency levels `1`, `4`, `16`, and `64`. Use `--mutation-files` and `--mutation-concurrency` to override those lists.

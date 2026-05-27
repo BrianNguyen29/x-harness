@@ -42,7 +42,7 @@ This adapter provides system-agnostic conventions for integrating x-harness into
 
 Policy files under `policies/` have the following runtime status:
 
-- **`admission.yaml`**: Synchronized manifest; validated by `doctor --policy-drift`. Admission behavior is enforced by the TypeScript admission engine.
+- **`admission.yaml`**: Synchronized manifest; validated by `doctor` and parity checks. Admission behavior is enforced by the Go engine with TypeScript compatibility during the dual-run window.
 - **`recovery.yaml`**: Runtime-enforced. Determines recovery routing for withheld outcomes.
 - **Other policy files**: Advisory or reserved for future enforcement. Do not assume they are active unless documented here.
 
