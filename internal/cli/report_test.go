@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	xschema "github.com/BrianNguyen29/x-harness/internal/schema"
 )
 
 func TestReportMissingCardReturnsUsage(t *testing.T) {
@@ -66,6 +68,7 @@ func TestReportMetricsJSON(t *testing.T) {
 	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
 		t.Fatalf("expected valid JSON, got error: %v\noutput: %s", err, stdout.String())
 	}
+	validateReportJSON(t, stdout.Bytes())
 	if result.Admission.Outcome != "success" {
 		t.Fatalf("expected admission outcome success, got %+v", result.Admission)
 	}
@@ -192,6 +195,7 @@ func TestReportTraceJSON(t *testing.T) {
 	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
 		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
 	}
+	validateReportJSON(t, stdout.Bytes())
 	if result.TotalEvents != 1 || result.Accepted != 1 || result.Withheld != 0 {
 		t.Fatalf("unexpected counts: %+v", result)
 	}
@@ -206,6 +210,21 @@ func TestReportTraceJSON(t *testing.T) {
 	}
 	if result.Latest["event_type"] != "verify_completed" {
 		t.Fatalf("expected latest verify event, got %v", result.Latest)
+	}
+}
+
+func validateReportJSON(t *testing.T, data []byte) {
+	t.Helper()
+	validator, err := xschema.Compile(filepath.Join("..", "..", "schemas", "report.schema.json"))
+	if err != nil {
+		t.Fatalf("failed to compile report schema: %v", err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(data, &doc); err != nil {
+		t.Fatalf("failed to unmarshal report JSON: %v", err)
+	}
+	if err := validator.Validate(doc); err != nil {
+		t.Fatalf("report JSON failed schema validation: %v\n%s", err, string(data))
 	}
 }
 

@@ -7,7 +7,7 @@
     },
     {
       "name": "schema_compile",
-      "note": "schema attribution compiles; schema agent-profile compiles; schema approval-risk compiles; schema benchmark-report compiles; schema claim compiles; schema completion-card compiles; schema components-registry compiles; schema cost-budget compiles; schema evidence compiles; schema evidence-index compiles; schema evolution-constitution compiles; schema episode-manifest compiles; schema frozen-manifest compiles; schema federation-pattern compiles; schema intervention compiles; schema packet compiles; schema permissions compiles; schema subagent-return compiles; schema verify-event compiles; schema pgv-advice compiles",
+      "note": "schema attribution compiles; schema agent-profile compiles; schema approval-risk compiles; schema benchmark-report compiles; schema claim compiles; schema completion-card compiles; schema components-registry compiles; schema cost-budget compiles; schema evidence compiles; schema evidence-index compiles; schema evolution-constitution compiles; schema episode-manifest compiles; schema frozen-manifest compiles; schema federation-pattern compiles; schema intervention compiles; schema packet compiles; schema permissions compiles; schema report compiles; schema subagent-return compiles; schema verify-event compiles; schema pgv-advice compiles",
       "status": "pass"
     },
     {
@@ -137,6 +137,7 @@
     "schemas/intervention.schema.json",
     "schemas/packet.schema.json",
     "schemas/permissions.schema.json",
+    "schemas/report.schema.json",
     "schemas/subagent-return.schema.json",
     "schemas/verify-event.schema.json",
     "schemas/pgv-advice.schema.json",
@@ -153,5 +154,5 @@
     "tools/experimental/evolve/constitution.yaml",
     "tools/experimental/evolve/evolution-budget.yaml"
   ],
-  "present_count": 56
+  "present_count": 57
 }

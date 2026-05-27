@@ -5,7 +5,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const packageRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  ".."
+);
 const nodeEntrypoint = path.join(packageRoot, "dist", "index.js");
 
 const platformMap = new Map([
@@ -36,7 +39,11 @@ async function candidateGoBinaries() {
   const version = await packageVersion();
   const ext = goos === "windows" ? ".exe" : "";
   return [
-    path.join(packageRoot, "go-binaries", `x-harness-v${version}-${goos}-${goarch}${ext}`),
+    path.join(
+      packageRoot,
+      "go-binaries",
+      `x-harness-v${version}-${goos}-${goarch}${ext}`
+    ),
     path.join(packageRoot, "go-binaries", `x-harness-${goos}-${goarch}${ext}`),
     path.join(packageRoot, "go-binaries", `x-harness${ext}`),
   ];

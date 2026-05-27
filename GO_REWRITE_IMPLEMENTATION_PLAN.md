@@ -978,7 +978,7 @@ model/renderer APIs.
 - [x] Port latency benchmark.
 - [x] Port admission/adversarial benchmark.
 - [x] Port mutation guard benchmark.
-- [ ] Add JSON report schema.
+- [x] Add JSON report schema.
 - [x] Add markdown report renderer.
 
 ### CI and Release
@@ -1009,7 +1009,7 @@ model/renderer APIs.
 - [x] Add schema parity fixtures comparing Go/TypeScript validation behavior for subagent returns.
 - [x] Verify and complete trace event creation parity.
 - [x] Port latency benchmark.
-- [ ] Add JSON report schema.
+- [x] Add JSON report schema.
 - [x] Add markdown report renderer.
 - [x] Implement npm wrapper binary shim after compatibility review.
 - [x] Decide whether to refactor context/contract code into `internal/contract/` or update the architecture target permanently.

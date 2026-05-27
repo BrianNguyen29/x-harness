@@ -286,6 +286,7 @@ describe("schema validators", () => {
       "frozen-manifest.schema.json",
       "federation-pattern.schema.json",
       "permissions.schema.json",
+      "report.schema.json",
       "subagent-return.schema.json",
       "verify-event.schema.json",
       "pgv-advice.schema.json",
@@ -399,6 +400,121 @@ describe("schema validators", () => {
           adversarial_block_rate: null,
           runtime_ms: 0,
         },
+      });
+      expect(validate.errors ?? []).toEqual([]);
+      expect(valid).toBe(true);
+    });
+  });
+
+  describe("report schema", () => {
+    it("accepts a metrics report", async () => {
+      const schema = await loadSchema("report");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        card_id: null,
+        task_id: "TASK-1",
+        tier: "light",
+        metrics: {
+          verification_strength: {
+            command_evidence_count: 1,
+            oracle_kinds: ["unit_test"],
+            untested_regions_count: 0,
+            remaining_risks_count: 0,
+          },
+          state_consistency: {
+            owner_present: true,
+            accountable_present: true,
+            files_changed_present: true,
+            admission_mapping_valid: true,
+          },
+          recovery_ability: {
+            blocked_has_next_action: false,
+            blocked_has_owner: false,
+            recovery_route_present: false,
+          },
+          replayability: {
+            completion_card_present: true,
+            input_card_hash_present: true,
+            policy_hash_present: true,
+          },
+          cost: {
+            default_context_class: "standard",
+            verify_runtime_ms: 1,
+          },
+        },
+        admission: {
+          outcome: "success",
+          acceptance_status: "accepted",
+          errors: [],
+          notes: [],
+        },
+        verify_event_accounting: {
+          cards_analyzed: 1,
+          note: "Single-card analysis.",
+        },
+        task_lifecycle_accounting: {
+          admitted: 1,
+          withheld: 0,
+          note: "Lifecycle state reflects only the analyzed completion card.",
+        },
+        admission_accounting: {
+          accepted: 1,
+          total_analyzed: 1,
+          note: "Admission requires success.",
+        },
+        withheld_accounting: {
+          failed: 0,
+          blocked: 0,
+          skipped: 0,
+          timeout: 0,
+          error: 0,
+          note: "None.",
+        },
+        unknown_or_unlinked_events: {
+          count: 0,
+          note: "None.",
+        },
+        denominator_warning: "Do not infer task-level success.",
+      });
+      expect(validate.errors ?? []).toEqual([]);
+      expect(valid).toBe(true);
+    });
+
+    it("accepts a trace report", async () => {
+      const schema = await loadSchema("report");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        total_events: 1,
+        accepted: 1,
+        withheld: 0,
+        by_outcome: { success: 1 },
+        verify_event_accounting: {
+          total_trace_events: 1,
+          note: "Counts are based only on traced verify events.",
+        },
+        task_lifecycle_accounting: {
+          admitted: 1,
+          withheld: 0,
+          note: "Lifecycle accounting covers only events present in the trace log.",
+        },
+        admission_accounting: {
+          accepted: 1,
+          total_trace_events: 1,
+          note: "Admission requires success.",
+        },
+        withheld_accounting: {
+          failed: 0,
+          blocked: 0,
+          skipped: 0,
+          timeout: 0,
+          error: 0,
+          note: "None.",
+        },
+        unknown_or_unlinked_events: {
+          count: 0,
+          note: "None.",
+        },
+        latest: null,
       });
       expect(validate.errors ?? []).toEqual([]);
       expect(valid).toBe(true);

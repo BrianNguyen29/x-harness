@@ -76,6 +76,7 @@ describe("release packaging", () => {
       "schemas/evidence.schema.json",
       "schemas/intervention.schema.json",
       "schemas/packet.schema.json",
+      "schemas/report.schema.json",
       "policies/admission.yaml",
       "policies/authority.yaml",
       "policies/approval-risk.yaml",

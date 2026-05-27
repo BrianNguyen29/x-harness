@@ -1,0 +1,316 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "x-harness-report",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/metrics_report"
+    },
+    {
+      "$ref": "#/$defs/trace_report"
+    }
+  ],
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "note_object": {
+      "type": "object",
+      "required": ["note"],
+      "properties": {
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "admission_summary": {
+      "type": "object",
+      "required": ["outcome", "acceptance_status", "errors", "notes"],
+      "properties": {
+        "outcome": {
+          "enum": [
+            "success",
+            "failed",
+            "blocked",
+            "skipped",
+            "timeout",
+            "error"
+          ]
+        },
+        "acceptance_status": {
+          "enum": ["accepted", "withheld"]
+        },
+        "errors": {
+          "$ref": "#/$defs/string_array"
+        },
+        "notes": {
+          "$ref": "#/$defs/string_array"
+        }
+      }
+    },
+    "withheld_accounting": {
+      "type": "object",
+      "required": ["failed", "blocked", "skipped", "timeout", "error", "note"],
+      "properties": {
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocked": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timeout": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "error": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "unknown_or_unlinked_events": {
+      "type": "object",
+      "required": ["count", "note"],
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "metrics_report": {
+      "type": "object",
+      "required": [
+        "card_id",
+        "task_id",
+        "tier",
+        "metrics",
+        "admission",
+        "verify_event_accounting",
+        "task_lifecycle_accounting",
+        "admission_accounting",
+        "withheld_accounting",
+        "unknown_or_unlinked_events",
+        "denominator_warning"
+      ],
+      "properties": {
+        "card_id": {},
+        "task_id": {},
+        "tier": {
+          "enum": ["light", "standard", "deep"]
+        },
+        "metrics": {
+          "type": "object",
+          "required": [
+            "verification_strength",
+            "state_consistency",
+            "recovery_ability",
+            "replayability",
+            "cost"
+          ],
+          "properties": {
+            "verification_strength": {
+              "type": "object",
+              "required": [
+                "command_evidence_count",
+                "oracle_kinds",
+                "untested_regions_count",
+                "remaining_risks_count"
+              ],
+              "properties": {
+                "command_evidence_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "oracle_kinds": {
+                  "$ref": "#/$defs/string_array"
+                },
+                "untested_regions_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "remaining_risks_count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "state_consistency": {
+              "type": "object",
+              "required": [
+                "owner_present",
+                "accountable_present",
+                "files_changed_present",
+                "admission_mapping_valid"
+              ],
+              "properties": {
+                "owner_present": { "type": "boolean" },
+                "accountable_present": { "type": "boolean" },
+                "files_changed_present": { "type": "boolean" },
+                "admission_mapping_valid": { "type": "boolean" }
+              }
+            },
+            "recovery_ability": {
+              "type": "object",
+              "required": [
+                "blocked_has_next_action",
+                "blocked_has_owner",
+                "recovery_route_present"
+              ],
+              "properties": {
+                "blocked_has_next_action": { "type": "boolean" },
+                "blocked_has_owner": { "type": "boolean" },
+                "recovery_route_present": { "type": "boolean" }
+              }
+            },
+            "replayability": {
+              "type": "object",
+              "required": [
+                "completion_card_present",
+                "input_card_hash_present",
+                "policy_hash_present"
+              ],
+              "properties": {
+                "completion_card_present": { "type": "boolean" },
+                "input_card_hash_present": { "type": "boolean" },
+                "policy_hash_present": { "type": "boolean" }
+              }
+            },
+            "cost": {
+              "type": "object",
+              "required": ["default_context_class", "verify_runtime_ms"],
+              "properties": {
+                "default_context_class": {
+                  "type": "string"
+                },
+                "verify_runtime_ms": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        "admission": {
+          "$ref": "#/$defs/admission_summary"
+        },
+        "verify_event_accounting": {
+          "type": "object",
+          "required": ["cards_analyzed", "note"],
+          "properties": {
+            "cards_analyzed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "note": {
+              "type": "string"
+            }
+          }
+        },
+        "task_lifecycle_accounting": {
+          "type": "object",
+          "required": ["admitted", "withheld", "note"],
+          "properties": {
+            "admitted": { "type": "integer", "minimum": 0 },
+            "withheld": { "type": "integer", "minimum": 0 },
+            "note": { "type": "string" }
+          }
+        },
+        "admission_accounting": {
+          "type": "object",
+          "required": ["accepted", "total_analyzed", "note"],
+          "properties": {
+            "accepted": { "type": "integer", "minimum": 0 },
+            "total_analyzed": { "type": "integer", "minimum": 0 },
+            "note": { "type": "string" }
+          }
+        },
+        "withheld_accounting": {
+          "$ref": "#/$defs/withheld_accounting"
+        },
+        "unknown_or_unlinked_events": {
+          "$ref": "#/$defs/unknown_or_unlinked_events"
+        },
+        "denominator_warning": {
+          "type": "string"
+        }
+      }
+    },
+    "trace_report": {
+      "type": "object",
+      "required": [
+        "total_events",
+        "accepted",
+        "withheld",
+        "by_outcome",
+        "verify_event_accounting",
+        "task_lifecycle_accounting",
+        "admission_accounting",
+        "withheld_accounting",
+        "unknown_or_unlinked_events",
+        "latest"
+      ],
+      "properties": {
+        "total_events": { "type": "integer", "minimum": 0 },
+        "accepted": { "type": "integer", "minimum": 0 },
+        "withheld": { "type": "integer", "minimum": 0 },
+        "by_outcome": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "verify_event_accounting": {
+          "type": "object",
+          "required": ["total_trace_events", "note"],
+          "properties": {
+            "total_trace_events": { "type": "integer", "minimum": 0 },
+            "note": { "type": "string" }
+          }
+        },
+        "task_lifecycle_accounting": {
+          "type": "object",
+          "required": ["admitted", "withheld", "note"],
+          "properties": {
+            "admitted": { "type": "integer", "minimum": 0 },
+            "withheld": { "type": "integer", "minimum": 0 },
+            "note": { "type": "string" }
+          }
+        },
+        "admission_accounting": {
+          "type": "object",
+          "required": ["accepted", "total_trace_events", "note"],
+          "properties": {
+            "accepted": { "type": "integer", "minimum": 0 },
+            "total_trace_events": { "type": "integer", "minimum": 0 },
+            "note": { "type": "string" }
+          }
+        },
+        "withheld_accounting": {
+          "$ref": "#/$defs/withheld_accounting"
+        },
+        "unknown_or_unlinked_events": {
+          "$ref": "#/$defs/unknown_or_unlinked_events"
+        },
+        "latest": {
+          "type": ["object", "null"]
+        }
+      }
+    }
+  }
+}
