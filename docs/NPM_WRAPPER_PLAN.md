@@ -97,6 +97,6 @@ If a Go binary release causes issues:
 
 ## Open Questions
 
-- Whether to sign Go binaries (cosign / GPG) in addition to SHA256.
+- Go binaries are signed with cosign on tagged releases; the launcher shim may optionally verify signatures when `X_HARNESS_VERIFY_SIGNATURE=1` is set.
 - Whether to publish platform-specific optional dependencies instead of bundling all binaries.
 - Exact timing of Phase 10/11 based on Go parity maturity.

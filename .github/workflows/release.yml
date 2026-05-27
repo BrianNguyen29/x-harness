@@ -123,6 +123,22 @@ jobs:
           set -euo pipefail
           bash tests/smoke/go-binary-smoke.sh .x-harness/release/go-binaries/x-harness-*-linux-amd64
 
+      - uses: sigstore/cosign-installer@v3.7.0
+
+      - name: Sign Go binaries with cosign
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          set -euo pipefail
+          for bin in .x-harness/release/go-binaries/x-harness-*; do
+            if [ -f "$bin" ] && [ ! -f "$bin.sig" ]; then
+              cosign sign-blob --yes \
+                --output-signature "${bin}.sig" \
+                --output-certificate "${bin}.pem" \
+                "$bin"
+            fi
+          done
+
       - uses: actions/upload-artifact@v4
         with:
           name: x-harness-release-artifacts
@@ -135,3 +151,35 @@ jobs:
         run: npm publish --workspace x-harness --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  cross-platform-smoke:
+    needs: release
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: x-harness-release-artifacts
+          path: .x-harness/release
+      - name: Smoke test on ${{ matrix.os }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME:-dev}"
+          case "${{ matrix.os }}" in
+            ubuntu-latest)
+              BIN=".x-harness/release/go-binaries/x-harness-${VERSION}-linux-amd64"
+              ;;
+            macos-latest)
+              BIN=".x-harness/release/go-binaries/x-harness-${VERSION}-darwin-amd64"
+              ;;
+            windows-latest)
+              BIN=".x-harness/release/go-binaries/x-harness-${VERSION}-windows-amd64.exe"
+              ;;
+          esac
+          chmod +x "$BIN"
+          bash tests/smoke/go-binary-smoke.sh "$BIN"

@@ -45,6 +45,8 @@ jobs:
         include:
           - name: test
             command: go test ./...
+          - name: race
+            command: go test -race ./...
           - name: vet
             command: go vet ./...
           - name: build
@@ -62,6 +64,16 @@ jobs:
           cache: npm
       - run: npm ci
       - run: ${{ matrix.command }}
+
+  go-fuzz-smoke:
+    name: go-fuzz-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - run: go test -fuzz=FuzzValidate -fuzztime=15s ./internal/schema
 
   verify-gates:
     runs-on: ubuntu-latest

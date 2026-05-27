@@ -55,9 +55,12 @@ describe("CI workflow", () => {
     ).toBeLessThan(workflow.indexOf(adversarialBenchmarkCommand));
     expect(workflow).toContain("go-quality");
     expect(workflow).toContain("go test ./...");
+    expect(workflow).toContain("go test -race ./...");
     expect(workflow).toContain("go vet ./...");
     expect(workflow).toContain("go build ./cmd/x-harness");
     expect(workflow).toContain("npm run parity:check-go");
+    expect(workflow).toContain("go-fuzz-smoke");
+    expect(workflow).toContain("-fuzz=FuzzValidate");
   });
 
   it("strict verify fixture passes with mutation guard enabled", async () => {

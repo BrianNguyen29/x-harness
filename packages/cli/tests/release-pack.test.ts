@@ -131,6 +131,12 @@ describe("release packaging", () => {
     expect(releaseWorkflow).toContain("Go binary smoke test");
     expect(releaseWorkflow).toContain("tests/smoke/go-binary-smoke.sh");
     expect(releaseWorkflow).toContain("go-binaries");
+    expect(releaseWorkflow).toContain("cosign-installer");
+    expect(releaseWorkflow).toContain("cosign sign-blob");
+    expect(releaseWorkflow).toContain("cross-platform-smoke");
+    expect(releaseWorkflow).toContain("ubuntu-latest");
+    expect(releaseWorkflow).toContain("macos-latest");
+    expect(releaseWorkflow).toContain("windows-latest");
     expect(sbomWorkflow).toContain("npm sbom --workspace x-harness");
   });
 });

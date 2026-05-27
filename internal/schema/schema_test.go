@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"encoding/json"
 	"path/filepath"
 	"testing"
 
@@ -49,4 +50,24 @@ func TestInvalidGoldenCardFails(t *testing.T) {
 	if err := v.Validate(doc); err == nil {
 		t.Fatal("expected invalid card to fail validation, but it passed")
 	}
+}
+
+func FuzzValidate(f *testing.F) {
+	schemaPath := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	v, err := Compile(schemaPath)
+	if err != nil {
+		f.Fatalf("expected schema to compile, got error: %v", err)
+	}
+
+	f.Add([]byte(`{"schema_version":"1.0","task_id":"t","tier":"light","owner":"o","accountable":"a","claim":{"fix_status":"fixed"},"verification":{"status":"passed"},"admission":{"outcome":"success"},"acceptance_status":"accepted","handoff":{"next_action":"n","owner":"u"}}`))
+	f.Add([]byte(`{}`))
+	f.Add([]byte(`{"schema_version":"1.0"}`))
+
+	f.Fuzz(func(t *testing.T, data []byte) {
+		var doc any
+		if err := json.Unmarshal(data, &doc); err != nil {
+			t.Skip()
+		}
+		_ = v.Validate(doc)
+	})
 }

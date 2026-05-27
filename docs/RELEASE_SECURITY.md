@@ -70,7 +70,27 @@ SBOM artifacts are uploaded with release artifacts. Release review should retain
 
 ## Sigstore And SLSA
 
-Sigstore signing and SLSA provenance are recommended for the next hardening layer. Until signing is enforced, releases must keep:
+Tagged releases sign Go binaries with cosign (keyless via GitHub OIDC):
+
+```bash
+cosign sign-blob --yes \
+  --output-signature "${bin}.sig" \
+  --output-certificate "${bin}.pem" \
+  "$bin"
+```
+
+Signature (`.sig`) and certificate (`.pem`) artifacts are uploaded alongside the binaries. Consumers can verify with:
+
+```bash
+cosign verify-blob \
+  --signature x-harness-v1.2.3-linux-amd64.sig \
+  --certificate x-harness-v1.2.3-linux-amd64.pem \
+  --certificate-identity-regexp='https://github.com/BrianNguyen29/x-harness/.github/workflows/release.yml@refs/tags/.*' \
+  --certificate-oidc-issuer='https://token.actions.githubusercontent.com' \
+  x-harness-v1.2.3-linux-amd64
+```
+
+In addition to signing, releases must keep:
 
 - npm provenance enabled for tagged publish.
 - CI-generated SBOM attached as an artifact.
@@ -78,3 +98,4 @@ Sigstore signing and SLSA provenance are recommended for the next hardening laye
 - Packed CLI smoke test proving `xh init`, `xh verify`, and `xh doctor` run from the tarball.
 - Frozen compatibility proving the packed CLI can export, verify, and merge-import a frozen bundle.
 - Go binary checksums and smoke evidence proving the native binary can run `doctor`, `examples verify`, and golden `verify` locally.
+- Cross-platform smoke tests on linux-amd64, darwin-amd64, and windows-amd64 via the release workflow.
