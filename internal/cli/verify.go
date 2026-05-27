@@ -84,7 +84,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		result = runWithMutationGuard(root, strict, doc, v, stderr)
 	} else {
 		schemaErr := v.Validate(doc)
-		result = buildVerifyResult(doc, schemaErr, nil)
+		result = buildVerifyResult(doc, schemaErr, nil, strict)
 	}
 
 	renderVerifyResult(result, jsonMode, verbose, stdout, cardPath, schemaPath)
@@ -168,7 +168,7 @@ func runWithMutationGuard(root string, strict bool, doc map[string]any, validato
 
 	if guardErr != nil {
 		mg := &mutationguard.Result{Enabled: true, SkippedReason: guardErr.Error(), Violated: strict}
-		result := buildVerifyResult(doc, schemaErr, mg)
+		result := buildVerifyResult(doc, schemaErr, mg, strict)
 		if strict {
 			fmt.Fprintf(stderr, "mutation_guard_error: guard failed in strict mode: %v\n", guardErr)
 			result.OK = false
@@ -178,7 +178,7 @@ func runWithMutationGuard(root string, strict bool, doc map[string]any, validato
 		return result
 	}
 
-	result := buildVerifyResult(doc, schemaErr, mgResult)
+	result := buildVerifyResult(doc, schemaErr, mgResult, strict)
 	if mgResult != nil && mgResult.Violated {
 		result.OK = false
 		result.AdmissionOutcome = "blocked"
@@ -187,7 +187,7 @@ func runWithMutationGuard(root string, strict bool, doc map[string]any, validato
 	return result
 }
 
-func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationguard.Result) VerifyResult {
+func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationguard.Result, strict bool) VerifyResult {
 	result := VerifyResult{
 		TaskID: stringValue(doc, "task_id"),
 		Tier:   stringValue(doc, "tier"),
@@ -202,7 +202,7 @@ func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationgu
 		return result
 	}
 
-	admResult := admission.Run(doc)
+	admResult := admission.Run(doc, strict)
 	result.AdmissionOutcome = admResult.Outcome
 	result.AcceptanceStatus = admResult.AcceptanceStatus
 	result.AdmissionErrors = admResult.Errors

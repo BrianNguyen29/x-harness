@@ -15,7 +15,7 @@ type Result struct {
 }
 
 // Run evaluates a parsed completion card and returns an admission result.
-func Run(doc map[string]any) Result {
+func Run(doc map[string]any, strict bool) Result {
 	errors := make([]string, 0)
 	notes := make([]string, 0)
 	blockingPredicate := ""
@@ -112,6 +112,12 @@ func Run(doc map[string]any) Result {
 	// Artifact status consistency
 	artResult := evaluateArtifactStatus(doc)
 	for _, e := range artResult.errors {
+		applyFinding(e.message, e.predicate, false)
+	}
+
+	// Strict provenance
+	provResult := evaluateStrictProvenance(doc, tier, strict)
+	for _, e := range provResult.errors {
 		applyFinding(e.message, e.predicate, false)
 	}
 
@@ -577,6 +583,89 @@ func evaluateArtifactStatus(doc map[string]any) evidenceResult {
 			message:   msg,
 			predicate: "admission_failed",
 		})
+	}
+
+	return result
+}
+
+func evaluateStrictProvenance(doc map[string]any, tier string, strict bool) evidenceResult {
+	result := evidenceResult{errors: []evidenceFinding{}, notes: []string{}}
+	if !strict {
+		return result
+	}
+	if tier != "standard" && tier != "deep" {
+		return result
+	}
+
+	evidence := mapValue(doc, "evidence")
+	for i, item := range sliceInMap(evidence, "command_evidence") {
+		record, ok := item.(map[string]any)
+		if !ok {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("strict evidence provenance requires evidence.command_evidence[%d] to be an object", i),
+				predicate: "evidence_provenance_missing",
+			})
+			continue
+		}
+		if strings.TrimSpace(stringInMap(record, "command")) == "" {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("strict evidence provenance requires evidence.command_evidence[%d].command", i),
+				predicate: "evidence_provenance_missing",
+			})
+		}
+		if _, ok := intLikeValue(record["exit_code"]); !ok {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("strict evidence provenance requires evidence.command_evidence[%d].exit_code", i),
+				predicate: "evidence_provenance_missing",
+			})
+		}
+		if strings.TrimSpace(stringInMap(record, "runner")) == "" {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("strict evidence provenance requires evidence.command_evidence[%d].runner", i),
+				predicate: "evidence_provenance_missing",
+			})
+		}
+		if strings.TrimSpace(stringInMap(record, "started_at")) == "" {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("strict evidence provenance requires evidence.command_evidence[%d].started_at", i),
+				predicate: "evidence_provenance_missing",
+			})
+		}
+	}
+
+	for i, item := range sliceInMap(evidence, "verification_artifacts") {
+		record, ok := item.(map[string]any)
+		if !ok {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("strict evidence provenance requires evidence.verification_artifacts[%d] to be an object", i),
+				predicate: "evidence_provenance_missing",
+			})
+			continue
+		}
+		if strings.TrimSpace(stringInMap(record, "command")) == "" {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("strict evidence provenance requires evidence.verification_artifacts[%d].command", i),
+				predicate: "evidence_provenance_missing",
+			})
+		}
+		if _, ok := intLikeValue(record["exit_code"]); !ok {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("strict evidence provenance requires evidence.verification_artifacts[%d].exit_code", i),
+				predicate: "evidence_provenance_missing",
+			})
+		}
+		if strings.TrimSpace(stringInMap(record, "runner")) == "" {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("strict evidence provenance requires evidence.verification_artifacts[%d].runner", i),
+				predicate: "evidence_provenance_missing",
+			})
+		}
+		if strings.TrimSpace(stringInMap(record, "started_at")) == "" {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("strict evidence provenance requires evidence.verification_artifacts[%d].started_at", i),
+				predicate: "evidence_provenance_missing",
+			})
+		}
 	}
 
 	return result

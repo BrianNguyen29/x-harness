@@ -1,10 +1,14 @@
 package doctor
 
 import (
+	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
+	"github.com/BrianNguyen29/x-harness/internal/components"
 	"github.com/BrianNguyen29/x-harness/internal/loader"
 	"github.com/BrianNguyen29/x-harness/internal/schema"
 )
@@ -59,6 +63,8 @@ func Run(root string) *Report {
 	checkPolicies(report, root)
 	checkAgentsContext(report, root)
 	checkCIWorkflow(report, root)
+	checkTierLabels(report, root)
+	checkComponentRegistry(report, root)
 
 	report.PresentCount = len(report.Present)
 	report.MissingCount = len(report.Missing)
@@ -267,6 +273,138 @@ func checkCIWorkflow(report *Report, root string) {
 			Name:   "ci_workflow",
 			Status: "failed",
 			Note:   "missing gates: " + strings.Join(missing, ", "),
+		})
+		report.Healthy = false
+	}
+}
+
+var invalidTierLabels = []string{"small", "medium", "large"}
+
+var allowedTierReferencePatterns = []*regexp.Regexp{
+	regexp.MustCompile(`(?i)do not use\b.*\b(small|medium|large)\b`),
+	regexp.MustCompile(`(?i)forbidden active aliases`),
+	regexp.MustCompile(`(?i)invalid tier labels`),
+	regexp.MustCompile(`(?i)risk.*\b(medium|large|small)\b`),
+	regexp.MustCompile(`(?i)confidence.*\b(medium|large|small)\b`),
+	regexp.MustCompile(`(?i)priority.*\b(medium|large|small)\b`),
+	regexp.MustCompile(`(?i)context[_\ -]?class.*\b(medium|large|small)\b`),
+	regexp.MustCompile(`(?i)default_token_impact.*\b(medium|large|small)\b`),
+	regexp.MustCompile(`(?i)runtime_impact.*\b(medium|large|small)\b`),
+}
+
+var tierScanDirs = []string{"docs", "templates", "adapters", "packages/cli/src", "internal", "cmd"}
+var tierScanExts = map[string]bool{".md": true, ".mdc": true, ".ts": true, ".json": true, ".go": true}
+
+func isAllowedTierReference(line string) bool {
+	for _, re := range allowedTierReferencePatterns {
+		if re.MatchString(line) {
+			return true
+		}
+	}
+	return false
+}
+
+func checkTierLabels(report *Report, root string) {
+	excludedFiles := map[string]bool{
+		filepath.Join(root, "docs", "RUNTIME_CONTRACT.md"):              true,
+		filepath.Join(root, "packages", "cli", "src", "commands", "doctor.ts"): true,
+		filepath.Join(root, "packages", "cli", "src", "core", "metrics.ts"):    true,
+		filepath.Join(root, "packages", "cli", "src", "core", "context.ts"):    true,
+		filepath.Join(root, "packages", "cli", "src", "core", "contract.ts"):   true,
+		filepath.Join(root, "packages", "cli", "src", "core", "recovery.ts"):   true,
+		filepath.Join(root, "packages", "cli", "src", "core", "attribution.ts"): true,
+		filepath.Join(root, "internal", "attribution", "attribution.go"):       true,
+		filepath.Join(root, "internal", "prediction", "prediction.go"):         true,
+		filepath.Join(root, "internal", "doctor", "doctor.go"):                 true,
+	}
+
+	labelRe := regexp.MustCompile(`(?i)\b(small|medium|large)\b`)
+	ok := true
+	notes := []string{}
+
+	for _, relDir := range tierScanDirs {
+		dir := filepath.Join(root, relDir)
+		if _, err := os.Stat(dir); err != nil {
+			continue
+		}
+		_ = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() {
+				return nil
+			}
+			if !tierScanExts[filepath.Ext(path)] {
+				return nil
+			}
+			if strings.HasSuffix(filepath.Base(path), "_test.go") {
+				return nil
+			}
+			if excludedFiles[path] {
+				return nil
+			}
+			f, err := os.Open(path)
+			if err != nil {
+				return nil
+			}
+			defer f.Close()
+
+			scanner := bufio.NewScanner(f)
+			for scanner.Scan() {
+				line := scanner.Text()
+				if isAllowedTierReference(line) {
+					continue
+				}
+				matches := labelRe.FindAllStringSubmatchIndex(line, -1)
+				for _, m := range matches {
+					if len(m) >= 4 {
+						label := strings.ToLower(line[m[2]:m[3]])
+						rel, _ := filepath.Rel(root, path)
+						notes = append(notes, "invalid tier label \""+label+"\" in "+rel)
+						ok = false
+					}
+				}
+			}
+			return nil
+		})
+	}
+
+	if ok {
+		report.Checks = append(report.Checks, Check{
+			Name:   "tier_labels",
+			Status: "passed",
+			Note:   "no invalid tier labels found (small/medium/large)",
+		})
+	} else {
+		report.Checks = append(report.Checks, Check{
+			Name:   "tier_labels",
+			Status: "failed",
+			Note:   strings.Join(notes, "; "),
+		})
+		report.Healthy = false
+	}
+}
+
+func checkComponentRegistry(report *Report, root string) {
+	result, err := components.ValidateRegistry(root)
+	if err != nil {
+		report.Checks = append(report.Checks, Check{
+			Name:   "component_registry",
+			Status: "failed",
+			Note:   err.Error(),
+		})
+		report.Healthy = false
+		return
+	}
+
+	if result.OK {
+		report.Checks = append(report.Checks, Check{
+			Name:   "component_registry",
+			Status: "passed",
+			Note:   fmt.Sprintf("%d component(s); protected paths %d/%d covered", result.ComponentCount, result.ProtectedPathsCovered, result.ProtectedPathsChecked),
+		})
+	} else {
+		report.Checks = append(report.Checks, Check{
+			Name:   "component_registry",
+			Status: "failed",
+			Note:   strings.Join(result.Errors, "; "),
 		})
 		report.Healthy = false
 	}

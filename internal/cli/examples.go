@@ -186,7 +186,7 @@ func verifyExample(ex goldenExample, validator *schema.Validator, root string) E
 		errors = append(errors, fmt.Sprintf("completion card validation failed: %v", schemaErr))
 	}
 
-	admResult := admission.Run(doc)
+	admResult := admission.Run(doc, false)
 	errors = append(errors, admResult.Errors...)
 
 	outcome := admResult.Outcome

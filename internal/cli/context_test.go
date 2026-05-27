@@ -3,6 +3,8 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -85,4 +87,192 @@ func TestContextContractCoreFactsCount(t *testing.T) {
 			t.Fatalf("expected fact[%d].Rule == %q, got %q", i, rule, contract.Facts[i].Rule)
 		}
 	}
+}
+
+func TestContextSyncCheckFresh(t *testing.T) {
+	repoRoot, err := findRepoRoot()
+	if err != nil {
+		t.Skipf("could not find repo root: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "sync", "--check", "--root", repoRoot}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "valid") {
+		t.Fatalf("expected fresh message, got stdout: %q", stdout.String())
+	}
+}
+
+func TestContextSyncCheckStaleHash(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	block := generateManagedBlock()
+	block = strings.Replace(block, "<!-- context-hash: ", "<!-- context-hash: deadbeef", 1)
+	if err := os.WriteFile(agentsPath, []byte("# AGENTS\n\n"+block+"\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "sync", "--check", "--root", tmpDir}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d", ExitError, code)
+	}
+	if !strings.Contains(stderr.String(), "stale") {
+		t.Fatalf("expected stale hash message, got stderr: %q", stderr.String())
+	}
+}
+
+func TestContextSyncCheckStaleBody(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	block := generateManagedBlock()
+	// Modify body but keep old hash by not regenerating
+	block = strings.Replace(block, "- Completion is admitted, not claimed.", "- Completion is admitted, not claimed. (modified)", 1)
+	if err := os.WriteFile(agentsPath, []byte("# AGENTS\n\n"+block+"\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "sync", "--check", "--root", tmpDir}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d", ExitError, code)
+	}
+	combined := stdout.String() + stderr.String()
+	if !strings.Contains(combined, "stale") && !strings.Contains(combined, "differs") {
+		t.Fatalf("expected stale/differs message, got stdout: %q stderr: %q", stdout.String(), stderr.String())
+	}
+}
+
+func TestContextSyncCheckMissingBlock(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	if err := os.WriteFile(agentsPath, []byte("# AGENTS\n\nSome content.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "sync", "--check", "--root", tmpDir}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d", ExitError, code)
+	}
+	if !strings.Contains(stderr.String(), "missing managed context block") {
+		t.Fatalf("expected missing block message, got stderr: %q", stderr.String())
+	}
+}
+
+func TestContextSyncWriteUpdatesBlock(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	if err := os.WriteFile(agentsPath, []byte("# AGENTS\n\nSome content.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "sync", "--write", "--root", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "refreshed") {
+		t.Fatalf("expected refreshed message, got stdout: %q", stdout.String())
+	}
+
+	// Verify the block is now fresh
+	updatedContent, err := os.ReadFile(agentsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	valid, note := validateManagedBlock(string(updatedContent))
+	if !valid {
+		t.Fatalf("expected updated block to be valid: %s", note)
+	}
+}
+
+func TestContextSyncCheckJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	if err := os.WriteFile(agentsPath, []byte("# AGENTS\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "sync", "--check", "--root", tmpDir, "--json"}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d", ExitError, code)
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result["valid"] != false {
+		t.Fatalf("expected valid=false, got %v", result["valid"])
+	}
+}
+
+func TestContextSyncWriteJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	if err := os.WriteFile(agentsPath, []byte("# AGENTS\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "sync", "--write", "--root", tmpDir, "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result["updated"] != true {
+		t.Fatalf("expected updated=true, got %v", result["updated"])
+	}
+	if result["context_hash"] == "" {
+		t.Fatalf("expected context_hash to be present")
+	}
+}
+
+func TestContextSyncMissingAgentsMd(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "sync", "--check", "--root", tmpDir}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "not found") {
+		t.Fatalf("expected not found message, got stderr: %q", stderr.String())
+	}
+}
+
+func findRepoRoot() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	for {
+		for _, marker := range []string{".git", "go.mod", "X_HARNESS.md", "AGENTS.md"} {
+			path := filepath.Join(wd, marker)
+			if _, err := os.Stat(path); err == nil {
+				return wd, nil
+			}
+		}
+		parent := filepath.Dir(wd)
+		if parent == wd {
+			break
+		}
+		wd = parent
+	}
+	return "", os.ErrNotExist
 }

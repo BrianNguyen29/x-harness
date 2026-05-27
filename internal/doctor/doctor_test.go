@@ -3,6 +3,7 @@ package doctor
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -25,7 +26,7 @@ func TestRunHealthyRepo(t *testing.T) {
 			t.Fatalf("expected check %s to pass, got %s: %s", c.Name, c.Status, c.Note)
 		}
 	}
-	for _, name := range []string{"critical_assets", "schemas_compile", "policies_parse", "agents_managed_context", "ci_workflow"} {
+	for _, name := range []string{"critical_assets", "schemas_compile", "policies_parse", "agents_managed_context", "ci_workflow", "tier_labels", "component_registry"} {
 		if !foundChecks[name] {
 			t.Fatalf("expected check %s to be present", name)
 		}
@@ -92,5 +93,67 @@ func TestRunMissingManagedContext(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("expected agents_managed_context check")
+	}
+}
+
+func TestRunBadTierLabel(t *testing.T) {
+	tmp := t.TempDir()
+	os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte("# AGENTS\n<!-- BEGIN X-HARNESS MANAGED CONTEXT -->\n<!-- END X-HARNESS MANAGED CONTEXT -->\n"), 0644)
+	os.MkdirAll(filepath.Join(tmp, "policies"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "schemas"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "templates"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "examples", "golden"), 0755)
+	os.WriteFile(filepath.Join(tmp, "policies", "mutation-guard.yaml"), []byte("{}\n"), 0644)
+	os.MkdirAll(filepath.Join(tmp, ".github", "workflows"), 0755)
+	os.WriteFile(filepath.Join(tmp, ".github", "workflows", "x-harness-verify.yml"), []byte("name: ci\njobs:\n  verify:\n    steps:\n      - run: echo ok\n"), 0644)
+	os.MkdirAll(filepath.Join(tmp, "docs"), 0755)
+	os.WriteFile(filepath.Join(tmp, "docs", "bad.md"), []byte("This task is small.\n"), 0644)
+
+	report := Run(tmp)
+	found := false
+	for _, c := range report.Checks {
+		if c.Name == "tier_labels" {
+			found = true
+			if c.Status != "failed" {
+				t.Fatalf("expected tier_labels to fail, got %s", c.Status)
+			}
+			if !strings.Contains(c.Note, "small") {
+				t.Fatalf("expected tier_labels note to mention small, got %s", c.Note)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("expected tier_labels check")
+	}
+}
+
+func TestRunBrokenComponentRegistry(t *testing.T) {
+	tmp := t.TempDir()
+	os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte("# AGENTS\n<!-- BEGIN X-HARNESS MANAGED CONTEXT -->\n<!-- END X-HARNESS MANAGED CONTEXT -->\n"), 0644)
+	os.MkdirAll(filepath.Join(tmp, "policies"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "schemas"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "templates"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "examples", "golden"), 0755)
+	os.WriteFile(filepath.Join(tmp, "policies", "mutation-guard.yaml"), []byte("{}\n"), 0644)
+	os.MkdirAll(filepath.Join(tmp, ".github", "workflows"), 0755)
+	os.WriteFile(filepath.Join(tmp, ".github", "workflows", "x-harness-verify.yml"), []byte("name: ci\njobs:\n  verify:\n    steps:\n      - run: echo ok\n"), 0644)
+	os.MkdirAll(filepath.Join(tmp, "components"), 0755)
+	os.WriteFile(filepath.Join(tmp, "components", "registry.yaml"), []byte("invalid: yaml: [\n"), 0644)
+
+	report := Run(tmp)
+	found := false
+	for _, c := range report.Checks {
+		if c.Name == "component_registry" {
+			found = true
+			if c.Status != "failed" {
+				t.Fatalf("expected component_registry to fail, got %s", c.Status)
+			}
+			if !strings.Contains(c.Note, "registry") {
+				t.Fatalf("expected component_registry note to mention registry, got %s", c.Note)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("expected component_registry check")
 	}
 }

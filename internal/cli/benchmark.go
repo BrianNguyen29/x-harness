@@ -494,7 +494,7 @@ func runAdversarialCase(root, cardPath, name string) adversarialCaseResult {
 		schemaErr = validator.Validate(doc)
 	}
 
-	admResult := admission.Run(doc)
+	admResult := admission.Run(doc, false)
 
 	mutationGuardExpected := name == "verifier-mutates-source"
 	tier := stringValue(doc, "tier")
