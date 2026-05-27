@@ -103,6 +103,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleAttribution(args[1:], stdout, stderr)
 	case "evidence":
 		return handleEvidence(args[1:], stdout, stderr)
+	case "episode":
+		return handleEpisode(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}
