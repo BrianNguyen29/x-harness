@@ -111,6 +111,12 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handlePermissions(args[1:], stdout, stderr)
 	case "prediction":
 		return handlePrediction(args[1:], stdout, stderr)
+	case "approval-risk":
+		return handleApprovalRisk(args[1:], stdout, stderr)
+	case "agent-profile":
+		return handleAgentProfile(args[1:], stdout, stderr)
+	case "cost":
+		return handleCost(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}
