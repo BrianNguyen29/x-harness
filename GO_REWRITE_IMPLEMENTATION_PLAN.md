@@ -889,10 +889,10 @@ Deliverables:
 
 Remaining Phase 8 hardening:
 
-- [ ] dedicated race test job
-- [ ] fuzz smoke targets in CI
-- [ ] signed Go release artifacts
-- [ ] cross-platform smoke execution beyond Linux amd64
+- [x] dedicated race test job
+- [x] fuzz smoke targets in CI
+- [x] signed Go release artifacts
+- [x] cross-platform smoke execution beyond Linux amd64
 - [ ] npm wrapper implementation after compatibility review
 
 Acceptance gate:
@@ -916,10 +916,15 @@ Acceptance gate:
 ### Contract
 
 - [x] Port canonical contract model.
-- [ ] Port managed block rendering.
-- [ ] Port managed block validation.
+- [x] Port managed block rendering.
+- [x] Port managed block validation.
 - [x] Port runtime contract rendering.
-- [ ] Add contract drift tests.
+- [x] Add contract drift tests.
+
+Note: the current Go implementation keeps managed-block and runtime-contract
+logic in `internal/cli/context.go` instead of a separate `internal/contract/`
+package. A future refactor may split this into a dedicated package, but the
+runtime behavior exists and is covered by tests.
 
 ### Schema and Policy
 
@@ -935,7 +940,7 @@ Acceptance gate:
 - [x] Port source loading (minimal).
 - [x] Port admission input builder (minimal).
 - [x] Port evidence floor (light/standard/deep).
-- [ ] Port strict provenance.
+- [x] Port strict provenance.
 - [x] Port done checklist and prediction checks.
 - [x] Port contradiction checks.
 - [x] Port governance checks (deep approval, tier downgrade).
@@ -961,8 +966,8 @@ Acceptance gate:
 - [x] Port schema checks.
 - [x] Port policy checks.
 - [x] Port managed block checks.
-- [ ] Port tier alias checks.
-- [ ] Port component registry check.
+- [x] Port tier alias checks.
+- [x] Port component registry check.
 - [x] Add `--format json|text`.
 - [x] Preserve `--json`.
 
@@ -978,21 +983,32 @@ Acceptance gate:
 
 - [x] Add Go CI job.
 - [x] Add dual-run parity harness (partial: Go vs TS baseline script).
-- [ ] Add race test job.
+- [x] Add race test job.
 - [x] Add release build matrix.
 - [x] Add checksum generation.
 - [x] Add packed binary smoke tests.
-- [ ] Add frozen compatibility smoke tests.
+- [x] Add frozen compatibility smoke tests.
 
 ### Next Implementation Priorities
 
-- [ ] Implement `context sync --check` and `context sync --write`.
-- [ ] Add contract drift tests for managed blocks.
-- [ ] Port strict provenance enforcement for standard/deep `verify --strict` command evidence.
-- [ ] Add Go doctor tier-alias and component-registry checks.
-- [ ] Implement remaining compatibility stubs: `intake`, `governance`, `intervention`, `clean`, top-level `export`, top-level `import`.
-- [ ] Add Go race/fuzz CI lanes.
-- [ ] Add release artifact signing strategy and cross-platform smoke execution.
+- [x] Implement `context sync --check` and `context sync --write`.
+- [x] Add contract drift tests for managed blocks.
+- [x] Port strict provenance enforcement for standard/deep `verify --strict` command evidence.
+- [x] Add Go doctor tier-alias and component-registry checks.
+- [x] Implement remaining compatibility stubs: `intake`, `governance`, `intervention`, `clean`, top-level `export`, top-level `import`.
+- [x] Add Go race/fuzz CI lanes.
+- [x] Add release artifact signing strategy and cross-platform smoke execution.
+
+### Remaining Completion Priorities
+
+- [ ] Add subagent return validation in Go.
+- [ ] Consolidate ad-hoc policy readers into shared policy loaders.
+- [ ] Add schema parity fixtures comparing Go/TypeScript validation behavior.
+- [ ] Verify and complete trace event creation parity.
+- [ ] Port latency benchmark.
+- [ ] Add JSON report schema and markdown report renderer.
+- [ ] Implement npm wrapper binary shim after compatibility review.
+- [ ] Decide whether to refactor context/contract code into `internal/contract/` or update the architecture target permanently.
 
 ## 16. Risk Register
 

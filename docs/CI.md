@@ -7,14 +7,15 @@
 The repository includes these public CI workflows:
 
 - `.github/workflows/x-harness-verify.yml` for TypeScript build, lint,
-  typecheck, tests, Go build/test/vet/parity, strict verify, doctor, examples,
-  and adversarial benchmark gates.
+  typecheck, tests, Go build/test/vet/race/fuzz/parity, strict verify,
+  doctor, examples, and adversarial benchmark gates.
 - `.github/workflows/codeql.yml` for GitHub CodeQL JavaScript/TypeScript
   scanning.
 - `.github/workflows/scorecard.yml` for OpenSSF Scorecard supply-chain checks.
 - `.github/workflows/sbom.yml` for CycloneDX SBOM generation.
 - `.github/workflows/release.yml` for tag-based package verification, Go binary
-  release candidate builds/checksums/smoke tests, and npm provenance publishing.
+  release candidate builds/checksums/signing/cross-platform smoke tests, and npm
+  provenance publishing.
 
 The verify workflow is the main pull-request gate:
 
@@ -32,7 +33,22 @@ permissions:
 
 jobs:
   quality:
+    name: quality / ${{ matrix.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: typecheck
+            command: npm run typecheck
+          - name: build
+            command: npm run build
+          - name: lint
+            command: npm run lint
+          - name: format
+            command: npm run format:check
+          - name: test
+            command: npm run build && npm run test
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -40,28 +56,46 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run typecheck
-      - run: npm run build
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm test
+      - run: ${{ matrix.command }}
 
   go-quality:
+    name: go-quality / ${{ matrix.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: test
+            command: go test ./...
+          - name: race
+            command: go test -race ./...
+          - name: vet
+            command: go vet ./...
+          - name: build
+            command: go build ./cmd/x-harness
+          - name: parity
+            command: npm run parity:check-go
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
       - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
+      - run: npm ci
+      - run: ${{ matrix.command }}
+
+  go-fuzz-smoke:
+    name: go-fuzz-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
-      - run: npm ci
-      - run: go test ./...
-      - run: go vet ./...
-      - run: go build ./cmd/x-harness
-      - run: npm run parity:check-go
+          go-version: "1.22"
+      - run: go test -fuzz=FuzzValidate -fuzztime=15s ./internal/schema
 
   verify-gates:
     runs-on: ubuntu-latest
@@ -81,9 +115,14 @@ jobs:
 
 1. Installs Node and Go dependencies/toolchains
 2. Type-checks, builds, lints, formats, and tests the TypeScript CLI
-3. Runs Go tests, `go vet`, and `go build ./cmd/x-harness`
+3. Runs Go tests, race detector, `go vet`, and `go build ./cmd/x-harness`
 4. Runs `npm run parity:check-go` against the committed TypeScript baseline
-5. Runs strict verify, examples, doctor, and adversarial benchmark gates
+5. Runs a bounded Go fuzz smoke target (`FuzzValidate`)
+6. Runs strict verify, examples, doctor, and adversarial benchmark gates
+
+The release workflow also builds native Go binaries for Linux, macOS, and
+Windows, generates SHA256 checksums, signs tag-release binaries with cosign,
+and runs smoke tests on Linux/macOS/Windows amd64 artifacts.
 
 ## Local-build fallback
 

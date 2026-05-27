@@ -23,7 +23,7 @@ enforces.
 
 ## Operations
 
-- [CI](CI.md)
+- [CI](CI.md) — TypeScript/Go dual-run, race/fuzz, release signing, and smoke gates
 - [Report Formats](REPORT_FORMATS.md)
 - [Cleanup](CLEANUP.md)
 - [Release Security](RELEASE_SECURITY.md)
