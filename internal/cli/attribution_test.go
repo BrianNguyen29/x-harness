@@ -164,7 +164,7 @@ func TestAttributionExplainNonexistentEpisode(t *testing.T) {
 func TestAttributionExplainUnsupportedSubcommand(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"attribution", "report"}, &stdout, &stderr)
+	code := Run([]string{"attribution", "unknown"}, &stdout, &stderr)
 	if code != ExitUsage {
 		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
 	}
@@ -224,6 +224,139 @@ func TestAttributionExplainEpisodeMustBeDirectory(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "not a directory") {
 		t.Fatalf("expected not a directory error, got: %q", stderr.String())
+	}
+}
+
+func TestAttributionReportJSONOutput(t *testing.T) {
+	root := t.TempDir()
+	ep1 := filepath.Join(root, "ep_001")
+	ep2 := filepath.Join(root, "ep_002")
+	if err := os.MkdirAll(ep1, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(ep2, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	m1 := map[string]any{
+		"episode_id": "ep_001",
+		"task_id":    "task_1",
+		"created_at": "2024-01-01T00:00:00Z",
+		"verdict": map[string]any{
+			"admission_outcome":  "failed",
+			"acceptance_status":  "withheld",
+			"blocking_predicate": "verification_failed",
+		},
+	}
+	m2 := map[string]any{
+		"episode_id": "ep_002",
+		"task_id":    "task_2",
+		"created_at": "2024-01-02T00:00:00Z",
+		"verdict": map[string]any{
+			"admission_outcome":  "failed",
+			"acceptance_status":  "withheld",
+			"blocking_predicate": "verification_failed",
+		},
+	}
+	m1data, _ := json.Marshal(m1)
+	m2data, _ := json.Marshal(m2)
+	os.WriteFile(filepath.Join(ep1, "manifest.json"), m1data, 0644)
+	os.WriteFile(filepath.Join(ep2, "manifest.json"), m2data, 0644)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"attribution", "report", "--episodes-dir", root, "--group-by", "predicate", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result attribution.AttributionReport
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.WithheldEpisodes != 2 {
+		t.Fatalf("expected withheld_episodes 2, got %d", result.WithheldEpisodes)
+	}
+	if len(result.Groups) == 0 {
+		t.Fatal("expected at least one group")
+	}
+	if result.Groups[0].Count != 2 {
+		t.Fatalf("expected first group count 2, got %d", result.Groups[0].Count)
+	}
+}
+
+func TestAttributionReportTextOutput(t *testing.T) {
+	root := t.TempDir()
+	ep1 := filepath.Join(root, "ep_001")
+	if err := os.MkdirAll(ep1, 0755); err != nil {
+		t.Fatal(err)
+	}
+	m1 := map[string]any{
+		"episode_id": "ep_001",
+		"task_id":    "task_1",
+		"created_at": "2024-01-01T00:00:00Z",
+		"verdict": map[string]any{
+			"admission_outcome":  "failed",
+			"acceptance_status":  "withheld",
+			"blocking_predicate": "verification_failed",
+		},
+	}
+	m1data, _ := json.Marshal(m1)
+	os.WriteFile(filepath.Join(ep1, "manifest.json"), m1data, 0644)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"attribution", "report", "--episodes-dir", root}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "# x-harness Attribution Report") {
+		t.Fatalf("expected report header, got:\n%s", out)
+	}
+	if !strings.Contains(out, "## Groups") {
+		t.Fatalf("expected groups header, got:\n%s", out)
+	}
+	if !strings.Contains(out, "verification_failed: 1") {
+		t.Fatalf("expected group count line, got:\n%s", out)
+	}
+}
+
+func TestAttributionReportInvalidGroupBy(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"attribution", "report", "--group-by", "invalid"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "--group-by must be predicate, taxonomy, or component") {
+		t.Fatalf("expected group-by error, got: %q", stderr.String())
+	}
+}
+
+func TestAttributionReportMissingEpisodesDir(t *testing.T) {
+	root := t.TempDir()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"attribution", "report", "--episodes-dir", filepath.Join(root, "missing")}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "total_episodes: 0") {
+		t.Fatalf("expected empty report, got:\n%s", out)
+	}
+}
+
+func TestAttributionReportUnknownFlag(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"attribution", "report", "--verbose"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "unknown flag") {
+		t.Fatalf("expected unknown flag error, got: %q", stderr.String())
 	}
 }
 

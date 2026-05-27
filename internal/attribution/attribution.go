@@ -6,7 +6,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // FailureTaxonomy is the deterministic taxonomy for failure attribution.
@@ -257,6 +261,232 @@ func LoadOrCreateAttribution(episodeDir string) (*FailureAttribution, error) {
 	}
 
 	return &attr, nil
+}
+
+// ReportGroup represents a single group in the attribution report.
+type ReportGroup struct {
+	Key        string   `json:"key"`
+	Count      int      `json:"count"`
+	EpisodeIDs []string `json:"episode_ids"`
+	Predicates []string `json:"predicates"`
+	Taxonomies []string `json:"taxonomies"`
+	Components []string `json:"components"`
+}
+
+// AttributionReport is the aggregate report across episodes.
+type AttributionReport struct {
+	OK               bool          `json:"ok"`
+	GroupBy          string        `json:"group_by"`
+	TotalEpisodes    int           `json:"total_episodes"`
+	WithheldEpisodes int           `json:"withheld_episodes"`
+	UnknownCount     int           `json:"unknown_count"`
+	UnknownRate      float64       `json:"unknown_rate"`
+	Groups           []ReportGroup `json:"groups"`
+	EntropyWarning   *string       `json:"entropy_warning"`
+}
+
+// ListAttributions scans an episodes directory and loads/creates attributions.
+func ListAttributions(episodesDir string) ([]FailureAttribution, error) {
+	if _, err := os.Stat(episodesDir); os.IsNotExist(err) {
+		return []FailureAttribution{}, nil
+	}
+
+	entries, err := os.ReadDir(episodesDir)
+	if err != nil {
+		return nil, err
+	}
+
+	var attributions []FailureAttribution
+	for _, entry := range entries {
+		if !entry.IsDir() || !strings.HasPrefix(entry.Name(), "ep_") {
+			continue
+		}
+		dir := filepath.Join(episodesDir, entry.Name())
+		if _, err := os.Stat(filepath.Join(dir, "manifest.json")); os.IsNotExist(err) {
+			continue
+		}
+		attr, err := LoadOrCreateAttribution(dir)
+		if err != nil {
+			continue
+		}
+		attributions = append(attributions, *attr)
+	}
+
+	sort.Slice(attributions, func(i, j int) bool {
+		a, errA := time.Parse(time.RFC3339, attributions[i].CreatedAt)
+		b, errB := time.Parse(time.RFC3339, attributions[j].CreatedAt)
+		if errA != nil || errB != nil {
+			return attributions[i].CreatedAt < attributions[j].CreatedAt
+		}
+		return a.Before(b)
+	})
+
+	return attributions, nil
+}
+
+// BuildAttributionReport aggregates attributions into a report grouped by the specified field.
+func BuildAttributionReport(attributions []FailureAttribution, groupBy string) AttributionReport {
+	var withheld []FailureAttribution
+	for _, item := range attributions {
+		if item.Verdict.AcceptanceStatus == "withheld" {
+			withheld = append(withheld, item)
+		}
+	}
+
+	unknownCount := 0
+	for _, item := range withheld {
+		if item.Primary != nil && item.Primary.Taxonomy == Funknown {
+			unknownCount++
+		}
+	}
+
+	type groupAggregate struct {
+		count      int
+		episodeIDs map[string]struct{}
+		predicates map[string]struct{}
+		taxonomies map[string]struct{}
+		components map[string]struct{}
+	}
+
+	groups := make(map[string]*groupAggregate)
+
+	for _, item := range withheld {
+		primary := item.Primary
+		var key string
+		switch groupBy {
+		case "predicate":
+			if primary != nil {
+				key = primary.Predicate
+			} else {
+				key = "none"
+			}
+		case "taxonomy":
+			if primary != nil {
+				key = string(primary.Taxonomy)
+			} else {
+				key = "none"
+			}
+		case "component":
+			if primary != nil {
+				key = primary.ComponentID
+			} else {
+				key = "none"
+			}
+		default:
+			key = "none"
+		}
+
+		g, ok := groups[key]
+		if !ok {
+			g = &groupAggregate{
+				episodeIDs: make(map[string]struct{}),
+				predicates: make(map[string]struct{}),
+				taxonomies: make(map[string]struct{}),
+				components: make(map[string]struct{}),
+			}
+			groups[key] = g
+		}
+		g.count++
+		g.episodeIDs[item.EpisodeID] = struct{}{}
+		if primary != nil {
+			g.predicates[primary.Predicate] = struct{}{}
+			g.taxonomies[string(primary.Taxonomy)] = struct{}{}
+			g.components[primary.ComponentID] = struct{}{}
+		}
+	}
+
+	var reportGroups []ReportGroup
+	for key, g := range groups {
+		rg := ReportGroup{
+			Key:   key,
+			Count: g.count,
+		}
+		for id := range g.episodeIDs {
+			rg.EpisodeIDs = append(rg.EpisodeIDs, id)
+		}
+		for p := range g.predicates {
+			rg.Predicates = append(rg.Predicates, p)
+		}
+		for t := range g.taxonomies {
+			rg.Taxonomies = append(rg.Taxonomies, t)
+		}
+		for c := range g.components {
+			rg.Components = append(rg.Components, c)
+		}
+		sort.Strings(rg.EpisodeIDs)
+		sort.Strings(rg.Predicates)
+		sort.Strings(rg.Taxonomies)
+		sort.Strings(rg.Components)
+		reportGroups = append(reportGroups, rg)
+	}
+
+	sort.Slice(reportGroups, func(i, j int) bool {
+		if reportGroups[i].Count != reportGroups[j].Count {
+			return reportGroups[i].Count > reportGroups[j].Count
+		}
+		return reportGroups[i].Key < reportGroups[j].Key
+	})
+
+	var unknownRate float64
+	if len(withheld) > 0 {
+		unknownRate = float64(unknownCount) / float64(len(withheld))
+	}
+	unknownRate = float64(int(unknownRate*10000+0.5)) / 10000
+
+	var entropyWarning *string
+	if len(withheld) > 0 && unknownRate >= 0.5 {
+		msg := "high Funknown attribution rate; inspect failure taxonomy and episode observability"
+		entropyWarning = &msg
+	}
+
+	return AttributionReport{
+		OK:               true,
+		GroupBy:          groupBy,
+		TotalEpisodes:    len(attributions),
+		WithheldEpisodes: len(withheld),
+		UnknownCount:     unknownCount,
+		UnknownRate:      unknownRate,
+		Groups:           reportGroups,
+		EntropyWarning:   entropyWarning,
+	}
+}
+
+var sinceRegex = regexp.MustCompile(`^(\d+)([dh])$`)
+
+// ParseSinceDuration parses a since string like "7d" or "12h" into a time.Duration.
+func ParseSinceDuration(since string) time.Duration {
+	if since == "" {
+		return 0
+	}
+	match := sinceRegex.FindStringSubmatch(since)
+	if match == nil {
+		return 0
+	}
+	value, _ := strconv.Atoi(match[1])
+	if match[2] == "d" {
+		return time.Duration(value) * 24 * time.Hour
+	}
+	return time.Duration(value) * time.Hour
+}
+
+// FilterSince filters attributions by created_at age.
+func FilterSince(attributions []FailureAttribution, since string) []FailureAttribution {
+	d := ParseSinceDuration(since)
+	if d == 0 {
+		return attributions
+	}
+	cutoff := time.Now().Add(-d)
+	var filtered []FailureAttribution
+	for _, item := range attributions {
+		ts, err := time.Parse(time.RFC3339, item.CreatedAt)
+		if err != nil {
+			continue
+		}
+		if ts.After(cutoff) || ts.Equal(cutoff) {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
 }
 
 func parseStringSlice(v any) []string {
