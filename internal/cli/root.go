@@ -119,6 +119,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleCost(args[1:], stdout, stderr)
 	case "evolve":
 		return handleEvolve(args[1:], stdout, stderr)
+	case "frozen":
+		return handleFrozen(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}
