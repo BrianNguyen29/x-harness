@@ -99,6 +99,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleRecovery(args[1:], stdout, stderr)
 	case "packet":
 		return handlePacket(args[1:], stdout, stderr)
+	case "attribution":
+		return handleAttribution(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}
