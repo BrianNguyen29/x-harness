@@ -53,6 +53,11 @@ describe("CI workflow", () => {
     expect(
       workflow.indexOf("node packages/cli/dist/index.js examples verify")
     ).toBeLessThan(workflow.indexOf(adversarialBenchmarkCommand));
+    expect(workflow).toContain("go-quality");
+    expect(workflow).toContain("go test ./...");
+    expect(workflow).toContain("go vet ./...");
+    expect(workflow).toContain("go build ./cmd/x-harness");
+    expect(workflow).toContain("npm run parity:check-go");
   });
 
   it("strict verify fixture passes with mutation guard enabled", async () => {

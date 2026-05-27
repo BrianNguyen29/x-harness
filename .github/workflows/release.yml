@@ -24,6 +24,10 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
@@ -80,6 +84,44 @@ jobs:
           "$TMP_REPO/node_modules/.bin/xh" frozen verify "$TMP_REPO/x-harness-frozen.tar.gz" --json
           "$TMP_REPO/node_modules/.bin/xh" import "$TMP_REPO/x-harness-frozen.tar.gz" --frozen --target "$TMP_REPO/frozen-target" --merge --json
           "$TMP_REPO/node_modules/.bin/xh" doctor --root "$TMP_REPO/frozen-target"
+
+      - name: Build Go release binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .x-harness/release/go-binaries
+          VERSION="${GITHUB_REF_NAME:-dev}"
+          PLATFORMS=(
+            "linux/amd64"
+            "linux/arm64"
+            "darwin/amd64"
+            "darwin/arm64"
+            "windows/amd64"
+            "windows/arm64"
+          )
+          for p in "${PLATFORMS[@]}"; do
+            GOOS="${p%%/*}"
+            GOARCH="${p##*/}"
+            OUT="x-harness-${VERSION}-${GOOS}-${GOARCH}"
+            if [ "$GOOS" = "windows" ]; then
+              OUT="${OUT}.exe"
+            fi
+            echo "Building $p -> $OUT"
+            GOOS="$GOOS" GOARCH="$GOARCH" go build -ldflags "-s -w -X main.version=${VERSION}" -o ".x-harness/release/go-binaries/$OUT" ./cmd/x-harness
+          done
+
+      - name: Generate Go binary checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .x-harness/release/go-binaries
+          sha256sum x-harness-* > checksums.txt
+
+      - name: Go binary smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tests/smoke/go-binary-smoke.sh .x-harness/release/go-binaries/x-harness-*-linux-amd64
 
       - uses: actions/upload-artifact@v4
         with:

@@ -36,6 +36,33 @@ jobs:
       - run: npm ci
       - run: ${{ matrix.command }}
 
+  go-quality:
+    name: go-quality / ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: test
+            command: go test ./...
+          - name: vet
+            command: go vet ./...
+          - name: build
+            command: go build ./cmd/x-harness
+          - name: parity
+            command: npm run parity:check-go
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: ${{ matrix.command }}
+
   verify-gates:
     runs-on: ubuntu-latest
     steps:

@@ -126,6 +126,11 @@ describe("release packaging", () => {
     expect(releaseWorkflow).toContain("Frozen transfer compatibility");
     expect(releaseWorkflow).toContain("frozen verify");
     expect(releaseWorkflow).toContain("--frozen --target");
+    expect(releaseWorkflow).toContain("Build Go release binaries");
+    expect(releaseWorkflow).toContain("Generate Go binary checksums");
+    expect(releaseWorkflow).toContain("Go binary smoke test");
+    expect(releaseWorkflow).toContain("tests/smoke/go-binary-smoke.sh");
+    expect(releaseWorkflow).toContain("go-binaries");
     expect(sbomWorkflow).toContain("npm sbom --workspace x-harness");
   });
 });
