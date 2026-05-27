@@ -105,6 +105,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleEvidence(args[1:], stdout, stderr)
 	case "episode":
 		return handleEpisode(args[1:], stdout, stderr)
+	case "components":
+		return handleComponents(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}
