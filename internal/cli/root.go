@@ -109,6 +109,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleComponents(args[1:], stdout, stderr)
 	case "permissions":
 		return handlePermissions(args[1:], stdout, stderr)
+	case "prediction":
+		return handlePrediction(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}
