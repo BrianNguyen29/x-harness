@@ -303,3 +303,215 @@ func TestEpisodeInspectMissingSubcommand(t *testing.T) {
 		t.Fatalf("expected subcommand required error, got:\n%s", stderr.String())
 	}
 }
+
+func createEpisodeForVerifyChainTest(t *testing.T, dir, episodeID, taskID, createdAt string, previousEpisodeID *string) {
+	t.Helper()
+
+	dataContent := []byte("hello " + episodeID)
+	dataPath := filepath.Join(dir, "data.txt")
+	if err := os.WriteFile(dataPath, dataContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+	dataHash := sha256Hex(dataContent)
+
+	event := map[string]interface{}{
+		"event_id":   "E1_" + episodeID,
+		"event_type": "verify_completed",
+		"outcome":    "success",
+	}
+	event["event_hash"] = computeTraceHashForTest(event)
+	event["previous_hash"] = nil
+	eventBytes, _ := json.Marshal(event)
+	traceContent := append(eventBytes, '\n')
+	tracePath := filepath.Join(dir, "trace.jsonl")
+	if err := os.WriteFile(tracePath, traceContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+	traceHash := sha256Hex(traceContent)
+
+	hashes := map[string]interface{}{
+		"schema_version": "1",
+		"files": []map[string]interface{}{
+			{"path": "data.txt", "sha256": "sha256:" + dataHash, "size_bytes": len(dataContent)},
+			{"path": "trace.jsonl", "sha256": "sha256:" + traceHash, "size_bytes": len(traceContent)},
+		},
+	}
+	hashesBytes, _ := json.MarshalIndent(hashes, "", "  ")
+	hashesPath := filepath.Join(dir, "hashes.json")
+	if err := os.WriteFile(hashesPath, hashesBytes, 0644); err != nil {
+		t.Fatal(err)
+	}
+	hashesHash := sha256Hex(hashesBytes)
+
+	manifest := map[string]interface{}{
+		"schema_version":      "1",
+		"episode_id":          episodeID,
+		"task_id":             taskID,
+		"created_at":          createdAt,
+		"x_harness_version":   "0.1.0",
+		"previous_episode_id": previousEpisodeID,
+		"git": map[string]interface{}{
+			"base_sha": nil, "head_sha": nil,
+			"dirty_before_verify": false, "dirty_after_verify": false,
+		},
+		"policy_hashes": map[string]interface{}{},
+		"schema_hashes": map[string]interface{}{},
+		"verdict": map[string]interface{}{
+			"admission_outcome": "success", "acceptance_status": "accepted", "blocking_predicate": nil,
+		},
+		"mutation_guard": map[string]interface{}{
+			"enabled": false, "violated": false, "unexpected_delta_count": 0,
+		},
+		"signing": map[string]interface{}{
+			"mode": "unsigned", "signature_ref": nil,
+		},
+		"bundle_refs": map[string]interface{}{
+			"raw": nil, "redacted": nil,
+		},
+		"admission_authority": false,
+		"hashes_hash":         "sha256:" + hashesHash,
+	}
+
+	manifestBytes, _ := json.Marshal(manifest)
+	manifestHash := sha256Hex(manifestBytes)
+	manifest["manifest_hash"] = "sha256:" + manifestHash
+
+	manifestOutBytes, _ := json.MarshalIndent(manifest, "", "  ")
+	manifestPath := filepath.Join(dir, "manifest.json")
+	if err := os.WriteFile(manifestPath, manifestOutBytes, 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestEpisodeVerifyChainMissingTaskID(t *testing.T) {
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{"episode", "verify-chain"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--task-id is required") {
+		t.Fatalf("expected --task-id required error, got:\n%s", stderr.String())
+	}
+}
+
+func TestEpisodeVerifyChainNoMatchingEpisodes(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{"episode", "verify-chain", "--task-id", "nonexistent", "--episodes-dir", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "episode chain valid: 0 episode(s) checked") {
+		t.Fatalf("expected empty chain message, got:\n%s", stdout.String())
+	}
+}
+
+func TestEpisodeVerifyChainValidChain(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	ep1Dir := filepath.Join(tmpDir, "ep_2024-01-01T00-00-00Z_test-task")
+	os.MkdirAll(ep1Dir, 0755)
+	prev1 := "ep_2024-01-01T00-00-00Z_test-task"
+	createEpisodeForVerifyChainTest(t, ep1Dir, prev1, "test-task", "2024-01-01T00:00:00Z", nil)
+
+	ep2Dir := filepath.Join(tmpDir, "ep_2024-01-02T00-00-00Z_test-task")
+	os.MkdirAll(ep2Dir, 0755)
+	createEpisodeForVerifyChainTest(t, ep2Dir, "ep_2024-01-02T00-00-00Z_test-task", "test-task", "2024-01-02T00:00:00Z", &prev1)
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{"episode", "verify-chain", "--task-id", "test-task", "--episodes-dir", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "episode chain valid: 2 episode(s) checked") {
+		t.Fatalf("expected valid chain message, got:\n%s", out)
+	}
+	if !strings.Contains(out, "- ep_2024-01-01T00-00-00Z_test-task") {
+		t.Fatalf("expected first episode id, got:\n%s", out)
+	}
+	if !strings.Contains(out, "- ep_2024-01-02T00-00-00Z_test-task") {
+		t.Fatalf("expected second episode id, got:\n%s", out)
+	}
+}
+
+func TestEpisodeVerifyChainValidChainJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	ep1Dir := filepath.Join(tmpDir, "ep_2024-01-01T00-00-00Z_test-task")
+	os.MkdirAll(ep1Dir, 0755)
+	prev1 := "ep_2024-01-01T00-00-00Z_test-task"
+	createEpisodeForVerifyChainTest(t, ep1Dir, prev1, "test-task", "2024-01-01T00:00:00Z", nil)
+
+	ep2Dir := filepath.Join(tmpDir, "ep_2024-01-02T00-00-00Z_test-task")
+	os.MkdirAll(ep2Dir, 0755)
+	createEpisodeForVerifyChainTest(t, ep2Dir, "ep_2024-01-02T00-00-00Z_test-task", "test-task", "2024-01-02T00:00:00Z", &prev1)
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{"episode", "verify-chain", "--task-id", "test-task", "--episodes-dir", tmpDir, "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal([]byte(stdout.String()), &result); err != nil {
+		t.Fatalf("expected valid JSON, got error: %v. output:\n%s", err, stdout.String())
+	}
+	if result["ok"] != true {
+		t.Fatalf("expected ok=true in JSON, got %v", result["ok"])
+	}
+	if result["task_id"] != "test-task" {
+		t.Fatalf("unexpected task_id: %v", result["task_id"])
+	}
+	if result["episodes_checked"] != float64(2) {
+		t.Fatalf("unexpected episodes_checked: %v", result["episodes_checked"])
+	}
+	episodeIDs, ok := result["episode_ids"].([]interface{})
+	if !ok || len(episodeIDs) != 2 {
+		t.Fatalf("unexpected episode_ids: %v", result["episode_ids"])
+	}
+}
+
+func TestEpisodeVerifyChainMissingPrevious(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	ep1Dir := filepath.Join(tmpDir, "ep_2024-01-01T00-00-00Z_test-task")
+	os.MkdirAll(ep1Dir, 0755)
+	createEpisodeForVerifyChainTest(t, ep1Dir, "ep_2024-01-01T00-00-00Z_test-task", "test-task", "2024-01-01T00:00:00Z", nil)
+
+	ep2Dir := filepath.Join(tmpDir, "ep_2024-01-02T00-00-00Z_test-task")
+	os.MkdirAll(ep2Dir, 0755)
+	missingPrev := "ep_nonexistent"
+	createEpisodeForVerifyChainTest(t, ep2Dir, "ep_2024-01-02T00-00-00Z_test-task", "test-task", "2024-01-02T00:00:00Z", &missingPrev)
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{"episode", "verify-chain", "--task-id", "test-task", "--episodes-dir", tmpDir}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitError, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "episode chain invalid:") {
+		t.Fatalf("expected invalid chain message, got:\n%s", out)
+	}
+	if !strings.Contains(out, "missing previous episode ep_nonexistent") {
+		t.Fatalf("expected missing previous episode error, got:\n%s", out)
+	}
+}
+
+func TestEpisodeVerifyChainUnknownFlag(t *testing.T) {
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{"episode", "verify-chain", "--bogus"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "unknown flag") {
+		t.Fatalf("expected unknown flag error, got:\n%s", stderr.String())
+	}
+}
