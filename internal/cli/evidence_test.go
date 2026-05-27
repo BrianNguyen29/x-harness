@@ -109,3 +109,118 @@ func TestEvidenceUnsupportedSubcommand(t *testing.T) {
 		t.Fatalf("expected unknown subcommand error, got: %s", stderr.String())
 	}
 }
+
+func TestEvidenceIndexMissingFlags(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"evidence", "index"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "evidence index requires --episode or --card") {
+		t.Fatalf("expected required flag error, got: %s", stderr.String())
+	}
+}
+
+func TestEvidenceIndexEpisode(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "file.txt"), []byte("hello"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"evidence", "index", "--episode", tmpDir, "--task-id", "task-001"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "Evidence index written.") {
+		t.Fatalf("expected written message, got: %s", out)
+	}
+	if !strings.Contains(out, "task_id: task-001") {
+		t.Fatalf("expected task_id, got: %s", out)
+	}
+	if !strings.Contains(out, "entries: 1") {
+		t.Fatalf("expected entries count, got: %s", out)
+	}
+}
+
+func TestEvidenceIndexCard(t *testing.T) {
+	tmpDir := t.TempDir()
+	cardPath := filepath.Join(tmpDir, "completion-card.yaml")
+	cardContent := `task_id: card-task
+evidence:
+  command_evidence: []
+  verification_artifacts: []
+`
+	if err := os.WriteFile(cardPath, []byte(cardContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"evidence", "index", "--card", cardPath}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "task_id: card-task") {
+		t.Fatalf("expected card task_id, got: %s", out)
+	}
+}
+
+func TestEvidenceIndexJSONOutput(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "file.txt"), []byte("hello"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"evidence", "index", "--episode", tmpDir, "--task-id", "task-001", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	var result map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON, got error: %v\noutput: %s", err, stdout.String())
+	}
+	if result["ok"] != true {
+		t.Fatalf("expected ok=true, got: %v", result)
+	}
+	if result["task_id"] != "task-001" {
+		t.Fatalf("expected task_id=task-001, got: %v", result)
+	}
+}
+
+func TestEvidenceIndexWithRedact(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "secrets.txt"), []byte("password=secret123"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"evidence", "index", "--episode", tmpDir, "--task-id", "task-001", "--redact"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "redacted_dir:") {
+		t.Fatalf("expected redacted_dir in output, got: %s", out)
+	}
+}
+
+func TestEvidenceIndexUnknownFlag(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"evidence", "index", "--episode", tmpDir, "--bogus"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "unknown flag") {
+		t.Fatalf("expected unknown flag error, got: %s", stderr.String())
+	}
+}
