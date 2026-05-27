@@ -1,7 +1,7 @@
 # x-harness Go Rewrite Implementation Plan
 
-Status: planning baseline
-Date: 2026-05-25
+Status: active implementation — Phase 7 complete; Phase 8 foundation landed
+Date: 2026-05-27
 Scope: rewrite the canonical x-harness CLI/runtime from TypeScript to Go while preserving the current file-first verification contract.
 
 Toolchain prerequisite: Phase 1 and later require a local Go toolchain capable
@@ -881,11 +881,19 @@ Acceptance gate:
 
 Deliverables:
 
-- dual-run GitHub Actions
-- Go release build workflow
-- release smoke fixtures
-- platform matrix
-- npm wrapper plan
+- [x] dual-run GitHub Actions foundation
+- [x] Go release build workflow foundation
+- [x] release smoke fixture for built Go binary
+- [x] platform build matrix with checksums
+- [x] npm wrapper plan
+
+Remaining Phase 8 hardening:
+
+- [ ] dedicated race test job
+- [ ] fuzz smoke targets in CI
+- [ ] signed Go release artifacts
+- [ ] cross-platform smoke execution beyond Linux amd64
+- [ ] npm wrapper implementation after compatibility review
 
 Acceptance gate:
 
@@ -932,7 +940,7 @@ Acceptance gate:
 - [x] Port contradiction checks.
 - [x] Port governance checks (deep approval, tier downgrade).
 - [x] Port admission decision.
-- [ ] Port recovery routing.
+- [x] Port recovery routing.
 - [ ] Port trace event creation.
 - [x] Port verify output renderers (minimal text + JSON).
 
@@ -968,13 +976,23 @@ Acceptance gate:
 
 ### CI and Release
 
-- [ ] Add Go CI job.
+- [x] Add Go CI job.
 - [x] Add dual-run parity harness (partial: Go vs TS baseline script).
 - [ ] Add race test job.
-- [ ] Add release build matrix.
-- [ ] Add checksum generation.
-- [ ] Add packed binary smoke tests.
+- [x] Add release build matrix.
+- [x] Add checksum generation.
+- [x] Add packed binary smoke tests.
 - [ ] Add frozen compatibility smoke tests.
+
+### Next Implementation Priorities
+
+- [ ] Implement `context sync --check` and `context sync --write`.
+- [ ] Add contract drift tests for managed blocks.
+- [ ] Port strict provenance enforcement for standard/deep `verify --strict` command evidence.
+- [ ] Add Go doctor tier-alias and component-registry checks.
+- [ ] Implement remaining compatibility stubs: `intake`, `governance`, `intervention`, `clean`, top-level `export`, top-level `import`.
+- [ ] Add Go race/fuzz CI lanes.
+- [ ] Add release artifact signing strategy and cross-platform smoke execution.
 
 ## 16. Risk Register
 

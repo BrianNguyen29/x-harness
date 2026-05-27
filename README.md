@@ -5,12 +5,13 @@
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/BrianNguyen29/x-harness/badge)](https://scorecard.dev/viewer/?uri=github.com/BrianNguyen29/x-harness)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js Version](https://img.shields.io/badge/Node.js-%3E%3D20-blue.svg)](package.json)
-[![Language: TypeScript](https://img.shields.io/badge/Language-TypeScript-blue.svg)](tsconfig.base.json)
+[![Language: Go](https://img.shields.io/badge/Language-Go-00ADD8.svg)](go.mod)
+[![Compatibility: TypeScript](https://img.shields.io/badge/Compatibility-TypeScript-blue.svg)](tsconfig.base.json)
 
 `x-harness` is a lightweight, offline-first, verify-gated harness for orchestrating and verifying AI-agent workflows. It enforces structured sub-agent handoffs, read-only validation gates, and fail-closed completion rules to help ensure completion claims are admitted only when they satisfy repository verification policy.
 
 > [!NOTE]
-> **Local Development Only**: `x-harness` is not yet published to npm. To use the CLI locally, clone the repository, run `npm install`, and `npm run build`. Then invoke the CLI with `node packages/cli/dist/index.js <command>`.
+> **Local Development**: the Go CLI is the native rewrite target and the TypeScript CLI remains the compatibility baseline during migration. Build locally with `go build ./cmd/x-harness` and run `./x-harness <command>`, or build the TypeScript CLI with `npm install && npm run build` and run `node packages/cli/dist/index.js <command>`.
 
 ---
 
@@ -30,13 +31,17 @@ If you are new to `x-harness`, follow this step-by-step walkthrough to get up an
 
 ### Step 1: Install and Compile
 
-Clone the repository and build the TypeScript CLI application locally:
+Clone the repository and build the native Go CLI locally:
 
 ```bash
-# Install dependencies
-npm install
+# Build the Go CLI binary
+go build ./cmd/x-harness
+```
 
-# Compile the TypeScript CLI source code
+The TypeScript CLI remains available as a compatibility baseline:
+
+```bash
+npm install
 npm run build
 ```
 
@@ -58,23 +63,23 @@ You can use either the alias or the full command:
 
 ```bash
 # These are equivalent:
-node packages/cli/dist/index.js check --card completion-card.yaml
-node packages/cli/dist/index.js verify --card completion-card.yaml
+./x-harness check --card completion-card.yaml
+./x-harness verify --card completion-card.yaml
 
 # These are equivalent:
-node packages/cli/dist/index.js prepare --json
-node packages/cli/dist/index.js handoff readiness --json
+./x-harness prepare --json
+./x-harness handoff readiness --json
 
 # These are equivalent:
-node packages/cli/dist/index.js recover --errors "test failed"
-node packages/cli/dist/index.js recovery suggest --errors "test failed"
+./x-harness recover --errors "test failed"
+./x-harness recovery suggest --errors "test failed"
 
 # status shows trace summary:
-node packages/cli/dist/index.js status
-node packages/cli/dist/index.js report
+./x-harness status
+./x-harness report
 
 # reset cleans harness state safely:
-node packages/cli/dist/index.js reset --confirm
+./x-harness reset --confirm
 ```
 
 **Slash commands for agent adapters:** When integrating with agent platforms (Claude Code, Cursor, etc.), use slash-facing syntax like `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset` to invoke these actions.
@@ -84,7 +89,7 @@ node packages/cli/dist/index.js reset --confirm
 `x-harness` comes with pre-packaged reference scenarios called "Golden Examples". Let's run a verification against a successful task claim:
 
 ```bash
-node packages/cli/dist/index.js check --card examples/golden/success-light/completion-card.yaml
+./x-harness check --card examples/golden/success-light/completion-card.yaml
 ```
 
 > **Expected Output:**
@@ -99,7 +104,7 @@ node packages/cli/dist/index.js check --card examples/golden/success-light/compl
 Now, let's run verification on a card that is missing mandatory evidence scopes:
 
 ```bash
-node packages/cli/dist/index.js check --card examples/golden/blocked-missing-evidence/completion-card.yaml
+./x-harness check --card examples/golden/blocked-missing-evidence/completion-card.yaml
 ```
 
 > **Expected Output:**
@@ -117,7 +122,7 @@ To start using `x-harness` in a separate development project, run the `init` com
 
 ```bash
 # Set up a Minimal workspace (default; installs agents contract, templates, and policies)
-node packages/cli/dist/index.js init --minimal
+./x-harness init --minimal
 ```
 
 If the target directory already contains conflicting harness files, `init` stops with a blocked summary and exits non-zero. Re-run with `--force` only when you intentionally want to overwrite those files, or use `--merge` if/when you want non-destructive merge behavior.
@@ -127,7 +132,7 @@ If the target directory already contains conflicting harness files, `init` stops
 When assigning a task to an agent, generate a structured handoff prompt. For example, to dispatch a normal task:
 
 ```bash
-node packages/cli/dist/index.js handoff standard --title "Fix Checkout Page Button Alignment"
+./x-harness handoff standard --title "Fix Checkout Page Button Alignment"
 ```
 
 This generates a markdown file matching the `standard` tier containing explicit file sets, required evidence checklists, and rollback definitions.
@@ -137,7 +142,7 @@ This generates a markdown file matching the `standard` tier containing explicit 
 Run the diagnostics command at any time to verify that all schemas, policies, templates, and links are healthy:
 
 ```bash
-node packages/cli/dist/index.js doctor --json
+./x-harness doctor --json
 ```
 
 ---
@@ -205,7 +210,9 @@ Task delegation in `x-harness` uses **only** the following three canonical tiers
 
 ## 🛠️ Command-Line Interface (CLI)
 
-`x-harness` features a TypeScript-first CLI tool to initialize templates, run verify gates, audit project health, and compute performance metrics.
+`x-harness` now has a Go-native CLI rewrite in active parity mode, with the TypeScript CLI retained as the compatibility baseline until the native binary becomes primary.
+
+The table below keeps TypeScript compatibility invocations for parity documentation. For the Go binary, replace `node packages/cli/dist/index.js` with `./x-harness`.
 
 ### Core Commands
 
@@ -288,19 +295,22 @@ Running `node packages/cli/dist/index.js verify --trace` logs a JSONL event deta
 ## 📁 Repository Directory Structure
 
 ```text
+├── cmd/
+│   └── x-harness/          # Go CLI entrypoint
+├── internal/               # Go runtime packages
 ├── packages/
-│   └── cli/                # TypeScript CLI Tool Source Code
+│   └── cli/                # TypeScript compatibility CLI source
 │       ├── src/
 │       │   ├── commands/   # command-line sub-commands
 │       │   ├── core/       # admission, metrics, and recovery engines
 │       │   └── validators/ # Ajv schema validation
 │       └── tests/          # CLI Unit and Integration tests
-│   templates/              # Markdown templates for tasks & completion cards
-│   schemas/                # JSON schemas for validating claims & cards
-│   policies/               # admission and recovery YAML policies
-│   docs/                   # Public user and contributor reference docs
-│   adapters/               # Platform-specific instructions and rules
-│   examples/               # Reference scenarios & golden test cases
+├── templates/              # Markdown templates for tasks & completion cards
+├── schemas/                # JSON schemas for validating claims & cards
+├── policies/               # admission and recovery YAML policies
+├── docs/                   # Public user and contributor reference docs
+├── adapters/               # Platform-specific instructions and rules
+├── examples/               # Reference scenarios & golden test cases
 ```
 
 ---
@@ -324,6 +334,7 @@ Running `node packages/cli/dist/index.js verify --trace` logs a JSONL event deta
 | [`docs/CI.md`](docs/CI.md)                             | CI integration guide and local-build composite action                        |
 | [`docs/CLEANUP.md`](docs/CLEANUP.md)                   | Cleanup and maintenance operations                                           |
 | [`docs/RELEASE_SECURITY.md`](docs/RELEASE_SECURITY.md) | Release, SBOM, and provenance checks                                         |
+| [`docs/NPM_WRAPPER_PLAN.md`](docs/NPM_WRAPPER_PLAN.md) | Plan for npm package transition to native Go binaries                        |
 
 ---
 
@@ -331,4 +342,4 @@ Running `node packages/cli/dist/index.js verify --trace` logs a JSONL event deta
 
 - **License**: MIT (`LICENSE`)
 - **Contribution Guidelines**: See `CONTRIBUTING.md` and `templates/HARNESS_CHANGE_CONTRACT.md` before making harness-sensitive changes.
-- **Project Health Checks**: Execute `node packages/cli/dist/index.js doctor` regularly to ensure files, schemas, and policies are valid and aligned.
+- **Project Health Checks**: Execute `./x-harness doctor` or `node packages/cli/dist/index.js doctor` regularly to ensure files, schemas, and policies are valid and aligned.

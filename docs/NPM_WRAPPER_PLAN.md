@@ -6,7 +6,7 @@ Goal: transition the `x-harness` npm package from a TypeScript (Node.js) CLI ent
 
 - The TypeScript CLI lives in `packages/cli/dist/index.js` and is invoked via `node`.
 - A Go implementation exists under `cmd/x-harness` and `internal/` with parity checks in `scripts/check-go-parity.mjs`.
-- Phase 8 introduces CI dual-run (Node + Go) and release candidate readiness.
+- Phase 8 foundation has introduced CI dual-run (Node + Go), Go release candidate binaries, checksums, and a local Go binary smoke test.
 
 ## Strategy
 
@@ -49,13 +49,14 @@ This keeps the `npm install` experience identical for consumers.
 
 ## Fallback / Compatibility Window
 
-- **Phase 8–9**: Go binary is included in the npm tarball but the JS launcher defaults to Go only when `X_HARNESS_GO=1` is set. Default remains Node.
+- **Phase 8 foundation**: Go release binaries are built and uploaded as release artifacts with checksums. They are not yet injected into the npm tarball.
+- **Phase 8–9 wrapper implementation**: Go binary is included in the npm tarball but the JS launcher defaults to Go only when `X_HARNESS_GO=1` is set. Default remains Node.
 - **Phase 10**: JS launcher defaults to Go when the binary is present. Node fallback is automatic.
 - **Phase 11+**: Node fallback is removed; package becomes a thin wrapper around the Go binary.
 
 During the compatibility window:
 - All existing `xh <command>` invocations continue to work.
-- The Node CLI remains the source of truth for verification gates.
+- The Node CLI remains the compatibility baseline for verification gates while Go parity checks run in CI.
 - Go parity checks (`npm run parity:check-go`) must remain green before advancing phases.
 
 ## Asset Layout

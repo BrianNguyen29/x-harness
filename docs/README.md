@@ -27,3 +27,4 @@ enforces.
 - [Report Formats](REPORT_FORMATS.md)
 - [Cleanup](CLEANUP.md)
 - [Release Security](RELEASE_SECURITY.md)
+- [NPM Wrapper Plan](NPM_WRAPPER_PLAN.md)

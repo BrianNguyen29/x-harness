@@ -11,7 +11,7 @@ labels: enhancement
 
 ## Scope check
 
-- [ ] Keeps x-harness file-first and TypeScript-first
+- [ ] Keeps x-harness file-first and Go-native with TypeScript compatibility
 - [ ] Does not require daemon/database/server/MCP by default
 - [ ] Preserves read-only verification
 - [ ] Preserves PGV advisory-only semantics

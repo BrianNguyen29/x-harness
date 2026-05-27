@@ -33,9 +33,9 @@ PGV advice is advisory-only. It never overrides verify and never grants admissio
 
 ## Project shape
 
-- TypeScript-first, file-first, lightweight harness. No daemon, database, server, or runtime required.
-- Workspace root delegates to `packages/cli` for build, dev, test, typecheck, lint, and verify.
-- CLI is local development only; build first, then invoke via `node packages/cli/dist/index.js <command>`.
+- Go-native rewrite with TypeScript compatibility baseline; file-first, lightweight harness. No daemon, database, server, or runtime required.
+- Workspace root delegates TypeScript build/dev/test/typecheck/lint/verify to `packages/cli`; Go CLI builds from `cmd/x-harness`.
+- CLI is local development oriented; build Go with `go build ./cmd/x-harness` and invoke `./x-harness <command>`, or build TypeScript with `npm run build` and invoke `node packages/cli/dist/index.js <command>`.
 
 ## Commands
 

@@ -21,6 +21,13 @@ Check Go CLI parity against the committed TypeScript baseline with:
 node scripts/check-go-parity.mjs
 ```
 
+Smoke a built Go binary with:
+
+```bash
+go build ./cmd/x-harness
+bash tests/smoke/go-binary-smoke.sh ./x-harness
+```
+
 This script first verifies that the committed TypeScript baseline is still
 current, then builds the Go CLI and compares the supported Go command surface
 against the committed TypeScript baseline semantically.

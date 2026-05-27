@@ -12,6 +12,10 @@ Before publish, the release workflow runs:
 - `npm run lint`
 - `npm run format:check`
 - `npm test`
+- `go test ./...`
+- `go vet ./...`
+- `go build ./cmd/x-harness`
+- `npm run parity:check-go`
 - `node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json`
 - `node packages/cli/dist/index.js doctor --root .`
 - `node packages/cli/dist/index.js examples verify`
@@ -19,6 +23,7 @@ Before publish, the release workflow runs:
 - `npm -w packages/cli run pack:dry-run`
 - Packed CLI smoke test from the generated `.tgz`
 - Frozen transfer compatibility from the generated `.tgz`
+- Go release binary matrix build, SHA256 checksums, and Go binary smoke test
 
 The adversarial benchmark is a hard release gate: `false_accept_count` and `adversarial_false_accept_count` must both remain `0`. Adversarial cases also exercise governance-enforced verification for protected-path approval spoofing.
 
@@ -41,7 +46,7 @@ The adversarial benchmark is a hard release gate: `false_accept_count` and `adve
 - `CHANGELOG.md`
 - `LICENSE`
 
-The CLI resolves package assets through `packages/cli/src/core/assets.ts`, with fallback support for source checkouts. This keeps `xh init` and `xh examples verify` working from source, `npm link`, global install, `npx`, `pnpm dlx`, and GitHub Actions temp repos.
+The TypeScript CLI resolves package assets through `packages/cli/src/core/assets.ts`, and the Go CLI resolves source/package assets through `internal/assets`. This keeps `xh init` and `xh examples verify` working from source, `npm link`, global install, `npx`, `pnpm dlx`, GitHub Actions temp repos, and native Go binary smoke tests.
 
 ## Provenance
 
@@ -72,3 +77,4 @@ Sigstore signing and SLSA provenance are recommended for the next hardening laye
 - `npm pack --dry-run` output reviewed in CI.
 - Packed CLI smoke test proving `xh init`, `xh verify`, and `xh doctor` run from the tarball.
 - Frozen compatibility proving the packed CLI can export, verify, and merge-import a frozen bundle.
+- Go binary checksums and smoke evidence proving the native binary can run `doctor`, `examples verify`, and golden `verify` locally.

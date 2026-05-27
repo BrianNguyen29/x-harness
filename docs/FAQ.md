@@ -4,13 +4,13 @@
 
 ## 🛠️ Environment & Tooling
 
-### Why a TypeScript CLI?
+### Why a Go CLI with TypeScript compatibility?
 
-Today, this repository is easiest to run in local development mode via `node packages/cli/dist/index.js ...` after `npm install` and `npm run build`. If a published package is added later, the same workflows can be exposed through a shorter installed CLI wrapper. The authoritative source of truth for the harness contract remains the repository file configurations (`policies/`, `schemas/`, `templates/`).
+The native Go CLI improves startup, distribution, and release artifact ergonomics. The TypeScript CLI remains as a compatibility baseline during migration so parity can be checked before Go becomes the default package entrypoint. The authoritative source of truth for the harness contract remains the repository file configurations (`policies/`, `schemas/`, `templates/`).
 
 ### Is Python required?
 
-No. Core tooling, schemas validation, and policies evaluation are strictly TypeScript-first. Any experimental Python scripts or tools will live isolated in experimental subdirectories and are marked non-canonical.
+No. Core tooling, schema validation, and policy evaluation are implemented in the Go CLI with TypeScript compatibility retained during migration. Any experimental Python scripts or tools will live isolated in experimental subdirectories and are marked non-canonical.
 
 ### Do I need a database, background server, or MCP configuration?
 

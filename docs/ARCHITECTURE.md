@@ -23,7 +23,7 @@
 ┌──────────────┐   ┌──────────────┐   ┌──────────────────┐
 │  VALIDATOR   │   │  ADMISSION   │   │     METRICS      │
 │    LAYER     │   │ CONTROL LAYER│   │  REPORTING LAYER │
-│   (Ajv)      │   │(admission.ts)│   │  (metrics.ts)    │
+│ (JSON Schema)│   │(admission)   │   │  (reporting)     │
 └──────┬───────┘   └──────┬───────┘   └────────┬─────────┘
        │                  │                    │
        │ Load             │ Load Policies      │ Calculate
@@ -44,11 +44,11 @@ Translates platform-specific conventions into unified `x-harness` parameters. It
 
 ### 2. Tooling & CLI Layer
 
-Provides developer utilities to scaffolding templates (`init`, `handoff`), modify files (`add`), clear logs (`clean`), and execute audits (`verify`, `doctor`, `report`). Built strictly in TypeScript to guarantee optimal portability.
+Provides developer utilities to scaffolding templates (`init`, `handoff`), modify files (`add`), clear logs (`clean`), and execute audits (`verify`, `doctor`, `report`). The native Go CLI is the rewrite target; the TypeScript CLI remains a compatibility baseline during migration.
 
 ### 3. Validator Layer
 
-Enforces complete structure verification on inputs via **Ajv (JSON Schema)** validation. This layer ensures that completion cards, sub-agent returns, and events perfectly comply with expected schemas prior to verification.
+Enforces complete structure verification on inputs via **JSON Schema** validation. This layer ensures that completion cards, sub-agent returns, and events comply with expected schemas prior to verification.
 
 ### 4. Admission Control Layer
 
@@ -67,20 +67,20 @@ The interaction sequence for a standard verification run:
 ```txt
 [Developer / Agent]
        │
-       │ 1. Run CLI command: "node packages/cli/dist/index.js verify --card completion-card.yaml"
+       │ 1. Run CLI command: "./x-harness verify --card completion-card.yaml"
        ▼
-[CLI / index.ts]
+[CLI / Go binary or TypeScript compatibility entrypoint]
        │
        │ 2. Load schemas (schemas/completion-card.schema.json)
        ▼
-[Validators / completionCard.ts]
+[Schema validators]
        │
        ├─► [FAIL] ──► Exits with Status 1 (Schema Validation Error)
        │
        └─► [PASS] ──► Loads Admission Rules (policies/admission.yaml)
                       │
                       ▼
-             [Core / admission.ts]
+              [Admission core]
                       │
                       ├─► [FAIL] ──► Suggested recovery route ──► Exit Status 1
                       │
