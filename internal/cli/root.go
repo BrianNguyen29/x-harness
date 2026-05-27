@@ -123,6 +123,18 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleFrozen(args[1:], stdout, stderr)
 	case "federation":
 		return handleFederation(args[1:], stdout, stderr)
+	case "governance":
+		return handleGovernance(args[1:], stdout, stderr)
+	case "clean":
+		return handleClean(args[1:], stdout, stderr)
+	case "intervention":
+		return handleIntervention(args[1:], stdout, stderr)
+	case "intake":
+		return handleIntake(args[1:], stdout, stderr)
+	case "export":
+		return handleFrozenExport(append([]string{"--frozen"}, args[1:]...), stdout, stderr)
+	case "import":
+		return handleFrozenImport(append([]string{"--frozen"}, args[1:]...), stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}
