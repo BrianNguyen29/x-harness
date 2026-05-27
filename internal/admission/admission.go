@@ -14,6 +14,29 @@ type Result struct {
 	BlockingPredicate string   `json:"blocking_predicate,omitempty"`
 }
 
+func isCompletionCardShape(doc map[string]any) bool {
+	if _, ok := doc["schema_version"]; ok {
+		return true
+	}
+	if _, ok := doc["task_id"]; ok {
+		return true
+	}
+	if _, ok := doc["admission"]; ok {
+		return true
+	}
+	if _, ok := doc["acceptance_status"]; ok {
+		return true
+	}
+	if claim, ok := doc["claim"].(map[string]any); ok {
+		if _, ok := claim["fix_status"]; ok {
+			if _, ok := claim["summary"]; ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // Run evaluates a parsed completion card and returns an admission result.
 func Run(doc map[string]any, strict bool) Result {
 	errors := make([]string, 0)
@@ -38,15 +61,17 @@ func Run(doc map[string]any, strict bool) Result {
 		}
 	}
 
-	// Required fields check
-	if owner := stringValue(doc, "owner"); strings.TrimSpace(owner) == "" {
-		errors = append(errors, "missing owner: owner is required")
-	}
-	if accountable := stringValue(doc, "accountable"); strings.TrimSpace(accountable) == "" {
-		errors = append(errors, "missing accountable: accountable is required")
-	}
-	if taskID := stringValue(doc, "task_id"); strings.TrimSpace(taskID) == "" {
-		errors = append(errors, "missing task_id: task_id is required")
+	// Required fields check (only for completion card shape)
+	if isCompletionCardShape(doc) {
+		if owner := stringValue(doc, "owner"); strings.TrimSpace(owner) == "" {
+			errors = append(errors, "missing owner: owner is required")
+		}
+		if accountable := stringValue(doc, "accountable"); strings.TrimSpace(accountable) == "" {
+			errors = append(errors, "missing accountable: accountable is required")
+		}
+		if taskID := stringValue(doc, "task_id"); strings.TrimSpace(taskID) == "" {
+			errors = append(errors, "missing task_id: task_id is required")
+		}
 	}
 
 	// Tier validation
@@ -63,7 +88,7 @@ func Run(doc map[string]any, strict bool) Result {
 	claim := mapValue(doc, "claim")
 	claimFixStatus := stringInMap(claim, "fix_status")
 	subagentReturn := mapValue(doc, "subagent_return")
-	subagentFixStatus := stringInMap(subagentReturn, "fix_status")
+	subagentFixStatus := stringInMap(mapValue(subagentReturn, "result"), "fix_status")
 	if claimFixStatus != "" && subagentFixStatus != "" && claimFixStatus != subagentFixStatus {
 		applyFinding(
 			fmt.Sprintf(`canonical contradiction: claim.fix_status is %q but result.fix_status is %q`, claimFixStatus, subagentFixStatus),

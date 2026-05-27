@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 
-	"github.com/BrianNguyen29/x-harness/internal/loader"
+	"github.com/BrianNguyen29/x-harness/internal/policy"
 	"gopkg.in/yaml.v3"
 )
 
@@ -47,9 +46,8 @@ type rawPolicy struct {
 }
 
 func LoadPolicy(root string) (*CostBudgetPolicy, error) {
-	policyPath := filepath.Join(root, "policies", "cost-budget.yaml")
 	var raw rawPolicy
-	if err := loader.LoadYAML(policyPath, &raw); err != nil {
+	if err := policy.LoadYAML(root, "cost-budget.yaml", &raw); err != nil {
 		return nil, fmt.Errorf("failed to load cost policy: %w", err)
 	}
 	return &CostBudgetPolicy{

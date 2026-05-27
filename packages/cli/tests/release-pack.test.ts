@@ -67,6 +67,7 @@ describe("release packaging", () => {
     const files = new Set(pack.files.map((file) => file.path));
     for (const required of [
       "dist/index.js",
+      "bin/x-harness.js",
       "schemas/agent-profile.schema.json",
       "schemas/approval-risk.schema.json",
       "schemas/claim.schema.json",
@@ -105,6 +106,25 @@ describe("release packaging", () => {
         true
       );
     }
+  });
+
+  it("npm bin points to compatibility wrapper", () => {
+    const packageJson = JSON.parse(
+      fs.readFileSync(path.join(packageRoot, "package.json"), "utf-8")
+    ) as { bin: Record<string, string>; files: string[] };
+    expect(packageJson.bin["x-harness"]).toBe("./bin/x-harness.js");
+    expect(packageJson.bin.xh).toBe("./bin/x-harness.js");
+    expect(packageJson.files).toContain("bin");
+    expect(packageJson.files).toContain("go-binaries");
+
+    const wrapper = fs.readFileSync(
+      path.join(packageRoot, "bin", "x-harness.js"),
+      "utf-8"
+    );
+    expect(wrapper).toContain("X_HARNESS_GO");
+    expect(wrapper).toContain("go-binaries");
+    expect(wrapper).toContain("dist");
+    expect(wrapper).toContain("index.js");
   });
 
   it("release workflows include benchmark, pack, SBOM, and provenance gates", () => {

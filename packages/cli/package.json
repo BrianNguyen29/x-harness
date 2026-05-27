@@ -25,7 +25,9 @@
     "node": ">=20"
   },
   "files": [
+    "bin",
     "dist",
+    "go-binaries",
     "schemas",
     "policies",
     "templates",
@@ -45,8 +47,8 @@
     "SUPPORT.md"
   ],
   "bin": {
-    "x-harness": "./dist/index.js",
-    "xh": "./dist/index.js"
+    "x-harness": "./bin/x-harness.js",
+    "xh": "./bin/x-harness.js"
   },
   "scripts": {
     "build": "tsc && node scripts/sync-package-assets.mjs",

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -108,10 +109,30 @@ type mutationGuardCase struct {
 	OK          bool   `json:"ok"`
 }
 
+type latencyBenchmarkResult struct {
+	Command    string                   `json:"command"`
+	Iterations int                      `json:"iterations"`
+	OK         bool                     `json:"ok"`
+	MinMs      int                      `json:"min_ms"`
+	AvgMs      int                      `json:"avg_ms"`
+	MaxMs      int                      `json:"max_ms"`
+	ExitCodes  []int                    `json:"exit_codes"`
+	Samples    []latencyBenchmarkSample `json:"samples"`
+}
+
+type latencyBenchmarkSample struct {
+	DurationMs int  `json:"duration_ms"`
+	ExitCode   int  `json:"exit_code"`
+	TimedOut   bool `json:"timed_out"`
+}
+
 func handleBenchmark(args []string, stdout io.Writer, stderr io.Writer) int {
 	filter := "all"
 	mutationFiles := "100,1000,5000"
 	mutationConcurrency := "1,4,16,64"
+	commands := "verify,doctor,examples,test:fast"
+	iterations := 1
+	timeoutMs := 120000
 	jsonMode := false
 	updateSnapshots := false
 
@@ -130,6 +151,31 @@ func handleBenchmark(args []string, stdout io.Writer, stderr io.Writer) int {
 		case "--mutation-concurrency":
 			if i+1 < len(args) {
 				mutationConcurrency = args[i+1]
+				i++
+			}
+		case "--commands":
+			if i+1 < len(args) {
+				commands = args[i+1]
+				i++
+			}
+		case "--iterations":
+			if i+1 < len(args) {
+				parsed, err := parsePositiveInt(args[i+1])
+				if err != nil {
+					fmt.Fprintf(stderr, "error parsing --iterations: %v\n", err)
+					return ExitUsage
+				}
+				iterations = parsed
+				i++
+			}
+		case "--timeout-ms":
+			if i+1 < len(args) {
+				parsed, err := parsePositiveInt(args[i+1])
+				if err != nil {
+					fmt.Fprintf(stderr, "error parsing --timeout-ms: %v\n", err)
+					return ExitUsage
+				}
+				timeoutMs = parsed
 				i++
 			}
 		case "--json":
@@ -204,6 +250,53 @@ func handleBenchmark(args []string, stdout io.Writer, stderr io.Writer) int {
 		return ExitError
 	}
 
+	if filter == "latency" {
+		commandNames, err := parseBenchmarkCommands(commands)
+		if err != nil {
+			fmt.Fprintf(stderr, "error parsing --commands: %v\n", err)
+			return ExitUsage
+		}
+		started := time.Now()
+		latencyResults := make([]latencyBenchmarkResult, 0, len(commandNames))
+		ok := true
+		for _, name := range commandNames {
+			result := runLatencyBenchmarkCommand(root, name, iterations, timeoutMs)
+			if !result.OK {
+				ok = false
+			}
+			latencyResults = append(latencyResults, result)
+		}
+
+		metrics := defaultBenchmarkMetrics()
+		metrics.RuntimeMs = int(time.Since(started).Milliseconds())
+		result := benchmarkResult{
+			OK:                     ok,
+			Filter:                 filter,
+			GeneratedAt:            time.Now().UTC().Format(time.RFC3339),
+			Integration:            nil,
+			Iterations:             iterations,
+			Metrics:                metrics,
+			MutationGuardBenchmark: nil,
+			Results:                make([]interface{}, 0, len(latencyResults)),
+			TimeoutMs:              timeoutMs,
+		}
+		for _, r := range latencyResults {
+			result.Results = append(result.Results, r)
+		}
+
+		if jsonMode {
+			if err := WriteJSON(stdout, result); err != nil {
+				return ExitError
+			}
+		} else {
+			renderLatencyBenchmarkText(stdout, latencyResults)
+		}
+		if result.OK {
+			return ExitOK
+		}
+		return ExitError
+	}
+
 	if filter == "adversarial" {
 		advReport, err := runAdversarialBenchmark(root)
 		if err != nil {
@@ -263,7 +356,7 @@ func handleBenchmark(args []string, stdout io.Writer, stderr io.Writer) int {
 		return ExitError
 	}
 
-	fmt.Fprintf(stderr, "benchmark filter %q is not implemented in the Go CLI; use --filter mutation-guard or --filter adversarial\n", filter)
+	fmt.Fprintf(stderr, "benchmark filter %q is not implemented in the Go CLI; use --filter latency, mutation-guard or adversarial\n", filter)
 	return ExitUsage
 }
 
@@ -303,6 +396,111 @@ func parsePositiveIntList(s string) ([]int, error) {
 		}
 	}
 	return result, nil
+}
+
+func parsePositiveInt(s string) (int, error) {
+	n, err := strconv.Atoi(strings.TrimSpace(s))
+	if err != nil || n < 1 {
+		return 0, fmt.Errorf("invalid positive integer: %s", s)
+	}
+	return n, nil
+}
+
+func parseBenchmarkCommands(s string) ([]string, error) {
+	valid := map[string]bool{"verify": true, "doctor": true, "examples": true, "test:fast": true, "test": true}
+	var result []string
+	seen := make(map[string]struct{})
+	for _, part := range strings.Split(s, ",") {
+		name := strings.TrimSpace(part)
+		if name == "" {
+			continue
+		}
+		if !valid[name] {
+			return nil, fmt.Errorf("unknown command %q", name)
+		}
+		if _, ok := seen[name]; !ok {
+			seen[name] = struct{}{}
+			result = append(result, name)
+		}
+	}
+	if len(result) == 0 {
+		return nil, fmt.Errorf("must include at least one command")
+	}
+	return result, nil
+}
+
+func runLatencyBenchmarkCommand(root, name string, iterations, timeoutMs int) latencyBenchmarkResult {
+	result := latencyBenchmarkResult{Command: name, Iterations: iterations, OK: true, Samples: []latencyBenchmarkSample{}, ExitCodes: []int{}}
+	for i := 0; i < iterations; i++ {
+		sample := runLatencySample(root, name, timeoutMs)
+		result.Samples = append(result.Samples, sample)
+		result.ExitCodes = append(result.ExitCodes, sample.ExitCode)
+		if sample.ExitCode != ExitOK || sample.TimedOut {
+			result.OK = false
+		}
+	}
+	if len(result.Samples) == 0 {
+		return result
+	}
+	minMs := result.Samples[0].DurationMs
+	maxMs := result.Samples[0].DurationMs
+	totalMs := 0
+	for _, sample := range result.Samples {
+		if sample.DurationMs < minMs {
+			minMs = sample.DurationMs
+		}
+		if sample.DurationMs > maxMs {
+			maxMs = sample.DurationMs
+		}
+		totalMs += sample.DurationMs
+	}
+	result.MinMs = minMs
+	result.MaxMs = maxMs
+	result.AvgMs = totalMs / len(result.Samples)
+	return result
+}
+
+func runLatencySample(root, name string, timeoutMs int) latencyBenchmarkSample {
+	started := time.Now()
+	exitCode := ExitError
+	timedOut := false
+	switch name {
+	case "verify":
+		var stdout, stderr strings.Builder
+		cardPath := filepath.Join(root, "examples", "golden", "success-light", "completion-card.yaml")
+		exitCode = Run([]string{"verify", "--card", cardPath, "--json"}, &stdout, &stderr)
+	case "doctor":
+		var stdout, stderr strings.Builder
+		exitCode = Run([]string{"doctor", "--root", root}, &stdout, &stderr)
+	case "examples":
+		var stdout, stderr strings.Builder
+		exitCode = Run([]string{"examples", "verify", "--json"}, &stdout, &stderr)
+	case "test:fast", "test":
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutMs)*time.Millisecond)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, "go", "test", "./internal/schema")
+		cmd.Dir = root
+		err := cmd.Run()
+		if ctx.Err() == context.DeadlineExceeded {
+			timedOut = true
+			exitCode = ExitError
+		} else if err == nil {
+			exitCode = ExitOK
+		} else {
+			exitCode = ExitError
+		}
+	}
+	return latencyBenchmarkSample{DurationMs: int(time.Since(started).Milliseconds()), ExitCode: exitCode, TimedOut: timedOut}
+}
+
+func renderLatencyBenchmarkText(w io.Writer, results []latencyBenchmarkResult) {
+	WriteLine(w, "# x-harness Latency Benchmark")
+	WriteLine(w, "")
+	WriteLine(w, "| command | iterations | min_ms | avg_ms | max_ms | ok |")
+	WriteLine(w, "| :-- | --: | --: | --: | --: | :-- |")
+	for _, item := range results {
+		WriteLine(w, "| %s | %d | %d | %d | %d | %v |", item.Command, item.Iterations, item.MinMs, item.AvgMs, item.MaxMs, item.OK)
+	}
 }
 
 func runMutationGuardBenchmark(fileCounts []int, concurrencyLevels []int) (*mutationGuardBenchmark, error) {

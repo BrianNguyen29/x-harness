@@ -1,11 +1,10 @@
 package authority
 
 import (
-	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/BrianNguyen29/x-harness/internal/loader"
+	"github.com/BrianNguyen29/x-harness/internal/policy"
 )
 
 // AuthorityPolicy represents the authority.yaml structure.
@@ -69,12 +68,11 @@ func matchPath(pattern, filePath string) bool {
 
 // LoadAuthorityPolicy loads the authority policy from the given repository root.
 func LoadAuthorityPolicy(root string) (*AuthorityPolicy, error) {
-	path := filepath.Join(root, "policies", "authority.yaml")
-	var policy AuthorityPolicy
-	if err := loader.LoadYAML(path, &policy); err != nil {
+	var p AuthorityPolicy
+	if err := policy.LoadYAML(root, "authority.yaml", &p); err != nil {
 		return nil, err
 	}
-	return &policy, nil
+	return &p, nil
 }
 
 // ClassifyPath returns the authority classification for a file path.

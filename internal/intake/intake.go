@@ -2,12 +2,10 @@ package intake
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/BrianNguyen29/x-harness/internal/loader"
+	"github.com/BrianNguyen29/x-harness/internal/policy"
 )
 
 // IntakeLabel represents the intake classification label.
@@ -149,15 +147,11 @@ func HasApprovedTierDowngradeIntervention(governance map[string]any) bool {
 
 // LoadIntakePolicy loads the intake policy from the given repository root.
 func LoadIntakePolicy(root string) (*IntakePolicy, error) {
-	path := filepath.Join(root, "policies", "intake.yaml")
-	if _, err := os.Stat(path); err != nil {
+	var p IntakePolicy
+	if err := policy.LoadYAML(root, "intake.yaml", &p); err != nil {
 		return nil, err
 	}
-	var policy IntakePolicy
-	if err := loader.LoadYAML(path, &policy); err != nil {
-		return nil, err
-	}
-	return &policy, nil
+	return &p, nil
 }
 
 // ClassifyTask classifies a task based on signals and file paths.

@@ -94,6 +94,30 @@ type unknownEvents struct {
 	Note  string `json:"note"`
 }
 
+type traceEventAccounting struct {
+	TotalTraceEvents int    `json:"total_trace_events"`
+	Note             string `json:"note"`
+}
+
+type traceAdmissionAccounting struct {
+	Accepted         int    `json:"accepted"`
+	TotalTraceEvents int    `json:"total_trace_events"`
+	Note             string `json:"note"`
+}
+
+type traceReportOutput struct {
+	TotalEvents             int                      `json:"total_events"`
+	Accepted                int                      `json:"accepted"`
+	Withheld                int                      `json:"withheld"`
+	ByOutcome               map[string]int           `json:"by_outcome"`
+	VerifyEventAccounting   traceEventAccounting     `json:"verify_event_accounting"`
+	TaskLifecycleAccounting lifecycleAccounting      `json:"task_lifecycle_accounting"`
+	AdmissionAccounting     traceAdmissionAccounting `json:"admission_accounting"`
+	WithheldAccounting      withheldAccounting       `json:"withheld_accounting"`
+	UnknownOrUnlinkedEvents unknownEvents            `json:"unknown_or_unlinked_events"`
+	Latest                  TraceEvent               `json:"latest"`
+}
+
 type reportMetricsOutput struct {
 	CardID                  any                 `json:"card_id"`
 	TaskID                  any                 `json:"task_id"`
@@ -111,6 +135,7 @@ type reportMetricsOutput struct {
 func handleReport(args []string, stdout io.Writer, stderr io.Writer) int {
 	metricsMode := false
 	cardPath := "completion-card.yaml"
+	traceDir := ".x-harness/traces"
 	jsonMode := false
 	format := "markdown"
 
@@ -121,6 +146,11 @@ func handleReport(args []string, stdout io.Writer, stderr io.Writer) int {
 		case "--card":
 			if i+1 < len(args) {
 				cardPath = args[i+1]
+				i++
+			}
+		case "--trace-dir":
+			if i+1 < len(args) {
+				traceDir = args[i+1]
 				i++
 			}
 		case "--json":
@@ -134,14 +164,13 @@ func handleReport(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 	}
 
-	if !metricsMode {
-		WriteLine(stderr, "command %q is declared in the Go CLI skeleton but not implemented yet", "report")
+	if format != "markdown" && format != "json" {
+		fmt.Fprintf(stderr, "unsupported report format %q (supported: markdown, json)\n", format)
 		return ExitUsage
 	}
 
-	if format != "markdown" && format != "json" {
-		fmt.Fprintf(stderr, "unsupported report format %q for --metrics (supported: markdown, json)\n", format)
-		return ExitUsage
+	if !metricsMode {
+		return renderTraceReport(traceDir, jsonMode || format == "json", stdout, stderr)
 	}
 
 	if _, err := os.Stat(cardPath); os.IsNotExist(err) {
@@ -238,6 +267,203 @@ func handleReport(args []string, stdout io.Writer, stderr io.Writer) int {
 
 	renderMetricsMarkdown(stdout, report)
 	return ExitOK
+}
+
+func renderTraceReport(traceDir string, jsonMode bool, stdout io.Writer, stderr io.Writer) int {
+	events, err := ReadTrace(traceDir)
+	if err != nil {
+		fmt.Fprintf(stderr, "failed to read trace: %v\n", err)
+		return ExitError
+	}
+	report := buildTraceReport(events)
+	if jsonMode {
+		if err := WriteJSON(stdout, report); err != nil {
+			return ExitError
+		}
+		return ExitOK
+	}
+	renderTraceReportMarkdown(stdout, report)
+	return ExitOK
+}
+
+func buildTraceReport(events []TraceEvent) traceReportOutput {
+	total := len(events)
+	accepted := 0
+	withheld := 0
+	failed := 0
+	blocked := 0
+	skipped := 0
+	timeoutCount := 0
+	errorCount := 0
+	unknownCount := 0
+	byOutcome := make(map[string]int)
+
+	validOutcomes := map[string]bool{"success": true, "failed": true, "blocked": true, "skipped": true, "timeout": true, "error": true}
+	for _, event := range events {
+		outcome := traceString(event, "outcome")
+		acceptance := traceString(event, "acceptance_status")
+		if outcome == "" {
+			outcome = "unknown"
+		}
+		byOutcome[outcome]++
+		switch acceptance {
+		case "accepted":
+			accepted++
+		case "withheld":
+			withheld++
+		}
+		switch outcome {
+		case "failed":
+			failed++
+		case "blocked":
+			blocked++
+		case "skipped":
+			skipped++
+		case "timeout":
+			timeoutCount++
+		case "error":
+			errorCount++
+		}
+		if !validOutcomes[outcome] || (acceptance != "accepted" && acceptance != "withheld") {
+			unknownCount++
+		}
+	}
+
+	var latest TraceEvent
+	if len(events) > 0 {
+		latest = events[len(events)-1]
+	}
+
+	return traceReportOutput{
+		TotalEvents: total,
+		Accepted:    accepted,
+		Withheld:    withheld,
+		ByOutcome:   byOutcome,
+		VerifyEventAccounting: traceEventAccounting{
+			TotalTraceEvents: total,
+			Note:             "Counts are based only on traced verify events; total task denominator may differ.",
+		},
+		TaskLifecycleAccounting: lifecycleAccounting{
+			Admitted: accepted,
+			Withheld: withheld,
+			Note:     "Lifecycle accounting covers only events present in the trace log.",
+		},
+		AdmissionAccounting: traceAdmissionAccounting{
+			Accepted:         accepted,
+			TotalTraceEvents: total,
+			Note:             "Admission requires outcome=success; non-success outcomes are withheld.",
+		},
+		WithheldAccounting: withheldAccounting{
+			Failed:  failed,
+			Blocked: blocked,
+			Skipped: skipped,
+			Timeout: timeoutCount,
+			Error:   errorCount,
+			Note:    "Withheld breakdown is only as complete as the trace event set.",
+		},
+		UnknownOrUnlinkedEvents: unknownEvents{
+			Count: unknownCount,
+			Note:  "Events with missing or unrecognized outcome/acceptance_status.",
+		},
+		Latest: latest,
+	}
+}
+
+func traceString(event TraceEvent, key string) string {
+	if event == nil {
+		return ""
+	}
+	if value, ok := event[key].(string); ok {
+		return value
+	}
+	return ""
+}
+
+func renderTraceReportMarkdown(w io.Writer, report traceReportOutput) {
+	WriteLine(w, "# x-harness Report")
+	WriteLine(w, "")
+	WriteLine(w, "## Installed mode")
+	WriteLine(w, "CLI-only (no daemon / no database / no MCP)")
+	WriteLine(w, "")
+	WriteLine(w, "## Completion card")
+	if report.TotalEvents == 0 {
+		WriteLine(w, "No completion cards found in trace.")
+	} else {
+		WriteLine(w, "%d card(s) in trace.", report.TotalEvents)
+	}
+	WriteLine(w, "")
+	WriteLine(w, "## Verify event accounting")
+	if report.TotalEvents == 0 {
+		WriteLine(w, "No verify events recorded.")
+		WriteLine(w, "Denominator: NOT_COMPUTABLE (no events)")
+	} else {
+		WriteLine(w, "- total_trace_events: %d", report.TotalEvents)
+		outcomes := make([]string, 0, len(report.ByOutcome))
+		for outcome := range report.ByOutcome {
+			outcomes = append(outcomes, outcome)
+		}
+		sort.Strings(outcomes)
+		for _, outcome := range outcomes {
+			WriteLine(w, "- %s: %d/%d", outcome, report.ByOutcome[outcome], report.TotalEvents)
+		}
+		WriteLine(w, "> Counts are based only on traced verify events; total task denominator may differ.")
+	}
+	WriteLine(w, "")
+	WriteLine(w, "## Task lifecycle accounting")
+	if report.TotalEvents == 0 {
+		WriteLine(w, "No lifecycle data available.")
+	} else {
+		WriteLine(w, "- admitted: %d/%d", report.Accepted, report.TotalEvents)
+		WriteLine(w, "- withheld: %d/%d", report.Withheld, report.TotalEvents)
+		WriteLine(w, "> Lifecycle accounting covers only events present in the trace log.")
+	}
+	WriteLine(w, "")
+	WriteLine(w, "## Admission accounting")
+	if report.TotalEvents == 0 {
+		WriteLine(w, "No admission data available.")
+	} else {
+		WriteLine(w, "- accepted: %d/%d", report.Accepted, report.TotalEvents)
+		WriteLine(w, "> Admission requires outcome=success; non-success outcomes are withheld.")
+	}
+	WriteLine(w, "")
+	WriteLine(w, "## Withheld accounting")
+	if report.TotalEvents == 0 {
+		WriteLine(w, "No withheld data available.")
+	} else if report.Withheld == 0 {
+		WriteLine(w, "None.")
+	} else {
+		if report.WithheldAccounting.Failed > 0 {
+			WriteLine(w, "- failed: %d/%d", report.WithheldAccounting.Failed, report.TotalEvents)
+		}
+		if report.WithheldAccounting.Blocked > 0 {
+			WriteLine(w, "- blocked: %d/%d", report.WithheldAccounting.Blocked, report.TotalEvents)
+		}
+		if report.WithheldAccounting.Skipped > 0 {
+			WriteLine(w, "- skipped: %d/%d", report.WithheldAccounting.Skipped, report.TotalEvents)
+		}
+		if report.WithheldAccounting.Timeout > 0 {
+			WriteLine(w, "- timeout: %d/%d", report.WithheldAccounting.Timeout, report.TotalEvents)
+		}
+		if report.WithheldAccounting.Error > 0 {
+			WriteLine(w, "- error: %d/%d", report.WithheldAccounting.Error, report.TotalEvents)
+		}
+		WriteLine(w, "> Withheld breakdown is only as complete as the trace event set.")
+	}
+	WriteLine(w, "")
+	WriteLine(w, "## Unknown or unlinked events")
+	if report.UnknownOrUnlinkedEvents.Count == 0 {
+		WriteLine(w, "None.")
+	} else {
+		WriteLine(w, "%d/%d events with missing or unrecognized outcome/acceptance_status.", report.UnknownOrUnlinkedEvents.Count, report.TotalEvents)
+	}
+	WriteLine(w, "")
+	WriteLine(w, "## Denominator warning")
+	WriteLine(w, "> Verify-event success must not be interpreted as task-level success without denominator review.")
+	if report.TotalEvents == 0 {
+		WriteLine(w, "Denominator: NOT_COMPUTABLE (no events)")
+	} else {
+		WriteLine(w, "- accepted: %d/%d cards", report.Accepted, report.TotalEvents)
+	}
 }
 
 func computeMetrics(doc map[string]any, inputCardHash, policyHash string, verifyRuntimeMs int) metricsData {

@@ -40,15 +40,15 @@ func TestVersionOutput(t *testing.T) {
 	}
 }
 
-func TestKnownCommandStubReturnsUsage(t *testing.T) {
+func TestReportCommandRendersTraceSummary(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	code := Run([]string{"report"}, &stdout, &stderr)
-	if code != ExitUsage {
-		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
 	}
-	if !strings.Contains(stderr.String(), "not implemented yet") {
-		t.Fatalf("expected stub message, got %q", stderr.String())
+	if !strings.Contains(stdout.String(), "# x-harness Report") {
+		t.Fatalf("expected report output, got %q", stdout.String())
 	}
 }
 

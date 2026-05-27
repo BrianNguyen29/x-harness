@@ -194,3 +194,54 @@ func TestBenchmarkAdversarialJSONShape(t *testing.T) {
 		t.Fatalf("expected blocking_predicate=verifier_not_read_only, got %s", mutationCase.BlockingPredicate)
 	}
 }
+
+func TestBenchmarkLatencyJSONShape(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"benchmark", "--filter", "latency", "--commands", "verify", "--iterations", "1", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result struct {
+		OK         bool   `json:"ok"`
+		Filter     string `json:"filter"`
+		Iterations int    `json:"iterations"`
+		Results    []struct {
+			Command    string `json:"command"`
+			Iterations int    `json:"iterations"`
+			OK         bool   `json:"ok"`
+			MinMs      int    `json:"min_ms"`
+			AvgMs      int    `json:"avg_ms"`
+			MaxMs      int    `json:"max_ms"`
+			ExitCodes  []int  `json:"exit_codes"`
+			Samples    []struct {
+				DurationMs int  `json:"duration_ms"`
+				ExitCode   int  `json:"exit_code"`
+				TimedOut   bool `json:"timed_out"`
+			} `json:"samples"`
+		} `json:"results"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if !result.OK {
+		t.Fatalf("expected ok=true, got output: %s", stdout.String())
+	}
+	if result.Filter != "latency" || result.Iterations != 1 {
+		t.Fatalf("unexpected filter/iterations: %+v", result)
+	}
+	if len(result.Results) != 1 {
+		t.Fatalf("expected one result, got %d", len(result.Results))
+	}
+	entry := result.Results[0]
+	if entry.Command != "verify" || !entry.OK || entry.Iterations != 1 {
+		t.Fatalf("unexpected latency entry: %+v", entry)
+	}
+	if len(entry.ExitCodes) != 1 || entry.ExitCodes[0] != ExitOK {
+		t.Fatalf("expected one successful exit code, got %v", entry.ExitCodes)
+	}
+	if len(entry.Samples) != 1 || entry.Samples[0].TimedOut {
+		t.Fatalf("expected one non-timeout sample, got %+v", entry.Samples)
+	}
+}

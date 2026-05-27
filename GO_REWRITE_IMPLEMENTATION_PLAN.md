@@ -921,19 +921,21 @@ Acceptance gate:
 - [x] Port runtime contract rendering.
 - [x] Add contract drift tests.
 
-Note: the current Go implementation keeps managed-block and runtime-contract
-logic in `internal/cli/context.go` instead of a separate `internal/contract/`
-package. A future refactor may split this into a dedicated package, but the
-runtime behavior exists and is covered by tests.
+Decision: keep managed-block and runtime-contract command logic in
+`internal/cli/context.go` for the first Go release. This keeps the parity-first
+rewrite surgical and avoids a package split before the contract model needs
+reuse outside CLI context commands. Revisit a dedicated `internal/contract/`
+package only after the Go CLI becomes primary or a second caller needs the
+model/renderer APIs.
 
 ### Schema and Policy
 
 - [x] Add YAML/JSON reader.
 - [x] Add JSON Schema compiler.
 - [x] Add completion card validation.
-- [ ] Add subagent return validation.
-- [ ] Add policy loaders.
-- [ ] Add schema parity fixtures.
+- [x] Add subagent return validation.
+- [x] Add policy loaders.
+- [x] Add schema parity fixtures for subagent return compatibility.
 
 ### Verify
 
@@ -946,7 +948,7 @@ runtime behavior exists and is covered by tests.
 - [x] Port governance checks (deep approval, tier downgrade).
 - [x] Port admission decision.
 - [x] Port recovery routing.
-- [ ] Port trace event creation.
+- [x] Port trace event creation.
 - [x] Port verify output renderers (minimal text + JSON).
 
 ### Mutation Guard
@@ -973,11 +975,11 @@ runtime behavior exists and is covered by tests.
 
 ### Benchmarks
 
-- [ ] Port latency benchmark.
+- [x] Port latency benchmark.
 - [x] Port admission/adversarial benchmark.
 - [x] Port mutation guard benchmark.
 - [ ] Add JSON report schema.
-- [ ] Add markdown report renderer.
+- [x] Add markdown report renderer.
 
 ### CI and Release
 
@@ -998,17 +1000,19 @@ runtime behavior exists and is covered by tests.
 - [x] Implement remaining compatibility stubs: `intake`, `governance`, `intervention`, `clean`, top-level `export`, top-level `import`.
 - [x] Add Go race/fuzz CI lanes.
 - [x] Add release artifact signing strategy and cross-platform smoke execution.
+- [x] Add npm compatibility wrapper shim with opt-in Go binary selection.
 
 ### Remaining Completion Priorities
 
-- [ ] Add subagent return validation in Go.
-- [ ] Consolidate ad-hoc policy readers into shared policy loaders.
-- [ ] Add schema parity fixtures comparing Go/TypeScript validation behavior.
-- [ ] Verify and complete trace event creation parity.
-- [ ] Port latency benchmark.
-- [ ] Add JSON report schema and markdown report renderer.
-- [ ] Implement npm wrapper binary shim after compatibility review.
-- [ ] Decide whether to refactor context/contract code into `internal/contract/` or update the architecture target permanently.
+- [x] Add subagent return validation in Go.
+- [x] Consolidate ad-hoc policy readers into shared policy loaders.
+- [x] Add schema parity fixtures comparing Go/TypeScript validation behavior for subagent returns.
+- [x] Verify and complete trace event creation parity.
+- [x] Port latency benchmark.
+- [ ] Add JSON report schema.
+- [x] Add markdown report renderer.
+- [x] Implement npm wrapper binary shim after compatibility review.
+- [x] Decide whether to refactor context/contract code into `internal/contract/` or update the architecture target permanently.
 
 ## 16. Risk Register
 

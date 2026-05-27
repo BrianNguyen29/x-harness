@@ -9,6 +9,7 @@ import (
 
 	"github.com/BrianNguyen29/x-harness/internal/authority"
 	"github.com/BrianNguyen29/x-harness/internal/loader"
+	"github.com/BrianNguyen29/x-harness/internal/policy"
 	"github.com/BrianNguyen29/x-harness/internal/schema"
 )
 
@@ -40,12 +41,11 @@ type ApprovalRiskReport struct {
 
 // LoadApprovalRiskPolicy loads the approval risk policy from the given repository root.
 func LoadApprovalRiskPolicy(root string) (*ApprovalRiskPolicy, error) {
-	path := filepath.Join(root, "policies", "approval-risk.yaml")
-	var policy ApprovalRiskPolicy
-	if err := loader.LoadYAML(path, &policy); err != nil {
+	var p ApprovalRiskPolicy
+	if err := policy.LoadYAML(root, "approval-risk.yaml", &p); err != nil {
 		return nil, err
 	}
-	return &policy, nil
+	return &p, nil
 }
 
 func evidenceFiles(card map[string]interface{}) []string {

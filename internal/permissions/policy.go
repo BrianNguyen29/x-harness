@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/BrianNguyen29/x-harness/internal/loader"
+	"github.com/BrianNguyen29/x-harness/internal/policy"
 	"github.com/BrianNguyen29/x-harness/internal/schema"
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v6"
 )
@@ -36,19 +36,18 @@ type TierProfile struct {
 
 // LoadPolicy loads and parses policies/permissions.yaml
 func LoadPolicy(root string) (*PermissionsPolicy, error) {
-	policyPath := filepath.Join(root, "policies", "permissions.yaml")
-	var policy PermissionsPolicy
-	if err := loader.LoadYAML(policyPath, &policy); err != nil {
+	var p PermissionsPolicy
+	if err := policy.LoadYAML(root, "permissions.yaml", &p); err != nil {
 		return nil, fmt.Errorf("failed to load policy: %w", err)
 	}
-	if err := ValidatePolicy(root, &policy); err != nil {
+	if err := ValidatePolicy(root, &p); err != nil {
 		return nil, err
 	}
-	return &policy, nil
+	return &p, nil
 }
 
 // ValidatePolicy validates policy against schema and cross-references
-func ValidatePolicy(root string, policy *PermissionsPolicy) error {
+func ValidatePolicy(root string, p *PermissionsPolicy) error {
 	schemaPath := filepath.Join(root, "schemas", "permissions.schema.json")
 	if _, err := os.Stat(schemaPath); err != nil {
 		return fmt.Errorf("permissions schema not found: %w", err)
@@ -60,7 +59,7 @@ func ValidatePolicy(root string, policy *PermissionsPolicy) error {
 
 	// Load as map for schema validation to avoid tag issues
 	var doc map[string]interface{}
-	if err := loader.LoadYAML(filepath.Join(root, "policies", "permissions.yaml"), &doc); err != nil {
+	if err := policy.LoadYAML(root, "permissions.yaml", &doc); err != nil {
 		return fmt.Errorf("failed to load policy for validation: %w", err)
 	}
 	if err := validator.Validate(doc); err != nil {
@@ -71,10 +70,10 @@ func ValidatePolicy(root string, policy *PermissionsPolicy) error {
 	}
 
 	// Cross-reference check
-	for role, tiers := range policy.Roles {
+	for role, tiers := range p.Roles {
 		for tier, profile := range tiers {
 			for _, setName := range append(profile.AllowCommandSets, profile.DenyCommandSets...) {
-				if _, ok := policy.CommandSets[setName]; !ok {
+				if _, ok := p.CommandSets[setName]; !ok {
 					return fmt.Errorf("%s.%s references unknown command set %s", role, tier, setName)
 				}
 			}

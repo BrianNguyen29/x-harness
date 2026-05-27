@@ -3,7 +3,9 @@ result:
   fix_status: partial
   key_findings: []
 evidence:
-  files_changed: []
+  files_changed:
+    - src/partial.ts
+  manual_rationale: "Fixture isolates passed verification with partial fix_status."
   commands_ran: []
 verification:
   status: passed

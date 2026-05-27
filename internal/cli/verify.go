@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/BrianNguyen29/x-harness/internal/admission"
 	"github.com/BrianNguyen29/x-harness/internal/assets"
@@ -29,16 +30,30 @@ type VerifyResult struct {
 
 func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	cardPath := ""
+	subagentPath := ""
+	tier := ""
 	jsonMode := false
 	verbose := false
 	useMutationGuard := false
 	strict := false
+	trace := false
+	traceDir := ".x-harness/traces"
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--card":
 			if i+1 < len(args) {
 				cardPath = args[i+1]
+				i++
+			}
+		case "--subagent-return":
+			if i+1 < len(args) {
+				subagentPath = args[i+1]
+				i++
+			}
+		case "--tier":
+			if i+1 < len(args) {
+				tier = args[i+1]
 				i++
 			}
 		case "--json":
@@ -50,11 +65,18 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		case "--strict":
 			strict = true
 			useMutationGuard = true
+		case "--trace":
+			trace = true
+		case "--trace-dir":
+			if i+1 < len(args) {
+				traceDir = args[i+1]
+				i++
+			}
 		}
 	}
 
-	if cardPath == "" {
-		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> [--json] [--verbose] [--mutation-guard] [--strict]")
+	if (cardPath == "" && subagentPath == "") || (cardPath != "" && subagentPath != "") {
+		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--trace] [--trace-dir <dir>]")
 		return ExitUsage
 	}
 
@@ -64,30 +86,109 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		return ExitError
 	}
 
-	schemaPath := assets.NewLocator(root).Schema("completion-card.schema.json")
-
 	var doc map[string]any
-	if err := loader.LoadDocument(cardPath, &doc); err != nil {
-		fmt.Fprintf(stderr, "error: cannot load card: %v\n", err)
-		return ExitError
-	}
+	var schemaPath string
+	var sourcePath string
+	var schemaErr error
 
-	v, err := schema.Compile(schemaPath)
-	if err != nil {
-		fmt.Fprintf(stderr, "error: cannot compile schema: %v\n", err)
-		return ExitError
+	if cardPath != "" {
+		schemaPath = assets.NewLocator(root).Schema("completion-card.schema.json")
+		sourcePath = cardPath
+		if err := loader.LoadDocument(cardPath, &doc); err != nil {
+			fmt.Fprintf(stderr, "error: cannot load card: %v\n", err)
+			return ExitError
+		}
+	} else {
+		schemaPath = assets.NewLocator(root).Schema("subagent-return.schema.json")
+		sourcePath = subagentPath
+		var subagentDoc map[string]any
+		if err := loader.LoadDocument(subagentPath, &subagentDoc); err != nil {
+			fmt.Fprintf(stderr, "error: cannot load subagent return: %v\n", err)
+			return ExitError
+		}
+		v, err := schema.Compile(schemaPath)
+		if err != nil {
+			fmt.Fprintf(stderr, "error: cannot compile schema: %v\n", err)
+			return ExitError
+		}
+		schemaErr = v.Validate(subagentDoc)
+		if schemaErr != nil {
+			result := buildVerifyResult(nil, schemaErr, nil, strict)
+			renderVerifyResult(result, jsonMode, verbose, stdout, sourcePath, schemaPath)
+			return ExitError
+		}
+		mappedDoc := map[string]any{
+			"subagent_return": subagentDoc,
+		}
+		if tier == "" {
+			tier = "standard"
+		}
+		mappedDoc["tier"] = tier
+		for _, key := range []string{"verification", "evidence", "handoff", "done_checklist", "prediction", "pgv_advice", "state"} {
+			if v, ok := subagentDoc[key]; ok {
+				mappedDoc[key] = v
+			}
+		}
+		doc = mappedDoc
 	}
 
 	var result VerifyResult
 
 	if useMutationGuard {
-		result = runWithMutationGuard(root, strict, doc, v, stderr)
+		var validateFn func() error
+		if cardPath != "" {
+			v, err := schema.Compile(schemaPath)
+			if err != nil {
+				fmt.Fprintf(stderr, "error: cannot compile schema: %v\n", err)
+				return ExitError
+			}
+			validateFn = func() error { return v.Validate(doc) }
+		}
+		result = runWithMutationGuard(root, strict, doc, validateFn, stderr)
 	} else {
-		schemaErr := v.Validate(doc)
+		if cardPath != "" {
+			v, err := schema.Compile(schemaPath)
+			if err != nil {
+				fmt.Fprintf(stderr, "error: cannot compile schema: %v\n", err)
+				return ExitError
+			}
+			schemaErr = v.Validate(doc)
+		}
 		result = buildVerifyResult(doc, schemaErr, nil, strict)
 	}
 
-	renderVerifyResult(result, jsonMode, verbose, stdout, cardPath, schemaPath)
+	renderVerifyResult(result, jsonMode, verbose, stdout, sourcePath, schemaPath)
+
+	if trace {
+		event := TraceEvent{
+			"event_id":             fmt.Sprintf("VE-%d", time.Now().UnixMilli()),
+			"event_type":           "verify_completed",
+			"task_id":              result.TaskID,
+			"story_id":             nil,
+			"tier":                 result.Tier,
+			"claim_id":             nil,
+			"evidence_id":          nil,
+			"verifier":             "x-harness",
+			"verifier_mode":        "read_only",
+			"outcome":              result.AdmissionOutcome,
+			"acceptance_status":    result.AcceptanceStatus,
+			"blocking_predicate":   nil,
+			"blocked_reason_class": nil,
+			"next_owner":           nil,
+			"next_action":          nil,
+			"created_at":           time.Now().UTC().Format(time.RFC3339Nano),
+			"notes":                result.AdmissionErrors,
+			"errors":               []string{},
+		}
+		if result.SchemaError != "" {
+			event["errors"] = append(event["errors"].([]string), result.SchemaError)
+		}
+		_, err := AppendTrace(event, traceDir)
+		if err != nil {
+			fmt.Fprintf(stderr, "failed to append trace: %v\n", err)
+			return ExitError
+		}
+	}
 
 	if result.OK {
 		return ExitOK
@@ -133,7 +234,7 @@ func injectTestMutation(root string, stderr io.Writer) {
 	}
 }
 
-func runWithMutationGuard(root string, strict bool, doc map[string]any, validator *schema.Validator, stderr io.Writer) VerifyResult {
+func runWithMutationGuard(root string, strict bool, doc map[string]any, validateFn func() error, stderr io.Writer) VerifyResult {
 	var useGit bool
 	var gitRoot string
 	var gitErr error
@@ -152,13 +253,17 @@ func runWithMutationGuard(root string, strict bool, doc map[string]any, validato
 	if useGit {
 		mgResult, guardErr = mutationguard.Guard(gitRoot, func() error {
 			injectTestMutation(gitRoot, stderr)
-			schemaErr = validator.Validate(doc)
+			if validateFn != nil {
+				schemaErr = validateFn()
+			}
 			return nil
 		})
 	} else {
 		mgResult, guardErr = mutationguard.GuardFallback(root, func() error {
 			injectTestMutation(root, stderr)
-			schemaErr = validator.Validate(doc)
+			if validateFn != nil {
+				schemaErr = validateFn()
+			}
 			return nil
 		})
 		if guardErr != nil && gitErr != nil {
@@ -218,13 +323,13 @@ func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationgu
 	return result
 }
 
-func renderVerifyResult(result VerifyResult, jsonMode, verbose bool, stdout io.Writer, cardPath, schemaPath string) {
+func renderVerifyResult(result VerifyResult, jsonMode, verbose bool, stdout io.Writer, sourcePath, schemaPath string) {
 	if jsonMode {
 		WriteJSON(stdout, result)
 		return
 	}
 	if verbose {
-		WriteLine(stdout, "card: %s", cardPath)
+		WriteLine(stdout, "source: %s", sourcePath)
 		WriteLine(stdout, "schema: %s", schemaPath)
 	}
 	WriteLine(stdout, "task_id: %s", result.TaskID)
@@ -252,6 +357,9 @@ func renderVerifyResult(result VerifyResult, jsonMode, verbose bool, stdout io.W
 }
 
 func stringValue(doc map[string]any, key string) string {
+	if doc == nil {
+		return ""
+	}
 	if v, ok := doc[key]; ok {
 		if s, ok := v.(string); ok {
 			return s
@@ -261,6 +369,9 @@ func stringValue(doc map[string]any, key string) string {
 }
 
 func mapValue(doc map[string]any, key string) map[string]any {
+	if doc == nil {
+		return nil
+	}
 	if v, ok := doc[key]; ok {
 		if m, ok := v.(map[string]any); ok {
 			return m

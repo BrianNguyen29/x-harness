@@ -3,6 +3,8 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -146,5 +148,98 @@ func TestReportMetricsMarkdown(t *testing.T) {
 	}
 	if !strings.Contains(out, "> Verify-event success must not be interpreted as task-level success") {
 		t.Fatalf("expected denominator warning, got:\n%s", out)
+	}
+}
+
+func TestReportTraceJSON(t *testing.T) {
+	traceDir := t.TempDir()
+	_, err := AppendTrace(TraceEvent{
+		"event_id":          "VE-test-1",
+		"event_type":        "verify_completed",
+		"task_id":           "TASK-1",
+		"tier":              "light",
+		"outcome":           "success",
+		"acceptance_status": "accepted",
+		"created_at":        "2026-01-01T00:00:00Z",
+	}, traceDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(traceDir, "events.jsonl")); err != nil {
+		t.Fatalf("expected trace events file: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"report", "--trace-dir", traceDir, "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result struct {
+		TotalEvents           int            `json:"total_events"`
+		Accepted              int            `json:"accepted"`
+		Withheld              int            `json:"withheld"`
+		ByOutcome             map[string]int `json:"by_outcome"`
+		Latest                map[string]any `json:"latest"`
+		VerifyEventAccounting struct {
+			TotalTraceEvents int `json:"total_trace_events"`
+		} `json:"verify_event_accounting"`
+		UnknownOrUnlinkedEvents struct {
+			Count int `json:"count"`
+		} `json:"unknown_or_unlinked_events"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.TotalEvents != 1 || result.Accepted != 1 || result.Withheld != 0 {
+		t.Fatalf("unexpected counts: %+v", result)
+	}
+	if result.ByOutcome["success"] != 1 {
+		t.Fatalf("expected success outcome count, got %v", result.ByOutcome)
+	}
+	if result.VerifyEventAccounting.TotalTraceEvents != 1 {
+		t.Fatalf("expected total_trace_events 1, got %d", result.VerifyEventAccounting.TotalTraceEvents)
+	}
+	if result.UnknownOrUnlinkedEvents.Count != 0 {
+		t.Fatalf("expected unknown count 0, got %d", result.UnknownOrUnlinkedEvents.Count)
+	}
+	if result.Latest["event_type"] != "verify_completed" {
+		t.Fatalf("expected latest verify event, got %v", result.Latest)
+	}
+}
+
+func TestReportTraceMarkdown(t *testing.T) {
+	traceDir := t.TempDir()
+	if _, err := AppendTrace(TraceEvent{
+		"event_id":          "VE-test-1",
+		"event_type":        "verify_completed",
+		"task_id":           "TASK-1",
+		"tier":              "light",
+		"outcome":           "blocked",
+		"acceptance_status": "withheld",
+		"created_at":        "2026-01-01T00:00:00Z",
+	}, traceDir); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"report", "--trace-dir", traceDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	for _, expected := range []string{
+		"# x-harness Report",
+		"## Verify event accounting",
+		"- total_trace_events: 1",
+		"- blocked: 1/1",
+		"## Withheld accounting",
+		"> Verify-event success must not be interpreted as task-level success",
+	} {
+		if !strings.Contains(out, expected) {
+			t.Fatalf("expected markdown to contain %q, got:\n%s", expected, out)
+		}
 	}
 }
