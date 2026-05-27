@@ -117,6 +117,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleAgentProfile(args[1:], stdout, stderr)
 	case "cost":
 		return handleCost(args[1:], stdout, stderr)
+	case "evolve":
+		return handleEvolve(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}
