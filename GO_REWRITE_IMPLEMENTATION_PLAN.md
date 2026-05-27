@@ -867,10 +867,10 @@ Acceptance gate:
 
 Deliverables:
 
-- init/add/recovery
-- packet/episode/evidence/attribution
-- components/permissions/prediction
-- frozen/evolve/federation/cost/approval-risk/agent-profile
+- [x] init/add/recovery
+- [x] packet/episode/evidence/attribution
+- [x] components/permissions/prediction
+- [x] frozen/evolve/federation/cost/approval-risk/agent-profile
 
 Acceptance gate:
 
