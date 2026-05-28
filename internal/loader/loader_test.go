@@ -81,7 +81,7 @@ func TestLoadDocumentYAML(t *testing.T) {
 func TestLoadDocumentUnknownFormat(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "data.txt")
-	if err := os.WriteFile(path, []byte("hello"), 0644); err != nil {
+	if err := os.WriteFile(path, []byte("{hello:"), 0644); err != nil {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
@@ -89,5 +89,37 @@ func TestLoadDocumentUnknownFormat(t *testing.T) {
 	err := LoadDocument(path, &v)
 	if err == nil {
 		t.Fatal("expected error for unknown format")
+	}
+}
+
+func TestLoadDocumentExtensionlessJSON(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "card")
+	if err := os.WriteFile(path, []byte(`{"key":"value"}`), 0644); err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+
+	var result map[string]any
+	if err := LoadDocument(path, &result); err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if result["key"] != "value" {
+		t.Fatalf("expected key=value, got %v", result["key"])
+	}
+}
+
+func TestLoadDocumentExtensionlessYAML(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "card")
+	if err := os.WriteFile(path, []byte("name: test\nvalue: 42\n"), 0644); err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+
+	var result map[string]any
+	if err := LoadDocument(path, &result); err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if result["name"] != "test" {
+		t.Fatalf("expected name=test, got %v", result["name"])
 	}
 }

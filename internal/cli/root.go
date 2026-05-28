@@ -57,6 +57,9 @@ var commands = []CommandInfo{
 	{Name: "agent-profile", Description: "Inspect agent profiles"},
 	{Name: "cost", Description: "Evaluate cost budget data"},
 	{Name: "actions", Description: "List beginner-friendly actions"},
+	{Name: "card", Description: "Generate or verify admission cards"},
+	{Name: "conformance", Description: "Run conformance checks"},
+	{Name: "readiness", Description: "Evaluate readiness levels"},
 }
 
 func Run(args []string, stdout io.Writer, stderr io.Writer) int {
@@ -141,6 +144,12 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleFrozenExport(append([]string{"--frozen"}, args[1:]...), stdout, stderr)
 	case "import":
 		return handleFrozenImport(append([]string{"--frozen"}, args[1:]...), stdout, stderr)
+	case "card":
+		return handleCard(args[1:], stdout, stderr)
+	case "conformance":
+		return handleConformance(args[1:], stdout, stderr)
+	case "readiness":
+		return handleReadiness(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}

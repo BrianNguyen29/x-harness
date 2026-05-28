@@ -51,7 +51,8 @@ func LoadYAML(path string, v any) error {
 }
 
 // LoadDocument detects the file format and loads it into v.
-// JSON and YAML files are unmarshaled directly. Unknown formats return an error.
+// JSON and YAML files are unmarshaled directly. For files without a recognized
+// extension, it attempts JSON first (stricter) and falls back to YAML.
 func LoadDocument(path string, v any) error {
 	format := DetectFormat(path)
 	switch format {
@@ -60,6 +61,12 @@ func LoadDocument(path string, v any) error {
 	case FormatYAML:
 		return LoadYAML(path, v)
 	default:
+		if err := LoadJSON(path, v); err == nil {
+			return nil
+		}
+		if err := LoadYAML(path, v); err == nil {
+			return nil
+		}
 		return errors.New("unsupported file format: " + string(format))
 	}
 }

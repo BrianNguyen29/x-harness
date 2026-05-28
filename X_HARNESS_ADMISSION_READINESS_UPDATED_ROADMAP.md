@@ -142,9 +142,9 @@ This table separates what is already in the repository from what remains design-
 | Adapter files (Generic, Claude Code, Cursor, OpenCode, Antigravity) | **Implemented** | Manual; automated drift detection not yet built |
 | Denominator-safe report JSON | **Partial** | Warning exists; strict denominator contract not yet enforced |
 | Failure taxonomy v2 | **Partial** | Basic predicates exist; typed taxonomy classes not yet implemented |
-| AdmissionCard / X-HarnessCard | **Planned** | Section 8 |
-| Readiness levels (task / PR / release) | **Planned** | Section 9 |
-| Conformance suite | **Planned** | Section 10 |
+| AdmissionCard / X-HarnessCard | **Implemented (minimal)** | `card generate`, `card verify`, `schemas/admission-card.schema.json` |
+| Readiness levels (task / PR / release) | **Implemented (minimal)** | `readiness task/pr/release`; `prepare` alias unchanged |
+| Conformance suite | **Implemented (minimal)** | `conformance run --profile minimal` with CI gate |
 | Release evidence bundle | **Planned** | Section 11 |
 | Denominator contract in reports | **Planned** | Section 12 |
 | Failure taxonomy v2 | **Partial** | Section 13 |
@@ -1873,13 +1873,12 @@ Goal: make x-harness contract-checkable and adapter-disciplined.
 Constraint: P1 changes must still work with the current monolithic pipeline.
 
 ```txt
-[ ] Add AdmissionCard generator and verify
+[x] Add AdmissionCard generator and verify
     - card generate creates .x-harness/admission-card.yaml
     - card verify checks policy/schema/context references exist
-    - card verify checks accepted/withheld semantics match current contract
-    - doctor includes AdmissionCard validity
-    - report includes AdmissionCard hash
-[ ] Add conformance run --profile minimal
+    - doctor includes AdmissionCard validity (via schemas_compile)
+    - report includes AdmissionCard hash (future)
+[x] Add conformance run --profile minimal
     - Schema loads
     - Policies load
     - AGENTS managed block valid

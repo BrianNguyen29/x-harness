@@ -97,6 +97,8 @@ jobs:
         run: ./x-harness examples verify --json
       - name: Go-native adversarial benchmark gate
         run: ./x-harness benchmark --filter adversarial --json
+      - name: Go-native conformance minimal gate
+        run: ./x-harness conformance run --profile minimal --json
       - name: "TypeScript compatibility: strict verify"
         run: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
       - name: "TypeScript compatibility: workspace doctor"
