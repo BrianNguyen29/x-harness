@@ -351,3 +351,217 @@ func TestTraceCLIUnknownSubcommand(t *testing.T) {
 		t.Fatalf("expected unknown subcommand error, got:\n%s", stderr.String())
 	}
 }
+
+func TestTraceCLITimeline(t *testing.T) {
+	tmpDir := t.TempDir()
+	_, _ = AppendTrace(TraceEvent{
+		"event_id": "E1", "event_type": "verify_completed", "outcome": "success",
+		"task_id": "TASK-1", "blocking_predicate": nil, "blocked_reason_class": nil,
+		"next_action": nil,
+	}, tmpDir)
+	_, _ = AppendTrace(TraceEvent{
+		"event_id": "E2", "event_type": "schema_validation", "outcome": "failed",
+		"task_id": "TASK-1", "blocking_predicate": "schema_mismatch", "blocked_reason_class": "evidence_missing",
+		"next_action": "fix schema and re-verify",
+	}, tmpDir)
+	_, _ = AppendTrace(TraceEvent{
+		"event_id": "E3", "event_type": "verify_completed", "outcome": "success",
+		"task_id": "TASK-2",
+	}, tmpDir)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"trace", "timeline", "--task", "TASK-1", "--trace-dir", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "TASK-1") {
+		t.Fatalf("expected TASK-1 header, got:\n%s", out)
+	}
+	if !strings.Contains(out, "verify_completed") {
+		t.Fatalf("expected verify_completed stage, got:\n%s", out)
+	}
+	if !strings.Contains(out, "schema_validation") {
+		t.Fatalf("expected schema_validation stage, got:\n%s", out)
+	}
+	if !strings.Contains(out, "reason: evidence_missing") {
+		t.Fatalf("expected reason, got:\n%s", out)
+	}
+	if !strings.Contains(out, "predicate: schema_mismatch") {
+		t.Fatalf("expected predicate, got:\n%s", out)
+	}
+	if !strings.Contains(out, "next: fix schema and re-verify") {
+		t.Fatalf("expected next action, got:\n%s", out)
+	}
+}
+
+func TestTraceCLITimelineMissingTask(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"trace", "timeline"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "usage:") {
+		t.Fatalf("expected usage message, got:\n%s", stderr.String())
+	}
+}
+
+func TestTraceCLITimelineNoEvents(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"trace", "timeline", "--task", "TASK-1", "--trace-dir", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "no trace events") {
+		t.Fatalf("expected no trace events message, got:\n%s", stdout.String())
+	}
+}
+
+func TestTraceCLIExplain(t *testing.T) {
+	tmpDir := t.TempDir()
+	_, _ = AppendTrace(TraceEvent{
+		"event_id": "E1", "event_type": "verify_completed", "outcome": "success",
+		"task_id": "TASK-1",
+	}, tmpDir)
+	_, _ = AppendTrace(TraceEvent{
+		"event_id": "E2", "event_type": "schema_validation", "outcome": "failed",
+		"task_id": "TASK-1", "blocking_predicate": "schema_mismatch", "blocked_reason_class": "evidence_missing",
+		"next_action": "fix schema and re-verify",
+	}, tmpDir)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"trace", "explain", "--task", "TASK-1", "--trace-dir", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "TASK-1 explain") {
+		t.Fatalf("expected explain header, got:\n%s", out)
+	}
+	if !strings.Contains(out, "schema_validation: failed") {
+		t.Fatalf("expected blocking event, got:\n%s", out)
+	}
+	if !strings.Contains(out, "predicate: schema_mismatch") {
+		t.Fatalf("expected predicate, got:\n%s", out)
+	}
+	if !strings.Contains(out, "next_action: fix schema and re-verify") {
+		t.Fatalf("expected next_action, got:\n%s", out)
+	}
+	if !strings.Contains(out, "reason_class: evidence_missing") {
+		t.Fatalf("expected reason_class, got:\n%s", out)
+	}
+}
+
+func TestTraceCLIExplainNoBlocking(t *testing.T) {
+	tmpDir := t.TempDir()
+	_, _ = AppendTrace(TraceEvent{
+		"event_id": "E1", "event_type": "verify_completed", "outcome": "success",
+		"task_id": "TASK-1",
+	}, tmpDir)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"trace", "explain", "--task", "TASK-1", "--trace-dir", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "no blocking events found") {
+		t.Fatalf("expected no blocking events message, got:\n%s", stdout.String())
+	}
+}
+
+func TestTraceCLIExplainMissingTask(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"trace", "explain"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "usage:") {
+		t.Fatalf("expected usage message, got:\n%s", stderr.String())
+	}
+}
+
+func TestTraceCLIInspectWithheld(t *testing.T) {
+	tmpDir := t.TempDir()
+	_, _ = AppendTrace(TraceEvent{
+		"event_id": "E1", "event_type": "verify_completed", "outcome": "failed",
+		"task_id": "TASK-1", "acceptance_status": "withheld", "blocked_reason_class": "evidence_missing",
+	}, tmpDir)
+	_, _ = AppendTrace(TraceEvent{
+		"event_id": "E2", "event_type": "verify_completed", "outcome": "blocked",
+		"task_id": "TASK-2", "acceptance_status": "withheld", "blocked_reason_class": "evidence_missing",
+	}, tmpDir)
+	_, _ = AppendTrace(TraceEvent{
+		"event_id": "E3", "event_type": "verify_completed", "outcome": "success",
+		"task_id": "TASK-3", "acceptance_status": "accepted",
+	}, tmpDir)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"trace", "inspect", "--withheld", "--trace-dir", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "withheld summary") {
+		t.Fatalf("expected summary header, got:\n%s", out)
+	}
+	if !strings.Contains(out, "evidence_missing") {
+		t.Fatalf("expected evidence_missing class, got:\n%s", out)
+	}
+	if !strings.Contains(out, "TASK-1") {
+		t.Fatalf("expected TASK-1, got:\n%s", out)
+	}
+	if !strings.Contains(out, "TASK-2") {
+		t.Fatalf("expected TASK-2, got:\n%s", out)
+	}
+	if strings.Contains(out, "TASK-3") {
+		t.Fatalf("did not expect TASK-3 in withheld output, got:\n%s", out)
+	}
+}
+
+func TestTraceCLIInspectWithheldEmpty(t *testing.T) {
+	tmpDir := t.TempDir()
+	_, _ = AppendTrace(TraceEvent{
+		"event_id": "E1", "event_type": "verify_completed", "outcome": "success",
+		"task_id": "TASK-1", "acceptance_status": "accepted",
+	}, tmpDir)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"trace", "inspect", "--withheld", "--trace-dir", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "no matching trace events") {
+		t.Fatalf("expected no matching events message, got:\n%s", stdout.String())
+	}
+}
+
+func TestTraceCLIInspectAll(t *testing.T) {
+	tmpDir := t.TempDir()
+	_, _ = AppendTrace(TraceEvent{
+		"event_id": "E1", "event_type": "verify_completed", "outcome": "success",
+		"task_id": "TASK-1", "acceptance_status": "accepted",
+	}, tmpDir)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"trace", "inspect", "--trace-dir", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "accepted") {
+		t.Fatalf("expected accepted class, got:\n%s", out)
+	}
+	if !strings.Contains(out, "TASK-1") {
+		t.Fatalf("expected TASK-1, got:\n%s", out)
+	}
+}

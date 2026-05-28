@@ -200,7 +200,7 @@ func containsString(slice []string, val string) bool {
 
 func handleTrace(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: x-harness trace <add|verify-chain> [options]")
+		fmt.Fprintln(stderr, "usage: x-harness trace <add|verify-chain|timeline|explain|inspect> [options]")
 		return ExitUsage
 	}
 
@@ -209,9 +209,15 @@ func handleTrace(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleTraceAdd(args[1:], stdout, stderr)
 	case "verify-chain":
 		return handleTraceVerifyChain(args[1:], stdout, stderr)
+	case "timeline":
+		return handleTraceTimeline(args[1:], stdout, stderr)
+	case "explain":
+		return handleTraceExplain(args[1:], stdout, stderr)
+	case "inspect":
+		return handleTraceInspect(args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "unknown trace subcommand: %s\n", args[0])
-		fmt.Fprintln(stderr, "usage: x-harness trace <add|verify-chain> [options]")
+		fmt.Fprintln(stderr, "usage: x-harness trace <add|verify-chain|timeline|explain|inspect> [options]")
 		return ExitUsage
 	}
 }
@@ -364,4 +370,275 @@ func handleTraceVerifyChain(args []string, stdout io.Writer, stderr io.Writer) i
 	fmt.Fprintf(stderr, "expected hash: %s\n", result.ExpectedHash)
 	fmt.Fprintf(stderr, "actual hash:   %s\n", result.ActualHash)
 	return ExitError
+}
+
+func readEvents(args []string, traceDir string, fromFile string) ([]TraceEvent, string, string, error) {
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--trace-dir":
+			if i+1 < len(args) {
+				traceDir = args[i+1]
+				i++
+			}
+		case "--from":
+			if i+1 < len(args) {
+				fromFile = args[i+1]
+				i++
+			}
+		}
+	}
+
+	var events []TraceEvent
+	var err error
+	if fromFile != "" {
+		events, err = ReadTraceFromFile(fromFile)
+	} else {
+		events, err = ReadTrace(traceDir)
+	}
+	if err != nil {
+		return nil, traceDir, fromFile, err
+	}
+	return events, traceDir, fromFile, nil
+}
+
+func handleTraceTimeline(args []string, stdout io.Writer, stderr io.Writer) int {
+	taskID := ""
+	traceDir := ".x-harness/traces"
+	fromFile := ""
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--task":
+			if i+1 < len(args) {
+				taskID = args[i+1]
+				i++
+			}
+		case "--trace-dir":
+			if i+1 < len(args) {
+				traceDir = args[i+1]
+				i++
+			}
+		case "--from":
+			if i+1 < len(args) {
+				fromFile = args[i+1]
+				i++
+			}
+		}
+	}
+
+	if taskID == "" {
+		fmt.Fprintln(stderr, "usage: x-harness trace timeline --task <task_id> [--trace-dir <dir>]")
+		return ExitUsage
+	}
+
+	var events []TraceEvent
+	var err error
+	if fromFile != "" {
+		events, err = ReadTraceFromFile(fromFile)
+	} else {
+		events, err = ReadTrace(traceDir)
+	}
+	if err != nil {
+		fmt.Fprintf(stderr, "failed to read trace: %v\n", err)
+		return ExitError
+	}
+
+	var filtered []TraceEvent
+	for _, e := range events {
+		if e.getString("task_id") == taskID {
+			filtered = append(filtered, e)
+		}
+	}
+
+	if len(filtered) == 0 {
+		fmt.Fprintf(stdout, "no trace events for task %s\n", taskID)
+		return ExitOK
+	}
+
+	fmt.Fprintf(stdout, "%s\n", taskID)
+	for _, e := range filtered {
+		stage := e.getString("event_type")
+		if stage == "" {
+			stage = "unknown"
+		}
+		outcome := e.getString("outcome")
+		if outcome == "" {
+			outcome = "-"
+		}
+		fmt.Fprintf(stdout, "  %-26s %s\n", stage, outcome)
+		if reason := e.getString("blocked_reason_class"); reason != "" {
+			fmt.Fprintf(stdout, "    reason: %s\n", reason)
+		}
+		if pred := e.getString("blocking_predicate"); pred != "" {
+			fmt.Fprintf(stdout, "    predicate: %s\n", pred)
+		}
+		if next := e.getString("next_action"); next != "" {
+			fmt.Fprintf(stdout, "    next: %s\n", next)
+		}
+	}
+	return ExitOK
+}
+
+func handleTraceExplain(args []string, stdout io.Writer, stderr io.Writer) int {
+	taskID := ""
+	traceDir := ".x-harness/traces"
+	fromFile := ""
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--task":
+			if i+1 < len(args) {
+				taskID = args[i+1]
+				i++
+			}
+		case "--trace-dir":
+			if i+1 < len(args) {
+				traceDir = args[i+1]
+				i++
+			}
+		case "--from":
+			if i+1 < len(args) {
+				fromFile = args[i+1]
+				i++
+			}
+		}
+	}
+
+	if taskID == "" {
+		fmt.Fprintln(stderr, "usage: x-harness trace explain --task <task_id> [--trace-dir <dir>]")
+		return ExitUsage
+	}
+
+	var events []TraceEvent
+	var err error
+	if fromFile != "" {
+		events, err = ReadTraceFromFile(fromFile)
+	} else {
+		events, err = ReadTrace(traceDir)
+	}
+	if err != nil {
+		fmt.Fprintf(stderr, "failed to read trace: %v\n", err)
+		return ExitError
+	}
+
+	var filtered []TraceEvent
+	for _, e := range events {
+		if e.getString("task_id") == taskID {
+			filtered = append(filtered, e)
+		}
+	}
+
+	if len(filtered) == 0 {
+		fmt.Fprintf(stdout, "no trace events for task %s\n", taskID)
+		return ExitOK
+	}
+
+	fmt.Fprintf(stdout, "%s explain\n", taskID)
+	hasBlocking := false
+	for _, e := range filtered {
+		outcome := e.getString("outcome")
+		if outcome == "success" || outcome == "" {
+			continue
+		}
+		hasBlocking = true
+		stage := e.getString("event_type")
+		if stage == "" {
+			stage = "unknown"
+		}
+		fmt.Fprintf(stdout, "  %s: %s\n", stage, outcome)
+		if pred := e.getString("blocking_predicate"); pred != "" {
+			fmt.Fprintf(stdout, "    predicate: %s\n", pred)
+		}
+		if next := e.getString("next_action"); next != "" {
+			fmt.Fprintf(stdout, "    next_action: %s\n", next)
+		}
+		if reason := e.getString("blocked_reason_class"); reason != "" {
+			fmt.Fprintf(stdout, "    reason_class: %s\n", reason)
+		}
+	}
+	if !hasBlocking {
+		fmt.Fprintf(stdout, "  no blocking events found\n")
+	}
+	return ExitOK
+}
+
+func handleTraceInspect(args []string, stdout io.Writer, stderr io.Writer) int {
+	withheldOnly := false
+	traceDir := ".x-harness/traces"
+	fromFile := ""
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--withheld":
+			withheldOnly = true
+		case "--trace-dir":
+			if i+1 < len(args) {
+				traceDir = args[i+1]
+				i++
+			}
+		case "--from":
+			if i+1 < len(args) {
+				fromFile = args[i+1]
+				i++
+			}
+		}
+	}
+
+	var events []TraceEvent
+	var err error
+	if fromFile != "" {
+		events, err = ReadTraceFromFile(fromFile)
+	} else {
+		events, err = ReadTrace(traceDir)
+	}
+	if err != nil {
+		fmt.Fprintf(stderr, "failed to read trace: %v\n", err)
+		return ExitError
+	}
+
+	if len(events) == 0 {
+		fmt.Fprintln(stdout, "no trace events found")
+		return ExitOK
+	}
+
+	groups := make(map[string]map[string]struct{})
+	var total int
+	for _, e := range events {
+		outcome := e.getString("outcome")
+		acceptance := e.getString("acceptance_status")
+		if withheldOnly {
+			if outcome == "success" || acceptance == "accepted" {
+				continue
+			}
+		}
+		total++
+		class := e.getString("blocked_reason_class")
+		if class == "" {
+			if acceptance != "" {
+				class = acceptance
+			} else if outcome != "" {
+				class = outcome
+			} else {
+				class = "unknown"
+			}
+		}
+		if groups[class] == nil {
+			groups[class] = make(map[string]struct{})
+		}
+		groups[class][e.getString("task_id")] = struct{}{}
+	}
+
+	if total == 0 {
+		fmt.Fprintln(stdout, "no matching trace events found")
+		return ExitOK
+	}
+
+	fmt.Fprintf(stdout, "withheld summary (%d events, %d classes)\n", total, len(groups))
+	for class, tasks := range groups {
+		fmt.Fprintf(stdout, "  %s (%d)\n", class, len(tasks))
+		for taskID := range tasks {
+			fmt.Fprintf(stdout, "    %s\n", taskID)
+		}
+	}
+	return ExitOK
 }

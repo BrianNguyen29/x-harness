@@ -156,7 +156,7 @@ This table separates what is already in the repository from what remains design-
 | Install profiles preview/apply | **Implemented (minimal)** | Section 19; `--profile minimal|standard|deep`, `--preview`, `--apply` supported; profile recommend implemented; repair/uninstall implemented (Section 21) |
 | Profile recommend | **Implemented (minimal)** | Section 20 |
 | Repair / uninstall preview/apply | **Implemented (minimal)** | Section 21; manifest-backed; repair preview/apply and uninstall preview/apply with --force; backups before overwrite/delete; unmanaged content preserved |
-| Trace timeline / explain | **Planned** | Section 22 |
+| Trace timeline / explain | **Implemented (minimal)** | Section 22; `trace timeline`, `trace explain`, `trace inspect --withheld` implemented; `trace collapse` remains planned |
 | Structured regression / capability / adversarial suites | **Partial** | Section 23; golden examples exist |
 | Worktree-aware verification | **Planned** | Section 24 |
 | Context GC / staleness doctor | **Planned** | Section 25 |
@@ -1596,10 +1596,10 @@ task-123
 ### 22.4 Acceptance criteria
 
 ```txt
-[ ] timeline reconstructs stage sequence from trace events.
-[ ] explain shows blocking predicate and next_action.
-[ ] inspect --withheld groups withheld cases by taxonomy class.
-[ ] No dashboard/server is introduced.
+[x] timeline reconstructs stage sequence from trace events.
+[x] explain shows blocking predicate and next_action.
+[x] inspect --withheld groups withheld cases by taxonomy class.
+[x] No dashboard/server is introduced.
 ```
 
 ---
@@ -2003,7 +2003,7 @@ Goal: improve safety, install UX, and trace inspectability.
     - repair --preview shows drift and proposed fixes
     - repair --apply restores managed files from manifest with backup before overwrite
     - No unmanaged content deleted in tests
-[ ] Add trace timeline / trace explain
+[x] Add trace timeline / trace explain
     - timeline reconstructs stage sequence from trace events
     - explain shows blocking predicate and next_action
     - inspect --withheld groups withheld cases by taxonomy class
