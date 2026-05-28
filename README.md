@@ -6,12 +6,16 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js Version](https://img.shields.io/badge/Node.js-%3E%3D20-blue.svg)](package.json)
 [![Language: Go](https://img.shields.io/badge/Language-Go-00ADD8.svg)](go.mod)
-[![Compatibility: TypeScript](https://img.shields.io/badge/Compatibility-TypeScript-blue.svg)](tsconfig.base.json)
+
 
 `x-harness` is a lightweight, offline-first, verify-gated harness for orchestrating and verifying AI-agent workflows. It enforces structured sub-agent handoffs, read-only validation gates, and fail-closed completion rules to help ensure completion claims are admitted only when they satisfy repository verification policy.
 
 > [!NOTE]
-> **Local Development**: the Go CLI is the native rewrite target and the TypeScript CLI remains the compatibility baseline during migration. Build locally with `go build ./cmd/x-harness` and run `./x-harness <command>`, or build the TypeScript CLI with `npm install && npm run build` and run `node packages/cli/dist/index.js <command>`.
+> **Published Runtime**: the npm package is now a Go-only wrapper. It ships platform-native Go binaries and no longer includes the TypeScript `dist/` runtime.
+>
+> **Local Development**: build the Go CLI with `go build ./cmd/x-harness` and run `./x-harness <command>`. The TypeScript source remains in the repository for source-checkout development and CI compatibility gates: `npm install && npm run build` then `node packages/cli/dist/index.js <command>`.
+>
+> **CI Gates**: the primary CI and release verification gates run through the native Go CLI (`./x-harness verify`, `./x-harness doctor`, `./x-harness examples verify`, `./x-harness benchmark`). TypeScript compatibility gates continue to run as a secondary validation layer from source checkout.
 
 ---
 
@@ -38,12 +42,52 @@ Clone the repository and build the native Go CLI locally:
 go build ./cmd/x-harness
 ```
 
-The TypeScript CLI remains available as a compatibility baseline:
+The TypeScript CLI remains available for source-checkout development:
 
 ```bash
 npm install
 npm run build
 ```
+
+#### Windows: Install via Scoop
+
+Once a Scoop bucket is published, Windows users can install the native binary without building from source:
+
+```powershell
+# Add the bucket (once it is published)
+scoop bucket add x-harness https://github.com/BrianNguyen29/x-harness
+
+# Install x-harness
+scoop install x-harness
+```
+
+To update to the latest release:
+
+```powershell
+scoop update x-harness
+```
+
+> **Maintainers**: the Scoop manifest is generated automatically during release. See [`packaging/scoop/README.md`](packaging/scoop/README.md) for manifest generation and bucket update instructions.
+
+#### macOS / Linux: Install via Homebrew
+
+Once a Homebrew tap is published, macOS and Linux users can install the native binary without building from source:
+
+```bash
+# Add the tap (once it is published)
+brew tap BrianNguyen29/x-harness https://github.com/BrianNguyen29/x-harness
+
+# Install x-harness
+brew install x-harness
+```
+
+To update to the latest release:
+
+```bash
+brew update && brew upgrade x-harness
+```
+
+> **Maintainers**: the Homebrew formula is generated automatically during release as `x-harness.rb`. Copy the generated formula into the tap repository (e.g., `homebrew-x-harness`) and commit. See `scripts/generate-homebrew-formula.sh` for the generator.
 
 ### Step 2: Seven Canonical Actions
 
@@ -210,9 +254,7 @@ Task delegation in `x-harness` uses **only** the following three canonical tiers
 
 ## 🛠️ Command-Line Interface (CLI)
 
-`x-harness` now has a Go-native CLI rewrite in active parity mode, with the TypeScript CLI retained as the compatibility baseline until the native binary becomes primary.
-
-The Go binary is the native source-checkout path. TypeScript compatibility remains available through `node packages/cli/dist/index.js` and is still used as the parity baseline during the dual-run window.
+`x-harness` has a Go-native CLI rewrite in active parity mode. The published npm package is a Go-only wrapper; TypeScript compatibility remains available through `node packages/cli/dist/index.js` in source checkouts and is used as the parity baseline during the dual-run window.
 
 ### Core Commands
 
@@ -255,7 +297,7 @@ The Go CLI also supports the following advanced commands:
 - `approval-risk` — Evaluate approval risk
 - `agent-profile` — Inspect agent profiles
 
-Run `./x-harness --help` for a full list of primary commands. The TypeScript CLI remains available as a fallback via `node packages/cli/dist/index.js <command>`.
+Run `./x-harness --help` for a full list of primary commands. The TypeScript CLI is available in source checkouts via `node packages/cli/dist/index.js <command>`.
 
 ---
 
@@ -369,4 +411,4 @@ Running `./x-harness verify --trace` logs a JSONL event detailing the verificati
 
 - **License**: MIT (`LICENSE`)
 - **Contribution Guidelines**: See `CONTRIBUTING.md` and `templates/HARNESS_CHANGE_CONTRACT.md` before making harness-sensitive changes.
-- **Project Health Checks**: Execute `./x-harness doctor` or `node packages/cli/dist/index.js doctor` regularly to ensure files, schemas, and policies are valid and aligned.
+- **Project Health Checks**: Execute `./x-harness doctor` regularly to ensure files, schemas, and policies are valid and aligned.

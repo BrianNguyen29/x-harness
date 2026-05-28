@@ -24,11 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Primary runtime**: Go CLI is now the recommended local development runtime; TypeScript CLI remains the compatibility baseline.
 - **Version**: Bumped to `0.99.0-rc1` to signal the release-candidate stage.
 
+### Changed
+
+- **NPM package is Go-only**: The published npm package no longer includes the TypeScript `dist/` runtime. The wrapper (`bin/x-harness.js`) is now a thin Go-binary launcher. Runtime dependencies (`ajv`, `commander`, `fs-extra`, `yaml`) have been moved to `devDependencies`.
+- **Node fallback source-checkout only**: The wrapper falls back to `node dist/index.js` only when the file exists (source checkout or custom build). In the published package, missing Go binaries result in an error instead of a silent Node fallback.
+
 ### Known Limitations
 
 - **NPM publish token**: The release workflow requires the `NPM_TOKEN` secret for npm publish; the latest RC run failed publish due to a missing token.
 - **Arm64 smoke gap**: Arm64 binaries are built but not smoke-tested in CI because arm64 runners are not universally available.
-- **Wrapper default**: The npm wrapper still defaults to Node.js unless `X_HARNESS_GO=1` is set. The flip to Go-default is deferred until after a successful stable release.
 
 ---
 

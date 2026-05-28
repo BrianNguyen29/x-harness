@@ -83,9 +83,25 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
       - run: npm ci
       - run: npm run build
-      - run: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
-      - run: node packages/cli/dist/index.js doctor --root .
-      - run: node packages/cli/dist/index.js examples verify
-      - run: node packages/cli/dist/index.js benchmark --filter adversarial --json
+      - run: go build -o ./x-harness ./cmd/x-harness
+      - name: Go-native strict verify gate
+        run: ./x-harness verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
+      - name: Go-native workspace doctor
+        run: ./x-harness doctor --root . --json
+      - name: Go-native golden examples
+        run: ./x-harness examples verify --json
+      - name: Go-native adversarial benchmark gate
+        run: ./x-harness benchmark --filter adversarial --json
+      - name: "TypeScript compatibility: strict verify"
+        run: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
+      - name: "TypeScript compatibility: workspace doctor"
+        run: node packages/cli/dist/index.js doctor --root .
+      - name: "TypeScript compatibility: golden examples"
+        run: node packages/cli/dist/index.js examples verify
+      - name: "TypeScript compatibility: adversarial benchmark"
+        run: node packages/cli/dist/index.js benchmark --filter adversarial --json

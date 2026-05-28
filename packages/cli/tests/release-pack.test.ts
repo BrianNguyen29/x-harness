@@ -65,8 +65,11 @@ describe("release packaging", () => {
       files: Array<{ path: string }>;
     };
     const files = new Set(pack.files.map((file) => file.path));
+    expect(
+      files.has("dist/index.js"),
+      "packed file must not include dist/index.js"
+    ).toBe(false);
     for (const required of [
-      "dist/index.js",
       "bin/x-harness.js",
       "schemas/agent-profile.schema.json",
       "schemas/approval-risk.schema.json",
@@ -123,9 +126,13 @@ describe("release packaging", () => {
       "utf-8"
     );
     expect(wrapper).toContain("X_HARNESS_GO");
+    expect(wrapper).toContain('process.env.X_HARNESS_GO === "0"');
+    expect(wrapper).not.toContain('process.env.X_HARNESS_GO !== "1"');
     expect(wrapper).toContain("go-binaries");
-    expect(wrapper).toContain("dist");
-    expect(wrapper).toContain("index.js");
+    expect(wrapper).toContain("existsSync(nodeEntrypoint)");
+    expect(wrapper).toContain(
+      "No Go binary found for your platform and Node fallback is not available"
+    );
   });
 
   it("release workflows include benchmark, pack, SBOM, and provenance gates", () => {
@@ -161,6 +168,7 @@ describe("release packaging", () => {
     expect(releaseWorkflow).toContain("cosign sign-blob");
     expect(releaseWorkflow).toContain("Packed CLI Go smoke test");
     expect(releaseWorkflow).toContain("X_HARNESS_GO=1");
+    expect(releaseWorkflow).not.toContain("X_HARNESS_GO=0");
     expect(releaseWorkflow).toContain("cross-platform-smoke");
     expect(releaseWorkflow).toContain("ubuntu-latest");
     expect(releaseWorkflow).toContain("macos-latest");

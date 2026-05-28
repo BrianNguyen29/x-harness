@@ -2,7 +2,7 @@
 
 x-harness supports multiple output formats for the `report` command.
 
-Source checkouts can use the Go binary (`./x-harness`) or the TypeScript compatibility entrypoint (`node packages/cli/dist/index.js`). The npm wrapper currently defaults to TypeScript compatibility and can opt into a packaged Go binary with `X_HARNESS_GO=1`.
+Source checkouts can use the Go binary (`./x-harness`) or the TypeScript compatibility entrypoint (`node packages/cli/dist/index.js`). The npm wrapper defaults to the packaged Go binary when present and falls back to TypeScript compatibility automatically; `X_HARNESS_GO=0` forces Node fallback and `X_HARNESS_GO=1` forces the Go path.
 
 ## Supported formats
 

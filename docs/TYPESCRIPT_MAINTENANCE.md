@@ -4,9 +4,10 @@ This document defines the maintenance policy for the TypeScript CLI after the Go
 
 ## Status
 
-- **Current**: TypeScript is the canonical runtime; Go runs side-by-side in CI.
-- **Target**: After a stable Go-primary release, TypeScript moves to compatibility/legacy maintenance mode.
-- **Not yet active**: The policy takes effect only when the wrapper defaults to Go and the Go CLI is declared stable.
+- **Freeze active**: TypeScript is no longer included in the published npm package runtime. The published package is a Go-only wrapper.
+- **Source-checkout development**: TypeScript source (`packages/cli/src`) and compiled output (`packages/cli/dist`) remain in the repository for local development and CI compatibility gates.
+- **Target**: After the compatibility window ends, TypeScript source may be removed from the repository entirely.
+- **Active**: The wrapper defaults to Go and falls back to Node only when `dist/index.js` exists (source checkout or custom build).
 
 ## Freeze Criteria
 
@@ -23,11 +24,11 @@ TypeScript is frozen as a compatibility source when:
 Once frozen, the TypeScript source in `packages/cli/src` is governed by these rules:
 
 1. **No new features**: New commands, flags, or behaviors are added only to the Go CLI.
-2. **Bug fixes only**: Critical bug fixes that affect the fallback path may be backported.
+2. **Bug fixes only**: Critical bug fixes that affect the source-checkout fallback path may be backported.
 3. **Security patches**: Security issues in dependencies or the wrapper shim are patched promptly.
 4. **Contract compatibility**: The TypeScript fallback must continue to produce the same admission decisions as the Go CLI for all golden fixtures.
-5. **Deprecation timeline**: After the freeze, the TypeScript fallback remains for a minimum compatibility window (recommended: two minor releases or 90 days, whichever is longer).
-6. **Removal**: TypeScript removal is considered only after the compatibility window ends and no critical fallback usage is reported.
+5. **Deprecation timeline**: The TypeScript source remains in the repository for a minimum compatibility window (recommended: two minor releases or 90 days, whichever is longer).
+6. **Removal**: TypeScript source removal is considered only after the compatibility window ends and no critical fallback usage is reported.
 
 ## What Is Frozen
 
@@ -42,13 +43,17 @@ Once frozen, the TypeScript source in `packages/cli/src` is governed by these ru
 
 ## Fallback Behavior
 
-During the compatibility window:
+In the published npm package:
+
+- The wrapper is Go-only; `dist/` is not included in the tarball.
+- `X_HARNESS_GO=0` exits with an error because Node fallback is unavailable.
+
+In a source checkout (or when `dist/index.js` exists):
 
 - `X_HARNESS_GO=1` forces the Go binary.
 - `X_HARNESS_GO=0` forces the Node fallback.
 - Without the variable, the wrapper defaults to Go when a matching binary is present.
-
-If the Go binary is missing or fails to spawn, the wrapper automatically falls back to Node.
+- If the Go binary is missing, the wrapper automatically falls back to Node.
 
 ## Migration for Consumers
 

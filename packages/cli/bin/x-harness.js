@@ -52,7 +52,7 @@ async function candidateGoBinaries() {
 function run(command, args) {
   const child = spawn(command, args, { stdio: "inherit" });
   child.on("error", () => {
-    runNodeFallback();
+    process.exit(1);
   });
   child.on("exit", (code, signal) => {
     if (signal) {
@@ -68,9 +68,17 @@ function runNodeFallback() {
 }
 
 async function main() {
-  if (process.env.X_HARNESS_GO !== "1") {
-    runNodeFallback();
-    return;
+  const nodeEntrypointExists = existsSync(nodeEntrypoint);
+
+  if (process.env.X_HARNESS_GO === "0") {
+    if (nodeEntrypointExists) {
+      runNodeFallback();
+      return;
+    }
+    console.error(
+      "x-harness: X_HARNESS_GO=0 requested but Node fallback is not available in this installation."
+    );
+    process.exit(1);
   }
 
   for (const candidate of await candidateGoBinaries()) {
@@ -80,7 +88,15 @@ async function main() {
     }
   }
 
-  runNodeFallback();
+  if (nodeEntrypointExists) {
+    runNodeFallback();
+    return;
+  }
+
+  console.error(
+    "x-harness: No Go binary found for your platform and Node fallback is not available in this installation."
+  );
+  process.exit(1);
 }
 
-main().catch(() => runNodeFallback());
+main().catch(() => process.exit(1));

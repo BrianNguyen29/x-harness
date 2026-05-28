@@ -13,6 +13,9 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v6
         with:
@@ -35,17 +38,20 @@ jobs:
       - run: npm run format:check
       - run: npm test
 
-      - name: Strict verify gate
-        run: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
+      - name: Build Go CLI
+        run: go build -o ./x-harness ./cmd/x-harness
 
-      - name: Workspace doctor
-        run: node packages/cli/dist/index.js doctor --root .
+      - name: Go-native strict verify gate
+        run: ./x-harness verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
 
-      - name: Golden examples
-        run: node packages/cli/dist/index.js examples verify
+      - name: Go-native workspace doctor
+        run: ./x-harness doctor --root . --json
 
-      - name: Adversarial benchmark gate
-        run: node packages/cli/dist/index.js benchmark --filter adversarial --json > benchmark-report.json
+      - name: Go-native golden examples
+        run: ./x-harness examples verify --json
+
+      - name: Go-native adversarial benchmark gate
+        run: ./x-harness benchmark --filter adversarial --json > benchmark-report.json
 
       - name: npm pack dry run
         run: npm -w packages/cli run pack:dry-run
@@ -91,6 +97,14 @@ jobs:
           cd .x-harness/release/go-binaries
           sha256sum x-harness-* > checksums.txt
 
+      - name: Generate Scoop manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME:-dev}"
+          mkdir -p .x-harness/release/scoop
+          bash scripts/generate-scoop-manifest.sh "$VERSION" .x-harness/release/go-binaries/checksums.txt > .x-harness/release/scoop/x-harness.json
+
       - name: Go binary smoke test
         shell: bash
         run: |
@@ -133,7 +147,25 @@ jobs:
       - name: Generate SBOM
         run: npm sbom --workspace x-harness --sbom-format cyclonedx --sbom-type application > .x-harness/release/sbom.cdx.json
 
-      - name: Packed CLI smoke test
+      - name: Generate Homebrew formula
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME:-dev}"
+          bash scripts/generate-homebrew-formula.sh "$VERSION" .x-harness/release/go-binaries/checksums.txt > .x-harness/release/x-harness.rb
+          echo "Generated Homebrew formula:"
+          cat .x-harness/release/x-harness.rb
+
+      - name: Generate release checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .x-harness/release
+          find . -type f ! -name 'release-checksums.txt' -print0 | xargs -0 sha256sum > release-checksums.txt
+          cd ../..
+          sha256sum benchmark-report.json >> .x-harness/release/release-checksums.txt
+
+      - name: Packed CLI smoke test (default Go path)
         shell: bash
         run: |
           set -euo pipefail
@@ -147,7 +179,7 @@ jobs:
           "$TMP_REPO/node_modules/.bin/xh" verify --card "$TMP_REPO/harness/completion-card.yaml" --json
           "$TMP_REPO/node_modules/.bin/xh" doctor --root "$PWD"
 
-      - name: Packed CLI Go smoke test
+      - name: Packed CLI Go smoke test (forced Go path)
         shell: bash
         run: |
           set -euo pipefail
@@ -173,12 +205,56 @@ jobs:
           "$TMP_REPO/node_modules/.bin/xh" import "$TMP_REPO/x-harness-frozen.tar.gz" --frozen --target "$TMP_REPO/frozen-target" --merge --json
           "$TMP_REPO/node_modules/.bin/xh" doctor --root "$TMP_REPO/frozen-target"
 
+      - name: "TypeScript compatibility: strict verify"
+        run: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
+
+      - name: "TypeScript compatibility: workspace doctor"
+        run: node packages/cli/dist/index.js doctor --root .
+
+      - name: "TypeScript compatibility: golden examples"
+        run: node packages/cli/dist/index.js examples verify
+
+      - name: "TypeScript compatibility: adversarial benchmark"
+        run: node packages/cli/dist/index.js benchmark --filter adversarial --json
+
       - uses: actions/upload-artifact@v4
         with:
           name: x-harness-release-artifacts
           path: |
             benchmark-report.json
             .x-harness/release/**
+
+      - name: Attach release artifacts to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME}"
+          if ! gh release view "$VERSION" >/dev/null 2>&1; then
+            gh release create "$VERSION" --title "Release $VERSION" --generate-notes
+          fi
+          for f in .x-harness/release/go-binaries/x-harness-*; do
+            if [ -f "$f" ]; then
+              gh release upload "$VERSION" "$f" --clobber
+            fi
+          done
+          gh release upload "$VERSION" .x-harness/release/go-binaries/checksums.txt --clobber
+          gh release upload "$VERSION" .x-harness/release/sbom.cdx.json --clobber
+          gh release upload "$VERSION" .x-harness/release/npm-pack.json --clobber
+          gh release upload "$VERSION" .x-harness/release/release-checksums.txt --clobber
+          gh release upload "$VERSION" benchmark-report.json --clobber
+          if [ -f ".x-harness/release/scoop/x-harness.json" ]; then
+            gh release upload "$VERSION" .x-harness/release/scoop/x-harness.json --clobber
+          fi
+          if [ -f ".x-harness/release/x-harness.rb" ]; then
+            gh release upload "$VERSION" .x-harness/release/x-harness.rb --clobber
+          fi
+          TARBALL="$(find "$PWD/.x-harness/release" -maxdepth 1 -name 'x-harness-*.tgz' -print -quit)"
+          if [ -n "$TARBALL" ] && [ -f "$TARBALL" ]; then
+            gh release upload "$VERSION" "$TARBALL" --clobber
+          fi
 
       - name: Publish to npm with provenance
         if: startsWith(github.ref, 'refs/tags/v')

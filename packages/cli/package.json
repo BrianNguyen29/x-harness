@@ -18,15 +18,13 @@
     "verification",
     "workflow",
     "cli",
-    "governance",
-    "typescript"
+    "governance"
   ],
   "engines": {
     "node": ">=20"
   },
   "files": [
     "bin",
-    "dist",
     "go-binaries",
     "schemas",
     "policies",
@@ -67,24 +65,23 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "pack:dry-run": "npm pack --dry-run --json",
-    "prepack": "npm run build",
-    "prepublishOnly": "npm run build",
+    "prepack": "node scripts/sync-package-assets.mjs",
+    "prepublishOnly": "node scripts/sync-package-assets.mjs",
     "ci": "npm run typecheck && npm run build && npm run lint && npm run format:check && npm run test"
   },
-  "dependencies": {
-    "ajv": "^8.20.0",
-    "commander": "^14.0.3",
-    "fs-extra": "^11.3.5",
-    "yaml": "^2.9.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.9.1",
+    "ajv": "^8.20.0",
+    "commander": "^14.0.3",
     "eslint": "^10.4.0",
+    "fs-extra": "^11.3.5",
     "prettier": "^3.5.3",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.4",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.7",
+    "yaml": "^2.9.0"
   }
 }

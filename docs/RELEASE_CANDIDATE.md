@@ -16,6 +16,16 @@ A release candidate is a tagged pre-release that must pass the full verification
    - Node.js quality gates: typecheck, build, lint, format, test.
    - Go quality gates: `go test ./...`, `go test -race ./...`, `go vet ./...`, `go build ./cmd/x-harness`.
    - Go parity check: `npm run parity:check-go`.
+   - Go-native primary gates (required):
+     - `./x-harness verify --card examples/ci/strict-verify/completion-card.yaml --strict --json`
+     - `./x-harness doctor --root . --json`
+     - `./x-harness examples verify --json`
+     - `./x-harness benchmark --filter adversarial --json`
+   - TypeScript compatibility gates (secondary, from source checkout):
+     - `node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json`
+     - `node packages/cli/dist/index.js doctor --root .`
+     - `node packages/cli/dist/index.js examples verify`
+     - `node packages/cli/dist/index.js benchmark --filter adversarial --json`
 
 2. **Go release binary build**
    - Binaries built for `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, `windows/amd64`, `windows/arm64`.
@@ -27,11 +37,12 @@ A release candidate is a tagged pre-release that must pass the full verification
 
 4. **Injection into npm package**
    - Signed Go binaries, signatures, certificates, and `checksums.txt` copied into `packages/cli/go-binaries/` before `npm pack`.
-   - The packed tarball therefore contains both the Node.js fallback and the platform-native Go binaries.
+   - The packed tarball therefore contains the platform-native Go binaries and the wrapper shim, but **not** the Node.js fallback `dist/`.
 
 5. **Packed tarball smoke tests**
-   - **Node path**: install the tarball into a temp project and run `xh doctor`, `xh verify`, and frozen transfer commands.
-   - **Go path**: install the tarball into a temp project and run `X_HARNESS_GO=1 xh --version`, `X_HARNESS_GO=1 xh doctor`, and `X_HARNESS_GO=1 xh examples verify`.
+   - **Default Go path**: install the tarball into a temp project and run `xh doctor`, `xh verify`, and frozen transfer commands (wrapper defaults to Go when the binary is present).
+   - **Forced Go path**: install the tarball into a temp project and run `X_HARNESS_GO=1 xh --version`, `X_HARNESS_GO=1 xh doctor`, and `X_HARNESS_GO=1 xh examples verify`.
+   - ~~Forced Node fallback~~: removed because the published tarball no longer ships `dist/index.js`.
 
 6. **Cross-platform smoke**
    - Download release artifacts on `ubuntu-latest`, `macos-latest`, and `windows-latest`.
@@ -41,9 +52,22 @@ A release candidate is a tagged pre-release that must pass the full verification
    - `benchmark-report.json` and `.x-harness/release/**` uploaded as CI artifacts.
    - SBOM (`sbom.cdx.json`) and npm pack manifest (`npm-pack.json`) retained.
 
+8. **GitHub Release artifact attachment**
+   - For tagged releases, the release workflow attaches all artifacts to the GitHub Release:
+     - Go binaries, signatures (`.sig`), certificates (`.pem`), and `checksums.txt`.
+     - `release-checksums.txt` covering all release artifacts.
+     - CycloneDX SBOM (`sbom.cdx.json`).
+     - Scoop manifest (`scoop/x-harness.json`).
+     - Homebrew formula (`x-harness.rb`).
+     - npm tarball (`x-harness-*.tgz`) and npm pack manifest (`npm-pack.json`).
+     - Adversarial benchmark report (`benchmark-report.json`).
+   - Consumers can verify downloads with `sha256sum -c checksums.txt` and `cosign verify-blob`.
+
 ## Wrapper Default-to-Go Criteria
 
-The npm wrapper (`bin/x-harness.js`) currently defaults to the Node.js runtime unless `X_HARNESS_GO=1` is set. The criteria for flipping the default to Go are:
+The npm wrapper (`bin/x-harness.js`) defaults to the Go binary when a platform-matching binary is present. Node fallback is available **only** in source checkouts where `dist/index.js` exists; the published package is Go-only.
+
+The criteria that were required before flipping the default:
 
 1. All primary Go commands exist and pass golden/adversarial parity tests.
 2. At least one full RC cycle has passed with dual-run CI green.
@@ -52,8 +76,6 @@ The npm wrapper (`bin/x-harness.js`) currently defaults to the Node.js runtime u
 5. Release artifact smoke tests pass on Linux, macOS, and Windows.
 6. Docs/templates/adapters managed-block drift is zero.
 7. No critical open issues blocking Go-primary usage.
-
-Until these criteria are met, `X_HARNESS_GO=1` remains the opt-in path.
 
 ## Evidence Floor for RC Admission
 
@@ -70,4 +92,4 @@ For a deep-tier RC, additionally declare:
 - `untested_regions_declared`: any platforms or edge cases not covered.
 - `remaining_risks_declared`: known risks (e.g., Windows path handling, signature verification optional).
 - `execution_controls_present`: checksums, signing, provenance.
-- `rollback_policy_present`: force Node fallback via `X_HARNESS_GO=0`, republish previous tag.
+- `rollback_policy_present`: republish previous tag, restore `dist/` inclusion if needed.

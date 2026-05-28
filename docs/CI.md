@@ -105,12 +105,28 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
       - run: npm ci
       - run: npm run build
-      - run: go build ./cmd/x-harness
-      - run: ./x-harness examples verify
-      - run: ./x-harness doctor --root .
-      - run: npm run parity:check-go
+      - run: go build -o ./x-harness ./cmd/x-harness
+      - name: Go-native strict verify gate
+        run: ./x-harness verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
+      - name: Go-native workspace doctor
+        run: ./x-harness doctor --root . --json
+      - name: Go-native golden examples
+        run: ./x-harness examples verify --json
+      - name: Go-native adversarial benchmark gate
+        run: ./x-harness benchmark --filter adversarial --json
+      - name: "TypeScript compatibility: strict verify"
+        run: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
+      - name: "TypeScript compatibility: workspace doctor"
+        run: node packages/cli/dist/index.js doctor --root .
+      - name: "TypeScript compatibility: golden examples"
+        run: node packages/cli/dist/index.js examples verify
+      - name: "TypeScript compatibility: adversarial benchmark"
+        run: node packages/cli/dist/index.js benchmark --filter adversarial --json
 ```
 
 ### What the workflow does
@@ -120,11 +136,13 @@ jobs:
 3. Runs Go tests, race detector, `go vet`, and `go build ./cmd/x-harness`
 4. Runs `npm run parity:check-go` against the committed TypeScript baseline
 5. Runs a bounded Go fuzz smoke target (`FuzzValidate`)
-6. Runs strict verify, examples, doctor, and adversarial benchmark gates
+6. Runs Go-native primary gates: strict verify, doctor, examples verify, and adversarial benchmark
+7. Runs TypeScript compatibility gates as a secondary validation layer
 
 The release workflow also builds native Go binaries for Linux, macOS, and
 Windows, generates SHA256 checksums, signs tag-release binaries with cosign,
-and runs smoke tests on Linux/macOS/Windows amd64 artifacts.
+runs smoke tests on Linux/macOS/Windows amd64 artifacts, and attaches all
+release artifacts to the GitHub Release for tagged builds.
 
 ## Local-build fallback
 
