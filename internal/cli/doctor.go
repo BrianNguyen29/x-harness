@@ -10,6 +10,7 @@ import (
 func handleDoctor(args []string, stdout io.Writer, stderr io.Writer) int {
 	root := ""
 	format := "json"
+	staleness := false
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -25,15 +26,17 @@ func handleDoctor(args []string, stdout io.Writer, stderr io.Writer) int {
 			}
 		case "--json":
 			format = "json"
+		case "--staleness":
+			staleness = true
 		}
 	}
 
 	if root == "" {
-		fmt.Fprintln(stderr, "usage: x-harness doctor --root <path> [--format json|text] [--json]")
+		fmt.Fprintln(stderr, "usage: x-harness doctor --root <path> [--format json|text] [--json] [--staleness]")
 		return ExitUsage
 	}
 
-	report := doctor.Run(root)
+	report := doctor.RunWithOptions(root, doctor.Options{Staleness: staleness})
 
 	switch format {
 	case "json":

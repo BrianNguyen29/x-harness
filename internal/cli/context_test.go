@@ -256,6 +256,87 @@ func TestContextSyncMissingAgentsMd(t *testing.T) {
 	}
 }
 
+func TestContextGCCheckFresh(t *testing.T) {
+	repoRoot, err := findRepoRoot()
+	if err != nil {
+		t.Skipf("could not find repo root: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "gc", "--check", "--root", repoRoot}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "passed") {
+		t.Fatalf("expected passed message, got stdout: %q", stdout.String())
+	}
+}
+
+func TestContextGCCheckStaleHash(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	block := generateManagedBlock()
+	block = strings.Replace(block, "<!-- context-hash: ", "<!-- context-hash: deadbeef", 1)
+	if err := os.WriteFile(agentsPath, []byte("# AGENTS\n\n"+block+"\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "gc", "--check", "--root", tmpDir}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d", ExitError, code)
+	}
+	if !strings.Contains(stderr.String(), "stale") {
+		t.Fatalf("expected stale hash message, got stderr: %q", stderr.String())
+	}
+}
+
+func TestContextGCCheckMissingBlock(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	if err := os.WriteFile(agentsPath, []byte("# AGENTS\n\nSome content.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "gc", "--check", "--root", tmpDir}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d", ExitError, code)
+	}
+	if !strings.Contains(stderr.String(), "missing managed context block") {
+		t.Fatalf("expected missing block message, got stderr: %q", stderr.String())
+	}
+}
+
+func TestContextGCCheckJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	if err := os.WriteFile(agentsPath, []byte("# AGENTS\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "gc", "--check", "--root", tmpDir, "--json"}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d", ExitError, code)
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result["ok"] != false {
+		t.Fatalf("expected ok=false, got %v", result["ok"])
+	}
+	findings, ok := result["findings"].([]any)
+	if !ok || len(findings) == 0 {
+		t.Fatalf("expected non-empty findings, got %v", result["findings"])
+	}
+}
+
 func TestGenerateManagedBlockDeterministic(t *testing.T) {
 	a := generateManagedBlock()
 	b := generateManagedBlock()

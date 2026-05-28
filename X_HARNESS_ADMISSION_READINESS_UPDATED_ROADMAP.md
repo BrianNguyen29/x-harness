@@ -159,7 +159,7 @@ This table separates what is already in the repository from what remains design-
 | Trace timeline / explain | **Implemented (minimal)** | Section 22; `trace timeline`, `trace explain`, `trace inspect --withheld` implemented; `trace collapse` remains planned |
 | Structured regression / capability / adversarial suites | **Implemented (minimal)** | Section 23; `--suite regression|capability|adversarial` supported; fixtures organized under suite dirs; CI regression gate added; strict conformance suite integration remains planned |
 | Worktree-aware verification | **Planned** | Section 24 |
-| Context GC / staleness doctor | **Planned** | Section 25 |
+| Context GC / staleness doctor | **Partial** | `context gc --check` and `doctor --staleness` minimally implemented; `context gc --write`, overclaim/dead-link/doc-field strict checks, and conformance strict integration remain planned (Section 25) |
 | Hooks bridge | **Planned / Conditional** | Section 26; P3 unless needed |
 | MCP read-only evidence adapter | **Planned / Conditional** | Section 27; P3 unless needed |
 | Sandbox bridge | **Planned / Conditional** | Section 28; P3 unless needed |
@@ -1735,10 +1735,11 @@ x-harness context gc --write
 ### 25.4 Acceptance criteria
 
 ```txt
-[ ] context gc --check is non-mutating.
+[x] context gc --check is non-mutating.
 [ ] context gc --write only touches managed blocks or generated docs.
 [ ] README overclaim phrases are detectable.
 [ ] doctor --staleness integrates into conformance strict.
+[ ] overclaim/dead-link/doc-field strict checks remain planned
 ```
 
 ---
@@ -2014,11 +2015,12 @@ Goal: improve safety, install UX, and trace inspectability.
     - Artifact paths checked against worktree root
     - Mutation guard baseline bound to worktree root
     - report displays branch/commit/worktree
-[ ] Add context GC / staleness doctor
+[x] Add context GC / staleness doctor (partial)
     - context gc --check is non-mutating
-    - context gc --write only touches managed blocks or generated docs
-    - README overclaim phrases are detectable
-    - doctor --staleness integrates into conformance strict
+    - doctor --staleness is implemented
+    - context gc --write remains planned
+    - README overclaim phrases remain planned
+    - doctor --staleness conformance strict integration remains planned
 [ ] Structure regression / capability / adversarial suites
     - Regression suite is release-blocking
     - Adversarial suite is release-blocking

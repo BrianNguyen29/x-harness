@@ -302,9 +302,95 @@ func runContextSync(args []string, stdout io.Writer, stderr io.Writer) int {
 	return ExitUsage
 }
 
+func runContextGC(args []string, stdout io.Writer, stderr io.Writer) int {
+	checkMode := false
+	writeMode := false
+	jsonMode := false
+	root := ""
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "--check":
+			checkMode = true
+		case "--write":
+			writeMode = true
+		case "--json":
+			jsonMode = true
+		case "--root":
+			if i+1 < len(args) {
+				root = args[i+1]
+				i++
+			}
+		}
+	}
+
+	if writeMode {
+		if jsonMode {
+			_ = WriteJSON(stdout, map[string]any{
+				"ok":   false,
+				"note": "context gc --write is planned but not yet implemented",
+			})
+		} else {
+			fmt.Fprintln(stderr, "context gc --write is planned but not yet implemented")
+		}
+		return ExitUsage
+	}
+
+	if !checkMode {
+		fmt.Fprintln(stderr, "usage: x-harness context gc --check [--root <path>] [--json]")
+		return ExitUsage
+	}
+
+	if root == "" {
+		root = "."
+	}
+
+	agentsPath := filepath.Join(root, "AGENTS.md")
+	agentsContentBytes, err := os.ReadFile(agentsPath)
+	if err != nil {
+		if jsonMode {
+			_ = WriteJSON(stdout, map[string]any{
+				"ok":   false,
+				"note": fmt.Sprintf("AGENTS.md not found at %s", agentsPath),
+			})
+		} else {
+			fmt.Fprintf(stderr, "Error: AGENTS.md not found at %s\n", agentsPath)
+		}
+		return ExitUsage
+	}
+
+	valid, note := validateManagedBlock(string(agentsContentBytes))
+
+	if jsonMode {
+		output := map[string]any{
+			"ok":       valid,
+			"findings": []string{},
+		}
+		if !valid {
+			output["findings"] = []string{note}
+		}
+		if err := WriteJSON(stdout, output); err != nil {
+			return ExitError
+		}
+	} else {
+		if valid {
+			fmt.Fprintln(stdout, "✓ Context GC check passed")
+		} else {
+			fmt.Fprintln(stderr, "✗ Context GC check failed")
+			fmt.Fprintf(stderr, "  - %s\n", note)
+		}
+	}
+
+	if valid {
+		return ExitOK
+	}
+	return ExitError
+}
+
 func handleContext(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: x-harness context --contract [--json] | context sync --check|--write [--root <path>] [--json]")
+		fmt.Fprintln(stderr, "usage: x-harness context --contract [--json] | context sync --check|--write [--root <path>] [--json] | context gc --check [--root <path>] [--json]")
 		return ExitUsage
 	}
 
@@ -313,6 +399,8 @@ func handleContext(args []string, stdout io.Writer, stderr io.Writer) int {
 		return runContext(args[1:], stdout, stderr)
 	case "sync":
 		return runContextSync(args[1:], stdout, stderr)
+	case "gc":
+		return runContextGC(args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "unknown context subcommand: %s\n", args[0])
 		return ExitUsage

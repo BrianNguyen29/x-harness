@@ -267,3 +267,91 @@ entries:
 func hashOf(s string) string {
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(s)))
 }
+
+func TestRunStalenessFresh(t *testing.T) {
+	report := RunWithOptions("../..", Options{Staleness: true})
+	found := false
+	for _, c := range report.Checks {
+		if c.Name == "agents_context_staleness" {
+			found = true
+			if c.Status != "passed" {
+				t.Fatalf("expected agents_context_staleness to pass, got %s: %s", c.Status, c.Note)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("expected agents_context_staleness check")
+	}
+}
+
+func TestRunStalenessStaleHash(t *testing.T) {
+	tmp := t.TempDir()
+	ctx := canonicalContext()
+	block := managedBegin + "\n<!-- generated-by: x-harness -->\n<!-- context-hash: deadbeefdeadbeef -->\n\n" + ctx + "\n\n" + managedEnd
+	os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte("# AGENTS\n\n"+block+"\n"), 0644)
+
+	report := RunWithOptions(tmp, Options{Staleness: true})
+	found := false
+	for _, c := range report.Checks {
+		if c.Name == "agents_context_staleness" {
+			found = true
+			if c.Status != "failed" {
+				t.Fatalf("expected agents_context_staleness to fail, got %s: %s", c.Status, c.Note)
+			}
+			if !strings.Contains(c.Note, "stale") {
+				t.Fatalf("expected note to contain 'stale', got %s", c.Note)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("expected agents_context_staleness check")
+	}
+}
+
+func TestRunStalenessStaleBody(t *testing.T) {
+	tmp := t.TempDir()
+	ctx := canonicalContext()
+	hash := contextHash(ctx)
+	modifiedCtx := strings.Replace(ctx, "admitted, not claimed", "admitted, not claimed. (modified)", 1)
+	block := managedBegin + "\n<!-- generated-by: x-harness -->\n<!-- context-hash: " + hash + " -->\n\n" + modifiedCtx + "\n\n" + managedEnd
+	os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte("# AGENTS\n\n"+block+"\n"), 0644)
+
+	report := RunWithOptions(tmp, Options{Staleness: true})
+	found := false
+	for _, c := range report.Checks {
+		if c.Name == "agents_context_staleness" {
+			found = true
+			if c.Status != "failed" {
+				t.Fatalf("expected agents_context_staleness to fail, got %s: %s", c.Status, c.Note)
+			}
+			if !strings.Contains(c.Note, "differs") {
+				t.Fatalf("expected note to contain 'differs', got %s", c.Note)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("expected agents_context_staleness check")
+	}
+}
+
+func TestRunStalenessMissingBlock(t *testing.T) {
+	tmp := t.TempDir()
+	os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte("# AGENTS\n\nSome content.\n"), 0644)
+
+	report := RunWithOptions(tmp, Options{Staleness: true})
+	found := false
+	for _, c := range report.Checks {
+		if c.Name == "agents_context_staleness" {
+			found = true
+			if c.Status != "failed" {
+				t.Fatalf("expected agents_context_staleness to fail, got %s: %s", c.Status, c.Note)
+			}
+			if !strings.Contains(c.Note, "missing managed context block") {
+				t.Fatalf("expected note about missing block, got %s", c.Note)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("expected agents_context_staleness check")
+	}
+}
