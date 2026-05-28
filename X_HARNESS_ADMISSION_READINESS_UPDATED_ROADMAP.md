@@ -1866,8 +1866,13 @@ Constraint: all P0b changes must work with the current monolithic pipeline in in
     - Text report rendering of withheld_reason deferred
     - Doctor checks that withheld cards have typed reasons deferred
     - Trace report grouping deferred: trace event format does not reliably carry taxonomy classes today
-[ ] Add/update golden examples for new denominator and taxonomy behavior
-[ ] Update parity tests if TypeScript compatibility layer affected
+[x] Add/update golden examples for new denominator and taxonomy behavior
+    - Added expected-report-metrics.json fixtures to success-standard-scoped-evidence and blocked-missing-evidence golden examples
+    - Fixtures exercise denominator-safe metrics (verify_event_success_rate, task_completion_coverage.not_computable, withheld_rate, denominator_warning)
+    - Fixtures exercise structured admission.withheld_reason taxonomy (failure_class, failure_stage, recoverability, next_action, blocking_predicate)
+    - Go test TestReportMetricsGoldenFixtures validates actual report output against fixtures
+[x] Update parity tests if TypeScript compatibility layer affected
+    - No-op: parity harness does not compare report metrics outputs; no TypeScript compatibility changes required
 ```
 
 ### P1 — Contract and conformance (code; monolithic pipeline)

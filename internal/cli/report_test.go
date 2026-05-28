@@ -364,3 +364,111 @@ func TestReportTraceMarkdown(t *testing.T) {
 		}
 	}
 }
+
+func TestReportMetricsGoldenFixtures(t *testing.T) {
+	cases := []struct {
+		cardDir      string
+		fixtureName  string
+		expectReason bool
+	}{
+		{
+			cardDir:      "success-standard-scoped-evidence",
+			fixtureName:  "expected-report-metrics.json",
+			expectReason: false,
+		},
+		{
+			cardDir:      "blocked-missing-evidence",
+			fixtureName:  "expected-report-metrics.json",
+			expectReason: true,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.cardDir, func(t *testing.T) {
+			cardPath := filepath.Join("..", "..", "examples", "golden", c.cardDir, "completion-card.yaml")
+			fixturePath := filepath.Join("..", "..", "examples", "golden", c.cardDir, c.fixtureName)
+
+			fixtureData, err := os.ReadFile(fixturePath)
+			if err != nil {
+				t.Fatalf("failed to read fixture %s: %v", fixturePath, err)
+			}
+			var expected map[string]any
+			if err := json.Unmarshal(fixtureData, &expected); err != nil {
+				t.Fatalf("failed to parse fixture %s: %v", fixturePath, err)
+			}
+
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			code := Run([]string{"report", "--metrics", "--card", cardPath, "--json"}, &stdout, &stderr)
+			if code != ExitOK {
+				t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+			}
+
+			var actual map[string]any
+			if err := json.Unmarshal(stdout.Bytes(), &actual); err != nil {
+				t.Fatalf("failed to parse report JSON: %v\noutput: %s", err, stdout.String())
+			}
+			validateReportJSON(t, stdout.Bytes())
+
+			// Validate denominator-safe metrics from fixture
+			expMetrics, _ := expected["metrics"].(map[string]any)
+			actMetrics, _ := actual["metrics"].(map[string]any)
+			if actMetrics == nil {
+				t.Fatalf("missing metrics in report output")
+			}
+
+			for _, key := range []string{"verify_event_success_rate", "task_completion_coverage", "withheld_rate"} {
+				expVal, ok := expMetrics[key]
+				if !ok {
+					continue
+				}
+				actVal, ok := actMetrics[key].(map[string]any)
+				if !ok {
+					t.Fatalf("expected %s in metrics", key)
+				}
+				expMap, _ := expVal.(map[string]any)
+				for k, v := range expMap {
+					if actVal[k] != v {
+						t.Fatalf("metrics.%s.%s mismatch: expected %v, got %v", key, k, v, actVal[k])
+					}
+				}
+			}
+
+			// Validate admission fields from fixture
+			expAdmission, _ := expected["admission"].(map[string]any)
+			actAdmission, _ := actual["admission"].(map[string]any)
+			if actAdmission == nil {
+				t.Fatalf("missing admission in report output")
+			}
+			for _, k := range []string{"outcome", "acceptance_status"} {
+				if actAdmission[k] != expAdmission[k] {
+					t.Fatalf("admission.%s mismatch: expected %v, got %v", k, expAdmission[k], actAdmission[k])
+				}
+			}
+
+			if c.expectReason {
+				actReason, ok := actAdmission["withheld_reason"].(map[string]any)
+				if !ok {
+					t.Fatalf("expected withheld_reason in admission")
+				}
+				expReason, _ := expAdmission["withheld_reason"].(map[string]any)
+				for _, k := range []string{"failure_class", "failure_stage", "recoverability", "next_action", "blocking_predicate"} {
+					if actReason[k] != expReason[k] {
+						t.Fatalf("withheld_reason.%s mismatch: expected %v, got %v", k, expReason[k], actReason[k])
+					}
+				}
+			} else {
+				if _, has := actAdmission["withheld_reason"]; has {
+					t.Fatalf("accepted card must not include withheld_reason")
+				}
+			}
+
+			// Validate denominator_warning presence
+			expWarn, _ := expected["denominator_warning"].(string)
+			actWarn, _ := actual["denominator_warning"].(string)
+			if !strings.Contains(actWarn, expWarn) {
+				t.Fatalf("denominator_warning mismatch: expected to contain %q, got %q", expWarn, actWarn)
+			}
+		})
+	}
+}

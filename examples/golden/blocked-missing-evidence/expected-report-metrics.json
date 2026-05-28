@@ -1,0 +1,59 @@
+{
+  "task_id": "TASK-GOLDEN-002",
+  "tier": "standard",
+  "metrics": {
+    "verification_strength": {
+      "command_evidence_count": 0,
+      "oracle_kinds": []
+    },
+    "verify_event_success_rate": {
+      "numerator": 0,
+      "denominator": 1,
+      "unit": "verify_event",
+      "not_task_level": true
+    },
+    "task_completion_coverage": {
+      "status": "not_computable",
+      "reason": "missing_aligned_task_denominator"
+    },
+    "withheld_rate": {
+      "numerator": 1,
+      "denominator": 1,
+      "unit": "verify_event",
+      "not_task_level": true
+    }
+  },
+  "admission": {
+    "outcome": "failed",
+    "acceptance_status": "withheld",
+    "withheld_reason": {
+      "failure_class": "schema_or_policy_invalid",
+      "failure_stage": "admission_gate",
+      "recoverability": "retry_with_fixes",
+      "next_action": "review_and_resubmit",
+      "blocking_predicate": "admission_failed"
+    }
+  },
+  "verify_event_accounting": {
+    "cards_analyzed": 1
+  },
+  "task_lifecycle_accounting": {
+    "admitted": 0,
+    "withheld": 1
+  },
+  "admission_accounting": {
+    "accepted": 0,
+    "total_analyzed": 1
+  },
+  "withheld_accounting": {
+    "failed": 1,
+    "blocked": 0,
+    "skipped": 0,
+    "timeout": 0,
+    "error": 0
+  },
+  "unknown_or_unlinked_events": {
+    "count": 0
+  },
+  "denominator_warning": "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee."
+}
