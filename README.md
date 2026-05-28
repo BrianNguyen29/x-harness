@@ -216,21 +216,46 @@ The Go binary is the native source-checkout path. TypeScript compatibility remai
 
 ### Core Commands
 
-| Command         | Usage                                                                                                                                                                                                                                                              | Description                                                                                                                |
-| :-------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------- |
-| **`init`**      | `node packages/cli/dist/index.js init [target_dir] [--minimal / --standard / --full]`                                                                                                                                                                              | Installs the core harness assets, schemas, policies, and adapters. Default is `--minimal`.                                 |
-| **`handoff`**   | `node packages/cli/dist/index.js handoff <light / standard / deep> [--title <text>] [--task <text>]`                                                                                                                                                               | Generates a clean markdown handoff task prompt structure.                                                                  |
-| **`add`**       | `node packages/cli/dist/index.js add <claim / evidence / completion-card> [key=value]`                                                                                                                                                                             | Adds a metadata helper file for compatibility modes.                                                                       |
-| **`verify`**    | `./x-harness verify [--card <path>] [--json] [--verbose] [--trace] [--trace-dir <dir>] [--subagent-return <path>] [--tier <tier>] [--task-id <id>] [--mutation-guard] [--strict]`                                                                                 | Executes the read-only verification policy against a completion card or compatibility subagent return. Supports tracing.   |
-| **`doctor`**    | `./x-harness doctor [--root <path>] [--json] [--format <json\|text>]`                                                                                                                                                                                              | Checks critical file presence, schemas compilation, policies, and wording. JSON remains the default output for automation. |
-| **`report`**    | `./x-harness report [--metrics] [--card <path>] [--json] [--format <markdown\|json>]`                                                                                                                                                                              | Summarizes verification events or calculates local card metrics. HTML remains available through the TypeScript CLI.        |
-| **`trace`**     | `node packages/cli/dist/index.js trace add [--outcome <status>] [--task-id <id>] [--acceptance-status <status>] [--tier <tier>] [--claim-id <id>] [--evidence-id <id>]`                                                                                            | Manually appends verify events to the trace log. Supports full event metadata.                                             |
-| **`clean`**     | `node packages/cli/dist/index.js clean [--tmp / --reset-card / --archive-success] [--force]`                                                                                                                                                                       | Defaults to a dry run; add `--force` to mutate tmp artifacts, reset a completion card, or archive accepted-card snapshots. |
-| **`context`**   | `node packages/cli/dist/index.js context [--verbose / --json / --refresh] [--root <path>]`                                                                                                                                                                         | Shows canonical context and refreshes the AGENTS.md managed block.                                                         |
-| **`examples`**  | `node packages/cli/dist/index.js examples`                                                                                                                                                                                                                         | Lists or copies built-in test-cases showing successful and blocked runs.                                                   |
-| **`recovery`**  | `node packages/cli/dist/index.js recovery suggest [--errors <text>] [--outcome <status>] [--from <trace-file>] [--write] [--force] [--json]`                                                                                                                       | Generates structured recovery playbook suggestions from errors or trace files. Supports JSON output and candidate writing. |
-| **`packet`**    | `node packages/cli/dist/index.js packet create --card <path>` or `packet verify-chain --task-id <id>`                                                                                                                                                              | Creates immutable claim packets from completion cards and verifies packet chain integrity.                                 |
-| **`benchmark`** | `./x-harness benchmark [--filter <latency\|adversarial\|mutation-guard>] [--commands <list>] [--iterations <n>] [--mutation-files <list>] [--mutation-concurrency <list>] [--json]`                                                                               | Measures command latency, adversarial fixtures, and mutation guard git/non-git fallback latency.                           |
+| Command         | Usage                                                                                                                                                                                                         | Description                                                                                                                |
+| :-------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------- |
+| **`init`**      | `./x-harness init [target_dir] [--minimal / --standard / --full]`                                                                                                                                             | Installs the core harness assets, schemas, policies, and adapters. Default is `--minimal`.                                 |
+| **`handoff`**   | `./x-harness handoff <light / standard / deep> [--title <text>] [--task <text>]`                                                                                                                              | Generates a clean markdown handoff task prompt structure.                                                                  |
+| **`add`**       | `./x-harness add <claim / evidence / completion-card> [key=value]`                                                                                                                                            | Adds a metadata helper file for compatibility modes.                                                                       |
+| **`verify`**    | `./x-harness verify [--card <path>] [--json] [--verbose] [--trace] [--trace-dir <dir>] [--subagent-return <path>] [--tier <tier>] [--task-id <id>] [--mutation-guard] [--strict]`                             | Executes the read-only verification policy against a completion card or compatibility subagent return. Supports tracing.   |
+| **`doctor`**    | `./x-harness doctor [--root <path>] [--json] [--format <json\|text>]`                                                                                                                                         | Checks critical file presence, schemas compilation, policies, and wording. JSON remains the default output for automation. |
+| **`report`**    | `./x-harness report [--metrics] [--card <path>] [--json] [--format <markdown\|json>]`                                                                                                                         | Summarizes verification events or calculates local card metrics. HTML remains available through the TypeScript CLI.        |
+| **`trace`**     | `./x-harness trace add [--outcome <status>] [--task-id <id>] [--acceptance-status <status>] [--tier <tier>] [--claim-id <id>] [--evidence-id <id>]`                                                           | Manually appends verify events to the trace log. Supports full event metadata.                                             |
+| **`clean`**     | `./x-harness clean [--tmp / --reset-card / --archive-success] [--force]`                                                                                                                                      | Defaults to a dry run; add `--force` to mutate tmp artifacts, reset a completion card, or archive accepted-card snapshots. |
+| **`context`**   | `./x-harness context [--verbose / --json / --refresh] [--root <path>]`                                                                                                                                        | Shows canonical context and refreshes the AGENTS.md managed block.                                                         |
+| **`examples`**  | `./x-harness examples`                                                                                                                                                                                        | Lists or copies built-in test-cases showing successful and blocked runs.                                                   |
+| **`recovery`**  | `./x-harness recovery suggest [--errors <text>] [--outcome <status>] [--from <trace-file>] [--write] [--force] [--json]`                                                                                      | Generates structured recovery playbook suggestions from errors or trace files. Supports JSON output and candidate writing. |
+| **`packet`**    | `./x-harness packet create --card <path>` or `packet verify-chain --task-id <id>`                                                                                                                             | Creates immutable claim packets from completion cards and verifies packet chain integrity.                                 |
+| **`benchmark`** | `./x-harness benchmark [--filter <latency\|adversarial\|mutation-guard>] [--commands <list>] [--iterations <n>] [--mutation-files <list>] [--mutation-concurrency <list>] [--json]`                           | Measures command latency, adversarial fixtures, and mutation guard git/non-git fallback latency.                           |
+
+---
+
+### Advanced Commands
+
+The Go CLI also supports the following advanced commands:
+
+- `attribution` — Evaluate attribution metadata
+- `components` — Inspect component registry coverage
+- `cost` — Evaluate cost budget data
+- `episode` — Create episode packages
+- `evidence` — Manage evidence corpus entries
+- `evolve` — Evaluate evolution candidates
+- `export` / `import` — Export and import frozen artifacts
+- `federation` — Evaluate federation patterns
+- `frozen` — Inspect frozen manifests
+- `governance` — Evaluate governance rules
+- `intervention` — Record governance interventions
+- `intake` — Evaluate task intake tiering
+- `permissions` — Evaluate permission rules
+- `prediction` — Evaluate prediction/checklist claims
+- `approval-risk` — Evaluate approval risk
+- `agent-profile` — Inspect agent profiles
+
+Run `./x-harness --help` for a full list of primary commands. The TypeScript CLI remains available as a fallback via `node packages/cli/dist/index.js <command>`.
 
 ---
 
@@ -334,6 +359,8 @@ Running `./x-harness verify --trace` logs a JSONL event detailing the verificati
 | [`docs/CI.md`](docs/CI.md)                             | CI integration guide and local-build composite action                        |
 | [`docs/CLEANUP.md`](docs/CLEANUP.md)                   | Cleanup and maintenance operations                                           |
 | [`docs/RELEASE_SECURITY.md`](docs/RELEASE_SECURITY.md) | Release, SBOM, and provenance checks                                         |
+| [`docs/RELEASE_CANDIDATE.md`](docs/RELEASE_CANDIDATE.md) | RC cycle, checklist, and wrapper default criteria                          |
+| [`docs/TYPESCRIPT_MAINTENANCE.md`](docs/TYPESCRIPT_MAINTENANCE.md) | Freeze policy and maintenance mode for the TypeScript CLI          |
 | [`docs/NPM_WRAPPER_PLAN.md`](docs/NPM_WRAPPER_PLAN.md) | Plan for npm package transition to native Go binaries                        |
 
 ---

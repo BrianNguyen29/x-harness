@@ -12,21 +12,30 @@ Before publish, the release workflow runs:
 - `npm run lint`
 - `npm run format:check`
 - `npm test`
+- Strict verify gate: `node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json`
+- Workspace doctor: `node packages/cli/dist/index.js doctor --root .`
+- Golden examples: `node packages/cli/dist/index.js examples verify`
+- Adversarial benchmark gate: `node packages/cli/dist/index.js benchmark --filter adversarial --json > benchmark-report.json`
+- `npm -w packages/cli run pack:dry-run`
 - `go test ./...`
 - `go vet ./...`
-- `go build ./cmd/x-harness`
 - `npm run parity:check-go`
-- `./x-harness verify --card examples/ci/strict-verify/completion-card.yaml --strict --json`
-- `./x-harness doctor --root .`
-- `./x-harness examples verify`
-- `./x-harness benchmark --filter adversarial --json`
-- TypeScript compatibility smoke/parity through `npm run parity:check-go`
-- `npm -w packages/cli run pack:dry-run`
-- Packed CLI smoke test from the generated `.tgz`
-- Frozen transfer compatibility from the generated `.tgz`
-- Go release binary matrix build, SHA256 checksums, and Go binary smoke test
+- Go release binary matrix build (`linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, `windows/amd64`, `windows/arm64`)
+- SHA256 checksums for all binaries
+- Go binary smoke test (`linux/amd64`)
+- Sign Go binaries with cosign (tagged releases only)
+- Copy Go binaries, signatures, and checksums into the npm package
+- Build release tarball (`npm pack`)
+- Generate CycloneDX SBOM
+- Packed CLI smoke test (Node path)
+- Packed CLI Go smoke test (`X_HARNESS_GO=1`)
+- Frozen transfer compatibility test
+- Publish to npm with provenance (tagged releases; requires `NPM_TOKEN`)
+- Cross-platform smoke tests (`linux/amd64`, `darwin/amd64`, `windows/amd64`)
 
 The adversarial benchmark is a hard release gate: `false_accept_count` and `adversarial_false_accept_count` must both remain `0`. Adversarial cases also exercise governance-enforced verification for protected-path approval spoofing.
+
+> **Arm64 build-vs-smoke gap**: arm64 binaries are included in the release matrix but are not smoke-tested in CI because GitHub-hosted arm64 runners are not universally available for Linux and Windows. The cross-platform smoke job covers amd64 only and is skipped automatically if the release job fails.
 
 ## Package Assets
 
@@ -99,4 +108,5 @@ In addition to signing, releases must keep:
 - Packed CLI smoke test proving `xh init`, `xh verify`, and `xh doctor` run from the tarball.
 - Frozen compatibility proving the packed CLI can export, verify, and merge-import a frozen bundle.
 - Go binary checksums and smoke evidence proving the native binary can run `doctor`, `examples verify`, and golden `verify` locally.
-- Cross-platform smoke tests on linux-amd64, darwin-amd64, and windows-amd64 via the release workflow.
+- Cross-platform smoke tests on `linux/amd64`, `darwin/amd64`, and `windows/amd64` via the release workflow.
+- Arm64 build-vs-smoke gap documented: arm64 binaries are built but not smoke-tested in CI.

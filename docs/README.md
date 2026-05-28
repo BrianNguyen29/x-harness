@@ -27,4 +27,6 @@ enforces.
 - [Report Formats](REPORT_FORMATS.md)
 - [Cleanup](CLEANUP.md)
 - [Release Security](RELEASE_SECURITY.md)
+- [Release Candidate](RELEASE_CANDIDATE.md) — RC cycle, checklist, and wrapper default criteria
+- [TypeScript Maintenance](TYPESCRIPT_MAINTENANCE.md) — Freeze policy and maintenance mode for the TypeScript CLI
 - [NPM Wrapper Plan](NPM_WRAPPER_PLAN.md)

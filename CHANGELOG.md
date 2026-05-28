@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.99.0-rc1] - 2026-05-28
+
+### Added
+
+- **Go-native CLI rewrite**: Introduced a Go CLI (`cmd/x-harness`) with parity-check against the TypeScript baseline. All primary commands are implemented in Go.
+- **Release binary matrix**: Go release binaries built for `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, `windows/amd64`, and `windows/arm64`.
+- **Sigstore signing**: Tagged releases sign Go binaries with cosign (keyless via GitHub OIDC).
+- **CycloneDX SBOM**: Release workflow generates and attaches an SBOM.
+- **Packed CLI Go smoke test**: Validates the Go binary path inside the npm tarball.
+- **Frozen transfer compatibility**: Validates export, verify, and import of frozen bundles from the packed tarball.
+- **Cross-platform smoke tests**: Smoke tests on `ubuntu-latest`, `macos-latest`, and `windows-latest` using the amd64 binaries.
+
+### Changed
+
+- **Primary runtime**: Go CLI is now the recommended local development runtime; TypeScript CLI remains the compatibility baseline.
+- **Version**: Bumped to `0.99.0-rc1` to signal the release-candidate stage.
+
+### Known Limitations
+
+- **NPM publish token**: The release workflow requires the `NPM_TOKEN` secret for npm publish; the latest RC run failed publish due to a missing token.
+- **Arm64 smoke gap**: Arm64 binaries are built but not smoke-tested in CI because arm64 runners are not universally available.
+- **Wrapper default**: The npm wrapper still defaults to Node.js unless `X_HARNESS_GO=1` is set. The flip to Go-default is deferred until after a successful stable release.
+
+---
+
 ## [0.1.0] - 2026-05-22
 
 ### Added
