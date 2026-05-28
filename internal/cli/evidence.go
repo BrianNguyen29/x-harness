@@ -7,12 +7,14 @@ import (
 	"os"
 	"strings"
 
+	"github.com/BrianNguyen29/x-harness/internal/classify"
 	"github.com/BrianNguyen29/x-harness/internal/evidence"
+	"github.com/BrianNguyen29/x-harness/internal/loader"
 )
 
 func handleEvidence(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "evidence requires a subcommand: validate, index")
+		fmt.Fprintln(stderr, "evidence requires a subcommand: validate, index, classify")
 		return ExitUsage
 	}
 
@@ -22,6 +24,8 @@ func handleEvidence(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleEvidenceValidate(args[1:], stdout, stderr)
 	case "index":
 		return handleEvidenceIndex(args[1:], stdout, stderr)
+	case "classify":
+		return handleEvidenceClassify(args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "unknown evidence subcommand: %s\n", subcommand)
 		fmt.Fprintln(stderr, "usage: x-harness evidence validate --index <path> [--json]")
@@ -211,4 +215,114 @@ func structToMap(v any) map[string]any {
 	var m map[string]any
 	_ = json.Unmarshal(b, &m)
 	return m
+}
+
+func handleEvidenceClassify(args []string, stdout io.Writer, stderr io.Writer) int {
+	var command string
+	var cardPath string
+	jsonMode := false
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--command":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --command requires a value")
+				return ExitUsage
+			}
+			command = args[i+1]
+			i++
+		case "--card":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --card requires a value")
+				return ExitUsage
+			}
+			cardPath = args[i+1]
+			i++
+		case "--json":
+			jsonMode = true
+		default:
+			if strings.HasPrefix(args[i], "-") {
+				fmt.Fprintf(stderr, "unknown flag: %s\n", args[i])
+				return ExitUsage
+			}
+			fmt.Fprintf(stderr, "unexpected argument: %s\n", args[i])
+			return ExitUsage
+		}
+	}
+
+	if command == "" && cardPath == "" {
+		fmt.Fprintln(stderr, "evidence classify requires --command or --card")
+		return ExitUsage
+	}
+
+	if command != "" && cardPath != "" {
+		fmt.Fprintln(stderr, "error: provide only one of --command or --card")
+		return ExitUsage
+	}
+
+	if command != "" {
+		result := classify.ClassifyCommand(command)
+		if jsonMode {
+			data, _ := json.MarshalIndent(result, "", "  ")
+			fmt.Fprintln(stdout, string(data))
+		} else {
+			fmt.Fprintf(stdout, "# x-harness Evidence Classify\n")
+			fmt.Fprintf(stdout, "- command: %s\n", result.Command)
+			fmt.Fprintf(stdout, "- intents: %s\n", strings.Join(result.Intents, ", "))
+			fmt.Fprintf(stdout, "- risk: %s\n", result.Risk)
+			fmt.Fprintf(stdout, "- unknown: %v\n", result.Unknown)
+		}
+		return ExitOK
+	}
+
+	// --card mode: inspect completion card command evidence
+	var card map[string]any
+	if err := loader.LoadDocument(cardPath, &card); err != nil {
+		fmt.Fprintf(stderr, "error: failed to load card: %v\n", err)
+		return ExitError
+	}
+
+	var commands []string
+	if evidenceRaw, ok := card["evidence"].(map[string]any); ok {
+		if cmdEvidence, ok := evidenceRaw["command_evidence"].([]any); ok {
+			for _, item := range cmdEvidence {
+				if m, ok := item.(map[string]any); ok {
+					if cmd, ok := m["command"].(string); ok && cmd != "" {
+						commands = append(commands, cmd)
+					}
+				}
+			}
+		}
+		if artifacts, ok := evidenceRaw["verification_artifacts"].([]any); ok {
+			for _, item := range artifacts {
+				if m, ok := item.(map[string]any); ok {
+					if cmd, ok := m["command"].(string); ok && cmd != "" {
+						commands = append(commands, cmd)
+					}
+				}
+			}
+		}
+	}
+
+	results := make([]classify.CommandClassification, 0, len(commands))
+	for _, cmd := range commands {
+		results = append(results, classify.ClassifyCommand(cmd))
+	}
+
+	if jsonMode {
+		out := map[string]any{
+			"card":    cardPath,
+			"results": results,
+		}
+		data, _ := json.MarshalIndent(out, "", "  ")
+		fmt.Fprintln(stdout, string(data))
+	} else {
+		fmt.Fprintf(stdout, "# x-harness Evidence Classify\n")
+		fmt.Fprintf(stdout, "- card: %s\n", cardPath)
+		fmt.Fprintf(stdout, "- commands_classified: %d\n", len(results))
+		for _, r := range results {
+			fmt.Fprintf(stdout, "  - %s: intents=[%s] risk=%s unknown=%v\n", r.Command, strings.Join(r.Intents, ", "), r.Risk, r.Unknown)
+		}
+	}
+	return ExitOK
 }

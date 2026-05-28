@@ -1,0 +1,153 @@
+version: 1
+
+# Permission Intent Classifier Policy
+# This policy documents the deterministic command intent classification rules
+# implemented in internal/classify/classify.go.
+#
+# Design principles:
+# - Fail-closed: unknown commands are never low-risk.
+# - Deterministic: same command always produces same classification.
+# - Non-sandbox: classification is advisory/evidence input, not runtime enforcement.
+
+intents:
+  read_files:
+    description: "Commands that read files or repository state without mutation"
+    examples:
+      - "git status"
+      - "git diff"
+      - "cat"
+      - "ls"
+      - "find"
+      - "head"
+      - "tail"
+    risk: low
+
+  write_files:
+    description: "Commands that write or modify files"
+    examples:
+      - "sed -i"
+      - "echo > file"
+      - "tee"
+      - "go build"
+      - "npm run build"
+      - "make"
+    risk: medium
+
+  delete_files:
+    description: "Commands that delete files or directories"
+    examples:
+      - "rm"
+      - "rm -rf"
+    risk: high
+
+  shell_exec:
+    description: "Implicit intent for any shell command execution"
+    examples:
+      - "any command"
+    risk: low
+    note: "shell_exec is always present alongside other intents; it does not drive risk alone"
+
+  network_outbound:
+    description: "Commands that initiate network connections"
+    examples:
+      - "curl"
+      - "wget"
+      - "git push"
+      - "git pull"
+      - "npm install"
+      - "npm publish"
+    risk: high
+
+  package_install:
+    description: "Commands that install dependencies or packages"
+    examples:
+      - "npm install"
+      - "go get"
+      - "cargo add"
+      - "pip install"
+    risk: medium
+
+  package_publish:
+    description: "Commands that publish packages or artifacts"
+    examples:
+      - "npm publish"
+      - "cargo publish"
+    risk: high
+
+  secret_access:
+    description: "Commands that access cloud credentials or secrets"
+    examples:
+      - "aws"
+      - "gcloud"
+      - "az"
+    risk: high
+
+  git_mutation:
+    description: "Commands that mutate git history or remote state"
+    examples:
+      - "git push"
+      - "git commit"
+      - "git merge"
+      - "git rebase"
+      - "git reset"
+    risk: high
+
+  database_mutation:
+    description: "Commands that interact with databases"
+    examples:
+      - "psql"
+      - "mysql"
+      - "sqlite3"
+    risk: high
+
+  deploy_or_publish:
+    description: "Commands that deploy or apply infrastructure changes"
+    examples:
+      - "kubectl apply"
+      - "terraform apply"
+      - "serverless deploy"
+    risk: high
+
+  permission_change:
+    description: "Commands that change permissions or escalate privilege"
+    examples:
+      - "chmod"
+      - "chown"
+      - "sudo"
+    risk: high
+
+  unknown:
+    description: "Command pattern not recognized by the classifier"
+    examples:
+      - "custom-tool --flag"
+    risk: high
+    note: "unknown commands are always high risk and set unknown=true"
+
+risk_levels:
+  low:
+    description: "Safe read-only or test operations"
+    allow_without_approval:
+      - light
+      - standard
+      - deep
+
+  medium:
+    description: "File writes, builds, or dependency installation"
+    allow_without_approval:
+      - light
+      - standard
+    require_approval:
+      - deep
+
+  high:
+    description: "Destructive, network, secret, deploy, or unknown commands"
+    allow_without_approval:
+      - light
+    require_approval:
+      - standard
+      - deep
+    note: "strict/deep high-risk without approval receipt should be withheld (admission integration deferred)"
+
+admission:
+  report_only: true
+  note: "This classifier is currently advisory-only. Admission blocking based on intents is deferred until approval receipt schema (Section 15) is implemented."

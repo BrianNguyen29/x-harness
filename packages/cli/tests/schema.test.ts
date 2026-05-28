@@ -278,6 +278,7 @@ describe("schema validators", () => {
       "agent-profile.schema.json",
       "approval-risk.schema.json",
       "benchmark-report.schema.json",
+      "classifier.schema.json",
       "completion-card.schema.json",
       "components-registry.schema.json",
       "cost-budget.schema.json",

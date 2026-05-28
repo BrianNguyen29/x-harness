@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "classifier-result",
+  "type": "object",
+  "required": ["command", "intents", "risk", "unknown"],
+  "properties": {
+    "command": {
+      "type": "string",
+      "description": "The normalized command string that was classified"
+    },
+    "intents": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "read_files",
+          "write_files",
+          "delete_files",
+          "shell_exec",
+          "network_outbound",
+          "package_install",
+          "package_publish",
+          "secret_access",
+          "git_mutation",
+          "database_mutation",
+          "deploy_or_publish",
+          "permission_change",
+          "unknown"
+        ]
+      },
+      "minItems": 1,
+      "description": "Determined intents for the command"
+    },
+    "risk": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Risk level derived from the highest-risk matched intent"
+    },
+    "unknown": {
+      "type": "boolean",
+      "description": "True when the command pattern is not recognized by the classifier"
+    }
+  },
+  "additionalProperties": false
+}

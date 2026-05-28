@@ -148,7 +148,7 @@ This table separates what is already in the repository from what remains design-
 | Release evidence bundle | **Implemented (minimal)** | Schema, generator, verify-evidence, and report implemented; SBOM / provenance / platform matrix remain planned (Section 11) |
 | Denominator contract in reports | **Planned** | Section 12 |
 | Failure taxonomy v2 | **Partial** | Section 13 |
-| Permission intent classifier | **Planned** | Section 14 |
+| Permission intent classifier | **Implemented (minimal)** | `evidence classify --command` and `--card` implemented; admission blocking and report integration deferred (Section 14) |
 | Approval receipt schema | **Planned** | Section 15 |
 | Adapter matrix / eval / doctor | **Partial** | `adapters matrix`, `adapters eval`, and `adapters doctor` implemented; managed block drift checks implemented; strict conformance profile and adapter file generation remain planned (Section 16) |
 | Admission skill-pack | **Planned / Conditional** | Section 17; P3 unless demand exists |
@@ -1150,11 +1150,35 @@ x-harness evidence classify --card completion-card.yaml
 ### 14.6 Acceptance criteria
 
 ```txt
-[ ] Classifier is deterministic.
-[ ] Classifier has tests for common command patterns.
-[ ] Unknown commands are not silently treated as low risk.
+[x] Classifier is deterministic.
+[x] Classifier has tests for common command patterns.
+[x] Unknown commands are not silently treated as low risk.
 [ ] Strict high-risk command without approval is withheld.
+    - Deferred: admission blocking requires approval receipt schema (Section 15).
+    - Current behavior: classifier is advisory-only; policy marks report_only=true.
 [ ] Command intent is included in reports.
+    - Deferred: report integration pending approval receipt and admission pipeline hook.
+```
+
+### 14.7 Implementation status
+
+```txt
+Implemented (minimal):
+- internal/classify/classify.go: deterministic ClassifyCommand with 13 intents.
+- policies/classifier.yaml: fail-closed policy documenting intent taxonomy and risk levels.
+- schemas/classifier.schema.json + packages/cli/schemas/classifier.schema.json: classification result schema.
+- CLI: x-harness evidence classify --command <cmd> [--json]
+- CLI: x-harness evidence classify --card <path> [--json]
+  - Inspects evidence.command_evidence[].command and verification_artifacts[].command.
+- Tests cover all required categories: git read, go/npm test, go/npm build, npm install,
+  npm publish, rm -rf, curl/wget, git push, sed -i, aws/gcloud/az, psql/mysql/sqlite,
+  unknown custom commands.
+
+Deferred:
+- Admission enforcement / approval receipt integration (Section 15).
+- Report intent inclusion.
+- stdout/stderr secret scanning.
+- ML/dynamic classification.
 ```
 
 ---
@@ -1924,11 +1948,11 @@ Constraint: P1 changes must still work with the current monolithic pipeline.
 Goal: improve safety, install UX, and trace inspectability.
 
 ```txt
-[ ] Add permission intent classifier
+[x] Add permission intent classifier (minimal)
     - Deterministic classification for common command patterns
     - Unknown commands are not silently low risk
-    - Strict high-risk without approval is withheld
-    - Intent included in reports
+    - Strict high-risk without approval is withheld: deferred until approval receipt schema
+    - Intent included in reports: deferred until report integration
 [ ] Add approval receipt schema
     - Optional for light, conditional for standard, required for deep high-risk
     - Scope mismatch produces withheld

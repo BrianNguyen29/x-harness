@@ -224,3 +224,109 @@ func TestEvidenceIndexUnknownFlag(t *testing.T) {
 		t.Fatalf("expected unknown flag error, got: %s", stderr.String())
 	}
 }
+
+func TestEvidenceClassifyCommandText(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"evidence", "classify", "--command", "npm publish"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "risk: high") {
+		t.Fatalf("expected high risk, got: %s", out)
+	}
+	if !strings.Contains(out, "package_publish") {
+		t.Fatalf("expected package_publish intent, got: %s", out)
+	}
+}
+
+func TestEvidenceClassifyCommandJSON(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"evidence", "classify", "--command", "custom-tool --flag", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	var result map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON, got error: %v\noutput: %s", err, stdout.String())
+	}
+	if result["risk"] != "high" {
+		t.Fatalf("expected high risk, got: %v", result)
+	}
+	if result["unknown"] != true {
+		t.Fatalf("expected unknown=true, got: %v", result)
+	}
+}
+
+func TestEvidenceClassifyCardJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	cardPath := filepath.Join(tmpDir, "completion-card.yaml")
+	cardContent := `task_id: classify-task
+evidence:
+  command_evidence:
+    - command: "go test ./..."
+      exit_code: 0
+  verification_artifacts:
+    - command: "npm publish"
+      exit_code: 0
+`
+	if err := os.WriteFile(cardPath, []byte(cardContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"evidence", "classify", "--card", cardPath, "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	var result map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON, got error: %v\noutput: %s", err, stdout.String())
+	}
+	if result["card"] != cardPath {
+		t.Fatalf("expected card path, got: %v", result)
+	}
+	results, ok := result["results"].([]any)
+	if !ok || len(results) != 2 {
+		t.Fatalf("expected 2 results, got: %v", result)
+	}
+}
+
+func TestEvidenceClassifyMissingFlags(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"evidence", "classify"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "requires --command or --card") {
+		t.Fatalf("expected required flag error, got: %s", stderr.String())
+	}
+}
+
+func TestEvidenceClassifyBothFlags(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"evidence", "classify", "--command", "ls", "--card", "card.yaml"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "provide only one of --command or --card") {
+		t.Fatalf("expected mutual exclusion error, got: %s", stderr.String())
+	}
+}
+
+func TestEvidenceClassifyUnknownFlag(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"evidence", "classify", "--command", "ls", "--bogus"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "unknown flag") {
+		t.Fatalf("expected unknown flag error, got: %s", stderr.String())
+	}
+}
