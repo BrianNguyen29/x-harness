@@ -17,6 +17,18 @@ error: withheld
 
 Blocked verification must identify blocking predicate, blocked reason class, next owner, and next action.
 
+## Failure taxonomy (minimal)
+
+The verify gate assigns a minimal failure taxonomy to withheld/failed/blocked outcomes:
+
+- `failure_class`: broad category (`stale_context`, `governance_missing`, `evidence_provenance_invalid`, `schema_or_policy_invalid`, `mutation_detected`, `schema_invalid`).
+- `failure_stage`: where the failure was caught (`admission_gate` or `verify_pipeline`).
+- `recoverability`: how the task can recover (`retry_after_refresh`, `human_intervention`, `retry_with_fixes`, `manual_review`).
+- `next_action`: recommended handoff action (`review_and_resubmit`, `escalate`).
+- `blocking_predicate`: the existing predicate that blocked admission.
+
+In JSON output, taxonomy fields are nested under `withheld_reason`. Success cases omit the object.
+
 ## Evidence scope verification
 
 The verify gate evaluates evidence scope according to tier:

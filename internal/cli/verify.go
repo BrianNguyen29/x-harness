@@ -16,16 +16,25 @@ import (
 	"github.com/BrianNguyen29/x-harness/internal/schema"
 )
 
+type withheldReason struct {
+	FailureClass      string `json:"failure_class"`
+	FailureStage      string `json:"failure_stage"`
+	Recoverability    string `json:"recoverability"`
+	NextAction        string `json:"next_action"`
+	BlockingPredicate string `json:"blocking_predicate"`
+}
+
 // VerifyResult is the minimal output of the verify command.
 type VerifyResult struct {
-	OK               bool                  `json:"ok"`
-	TaskID           string                `json:"task_id"`
-	Tier             string                `json:"tier"`
-	AdmissionOutcome string                `json:"admission_outcome"`
-	AcceptanceStatus string                `json:"acceptance_status"`
-	SchemaError      string                `json:"schema_error,omitempty"`
-	AdmissionErrors  []string              `json:"admission_errors,omitempty"`
-	MutationGuard    *mutationguard.Result `json:"mutation_guard,omitempty"`
+	OK               bool                   `json:"ok"`
+	TaskID           string                 `json:"task_id"`
+	Tier             string                 `json:"tier"`
+	AdmissionOutcome string                 `json:"admission_outcome"`
+	AcceptanceStatus string                 `json:"acceptance_status"`
+	SchemaError      string                 `json:"schema_error,omitempty"`
+	AdmissionErrors  []string               `json:"admission_errors,omitempty"`
+	MutationGuard    *mutationguard.Result  `json:"mutation_guard,omitempty"`
+	WithheldReason   *withheldReason        `json:"withheld_reason,omitempty"`
 }
 
 func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
@@ -180,6 +189,10 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			"notes":                result.AdmissionErrors,
 			"errors":               []string{},
 		}
+		if result.WithheldReason != nil {
+			event["blocking_predicate"] = result.WithheldReason.BlockingPredicate
+			event["blocked_reason_class"] = result.WithheldReason.FailureClass
+		}
 		if result.SchemaError != "" {
 			event["errors"] = append(event["errors"].([]string), result.SchemaError)
 		}
@@ -304,6 +317,13 @@ func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationgu
 		result.AcceptanceStatus = "withheld"
 		result.OK = false
 		result.MutationGuard = mgResult
+		result.WithheldReason = &withheldReason{
+			FailureClass:      "schema_invalid",
+			FailureStage:      "verify_pipeline",
+			Recoverability:    "retry_with_fixes",
+			NextAction:        "review_and_resubmit",
+			BlockingPredicate: "schema_invalid",
+		}
 		return result
 	}
 
@@ -314,10 +334,27 @@ func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationgu
 	result.OK = admResult.Outcome == "success" && admResult.AcceptanceStatus == "accepted" && len(admResult.Errors) == 0
 	result.MutationGuard = mgResult
 
+	if admResult.WithheldReason != nil {
+		result.WithheldReason = &withheldReason{
+			FailureClass:      admResult.WithheldReason.FailureClass,
+			FailureStage:      admResult.WithheldReason.FailureStage,
+			Recoverability:    admResult.WithheldReason.Recoverability,
+			NextAction:        admResult.WithheldReason.NextAction,
+			BlockingPredicate: admResult.BlockingPredicate,
+		}
+	}
+
 	if mgResult != nil && mgResult.Violated {
 		result.OK = false
 		result.AdmissionOutcome = "blocked"
 		result.AcceptanceStatus = "withheld"
+		result.WithheldReason = &withheldReason{
+			FailureClass:      "mutation_detected",
+			FailureStage:      "verify_pipeline",
+			Recoverability:    "manual_review",
+			NextAction:        "review_and_resubmit",
+			BlockingPredicate: "verifier_not_read_only",
+		}
 	}
 
 	return result
@@ -341,6 +378,14 @@ func renderVerifyResult(result VerifyResult, jsonMode, verbose bool, stdout io.W
 	}
 	for _, e := range result.AdmissionErrors {
 		WriteLine(stdout, "admission_error: %s", e)
+	}
+	if result.WithheldReason != nil {
+		WriteLine(stdout, "withheld_reason:")
+		WriteLine(stdout, "  failure_class: %s", result.WithheldReason.FailureClass)
+		WriteLine(stdout, "  failure_stage: %s", result.WithheldReason.FailureStage)
+		WriteLine(stdout, "  recoverability: %s", result.WithheldReason.Recoverability)
+		WriteLine(stdout, "  next_action: %s", result.WithheldReason.NextAction)
+		WriteLine(stdout, "  blocking_predicate: %s", result.WithheldReason.BlockingPredicate)
 	}
 	if result.MutationGuard != nil {
 		if result.MutationGuard.SkippedReason != "" {

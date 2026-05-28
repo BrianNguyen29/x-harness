@@ -5,13 +5,22 @@ import (
 	"strings"
 )
 
+// FailureTaxonomy provides minimal classification for withheld/failed/blocked outcomes.
+type FailureTaxonomy struct {
+	FailureClass   string `json:"failure_class"`
+	FailureStage   string `json:"failure_stage"`
+	Recoverability string `json:"recoverability"`
+	NextAction     string `json:"next_action"`
+}
+
 // Result is the output of the admission decision engine.
 type Result struct {
-	Outcome           string   `json:"outcome"`
-	AcceptanceStatus  string   `json:"acceptance_status"`
-	Errors            []string `json:"errors"`
-	Notes             []string `json:"notes"`
-	BlockingPredicate string   `json:"blocking_predicate,omitempty"`
+	Outcome           string           `json:"outcome"`
+	AcceptanceStatus  string           `json:"acceptance_status"`
+	Errors            []string         `json:"errors"`
+	Notes             []string         `json:"notes"`
+	BlockingPredicate string           `json:"blocking_predicate,omitempty"`
+	WithheldReason    *FailureTaxonomy `json:"withheld_reason,omitempty"`
 }
 
 func isCompletionCardShape(doc map[string]any) bool {
@@ -58,6 +67,7 @@ func Run(doc map[string]any, strict bool) Result {
 			Errors:            []string{"stale_ground detected: withholding pending refresh or ruling out"},
 			Notes:             []string{"stale-ground policy: if_detected = withhold"},
 			BlockingPredicate: "stale_ground",
+			WithheldReason:    buildTaxonomy("stale_ground"),
 		}
 	}
 
@@ -276,6 +286,7 @@ func Run(doc map[string]any, strict bool) Result {
 			Errors:            errors,
 			Notes:             notes,
 			BlockingPredicate: blockingPredicate,
+			WithheldReason:    buildTaxonomy(blockingPredicate),
 		}
 	}
 
@@ -518,6 +529,39 @@ func verificationArtifactsHaveScope(artifacts []any) bool {
 		}
 	}
 	return false
+}
+
+func buildTaxonomy(predicate string) *FailureTaxonomy {
+	switch predicate {
+	case "stale_ground":
+		return &FailureTaxonomy{
+			FailureClass:   "stale_context",
+			FailureStage:   "admission_gate",
+			Recoverability: "retry_after_refresh",
+			NextAction:     "review_and_resubmit",
+		}
+	case "approval_missing", "Fintervention":
+		return &FailureTaxonomy{
+			FailureClass:   "governance_missing",
+			FailureStage:   "admission_gate",
+			Recoverability: "human_intervention",
+			NextAction:     "escalate",
+		}
+	case "evidence_provenance_missing":
+		return &FailureTaxonomy{
+			FailureClass:   "evidence_provenance_invalid",
+			FailureStage:   "admission_gate",
+			Recoverability: "retry_with_fixes",
+			NextAction:     "review_and_resubmit",
+		}
+	default:
+		return &FailureTaxonomy{
+			FailureClass:   "schema_or_policy_invalid",
+			FailureStage:   "admission_gate",
+			Recoverability: "retry_with_fixes",
+			NextAction:     "review_and_resubmit",
+		}
+	}
 }
 
 func intLikeValue(v any) (int, bool) {

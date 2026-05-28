@@ -352,6 +352,137 @@ func TestVerifyTraceWritesEvent(t *testing.T) {
 	}
 }
 
+func TestVerifyJSONWithheldIncludesTaxonomy(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cardSrc := filepath.Join("..", "..", "examples", "golden", "blocked-missing-evidence", "completion-card.yaml")
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	srcData, err := os.ReadFile(cardSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cardDst, srcData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
+	if code == ExitOK {
+		t.Fatalf("expected non-ok exit, got %d", code)
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason in JSON output")
+	}
+	if result.WithheldReason.FailureClass == "" {
+		t.Fatal("expected failure_class in withheld_reason")
+	}
+	if result.WithheldReason.FailureStage == "" {
+		t.Fatal("expected failure_stage in withheld_reason")
+	}
+	if result.WithheldReason.Recoverability == "" {
+		t.Fatal("expected recoverability in withheld_reason")
+	}
+	if result.WithheldReason.NextAction == "" {
+		t.Fatal("expected next_action in withheld_reason")
+	}
+	if result.WithheldReason.BlockingPredicate == "" {
+		t.Fatal("expected blocking_predicate in withheld_reason")
+	}
+}
+
+func TestVerifyTraceEventIncludesTaxonomy(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cardSrc := filepath.Join("..", "..", "examples", "golden", "blocked-missing-evidence", "completion-card.yaml")
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	srcData, err := os.ReadFile(cardSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cardDst, srcData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	traceDir := filepath.Join(tmpDir, "traces")
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--trace", "--trace-dir", traceDir, "--json"}, &stdout, &stderr)
+	if code == ExitOK {
+		t.Fatalf("expected non-ok exit, got %d", code)
+	}
+
+	events, err := ReadTrace(traceDir)
+	if err != nil {
+		t.Fatalf("failed to read trace: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+
+	event := events[0]
+	if event.getString("blocking_predicate") == "" {
+		t.Fatalf("expected blocking_predicate in trace event, got empty")
+	}
+	if event.getString("blocked_reason_class") == "" {
+		t.Fatalf("expected blocked_reason_class in trace event, got empty")
+	}
+}
+
 func TestVerifySubagentReturnContradiction(t *testing.T) {
 	tmpDir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {

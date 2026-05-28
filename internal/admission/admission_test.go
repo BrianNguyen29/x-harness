@@ -206,6 +206,107 @@ func TestLyingCommandExitCode(t *testing.T) {
 	}
 }
 
+func TestStaleGroundTaxonomy(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "light",
+		"owner":          "a",
+		"accountable":    "b",
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+		"stale_ground": true,
+	}
+	result := Run(doc, false)
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason for stale_ground")
+	}
+	if result.WithheldReason.FailureClass != "stale_context" {
+		t.Fatalf("expected failure_class stale_context, got %s", result.WithheldReason.FailureClass)
+	}
+	if result.WithheldReason.FailureStage != "admission_gate" {
+		t.Fatalf("expected failure_stage admission_gate, got %s", result.WithheldReason.FailureStage)
+	}
+	if result.WithheldReason.Recoverability != "retry_after_refresh" {
+		t.Fatalf("expected recoverability retry_after_refresh, got %s", result.WithheldReason.Recoverability)
+	}
+	if result.WithheldReason.NextAction != "review_and_resubmit" {
+		t.Fatalf("expected next_action review_and_resubmit, got %s", result.WithheldReason.NextAction)
+	}
+}
+
+func TestMissingEvidenceTaxonomy(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "light",
+		"owner":          "a",
+		"accountable":    "b",
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+		"evidence": map[string]any{
+			"files_changed": []any{},
+		},
+	}
+	result := Run(doc, false)
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason for missing evidence")
+	}
+	if result.WithheldReason.FailureClass != "schema_or_policy_invalid" {
+		t.Fatalf("expected failure_class schema_or_policy_invalid, got %s", result.WithheldReason.FailureClass)
+	}
+	if result.BlockingPredicate != "admission_failed" {
+		t.Fatalf("expected blocking_predicate admission_failed, got %s", result.BlockingPredicate)
+	}
+}
+
+func TestDeepApprovalTaxonomy(t *testing.T) {
+	doc := loadGolden(t, "deep-approval-required")
+	result := Run(doc, false)
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason for deep approval missing")
+	}
+	if result.WithheldReason.FailureClass != "governance_missing" {
+		t.Fatalf("expected failure_class governance_missing, got %s", result.WithheldReason.FailureClass)
+	}
+	if result.WithheldReason.Recoverability != "human_intervention" {
+		t.Fatalf("expected recoverability human_intervention, got %s", result.WithheldReason.Recoverability)
+	}
+	if result.WithheldReason.NextAction != "escalate" {
+		t.Fatalf("expected next_action escalate, got %s", result.WithheldReason.NextAction)
+	}
+}
+
 func TestStaleGroundBlocks(t *testing.T) {
 	doc := map[string]any{
 		"schema_version": "1",
