@@ -150,7 +150,7 @@ This table separates what is already in the repository from what remains design-
 | Failure taxonomy v2 | **Partial** | Section 13 |
 | Permission intent classifier | **Planned** | Section 14 |
 | Approval receipt schema | **Planned** | Section 15 |
-| Adapter matrix / eval / doctor | **Partial** | Schema and `adapters matrix` command implemented; eval and doctor remain planned (Section 16) |
+| Adapter matrix / eval / doctor | **Partial** | `adapters matrix`, `adapters eval`, and `adapters doctor` implemented; managed block drift checks implemented; strict conformance profile and adapter file generation remain planned (Section 16) |
 | Admission skill-pack | **Planned / Conditional** | Section 17; P3 unless demand exists |
 | Adapter/skill static scanner | **Planned** | Section 18 |
 | Install profiles preview/apply | **Planned** | Section 19 |
@@ -1261,10 +1261,11 @@ adapters:
 ### 16.5 Acceptance criteria
 
 ```txt
-[ ] adapters matrix prints capability table.
-[ ] adapters eval exits non-zero on contract drift.
-[ ] adapters doctor is included in conformance strict profile.
-[ ] adapter files are generated from canonical contract blocks.
+[x] adapters matrix prints capability table.
+[x] adapters eval exits non-zero on missing README/caps/formats.
+[x] adapters doctor checks managed block hash drift.
+[ ] adapters doctor is included in conformance strict profile (strict profile is P2).
+[ ] adapter files are generated from canonical contract blocks (generator is future work).
 ```
 
 ---
@@ -2046,9 +2047,9 @@ Why second: this makes x-harness contract-checkable.
 ```txt
 [x] Add adapter matrix schema.
 [x] Add adapters matrix command.
-[ ] Add adapters eval.
-[ ] Add adapters doctor.
-[ ] Add managed block drift checks.
+[x] Add adapters eval (minimal).
+[x] Add adapters doctor (minimal).
+[x] Add managed block drift checks (minimal).
 ```
 
 Why third: adapter drift becomes a real risk once x-harness supports many coding agents.
