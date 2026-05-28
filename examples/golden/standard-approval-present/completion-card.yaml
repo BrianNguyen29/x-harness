@@ -1,0 +1,48 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-STD-APPR-PRES-001
+tier: standard
+owner: alice
+accountable: bob
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Clean build artifacts before deploy
+  expected_effect: dist/ is removed
+  measurable_signal: ls dist/ returns error
+  falsification_method: Run without rm; dist/ should still exist
+  horizon: same_verify
+approval_receipt:
+  decision: approved
+  approver: user
+  classified_commands:
+    - command: rm -rf dist
+      risk: high
+  aggregate_risk: high
+evidence:
+  files_changed:
+    - scripts/clean.sh
+  command_evidence:
+    - command: rm -rf dist
+      exit_code: 0
+claim:
+  fix_status: fixed
+  summary: Added clean script that removes dist
+  evidence:
+    - description: Clean script
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice

@@ -33,6 +33,10 @@ recovery_routing:
     next_action: "Request human approval before admission."
     owner: user
 
+  classifier_approval_required:
+    next_action: "Request approval for high-risk commands and attach an approval_receipt with approved decision, approver, matching classified_commands, and sufficient aggregate_risk."
+    owner: user
+
   conflicting_scope:
     next_action: "Ask user to clarify task scope."
     owner: user

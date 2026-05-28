@@ -3,6 +3,8 @@ package admission
 import (
 	"fmt"
 	"strings"
+
+	"github.com/BrianNguyen29/x-harness/internal/classify"
 )
 
 // FailureTaxonomy provides minimal classification for withheld/failed/blocked outcomes.
@@ -143,6 +145,13 @@ func Run(doc map[string]any, strict bool) Result {
 	for _, e := range cmdResult.errors {
 		applyFinding(e.message, e.predicate, false)
 	}
+
+	// Approval receipt enforcement for classified commands
+	appResult := evaluateApprovalReceipt(doc, tier)
+	for _, e := range appResult.errors {
+		applyFinding(e.message, e.predicate, false)
+	}
+	notes = append(notes, appResult.notes...)
 
 	// Artifact status consistency
 	artResult := evaluateArtifactStatus(doc)
@@ -547,6 +556,13 @@ func buildTaxonomy(predicate string) *FailureTaxonomy {
 			Recoverability: "human_intervention",
 			NextAction:     "escalate",
 		}
+	case "classifier_approval_required":
+		return &FailureTaxonomy{
+			FailureClass:   "command_risky",
+			FailureStage:   "admission_gate",
+			Recoverability: "human_intervention",
+			NextAction:     "request_approval",
+		}
 	case "evidence_provenance_missing":
 		return &FailureTaxonomy{
 			FailureClass:   "evidence_provenance_invalid",
@@ -625,6 +641,128 @@ func evaluateCommandSafety(doc map[string]any) evidenceResult {
 				predicate: "admission_failed",
 			})
 		}
+	}
+
+	return result
+}
+
+func evaluateApprovalReceipt(doc map[string]any, tier string) evidenceResult {
+	result := evidenceResult{errors: []evidenceFinding{}, notes: []string{}}
+	if tier != "standard" && tier != "deep" {
+		return result
+	}
+
+	evidence := mapValue(doc, "evidence")
+	var commands []string
+	for _, item := range sliceInMap(evidence, "command_evidence") {
+		record, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if cmd := stringInMap(record, "command"); cmd != "" {
+			commands = append(commands, cmd)
+		}
+	}
+	for _, item := range sliceInMap(evidence, "verification_artifacts") {
+		record, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if cmd := stringInMap(record, "command"); cmd != "" {
+			commands = append(commands, cmd)
+		}
+	}
+
+	var requiringApproval []classify.CommandClassification
+	var maxRequiredRisk string
+	for _, cmd := range commands {
+		classification := classify.ClassifyCommand(cmd)
+		needsApproval := false
+		switch tier {
+		case "standard":
+			if classification.Risk == "high" || classification.Unknown {
+				needsApproval = true
+			}
+		case "deep":
+			if classification.Risk == "medium" || classification.Risk == "high" || classification.Unknown {
+				needsApproval = true
+			}
+		}
+		if needsApproval {
+			requiringApproval = append(requiringApproval, classification)
+			if classify.RiskMeetsThreshold(classification.Risk, maxRequiredRisk) {
+				maxRequiredRisk = classification.Risk
+			}
+		}
+	}
+
+	if len(requiringApproval) == 0 {
+		return result
+	}
+
+	receipt := mapValue(doc, "approval_receipt")
+	if receipt == nil {
+		result.errors = append(result.errors, evidenceFinding{
+			message:   fmt.Sprintf("tier %s requires approval receipt for %d high-risk command(s)", tier, len(requiringApproval)),
+			predicate: "classifier_approval_required",
+		})
+		return result
+	}
+
+	decision := stringInMap(receipt, "decision")
+	approver := stringInMap(receipt, "approver")
+	aggregateRisk := stringInMap(receipt, "aggregate_risk")
+	classifiedCmds := sliceInMap(receipt, "classified_commands")
+
+	if decision != "approved" {
+		result.errors = append(result.errors, evidenceFinding{
+			message:   fmt.Sprintf("approval_receipt decision is %q; must be 'approved'", decision),
+			predicate: "classifier_approval_required",
+		})
+	}
+	if strings.TrimSpace(approver) == "" {
+		result.errors = append(result.errors, evidenceFinding{
+			message:   "approval_receipt approver is required",
+			predicate: "classifier_approval_required",
+		})
+	}
+	if len(classifiedCmds) == 0 {
+		result.errors = append(result.errors, evidenceFinding{
+			message:   "approval_receipt classified_commands is required",
+			predicate: "classifier_approval_required",
+		})
+	}
+	if maxRequiredRisk != "" && !classify.RiskMeetsThreshold(aggregateRisk, maxRequiredRisk) {
+		result.errors = append(result.errors, evidenceFinding{
+			message:   fmt.Sprintf("approval_receipt aggregate_risk %q is below required threshold %q", aggregateRisk, maxRequiredRisk),
+			predicate: "classifier_approval_required",
+		})
+	}
+
+	// Build coverage map from receipt classified commands
+	covered := make(map[string]struct{})
+	for _, item := range classifiedCmds {
+		rec, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		cmd := stringInMap(rec, "command")
+		if cmd != "" {
+			covered[cmd] = struct{}{}
+		}
+	}
+
+	for _, classification := range requiringApproval {
+		if _, ok := covered[classification.Command]; !ok {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("approval_receipt does not cover command %q (risk: %s)", classification.Command, classification.Risk),
+				predicate: "classifier_approval_required",
+			})
+		}
+	}
+
+	if len(result.errors) == 0 {
+		result.notes = append(result.notes, fmt.Sprintf("approval_receipt validated for %d high-risk command(s)", len(requiringApproval)))
 	}
 
 	return result

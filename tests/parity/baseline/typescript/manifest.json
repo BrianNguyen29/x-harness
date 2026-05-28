@@ -144,6 +144,34 @@
       "output": "verify/golden/multi-agent-success.json"
     },
     {
+      "id": "verify:golden:standard-approval-missing",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/standard-approval-missing/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/golden/standard-approval-missing.json"
+    },
+    {
+      "id": "verify:golden:standard-approval-present",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/standard-approval-present/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/golden/standard-approval-present.json"
+    },
+    {
       "id": "verify:golden:success-light",
       "command": [
         "node",

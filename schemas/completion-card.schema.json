@@ -336,6 +336,46 @@
       "type": "boolean",
       "description": "Advisory-only flag indicating the worker acknowledged context constraints. Missing or false does not block admission."
     },
+    "approval_receipt": {
+      "type": "object",
+      "description": "Optional approval receipt for high-risk command evidence. Required for standard/deep when evidence contains high-risk or unknown commands (standard: high/unknown; deep: medium/high/unknown).",
+      "required": ["decision", "approver", "classified_commands", "aggregate_risk"],
+      "properties": {
+        "decision": {
+          "enum": ["approved", "rejected"]
+        },
+        "approver": {
+          "type": "string",
+          "minLength": 1
+        },
+        "approved_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "classified_commands": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["command", "risk"],
+            "properties": {
+              "command": {
+                "type": "string",
+                "minLength": 1
+              },
+              "risk": {
+                "enum": ["low", "medium", "high"]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "aggregate_risk": {
+          "enum": ["low", "medium", "high"]
+        }
+      },
+      "additionalProperties": false
+    },
     "stale_ground": {
       "type": "boolean",
       "description": "Indicates the task context may be stale. When true, admission is blocked unless the stale ground is resolved. CLI flag --stale-ground overrides this card field."

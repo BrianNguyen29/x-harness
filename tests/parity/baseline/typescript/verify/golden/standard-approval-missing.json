@@ -1,0 +1,67 @@
+{
+  "acceptance_status": "accepted",
+  "admission_outcome": "success",
+  "card_id": null,
+  "changed_files": {
+    "card_files": [
+      "scripts/clean.sh"
+    ],
+    "files": [
+      "scripts/clean.sh"
+    ],
+    "git_files": [],
+    "source": "card"
+  },
+  "checks": [
+    {
+      "name": "completion card valid",
+      "note": "completion card valid: examples/golden/standard-approval-missing/completion-card.yaml",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "tier \"standard\" recommends verification_artifacts",
+      "note": "tier \"standard\" recommends verification_artifacts",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "tier \"standard\" recommends evidence scope (verifies/does_not_verify)",
+      "note": "tier \"standard\" recommends evidence scope (verifies/does_not_verify)",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "tier \"standard\" recommends untested_regions",
+      "note": "tier \"standard\" recommends untested_regions",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "admission checks passed",
+      "note": "admission checks passed",
+      "severity": "info",
+      "status": "passed"
+    }
+  ],
+  "decision": {
+    "acceptance_status": "accepted",
+    "outcome": "success"
+  },
+  "denominator_warning": "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
+  "episode": null,
+  "input_card_hash": "sha256:ef4df6be6a344cea7ea4071fa039a7f840864f31d884a426c8ff659cb2b83a56",
+  "ok": true,
+  "policy_hash": "sha256:5c08082dadbc591d27f6e9b8640fe4c430d17afba75e179abab1633110b231cc",
+  "recovery": null,
+  "schema_version": 1,
+  "strict": false,
+  "task_id": "TASK-GOLDEN-STD-APPR-MISS-001",
+  "withheld_reason": null
+}

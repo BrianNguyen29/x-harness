@@ -11,10 +11,10 @@ describe("examples command", () => {
     expect(exitCode).toBe(0);
     const output = JSON.parse(stdout);
     expect(output.ok).toBe(true);
-    expect(output.total).toBe(12);
-    expect(output.passed).toBe(12);
+    expect(output.total).toBe(14);
+    expect(output.passed).toBe(14);
     expect(output.failed).toBe(0);
-    expect(output.results).toHaveLength(12);
+    expect(output.results).toHaveLength(14);
 
     const names = output.results.map((r: { name: string }) => r.name);
     expect(names).toContain("success-light");
@@ -34,7 +34,7 @@ describe("examples command", () => {
   it("verify subcommand prints human-readable summary", async () => {
     const { stdout, exitCode } = await execaNode(["examples", "verify"]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("Golden examples: 12 total");
+    expect(stdout).toContain("Golden examples: 14 total");
     expect(stdout).toContain("success-light");
     expect(stdout).toContain("blocked-missing-evidence");
     expect(stdout).toContain("failed-invalid-status");

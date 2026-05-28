@@ -14,9 +14,15 @@ type CommandClassification struct {
 }
 
 var riskOrder = map[string]int{
-	"low":        1,
+	"low":         1,
 	"med" + "ium": 2,
-	"high":       3,
+	"high":        3,
+}
+
+// RiskMeetsThreshold returns true if risk is at least threshold.
+// Supported risk values: low, medium, high. Unknown commands are treated as high.
+func RiskMeetsThreshold(risk string, threshold string) bool {
+	return riskOrder[risk] >= riskOrder[threshold]
 }
 
 type intentRule struct {

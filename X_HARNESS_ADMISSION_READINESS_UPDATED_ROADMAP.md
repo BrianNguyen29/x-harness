@@ -1192,35 +1192,36 @@ Make human approval auditable for deep/high-risk tasks without creating a workfl
 ### 15.2 Schema example
 
 ```yaml
-approval:
-  required: true
-  reason: "database_migration"
+approval_receipt:
+  decision: approved
   approver: "human"
   approved_at: "2026-05-28T00:00:00Z"
-  decision: approved
-  scope:
-    commands:
-      - "go test ./..."
-      - "make migrate-dry-run"
-    files:
-      - "migrations/*.sql"
-  receipt_hash: "sha256:..."
+  classified_commands:
+    - command: "go test ./..."
+      risk: low
+    - command: "make migrate-dry-run"
+      risk: medium
+  aggregate_risk: medium
 ```
 
 ### 15.3 Admission rule
 
 ```txt
-deep + high-risk intent + missing approval receipt => withheld
+standard + high/unknown intent + missing approval receipt => withheld
+deep + medium/high/unknown intent + missing approval receipt => withheld
 ```
 
 ### 15.4 Acceptance criteria
 
 ```txt
-[ ] Approval receipt is optional for light tasks.
-[ ] Approval receipt is conditional for standard tasks based on policy.
-[ ] Approval receipt is required for deep high-risk tasks.
-[ ] Scope mismatch between approval and command/files produces withheld.
-[ ] Approval receipt hash is included in report.
+[x] Approval receipt schema exists in schemas/approval-receipt.schema.json.
+[x] Runtime copy synced to packages/cli/schemas/approval-receipt.schema.json.
+[x] Approval receipt is optional for light tasks (advisory only).
+[x] Approval receipt is required for standard tasks with high/unknown commands.
+[x] Approval receipt is required for deep tasks with medium/high/unknown commands.
+[x] Scope mismatch between approval and commands produces withheld.
+[x] Invalid decision, missing approver, or insufficient aggregate_risk produces withheld.
+[ ] Approval receipt hash is included in report (deferred to report integration).
 ```
 
 ---
@@ -1953,10 +1954,16 @@ Goal: improve safety, install UX, and trace inspectability.
     - Unknown commands are not silently low risk
     - Strict high-risk without approval is withheld: deferred until approval receipt schema
     - Intent included in reports: deferred until report integration
-[ ] Add approval receipt schema
-    - Optional for light, conditional for standard, required for deep high-risk
-    - Scope mismatch produces withheld
-    - Hash included in report
+[x] Add approval receipt schema (minimal)
+    - Schema: schemas/approval-receipt.schema.json + runtime copy
+    - Completion card accepts optional top-level approval_receipt
+    - Admission hook classifies evidence commands and enforces tier-based receipt requirement
+    - Standard: high/unknown without receipt => withheld
+    - Deep: medium/high/unknown without receipt => withheld
+    - Light: advisory only, no block
+    - Validation: approved decision, non-empty approver, matching command coverage, sufficient aggregate_risk
+    - Taxonomy: classifier_approval_required maps to command_risky / request_approval / human_intervention
+    - Registry, hash binding, expiry, report integration remain planned
 [ ] Add adapter/skill static scanner
     - Deterministic, JSON output, no network required
     - High severity blocks conformance strict unless waived

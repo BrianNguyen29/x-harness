@@ -578,6 +578,619 @@ func TestStrictLightMissingFieldsExempt(t *testing.T) {
 	}
 }
 
+func TestStandardHighRiskMissingReceipt(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction": map[string]any{
+			"claim":               "p",
+			"expected_effect":     "e",
+			"falsification_method": "f",
+			"measurable_signal":   "m",
+			"horizon":             "same_verify",
+		},
+		"evidence": map[string]any{
+			"files_changed": []any{"f"},
+			"command_evidence": []any{
+				map[string]any{
+					"command":   "rm -rf dist",
+					"exit_code": 0,
+				},
+			},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed, got %s", result.Outcome)
+	}
+	if result.AcceptanceStatus != "withheld" {
+		t.Fatalf("expected withheld, got %s", result.AcceptanceStatus)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if strings.Contains(e, "requires approval receipt") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected approval receipt error, got %v", result.Errors)
+	}
+	if result.BlockingPredicate != "classifier_approval_required" {
+		t.Fatalf("expected classifier_approval_required predicate, got %s", result.BlockingPredicate)
+	}
+}
+
+func TestStandardHighRiskWithReceipt(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction": map[string]any{
+			"claim":               "p",
+			"expected_effect":     "e",
+			"falsification_method": "f",
+			"measurable_signal":   "m",
+			"horizon":             "same_verify",
+		},
+		"evidence": map[string]any{
+			"files_changed": []any{"f"},
+			"command_evidence": []any{
+				map[string]any{
+					"command":   "rm -rf dist",
+					"exit_code": 0,
+				},
+			},
+		},
+		"approval_receipt": map[string]any{
+			"decision": "approved",
+			"approver": "user",
+			"classified_commands": []any{
+				map[string]any{
+					"command": "rm -rf dist",
+					"risk":    "high",
+				},
+			},
+			"aggregate_risk": "high",
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s", result.Outcome)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted, got %s", result.AcceptanceStatus)
+	}
+	if len(result.Errors) != 0 {
+		t.Fatalf("expected no errors, got %v", result.Errors)
+	}
+}
+
+func TestDeepMediumRiskMissingReceipt(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "deep",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction": map[string]any{
+			"claim":               "p",
+			"expected_effect":     "e",
+			"falsification_method": "f",
+			"measurable_signal":   "m",
+			"horizon":             "same_verify",
+		},
+		"state": map[string]any{
+			"read_set":  []any{"r"},
+			"write_set": []any{"w"},
+		},
+		"evidence": map[string]any{
+			"files_changed": []any{"f"},
+			"command_evidence": []any{
+				map[string]any{
+					"command":   "go build ./...",
+					"exit_code": 0,
+				},
+			},
+			"verification_artifacts": []any{
+				map[string]any{
+					"kind":     "build",
+					"command":  "go build ./...",
+					"status":   "passed",
+					"verifies": []any{"v"},
+				},
+			},
+			"untested_regions":   []any{"u"},
+			"remaining_risks":    []any{"r"},
+			"rollback_policy":    []any{"rp"},
+			"execution_controls": []any{"ec"},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed, got %s", result.Outcome)
+	}
+	if result.AcceptanceStatus != "withheld" {
+		t.Fatalf("expected withheld, got %s", result.AcceptanceStatus)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if strings.Contains(e, "requires approval receipt") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected approval receipt error, got %v", result.Errors)
+	}
+}
+
+func TestDeepMediumRiskWithReceipt(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "deep",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction": map[string]any{
+			"claim":               "p",
+			"expected_effect":     "e",
+			"falsification_method": "f",
+			"measurable_signal":   "m",
+			"horizon":             "same_verify",
+		},
+		"state": map[string]any{
+			"read_set":  []any{"r"},
+			"write_set": []any{"w"},
+		},
+		"evidence": map[string]any{
+			"files_changed": []any{"f"},
+			"command_evidence": []any{
+				map[string]any{
+					"command":   "go build ./...",
+					"exit_code": 0,
+				},
+			},
+			"verification_artifacts": []any{
+				map[string]any{
+					"kind":     "build",
+					"command":  "go build ./...",
+					"status":   "passed",
+					"verifies": []any{"v"},
+				},
+			},
+			"untested_regions":   []any{"u"},
+			"remaining_risks":    []any{"r"},
+			"rollback_policy":    []any{"rp"},
+			"execution_controls": []any{"ec"},
+		},
+		"approval_receipt": map[string]any{
+			"decision": "approved",
+			"approver": "user",
+			"classified_commands": []any{
+				map[string]any{
+					"command": "go build ./...",
+					"risk":    "medium",
+				},
+			},
+			"aggregate_risk": "medium",
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s", result.Outcome)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted, got %s", result.AcceptanceStatus)
+	}
+	if len(result.Errors) != 0 {
+		t.Fatalf("expected no errors, got %v", result.Errors)
+	}
+}
+
+func TestLightHighRiskNoReceiptAllowed(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "light",
+		"owner":          "a",
+		"accountable":    "b",
+		"evidence": map[string]any{
+			"files_changed": []any{"f"},
+			"command_evidence": []any{
+				map[string]any{
+					"command":   "rm -rf dist",
+					"exit_code": 0,
+				},
+			},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s", result.Outcome)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted, got %s", result.AcceptanceStatus)
+	}
+	if len(result.Errors) != 0 {
+		t.Fatalf("expected no errors, got %v", result.Errors)
+	}
+}
+
+func TestApprovalReceiptTaxonomy(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction": map[string]any{
+			"claim":               "p",
+			"expected_effect":     "e",
+			"falsification_method": "f",
+			"measurable_signal":   "m",
+			"horizon":             "same_verify",
+		},
+		"evidence": map[string]any{
+			"files_changed": []any{"f"},
+			"command_evidence": []any{
+				map[string]any{
+					"command":   "rm -rf dist",
+					"exit_code": 0,
+				},
+			},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false)
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason for missing approval receipt")
+	}
+	if result.WithheldReason.FailureClass != "command_risky" {
+		t.Fatalf("expected failure_class command_risky, got %s", result.WithheldReason.FailureClass)
+	}
+	if result.WithheldReason.Recoverability != "human_intervention" {
+		t.Fatalf("expected recoverability human_intervention, got %s", result.WithheldReason.Recoverability)
+	}
+	if result.WithheldReason.NextAction != "request_approval" {
+		t.Fatalf("expected next_action request_approval, got %s", result.WithheldReason.NextAction)
+	}
+}
+
+func TestApprovalReceiptInvalidDecision(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction": map[string]any{
+			"claim":               "p",
+			"expected_effect":     "e",
+			"falsification_method": "f",
+			"measurable_signal":   "m",
+			"horizon":             "same_verify",
+		},
+		"evidence": map[string]any{
+			"files_changed": []any{"f"},
+			"command_evidence": []any{
+				map[string]any{
+					"command":   "rm -rf dist",
+					"exit_code": 0,
+				},
+			},
+		},
+		"approval_receipt": map[string]any{
+			"decision": "rejected",
+			"approver": "user",
+			"classified_commands": []any{
+				map[string]any{
+					"command": "rm -rf dist",
+					"risk":    "high",
+				},
+			},
+			"aggregate_risk": "high",
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed, got %s", result.Outcome)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if strings.Contains(e, "decision is \"rejected\"") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected rejected decision error, got %v", result.Errors)
+	}
+}
+
+func TestApprovalReceiptInsufficientAggregateRisk(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "deep",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction": map[string]any{
+			"claim":               "p",
+			"expected_effect":     "e",
+			"falsification_method": "f",
+			"measurable_signal":   "m",
+			"horizon":             "same_verify",
+		},
+		"state": map[string]any{
+			"read_set":  []any{"r"},
+			"write_set": []any{"w"},
+		},
+		"evidence": map[string]any{
+			"files_changed": []any{"f"},
+			"command_evidence": []any{
+				map[string]any{
+					"command":   "go build ./...",
+					"exit_code": 0,
+				},
+			},
+			"verification_artifacts": []any{
+				map[string]any{
+					"kind":     "build",
+					"command":  "go build ./...",
+					"status":   "passed",
+					"verifies": []any{"v"},
+				},
+			},
+			"untested_regions":   []any{"u"},
+			"remaining_risks":    []any{"r"},
+			"rollback_policy":    []any{"rp"},
+			"execution_controls": []any{"ec"},
+		},
+		"approval_receipt": map[string]any{
+			"decision": "approved",
+			"approver": "user",
+			"classified_commands": []any{
+				map[string]any{
+					"command": "go build ./...",
+					"risk":    "medium",
+				},
+			},
+			"aggregate_risk": "low",
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed, got %s", result.Outcome)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if strings.Contains(e, "aggregate_risk \"low\" is below required threshold \"medium\"") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected insufficient aggregate risk error, got %v", result.Errors)
+	}
+}
+
+func TestApprovalReceiptMissingCommandCoverage(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction": map[string]any{
+			"claim":               "p",
+			"expected_effect":     "e",
+			"falsification_method": "f",
+			"measurable_signal":   "m",
+			"horizon":             "same_verify",
+		},
+		"evidence": map[string]any{
+			"files_changed": []any{"f"},
+			"command_evidence": []any{
+				map[string]any{
+					"command":   "rm -rf dist",
+					"exit_code": 0,
+				},
+			},
+		},
+		"approval_receipt": map[string]any{
+			"decision": "approved",
+			"approver": "user",
+			"classified_commands": []any{
+				map[string]any{
+					"command": "npm test",
+					"risk":    "low",
+				},
+			},
+			"aggregate_risk": "high",
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed, got %s", result.Outcome)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if strings.Contains(e, "does not cover command \"rm -rf dist\"") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected missing command coverage error, got %v", result.Errors)
+	}
+}
+
 func TestStrictDeepMissingArtifactsProvenanceFails(t *testing.T) {
 	doc := map[string]any{
 		"schema_version": "1",
