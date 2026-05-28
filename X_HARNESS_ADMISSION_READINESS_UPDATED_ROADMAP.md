@@ -880,6 +880,10 @@ release:
 [ ] release profile requires release evidence bundle.
 ```
 
+### 10.6 Strict profile specification
+
+A review-only specification for the strict profile is maintained at `docs/CONFORMANCE_STRICT_PROFILE.md`. It defines blocking checks, waiver policy, exit semantics, deferred exclusions, and open decisions for review before implementation.
+
 ---
 
 ## 11. Release Evidence Bundle

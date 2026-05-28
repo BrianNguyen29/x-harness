@@ -34,3 +34,4 @@ enforces.
 ## Roadmap
 
 - [Admission Readiness Roadmap](../X_HARNESS_ADMISSION_READINESS_UPDATED_ROADMAP.md) — Implementation status, phased plan, and design targets
+- [Conformance Strict Profile Spec](CONFORMANCE_STRICT_PROFILE.md) — Review-only specification for `conformance run --profile strict`
