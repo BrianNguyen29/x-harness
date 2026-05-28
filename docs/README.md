@@ -30,3 +30,7 @@ enforces.
 - [Release Candidate](RELEASE_CANDIDATE.md) — RC cycle, checklist, and wrapper default criteria
 - [TypeScript Maintenance](TYPESCRIPT_MAINTENANCE.md) — Freeze policy and maintenance mode for the TypeScript CLI
 - [NPM Wrapper Plan](NPM_WRAPPER_PLAN.md)
+
+## Roadmap
+
+- [Admission Readiness Roadmap](../X_HARNESS_ADMISSION_READINESS_UPDATED_ROADMAP.md) — Implementation status, phased plan, and design targets

@@ -8,7 +8,9 @@
 [![Language: Go](https://img.shields.io/badge/Language-Go-00ADD8.svg)](go.mod)
 
 
-`x-harness` is a lightweight, offline-first, verify-gated harness for orchestrating and verifying AI-agent workflows. It enforces structured sub-agent handoffs, read-only validation gates, and fail-closed completion rules to help ensure completion claims are admitted only when they satisfy repository verification policy.
+`x-harness` is a Go-native, file-first admission and readiness harness for AI coding workflows. It does not run your agents, it does not replace CI, and it does not guarantee that code is correct. It does one bounded job: turn an AI agent's completion claim into an auditable admission decision — `accepted` or `withheld` — under repository policy.
+
+> Expansion is incremental. The current stable core is a verify-gated completion admission system with tiered handoff templates, read-only validation, and deterministic local metrics. See the [roadmap](X_HARNESS_ADMISSION_READINESS_UPDATED_ROADMAP.md) for planned enhancements.
 
 > [!NOTE]
 > **Published Runtime**: the npm package is now a Go-only wrapper. It ships platform-native Go binaries and no longer includes the TypeScript `dist/` runtime.
@@ -19,11 +21,31 @@
 
 ---
 
+## What x-harness is not
+
+x-harness is not an agent runtime, product planning system, issue tracker, LLM gateway, dashboard platform, deployment engine, or plugin marketplace. It integrates with AI coding agents; it does not replace them.
+
+## Core contract
+
+Completion is admitted, not claimed.
+
+An agent may propose completion, but accepted completion requires:
+
+```yaml
+admission:
+  outcome: success
+  acceptance_status: accepted
+```
+
+All non-success outcomes are withheld. The verifier is read-only. PGV and LLM advisory checks are advisory-only.
+
+---
+
 ## 🎯 Core Philosophy
 
 > **Completion is admitted, not merely claimed.**
 
-Traditional agent harnesses focus primarily on generation (what code or text the agent should write). `x-harness` shifts the focus to verification and governance. It provides orchestrators and developers with a deterministic, rule-based gate to verify agent work products against strict repository policies.
+`x-harness` shifts the focus from generation to verification and governance. It provides a deterministic, rule-based gate to verify agent work products against repository policies.
 
 In `x-harness`, an agent stating `fix_status: fixed` or running a passing test is simply producing a **completion candidate**. Actual completion is only **accepted** when the read-only verification gate runs its policy and admits the work.
 
