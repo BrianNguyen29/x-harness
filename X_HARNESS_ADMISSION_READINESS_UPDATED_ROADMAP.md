@@ -153,9 +153,9 @@ This table separates what is already in the repository from what remains design-
 | Adapter matrix / eval / doctor | **Partial** | `adapters matrix`, `adapters eval`, and `adapters doctor` implemented; managed block drift checks implemented; strict conformance profile and adapter file generation remain planned (Section 16) |
 | Admission skill-pack | **Implemented (minimal)** | Section 17; optional namespaced skill-pack at skills/x-harness-admission/; adapter eval integration remains planned |
 | Adapter/skill static scanner | **Implemented (minimal)** | `scan adapter`, `scan skill`, `scan managed` implemented; deterministic regex-based heuristics; JSON and text output; report-only; conformance strict blocking and waiver enforcement planned |
-| Install profiles preview/apply | **Implemented (minimal)** | Section 19; `--profile minimal|standard|deep`, `--preview`, `--apply` supported; profile recommend and repair/uninstall remain planned |
+| Install profiles preview/apply | **Implemented (minimal)** | Section 19; `--profile minimal|standard|deep`, `--preview`, `--apply` supported; profile recommend implemented; repair/uninstall implemented (Section 21) |
 | Profile recommend | **Implemented (minimal)** | Section 20 |
-| Repair / uninstall preview/apply | **Planned** | Section 21 |
+| Repair / uninstall preview/apply | **Implemented (minimal)** | Section 21; manifest-backed; repair preview/apply and uninstall preview/apply with --force; backups before overwrite/delete; unmanaged content preserved |
 | Trace timeline / explain | **Planned** | Section 22 |
 | Structured regression / capability / adversarial suites | **Partial** | Section 23; golden examples exist |
 | Worktree-aware verification | **Planned** | Section 24 |
@@ -1555,11 +1555,11 @@ x-harness uninstall --apply
 ### 21.4 Acceptance criteria
 
 ```txt
-[ ] uninstall --preview lists managed files/blocks.
-[ ] uninstall --apply removes only managed content.
-[ ] repair --preview shows drift and proposed fixes.
-[ ] repair --apply restores managed blocks from canonical contract.
-[ ] No unmanaged content is deleted in tests.
+[x] uninstall --preview lists managed files/blocks.
+[x] uninstall --apply removes only managed content.
+[x] repair --preview shows drift and proposed fixes.
+[x] repair --apply restores managed files from manifest with backup before overwrite.
+[x] No unmanaged content is deleted in tests.
 ```
 
 ---
@@ -1997,11 +1997,11 @@ Goal: improve safety, install UX, and trace inspectability.
     - Deterministic, does not create files
     - Explains what is not needed
     - Deep profile recommended only for high-risk/release-like goals
-[ ] Add repair/uninstall preview/apply
+[x] Add repair/uninstall preview/apply
     - uninstall --preview lists managed files/blocks
     - uninstall --apply removes only managed content
     - repair --preview shows drift and proposed fixes
-    - repair --apply restores managed blocks from canonical contract
+    - repair --apply restores managed files from manifest with backup before overwrite
     - No unmanaged content deleted in tests
 [ ] Add trace timeline / trace explain
     - timeline reconstructs stage sequence from trace events
@@ -2149,7 +2149,7 @@ This update is complete when:
 [ ] Release evidence bundle can be generated and verified.
 [ ] Trace timeline/explain makes withheld decisions inspectable.
 [ ] Install profiles support preview/apply.
-[ ] Repair/uninstall only touches managed content.
+[x] Repair/uninstall only touches managed content.
 [ ] Optional hooks/MCP/sandbox integrations remain disabled by default.
 [ ] No database, daemon, API server, dashboard, or agent runtime is introduced.
 ```

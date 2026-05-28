@@ -166,6 +166,14 @@ func handleInit(args []string, stdout io.Writer, stderr io.Writer) int {
 		WriteLine(stdout, "copied: %s", p.dest)
 	}
 
+	// Write manifest for repair/uninstall lifecycle
+	manifestEntries := computeManifestEntries(plan, targetDir)
+	if err := writeManifest(targetDir, displayMode, manifestEntries); err != nil {
+		fmt.Fprintf(stderr, "warning: failed to write manifest: %v\n", err)
+	} else {
+		WriteLine(stdout, "manifest: %s", filepath.Join(targetDir, manifestPath))
+	}
+
 	WriteLine(stdout, "x-harness init (%s) complete: %d assets copied to %s", displayMode, len(copied), targetDir)
 	return ExitOK
 }

@@ -57,6 +57,8 @@ var commands = []CommandInfo{
 	{Name: "agent-profile", Description: "Inspect agent profiles"},
 	{Name: "cost", Description: "Evaluate cost budget data"},
 	{Name: "profile", Description: "Recommend installation profiles"},
+	{Name: "repair", Description: "Repair managed files from manifest"},
+	{Name: "uninstall", Description: "Uninstall managed files using manifest"},
 	{Name: "actions", Description: "List beginner-friendly actions"},
 	{Name: "card", Description: "Generate or verify admission cards"},
 	{Name: "conformance", Description: "Run conformance checks"},
@@ -162,6 +164,10 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleScan(args[1:], stdout, stderr)
 	case "profile":
 		return handleProfile(args[1:], stdout, stderr)
+	case "repair":
+		return handleRepair(args[1:], stdout, stderr)
+	case "uninstall":
+		return handleUninstall(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}
