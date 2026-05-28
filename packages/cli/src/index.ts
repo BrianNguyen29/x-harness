@@ -34,6 +34,7 @@ import { federationCommand } from "./commands/federation.js";
 import { approvalRiskCommand } from "./commands/approval-risk.js";
 import { agentProfileCommand } from "./commands/agent-profile.js";
 import { costCommand } from "./commands/cost.js";
+import { profileCommand } from "./commands/profile.js";
 import { CliError, handleCliError } from "./core/exit.js";
 
 const program = new Command();
@@ -70,6 +71,7 @@ program.addCommand(federationCommand());
 program.addCommand(approvalRiskCommand());
 program.addCommand(agentProfileCommand());
 program.addCommand(costCommand());
+program.addCommand(profileCommand());
 
 // Commands with beginner-friendly aliases
 const verify = verifyCommand();

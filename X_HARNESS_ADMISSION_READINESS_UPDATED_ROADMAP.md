@@ -154,7 +154,7 @@ This table separates what is already in the repository from what remains design-
 | Admission skill-pack | **Implemented (minimal)** | Section 17; optional namespaced skill-pack at skills/x-harness-admission/; adapter eval integration remains planned |
 | Adapter/skill static scanner | **Implemented (minimal)** | `scan adapter`, `scan skill`, `scan managed` implemented; deterministic regex-based heuristics; JSON and text output; report-only; conformance strict blocking and waiver enforcement planned |
 | Install profiles preview/apply | **Implemented (minimal)** | Section 19; `--profile minimal|standard|deep`, `--preview`, `--apply` supported; profile recommend and repair/uninstall remain planned |
-| Profile recommend | **Planned** | Section 20 |
+| Profile recommend | **Implemented (minimal)** | Section 20 |
 | Repair / uninstall preview/apply | **Planned** | Section 21 |
 | Trace timeline / explain | **Planned** | Section 22 |
 | Structured regression / capability / adversarial suites | **Partial** | Section 23; golden examples exist |
@@ -1520,10 +1520,10 @@ reason: "PR verification needs strict evidence and mutation guard, not release c
 ### 20.4 Acceptance criteria
 
 ```txt
-[ ] Recommendation is deterministic.
-[ ] Recommendation does not create files.
-[ ] Recommendation explains what is not needed.
-[ ] Deep profile is recommended only for high-risk or release-like goals.
+[x] Recommendation is deterministic.
+[x] Recommendation does not create files.
+[x] Recommendation explains what is not needed.
+[x] Deep profile is recommended only for high-risk or release-like goals.
 ```
 
 ---
@@ -1993,7 +1993,7 @@ Goal: improve safety, install UX, and trace inspectability.
     - Managed blocks are idempotent
     - Unmanaged content preserved
     - doctor can verify installed profile
-[ ] Add profile recommend
+[x] Add profile recommend
     - Deterministic, does not create files
     - Explains what is not needed
     - Deep profile recommended only for high-risk/release-like goals

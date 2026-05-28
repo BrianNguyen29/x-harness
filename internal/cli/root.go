@@ -56,6 +56,7 @@ var commands = []CommandInfo{
 	{Name: "approval-risk", Description: "Evaluate approval risk"},
 	{Name: "agent-profile", Description: "Inspect agent profiles"},
 	{Name: "cost", Description: "Evaluate cost budget data"},
+	{Name: "profile", Description: "Recommend installation profiles"},
 	{Name: "actions", Description: "List beginner-friendly actions"},
 	{Name: "card", Description: "Generate or verify admission cards"},
 	{Name: "conformance", Description: "Run conformance checks"},
@@ -159,6 +160,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleAdapters(args[1:], stdout, stderr)
 	case "scan":
 		return handleScan(args[1:], stdout, stderr)
+	case "profile":
+		return handleProfile(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}
