@@ -159,7 +159,7 @@ This table separates what is already in the repository from what remains design-
 | Trace timeline / explain | **Implemented (minimal)** | Section 22; `trace timeline`, `trace explain`, `trace inspect --withheld` implemented; `trace collapse` remains planned |
 | Structured regression / capability / adversarial suites | **Implemented (minimal)** | Section 23; `--suite regression|capability|adversarial` supported; fixtures organized under suite dirs; CI regression gate added; strict conformance suite integration remains planned |
 | Worktree-aware verification | **Planned** | Section 24 |
-| Context GC / staleness doctor | **Partial** | `context gc --check` and `doctor --staleness` minimally implemented; `context gc --write`, overclaim/dead-link/doc-field strict checks, and conformance strict integration remain planned (Section 25) |
+| Context GC / staleness doctor | **Partial** | `context gc --check` and `context gc --write` minimally implemented; overclaim/dead-link/doc-field strict checks and conformance strict integration remain planned (Section 25) |
 | Hooks bridge | **Planned / Conditional** | Section 26; P3 unless needed |
 | MCP read-only evidence adapter | **Planned / Conditional** | Section 27; P3 unless needed |
 | Sandbox bridge | **Planned / Conditional** | Section 28; P3 unless needed |

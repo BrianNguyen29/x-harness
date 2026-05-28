@@ -337,6 +337,155 @@ func TestContextGCCheckJSON(t *testing.T) {
 	}
 }
 
+func TestContextGCWriteUpdatesStaleBlock(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	block := generateManagedBlock()
+	block = strings.Replace(block, "<!-- context-hash: ", "<!-- context-hash: deadbeef", 1)
+	if err := os.WriteFile(agentsPath, []byte("# AGENTS\n\n"+block+"\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "gc", "--write", "--root", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "refreshed") {
+		t.Fatalf("expected refreshed message, got stdout: %q", stdout.String())
+	}
+
+	updatedContent, err := os.ReadFile(agentsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	valid, note := validateManagedBlock(string(updatedContent))
+	if !valid {
+		t.Fatalf("expected updated block to be valid: %s", note)
+	}
+}
+
+func TestContextGCWriteIdempotentFresh(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	block := generateManagedBlock()
+	if err := os.WriteFile(agentsPath, []byte("# AGENTS\n\n"+block+"\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "gc", "--write", "--root", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "up-to-date") {
+		t.Fatalf("expected up-to-date message, got stdout: %q", stdout.String())
+	}
+
+	// Verify file content is unchanged
+	updatedContent, err := os.ReadFile(agentsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(updatedContent) != "# AGENTS\n\n"+block+"\n" {
+		t.Fatal("expected AGENTS.md content to be unchanged for fresh block")
+	}
+}
+
+func TestContextGCWritePreservesSurroundingContent(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	before := "# My Project\n\nCustom instructions here.\n\n"
+	after := "\n\n## Notes\n\nKeep this section.\n"
+	existingBlock := generateManagedBlock()
+	existingBlock = strings.Replace(existingBlock, "<!-- context-hash: ", "<!-- context-hash: deadbeef", 1)
+	content := before + existingBlock + after
+	if err := os.WriteFile(agentsPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "gc", "--write", "--root", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	updated, err := os.ReadFile(agentsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updatedStr := string(updated)
+	if !strings.Contains(updatedStr, before) {
+		t.Fatalf("expected content before block to be preserved")
+	}
+	if !strings.Contains(updatedStr, after) {
+		t.Fatalf("expected content after block to be preserved")
+	}
+	valid, note := validateManagedBlock(updatedStr)
+	if !valid {
+		t.Fatalf("expected updated block to be valid: %s", note)
+	}
+}
+
+func TestContextGCWriteJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	if err := os.WriteFile(agentsPath, []byte("# AGENTS\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "gc", "--write", "--root", tmpDir, "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result["ok"] != true {
+		t.Fatalf("expected ok=true, got %v", result["ok"])
+	}
+	if result["changed"] != true {
+		t.Fatalf("expected changed=true, got %v", result["changed"])
+	}
+	if result["context_hash"] == "" {
+		t.Fatalf("expected context_hash to be present")
+	}
+}
+
+func TestContextGCWriteJSONIdempotent(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	block := generateManagedBlock()
+	if err := os.WriteFile(agentsPath, []byte("# AGENTS\n\n"+block+"\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "gc", "--write", "--root", tmpDir, "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result["ok"] != true {
+		t.Fatalf("expected ok=true, got %v", result["ok"])
+	}
+	if result["changed"] != false {
+		t.Fatalf("expected changed=false, got %v", result["changed"])
+	}
+}
+
 func TestGenerateManagedBlockDeterministic(t *testing.T) {
 	a := generateManagedBlock()
 	b := generateManagedBlock()

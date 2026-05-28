@@ -325,20 +325,8 @@ func runContextGC(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 	}
 
-	if writeMode {
-		if jsonMode {
-			_ = WriteJSON(stdout, map[string]any{
-				"ok":   false,
-				"note": "context gc --write is planned but not yet implemented",
-			})
-		} else {
-			fmt.Fprintln(stderr, "context gc --write is planned but not yet implemented")
-		}
-		return ExitUsage
-	}
-
-	if !checkMode {
-		fmt.Fprintln(stderr, "usage: x-harness context gc --check [--root <path>] [--json]")
+	if !checkMode && !writeMode {
+		fmt.Fprintln(stderr, "usage: x-harness context gc --check|--write [--root <path>] [--json]")
 		return ExitUsage
 	}
 
@@ -359,38 +347,89 @@ func runContextGC(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 		return ExitUsage
 	}
+	agentsContent := string(agentsContentBytes)
 
-	valid, note := validateManagedBlock(string(agentsContentBytes))
+	valid, note := validateManagedBlock(agentsContent)
 
-	if jsonMode {
-		output := map[string]any{
-			"ok":       valid,
-			"findings": []string{},
+	if checkMode {
+		if jsonMode {
+			output := map[string]any{
+				"ok":       valid,
+				"findings": []string{},
+			}
+			if !valid {
+				output["findings"] = []string{note}
+			}
+			if err := WriteJSON(stdout, output); err != nil {
+				return ExitError
+			}
+		} else {
+			if valid {
+				fmt.Fprintln(stdout, "✓ Context GC check passed")
+			} else {
+				fmt.Fprintln(stderr, "✗ Context GC check failed")
+				fmt.Fprintf(stderr, "  - %s\n", note)
+			}
 		}
-		if !valid {
-			output["findings"] = []string{note}
+		if valid {
+			return ExitOK
 		}
-		if err := WriteJSON(stdout, output); err != nil {
+		return ExitError
+	}
+
+	if writeMode {
+		if valid {
+			if jsonMode {
+				_ = WriteJSON(stdout, map[string]any{
+					"ok":      true,
+					"changed": false,
+					"note":    "AGENTS.md is already up-to-date",
+				})
+			} else {
+				fmt.Fprintln(stdout, "✓ AGENTS.md is already up-to-date")
+			}
+			return ExitOK
+		}
+
+		block := generateManagedBlock()
+		updated := injectManagedBlock(agentsContent, block)
+		if err := os.WriteFile(agentsPath, []byte(updated), 0644); err != nil {
+			fmt.Fprintf(stderr, "Error: failed to write AGENTS.md: %v\n", err)
 			return ExitError
 		}
-	} else {
-		if valid {
-			fmt.Fprintln(stdout, "✓ Context GC check passed")
-		} else {
-			fmt.Fprintln(stderr, "✗ Context GC check failed")
-			fmt.Fprintf(stderr, "  - %s\n", note)
-		}
-	}
 
-	if valid {
+		hashMatch := strings.Index(block, "<!-- context-hash: ")
+		var hash string
+		if hashMatch != -1 {
+			hashStart := hashMatch + len("<!-- context-hash: ")
+			hashEnd := strings.Index(block[hashStart:], " -->")
+			if hashEnd != -1 {
+				hash = block[hashStart : hashStart+hashEnd]
+			}
+		}
+		if hash == "" {
+			hash = "unknown"
+		}
+
+		if jsonMode {
+			_ = WriteJSON(stdout, map[string]any{
+				"ok":           true,
+				"changed":      true,
+				"context_hash": hash,
+				"findings":     []string{note},
+			})
+		} else {
+			fmt.Fprintf(stdout, "AGENTS.md refreshed (context-hash: %s)\n", hash)
+		}
 		return ExitOK
 	}
-	return ExitError
+
+	return ExitUsage
 }
 
 func handleContext(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: x-harness context --contract [--json] | context sync --check|--write [--root <path>] [--json] | context gc --check [--root <path>] [--json]")
+		fmt.Fprintln(stderr, "usage: x-harness context --contract [--json] | context sync --check|--write [--root <path>] [--json] | context gc --check|--write [--root <path>] [--json]")
 		return ExitUsage
 	}
 
