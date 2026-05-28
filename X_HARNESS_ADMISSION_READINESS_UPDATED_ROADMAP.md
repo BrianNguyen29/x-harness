@@ -153,7 +153,7 @@ This table separates what is already in the repository from what remains design-
 | Adapter matrix / eval / doctor | **Partial** | `adapters matrix`, `adapters eval`, and `adapters doctor` implemented; managed block drift checks implemented; strict conformance profile and adapter file generation remain planned (Section 16) |
 | Admission skill-pack | **Implemented (minimal)** | Section 17; optional namespaced skill-pack at skills/x-harness-admission/; adapter eval integration remains planned |
 | Adapter/skill static scanner | **Implemented (minimal)** | `scan adapter`, `scan skill`, `scan managed` implemented; deterministic regex-based heuristics; JSON and text output; report-only; conformance strict blocking and waiver enforcement planned |
-| Install profiles preview/apply | **Planned** | Section 19 |
+| Install profiles preview/apply | **Implemented (minimal)** | Section 19; `--profile minimal|standard|deep`, `--preview`, `--apply` supported; profile recommend and repair/uninstall remain planned |
 | Profile recommend | **Planned** | Section 20 |
 | Repair / uninstall preview/apply | **Planned** | Section 21 |
 | Trace timeline / explain | **Planned** | Section 22 |
@@ -1477,11 +1477,11 @@ NOOP schemas/completion-card.schema.json
 ### 19.6 Acceptance criteria
 
 ```txt
-[ ] init --preview prints exact planned mutations.
-[ ] init --apply performs only planned mutations.
-[ ] Managed blocks are idempotent.
-[ ] Unmanaged user content is preserved.
-[ ] doctor can verify installed profile.
+[x] init --preview prints exact planned mutations.
+[x] init --apply performs only planned mutations.
+[ ] Managed blocks are idempotent. (remains planned — no managed block idempotency changes in this slice)
+[ ] Unmanaged user content is preserved. (remains planned — no broad content refactor)
+[ ] doctor can verify installed profile. (remains planned — out of scope for this slice)
 ```
 
 ---

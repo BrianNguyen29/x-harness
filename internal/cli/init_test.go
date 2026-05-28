@@ -232,3 +232,118 @@ func TestInitDryRunAdapters(t *testing.T) {
 		t.Fatalf("expected adapters/cursor in plan, got: %s", out)
 	}
 }
+
+func TestInitProfileMinimal(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	code := Run([]string{"init", tmpDir, "--profile", "minimal"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "init (minimal) complete") {
+		t.Fatalf("expected minimal complete, got: %s", stdout.String())
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "AGENTS.md")); err != nil {
+		t.Fatalf("expected AGENTS.md to exist: %v", err)
+	}
+}
+
+func TestInitProfileStandard(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	code := Run([]string{"init", tmpDir, "--profile", "standard"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "init (standard) complete") {
+		t.Fatalf("expected standard complete, got: %s", stdout.String())
+	}
+	for _, dir := range []string{"schemas", "policies", "01-solo-agent", "02-assisted-agent"} {
+		path := filepath.Join(tmpDir, dir)
+		if _, err := os.Stat(path); err != nil {
+			t.Fatalf("expected %s to exist: %v", dir, err)
+		}
+	}
+}
+
+func TestInitProfileDeep(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	code := Run([]string{"init", tmpDir, "--profile", "deep"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "init (deep) complete") {
+		t.Fatalf("expected deep complete, got: %s", stdout.String())
+	}
+	for _, dir := range []string{"examples", "schemas", "policies", "templates", "adapters"} {
+		path := filepath.Join(tmpDir, dir)
+		if _, err := os.Stat(path); err != nil {
+			t.Fatalf("expected %s to exist: %v", dir, err)
+		}
+	}
+}
+
+func TestInitPreview(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	code := Run([]string{"init", tmpDir, "--preview"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "dry run") {
+		t.Fatalf("expected dry run header, got: %s", stdout.String())
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "AGENTS.md")); err == nil {
+		t.Fatal("expected AGENTS.md to not exist in preview")
+	}
+}
+
+func TestInitApply(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	code := Run([]string{"init", tmpDir, "--apply"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "init (minimal) complete") {
+		t.Fatalf("expected minimal complete, got: %s", stdout.String())
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "AGENTS.md")); err != nil {
+		t.Fatalf("expected AGENTS.md to exist: %v", err)
+	}
+}
+
+func TestInitProfileConflictLegacy(t *testing.T) {
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{"init", "--profile", "minimal", "--full"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "cannot use --profile") {
+		t.Fatalf("expected conflict error, got: %q", stderr.String())
+	}
+}
+
+func TestInitUnknownProfile(t *testing.T) {
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{"init", "--profile", "bogus"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "invalid profile") {
+		t.Fatalf("expected invalid profile error, got: %q", stderr.String())
+	}
+}

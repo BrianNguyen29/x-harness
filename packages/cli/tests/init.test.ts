@@ -126,4 +126,115 @@ describe("init command", () => {
     expect(exitCode).toBe(0);
     expect(stdout).toContain("init");
   });
+
+  it("--profile minimal installs minimal assets", async () => {
+    const tmpDir = mkdtempSync(path.join(tmpdir(), "x-harness-init-"));
+    try {
+      const { stdout, exitCode } = await execaNode([
+        "init",
+        tmpDir,
+        "--profile",
+        "minimal",
+      ]);
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("init (minimal) complete");
+      expect(await fs.pathExists(path.join(tmpDir, "AGENTS.md"))).toBe(true);
+      expect(await fs.pathExists(path.join(tmpDir, "schemas"))).toBe(false);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("--profile standard installs standard assets", async () => {
+    const tmpDir = mkdtempSync(path.join(tmpdir(), "x-harness-init-"));
+    try {
+      const { stdout, exitCode } = await execaNode([
+        "init",
+        tmpDir,
+        "--profile",
+        "standard",
+      ]);
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("init (standard) complete");
+      expect(await fs.pathExists(path.join(tmpDir, "schemas"))).toBe(true);
+      expect(await fs.pathExists(path.join(tmpDir, "01-solo-agent"))).toBe(
+        true
+      );
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("--profile deep installs deep assets", async () => {
+    const tmpDir = mkdtempSync(path.join(tmpdir(), "x-harness-init-"));
+    try {
+      const { stdout, exitCode } = await execaNode([
+        "init",
+        tmpDir,
+        "--profile",
+        "deep",
+      ]);
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("init (deep) complete");
+      expect(await fs.pathExists(path.join(tmpDir, "examples"))).toBe(true);
+      expect(await fs.pathExists(path.join(tmpDir, "schemas"))).toBe(true);
+      expect(await fs.pathExists(path.join(tmpDir, "templates"))).toBe(true);
+      expect(await fs.pathExists(path.join(tmpDir, "adapters"))).toBe(true);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("--preview behaves like --dry-run", async () => {
+    const tmpDir = mkdtempSync(path.join(tmpdir(), "x-harness-init-"));
+    try {
+      const { stdout, exitCode } = await execaNode([
+        "init",
+        tmpDir,
+        "--preview",
+      ]);
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("dry run");
+      expect(await fs.pathExists(path.join(tmpDir, "AGENTS.md"))).toBe(false);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("--apply behaves like default apply", async () => {
+    const tmpDir = mkdtempSync(path.join(tmpdir(), "x-harness-init-"));
+    try {
+      const { stdout, exitCode } = await execaNode([
+        "init",
+        tmpDir,
+        "--apply",
+      ]);
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("init (minimal) complete");
+      expect(await fs.pathExists(path.join(tmpDir, "AGENTS.md"))).toBe(true);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("errors on --profile with legacy mode flag", async () => {
+    const { stderr, exitCode } = await execaNode([
+      "init",
+      "--profile",
+      "minimal",
+      "--full",
+    ]);
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("cannot use --profile");
+  });
+
+  it("errors on unknown --profile", async () => {
+    const { stderr, exitCode } = await execaNode([
+      "init",
+      "--profile",
+      "bogus",
+    ]);
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("invalid profile");
+  });
 });

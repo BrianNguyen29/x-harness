@@ -8,9 +8,12 @@ interface InitOptions {
   standard?: boolean;
   full?: boolean;
   dryRun?: boolean;
+  preview?: boolean;
+  apply?: boolean;
   merge?: boolean;
   force?: boolean;
   adapters?: string;
+  profile?: string;
 }
 
 const MODE_ASSETS: Record<string, string[]> = {
@@ -30,13 +33,41 @@ export function initCommand(): Command {
     .option("--minimal", "Minimal mode (default)")
     .option("--standard", "Standard mode")
     .option("--full", "Full mode")
+    .option("--profile <profile>", "Install profile (minimal, standard, deep)")
     .option("--dry-run", "Show what would be copied")
+    .option("--preview", "Preview changes (alias for --dry-run)")
+    .option("--apply", "Apply changes explicitly")
     .option("--merge", "Merge with existing files")
     .option("--force", "Overwrite existing files")
     .option("--adapters <list>", "Comma-separated adapter list")
     .argument("[target]", "Target directory", ".")
     .action(async (target: string, opts: InitOptions) => {
-      const mode = opts.full ? "full" : opts.standard ? "standard" : "minimal";
+      let mode = opts.full ? "full" : opts.standard ? "standard" : "minimal";
+      const legacyModeSet = !!(opts.minimal || opts.standard || opts.full);
+
+      if (opts.profile) {
+        if (legacyModeSet) {
+          console.error("usage: init [target] [options]");
+          console.error("cannot use --profile with --minimal, --standard, or --full");
+          process.exit(1);
+        }
+        switch (opts.profile) {
+          case "minimal":
+          case "standard":
+            mode = opts.profile;
+            break;
+          case "deep":
+            mode = "full";
+            break;
+          default:
+            console.error("usage: init [target] [options]");
+            console.error(`invalid profile: ${opts.profile}`);
+            process.exit(1);
+        }
+      }
+
+      const displayMode = opts.profile === "deep" ? "deep" : mode;
+      const dryRun = opts.dryRun || opts.preview || false;
       const targetDir = path.resolve(target);
       const assetRoot = await resolveAssetRoot();
 
@@ -92,8 +123,8 @@ export function initCommand(): Command {
         }
       }
 
-      if (opts.dryRun) {
-        console.log(`# x-harness init (${mode}) - dry run`);
+      if (dryRun) {
+        console.log(`# x-harness init (${displayMode}) - dry run`);
         for (const p of plan) {
           console.log(`would copy: ${p.src} -> ${p.dest}`);
         }
@@ -123,7 +154,7 @@ export function initCommand(): Command {
 
       if (conflicts.length > 0) {
         console.error(
-          `\n# x-harness init (${mode}) blocked: ${conflicts.length} file(s) already exist`
+          `\n# x-harness init (${displayMode}) blocked: ${conflicts.length} file(s) already exist`
         );
         for (const c of conflicts) {
           console.error(`conflict: ${c}`);
@@ -135,7 +166,7 @@ export function initCommand(): Command {
       }
 
       console.log(
-        `x-harness init (${mode}) complete: ${copied.length} assets copied to ${targetDir}`
+        `x-harness init (${displayMode}) complete: ${copied.length} assets copied to ${targetDir}`
       );
     });
 }

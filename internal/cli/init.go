@@ -12,23 +12,34 @@ import (
 
 func handleInit(args []string, stdout io.Writer, stderr io.Writer) int {
 	mode := "minimal"
+	legacyModeSet := false
 	dryRun := false
 	merge := false
 	force := false
 	adapters := ""
 	assetRootFlag := ""
 	target := "."
+	profile := ""
+	preview := false
+	apply := false
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--minimal":
 			mode = "minimal"
+			legacyModeSet = true
 		case "--standard":
 			mode = "standard"
+			legacyModeSet = true
 		case "--full":
 			mode = "full"
+			legacyModeSet = true
 		case "--dry-run":
 			dryRun = true
+		case "--preview":
+			preview = true
+		case "--apply":
+			apply = true
 		case "--merge":
 			merge = true
 		case "--force":
@@ -49,6 +60,14 @@ func handleInit(args []string, stdout io.Writer, stderr io.Writer) int {
 			}
 			assetRootFlag = args[i+1]
 			i++
+		case "--profile":
+			if i+1 >= len(args) {
+				WriteLine(stderr, "usage: init [target] [options]")
+				WriteLine(stderr, "missing value for --profile")
+				return ExitUsage
+			}
+			profile = args[i+1]
+			i++
 		default:
 			if strings.HasPrefix(args[i], "-") {
 				WriteLine(stderr, "unknown flag: %s", args[i])
@@ -62,6 +81,33 @@ func handleInit(args []string, stdout io.Writer, stderr io.Writer) int {
 			}
 		}
 	}
+
+	if profile != "" {
+		if legacyModeSet {
+			WriteLine(stderr, "usage: init [target] [options]")
+			WriteLine(stderr, "cannot use --profile with --minimal, --standard, or --full")
+			return ExitUsage
+		}
+		switch profile {
+		case "minimal", "standard":
+			mode = profile
+		case "deep":
+			mode = "full"
+		default:
+			WriteLine(stderr, "usage: init [target] [options]")
+			WriteLine(stderr, "invalid profile: %s", profile)
+			return ExitUsage
+		}
+	}
+
+	displayMode := mode
+	if profile == "deep" {
+		displayMode = "deep"
+	}
+	if preview {
+		dryRun = true
+	}
+	_ = apply
 
 	targetDir, err := filepath.Abs(target)
 	if err != nil {
@@ -78,7 +124,7 @@ func handleInit(args []string, stdout io.Writer, stderr io.Writer) int {
 	plan := buildInitPlan(mode, assetRoot, targetDir, adapters, stderr)
 
 	if dryRun {
-		WriteLine(stdout, "# x-harness init (%s) - dry run", mode)
+		WriteLine(stdout, "# x-harness init (%s) - dry run", displayMode)
 		for _, p := range plan {
 			WriteLine(stdout, "would copy: %s -> %s", p.src, p.dest)
 		}
@@ -93,7 +139,7 @@ func handleInit(args []string, stdout io.Writer, stderr io.Writer) int {
 	}
 
 	if len(conflicts) > 0 {
-		fmt.Fprintf(stderr, "\n# x-harness init (%s) blocked: %d file(s) already exist\n", mode, len(conflicts))
+		fmt.Fprintf(stderr, "\n# x-harness init (%s) blocked: %d file(s) already exist\n", displayMode, len(conflicts))
 		for _, c := range conflicts {
 			fmt.Fprintf(stderr, "conflict: %s\n", c)
 		}
@@ -120,7 +166,7 @@ func handleInit(args []string, stdout io.Writer, stderr io.Writer) int {
 		WriteLine(stdout, "copied: %s", p.dest)
 	}
 
-	WriteLine(stdout, "x-harness init (%s) complete: %d assets copied to %s", mode, len(copied), targetDir)
+	WriteLine(stdout, "x-harness init (%s) complete: %d assets copied to %s", displayMode, len(copied), targetDir)
 	return ExitOK
 }
 
