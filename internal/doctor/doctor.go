@@ -290,6 +290,7 @@ var allowedTierReferencePatterns = []*regexp.Regexp{
 	regexp.MustCompile(`(?i)context[_\ -]?class.*\b(medium|large|small)\b`),
 	regexp.MustCompile(`(?i)default_token_impact.*\b(medium|large|small)\b`),
 	regexp.MustCompile(`(?i)runtime_impact.*\b(medium|large|small)\b`),
+	regexp.MustCompile(`(?i)severity.*\b(medium|large|small)\b`),
 }
 
 var tierScanDirs = []string{"docs", "templates", "adapters", "packages/cli/src", "internal", "cmd"}
@@ -316,6 +317,8 @@ func checkTierLabels(report *Report, root string) {
 		filepath.Join(root, "internal", "attribution", "attribution.go"):       true,
 		filepath.Join(root, "internal", "prediction", "prediction.go"):         true,
 		filepath.Join(root, "internal", "doctor", "doctor.go"):                 true,
+		filepath.Join(root, "internal", "scanner", "scanner.go"):               true,
+		filepath.Join(root, "internal", "cli", "scan.go"):                     true,
 	}
 
 	labelRe := regexp.MustCompile(`(?i)\b(small|medium|large)\b`)

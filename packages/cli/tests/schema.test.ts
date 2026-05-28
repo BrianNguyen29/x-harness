@@ -291,6 +291,7 @@ describe("schema validators", () => {
       "permissions.schema.json",
       "release-evidence.schema.json",
       "report.schema.json",
+      "scanner.schema.json",
       "subagent-return.schema.json",
       "verify-event.schema.json",
       "pgv-advice.schema.json",

@@ -1,0 +1,149 @@
+version: 1
+
+# Adapter/Skill Static Scanner Policy
+# This policy documents the deterministic regex-based heuristics implemented in
+# internal/scanner/scanner.go.
+#
+# Design principles:
+# - Deterministic: same file always produces same findings.
+# - Report-only first slice: findings are advisory; conformance strict blocking and
+#   waiver enforcement remain planned (see roadmap Section 18).
+# - No network required: scanner operates on local files only.
+# - Exit code 0 for report-only MVP unless roadmap/tests explicitly require non-zero.
+
+rules:
+  - id: remote-pipe-shell
+    category: remote_code_execution
+    severity: high
+    description: "curl or wget piped directly into a shell interpreter"
+    pattern: '(?i)(curl|wget)[^|]*\|\s*(bash|sh|zsh|fish)'
+    waivable: false
+
+  - id: rm-rf-root
+    category: destructive_command
+    severity: high
+    description: "rm -rf targeting root or home directory"
+    pattern: '(?i)rm\s+-[a-zA-Z]*f[a-zA-Z]*\s+(/|\.+/|~/)'
+    waivable: false
+
+  - id: rm-rf-dot
+    category: destructive_command
+    severity: high
+    description: "rm -rf targeting current directory"
+    pattern: '(?i)rm\s+-[a-zA-Z]*r[a-zA-Z]*\s+\.'
+    waivable: false
+
+  - id: chmod-executable-remote
+    category: permission_change
+    severity: high
+    description: "chmod +x on a file in a temporary or remote path"
+    pattern: '(?i)chmod\s+\+x\s+(/tmp/|/var/tmp/|~/|\.*/)'
+    waivable: true
+
+  - id: ssh-secret-access
+    category: secret_access
+    severity: high
+    description: "cat or read of SSH or cloud credential directories"
+    pattern: '(?i)cat\s+.*(/\.ssh/|/\.aws/|/\.gcp/|/\.azure/)'
+    waivable: false
+
+  - id: env-exfiltration
+    category: secret_access
+    severity: high
+    description: "environment or .env contents piped to network tool"
+    pattern: '(?i)(env\s*|printenv\s*|cat\s+.*\.env).*\|\s*(curl|wget|nc\s|netcat)'
+    waivable: false
+
+  - id: api-key-token-exfil
+    category: secret_access
+    severity: high
+    description: "API key or token piped to network tool"
+    pattern: '(?i)(API_KEY|TOKEN|SECRET|PASSWORD|PRIVATE_KEY).*\|\s*(curl|wget|nc\s|netcat)'
+    waivable: false
+
+  - id: mcp-auto-enable
+    category: mcp_untrusted
+    severity: high
+    description: "MCP server auto-enable without explicit approval"
+    pattern: '(?i)mcp.*auto[-_]?enable|auto[-_]?enable.*mcp|enable\s+mcp\s+server'
+    waivable: true
+
+  - id: hook-outside-namespace
+    category: hook_misconfiguration
+    severity: medium
+    description: "hook install/run/exec not namespaced under x-harness"
+    pattern: '(?i)hook.*(install|run|exec)'
+    exclude:
+      - x-harness
+      - xharness
+    waivable: true
+
+  - id: sudo-dangerous
+    category: privilege_escalation
+    severity: high
+    description: "sudo combined with a dangerous command"
+    pattern: '(?i)sudo\s+(rm|chmod|chown|dd|mkfs|fdisk)'
+    waivable: false
+
+  - id: chown-dangerous
+    category: permission_change
+    severity: high
+    description: "chown targeting system directories or root recursively"
+    pattern: '(?i)chown\s+-R\s+root|chown\s+.*(/etc/|/usr/|/bin/|/sbin/)'
+    waivable: false
+
+  - id: chmod-dangerous
+    category: permission_change
+    severity: high
+    description: "chmod 777 or chmod targeting system directories"
+    pattern: '(?i)chmod\s+777|chmod\s+.*(/etc/|/usr/|/bin/|/sbin/)'
+    waivable: false
+
+  - id: path-traversal
+    category: path_traversal
+    severity: medium
+    description: "suspicious path traversal sequences"
+    pattern: '(?i)(\.\./){2,}|/\.\./\.\./|\.{3,}/'
+    waivable: true
+
+  - id: network-fetch
+    category: network_outbound
+    severity: medium
+    description: "network fetch command without pipe-to-shell"
+    pattern: '(?i)^(curl|wget|fetch|download)\s+[^|]*\b(https?://|ftp://)[^|]*$'
+    waivable: true
+
+  - id: browser-profile-access
+    category: secret_access
+    severity: high
+    description: "access to browser profile directories"
+    pattern: '(?i)cat\s+.*(/\.config/|/Library/Application\s+Support/|/AppData/).*(chrome|firefox|safari|edge|opera)'
+    waivable: false
+
+  - id: eval-or-exec-string
+    category: remote_code_execution
+    severity: high
+    description: "eval/exec/system called with a string argument"
+    pattern: '(?i)eval\s*\(|exec\s*\(|system\s*\('
+    waivable: false
+
+  - id: broad-write-outside-allowlist
+    category: filesystem_write
+    severity: medium
+    description: "redirect or tee writing to system directories"
+    pattern: '(?i)(>|>>|tee)\s+(/etc/|/usr/|/bin/|/sbin/|/sys/|/proc/)'
+    waivable: true
+
+severity:
+  low:
+    description: "Unusual wording or broad instruction"
+  medium:
+    description: "Network command or filesystem write without declared intent"
+  high:
+    description: "Secret access, destructive command, remote code execution, publish/deploy command"
+
+admission:
+  report_only: true
+  note: >
+    Scanner is report-only in this slice. Conformance strict blocking and
+    waiver enforcement are planned for a future slice.

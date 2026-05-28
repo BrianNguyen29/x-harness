@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "scanner-result",
+  "type": "object",
+  "required": ["files_scanned", "findings", "summary"],
+  "properties": {
+    "files_scanned": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of files scanned"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      },
+      "description": "List of scanner findings"
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "required": ["severity", "category", "rule_id", "file", "line", "snippet", "waivable"],
+      "properties": {
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Finding severity level"
+        },
+        "category": {
+          "type": "string",
+          "description": "Finding category"
+        },
+        "rule_id": {
+          "type": "string",
+          "description": "Identifier of the matched rule"
+        },
+        "file": {
+          "type": "string",
+          "description": "Path to the file containing the match"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Line number of the match"
+        },
+        "snippet": {
+          "type": "string",
+          "description": "Matched line content (truncated if very long)"
+        },
+        "waivable": {
+          "type": "boolean",
+          "description": "Whether the finding can be waived"
+        }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": ["low", "medium", "high", "total", "risk", "files_scanned"],
+      "properties": {
+        "low": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of low severity findings"
+        },
+        "medium": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of medium severity findings"
+        },
+        "high": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of high severity findings"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of findings"
+        },
+        "risk": {
+          "type": "string",
+          "enum": ["none", "low", "medium", "high"],
+          "description": "Aggregate risk derived from the highest severity present"
+        },
+        "files_scanned": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of files scanned"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

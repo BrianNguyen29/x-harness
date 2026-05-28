@@ -152,7 +152,7 @@ This table separates what is already in the repository from what remains design-
 | Approval receipt schema | **Planned** | Section 15 |
 | Adapter matrix / eval / doctor | **Partial** | `adapters matrix`, `adapters eval`, and `adapters doctor` implemented; managed block drift checks implemented; strict conformance profile and adapter file generation remain planned (Section 16) |
 | Admission skill-pack | **Planned / Conditional** | Section 17; P3 unless demand exists |
-| Adapter/skill static scanner | **Planned** | Section 18 |
+| Adapter/skill static scanner | **Implemented (minimal)** | `scan adapter`, `scan skill`, `scan managed` implemented; deterministic regex-based heuristics; JSON and text output; report-only; conformance strict blocking and waiver enforcement planned |
 | Install profiles preview/apply | **Planned** | Section 19 |
 | Profile recommend | **Planned** | Section 20 |
 | Repair / uninstall preview/apply | **Planned** | Section 21 |
@@ -1396,11 +1396,22 @@ high:
 ### 18.5 Acceptance criteria
 
 ```txt
-[ ] Scanner is deterministic.
-[ ] Scanner supports JSON output.
-[ ] Scanner does not require network access.
+[x] Scanner is deterministic.
+[x] Scanner supports JSON output.
+[x] Scanner does not require network access.
+[x] CLI commands implemented: scan adapter, scan skill <path>, scan managed.
+[x] Deterministic heuristics cover: remote pipe-to-shell, rm -rf, chmod/chown dangerous,
+    secret access, env exfiltration, MCP auto-enable, hooks outside namespace, sudo dangerous,
+    path traversal, network fetch, browser profile access, eval/exec string, broad system writes.
+[x] Findings include severity, category, rule id, file, line, snippet, waivable flag.
+[x] Summary includes low/medium/high/total counts and aggregate risk.
+[x] Schema exists and validates output shape (schemas/scanner.schema.json + runtime copy).
+[x] Tests cover clean/no-finding and dangerous patterns for high/medium/low findings.
+[x] Tests cover CLI JSON/text behavior and real adapter/skill smoke paths.
 [ ] High severity scanner finding blocks conformance strict unless explicitly waived.
+    - Deferred: conformance strict profile and waiver enforcement are future work.
 [ ] Waivers must include reason and expiry.
+    - Deferred: waiver schema and enforcement are future work.
 ```
 
 ---
@@ -1964,10 +1975,13 @@ Goal: improve safety, install UX, and trace inspectability.
     - Validation: approved decision, non-empty approver, matching command coverage, sufficient aggregate_risk
     - Taxonomy: classifier_approval_required maps to command_risky / request_approval / human_intervention
     - Registry, hash binding, expiry, report integration remain planned
-[ ] Add adapter/skill static scanner
-    - Deterministic, JSON output, no network required
-    - High severity blocks conformance strict unless waived
-    - Waivers include reason and expiry
+[x] Add adapter/skill static scanner (minimal)
+    - Deterministic regex-based heuristics; JSON and text output; no network required
+    - CLI: scan adapter, scan skill <path>, scan managed
+    - Report-only first slice; exit code 0 for findings in MVP
+    - High severity blocks conformance strict unless waived: deferred
+    - Waivers include reason and expiry: deferred
+    - Policy: policies/scanner.yaml; schema: schemas/scanner.schema.json + runtime copy
 [ ] Add optional admission skill-pack
     - Optional, namespaced under x-harness
     - Generated from canonical contract text

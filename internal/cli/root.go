@@ -62,6 +62,7 @@ var commands = []CommandInfo{
 	{Name: "readiness", Description: "Evaluate readiness levels"},
 	{Name: "release", Description: "Generate or verify release evidence"},
 	{Name: "adapters", Description: "Inspect adapter matrix"},
+	{Name: "scan", Description: "Run static security scan on adapter or skill files"},
 }
 
 func Run(args []string, stdout io.Writer, stderr io.Writer) int {
@@ -156,6 +157,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleRelease(args[1:], stdout, stderr)
 	case "adapters":
 		return handleAdapters(args[1:], stdout, stderr)
+	case "scan":
+		return handleScan(args[1:], stdout, stderr)
 	default:
 		return handleStub(args, stdout, stderr)
 	}
