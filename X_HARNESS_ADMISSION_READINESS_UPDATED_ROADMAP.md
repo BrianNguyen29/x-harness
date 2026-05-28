@@ -145,7 +145,7 @@ This table separates what is already in the repository from what remains design-
 | AdmissionCard / X-HarnessCard | **Implemented (minimal)** | `card generate`, `card verify`, `schemas/admission-card.schema.json` |
 | Readiness levels (task / PR / release) | **Implemented (minimal)** | `readiness task/pr/release`; `prepare` alias unchanged |
 | Conformance suite | **Implemented (minimal)** | `conformance run --profile minimal` with CI gate |
-| Release evidence bundle | **Implemented (minimal)** | Schema, generator, and verify-evidence implemented; release report / SBOM / provenance / platform matrix remain planned (Section 11) |
+| Release evidence bundle | **Implemented (minimal)** | Schema, generator, verify-evidence, and report implemented; SBOM / provenance / platform matrix remain planned (Section 11) |
 | Denominator contract in reports | **Planned** | Section 12 |
 | Failure taxonomy v2 | **Partial** | Section 13 |
 | Permission intent classifier | **Planned** | Section 14 |
@@ -2061,7 +2061,7 @@ Why third: adapter drift becomes a real risk once x-harness supports many coding
 [x] 1. Add release evidence schema.
 [x] 2. Add release evidence generator.
 [x] 3. Add release verify-evidence.
-[ ] 4. Add release report (remains planned).
+[x] 4. Add release report (minimal; markdown and JSON; SBOM/provenance/platform matrix remain planned).
 ```
 
 Why fourth: Go-native binary releases need machine-readable evidence.

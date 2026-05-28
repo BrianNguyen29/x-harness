@@ -18,7 +18,7 @@ import (
 
 func handleRelease(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: x-harness release <evidence|verify-evidence> [options]")
+		fmt.Fprintln(stderr, "usage: x-harness release <evidence|verify-evidence|report> [options]")
 		return ExitUsage
 	}
 
@@ -27,9 +27,11 @@ func handleRelease(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleReleaseEvidence(args[1:], stdout, stderr)
 	case "verify-evidence":
 		return handleReleaseVerifyEvidence(args[1:], stdout, stderr)
+	case "report":
+		return handleReleaseReport(args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "unknown release subcommand: %s\n", args[0])
-		fmt.Fprintln(stderr, "usage: x-harness release <evidence|verify-evidence> [options]")
+		fmt.Fprintln(stderr, "usage: x-harness release <evidence|verify-evidence|report> [options]")
 		return ExitUsage
 	}
 }
@@ -190,6 +192,141 @@ func handleReleaseVerifyEvidence(args []string, stdout io.Writer, stderr io.Writ
 		return ExitError
 	}
 	return ExitOK
+}
+
+func handleReleaseReport(args []string, stdout io.Writer, stderr io.Writer) int {
+	evidencePath := ""
+	format := "markdown"
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--evidence":
+			if i+1 < len(args) {
+				evidencePath = args[i+1]
+				i++
+			}
+		case "--format":
+			if i+1 < len(args) {
+				format = args[i+1]
+				i++
+			}
+		}
+	}
+
+	if evidencePath == "" {
+		fmt.Fprintln(stderr, "usage: x-harness release report --evidence <path> [--format markdown|json]")
+		return ExitUsage
+	}
+
+	data, err := os.ReadFile(evidencePath)
+	if err != nil {
+		fmt.Fprintf(stderr, "error: cannot read evidence file: %v\n", err)
+		return ExitError
+	}
+
+	var ev release.Evidence
+	if err := json.Unmarshal(data, &ev); err != nil {
+		fmt.Fprintf(stderr, "error: cannot parse evidence file: %v\n", err)
+		return ExitError
+	}
+
+	if verifyErr := release.VerifyEvidence(&ev); verifyErr != nil {
+		fmt.Fprintf(stderr, "error: invalid or incomplete evidence: %v\n", verifyErr)
+		return ExitError
+	}
+
+	switch format {
+	case "json":
+		report := buildReleaseReport(&ev)
+		if err := WriteJSON(stdout, report); err != nil {
+			fmt.Fprintf(stderr, "error: cannot marshal report: %v\n", err)
+			return ExitError
+		}
+	case "markdown":
+		renderMarkdownReleaseReport(stdout, &ev)
+	default:
+		fmt.Fprintf(stderr, "unknown format: %s\n", format)
+		fmt.Fprintln(stderr, "usage: x-harness release report --evidence <path> [--format markdown|json]")
+		return ExitUsage
+	}
+
+	return ExitOK
+}
+
+type releaseReport struct {
+	SchemaVersion string            `json:"schema_version"`
+	Version       string            `json:"version"`
+	Commit        string            `json:"commit,omitempty"`
+	GoVersion     string            `json:"go_version,omitempty"`
+	GeneratedAt   string            `json:"generated_at"`
+	Artifacts     []release.Artifact `json:"artifacts"`
+	Conformance   map[string]string `json:"conformance"`
+	Doctor        string            `json:"doctor,omitempty"`
+	ContextSync   string            `json:"context_sync,omitempty"`
+	PlatformMatrix string           `json:"platform_matrix,omitempty"`
+	SBOM          string            `json:"sbom,omitempty"`
+	Provenance    string            `json:"provenance,omitempty"`
+}
+
+func buildReleaseReport(ev *release.Evidence) releaseReport {
+	r := releaseReport{
+		SchemaVersion: ev.SchemaVersion,
+		Version:       ev.Version,
+		Commit:        ev.Commit,
+		GoVersion:     ev.GoVersion,
+		GeneratedAt:   ev.GeneratedAt,
+		Artifacts:     ev.Artifacts,
+		Conformance:   map[string]string{"minimal": ev.Conformance.Minimal},
+	}
+	if ev.Doctor != nil {
+		r.Doctor = ev.Doctor.Status
+	}
+	if ev.ContextSync != nil {
+		r.ContextSync = ev.ContextSync.Status
+	}
+	r.PlatformMatrix = "not declared in minimal evidence"
+	r.SBOM = "not declared in minimal evidence"
+	r.Provenance = "not declared in minimal evidence"
+	return r
+}
+
+func renderMarkdownReleaseReport(w io.Writer, ev *release.Evidence) {
+	fmt.Fprintf(w, "# Release Report\n\n")
+	fmt.Fprintf(w, "- **Schema Version**: %s\n", ev.SchemaVersion)
+	fmt.Fprintf(w, "- **Version**: %s\n", ev.Version)
+	if ev.Commit != "" {
+		fmt.Fprintf(w, "- **Commit**: %s\n", ev.Commit)
+	}
+	if ev.GoVersion != "" {
+		fmt.Fprintf(w, "- **Go Version**: %s\n", ev.GoVersion)
+	}
+	fmt.Fprintf(w, "- **Generated At**: %s\n", ev.GeneratedAt)
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "## Artifacts")
+	for _, art := range ev.Artifacts {
+		fmt.Fprintf(w, "- `%s` (%d bytes)\n", art.Path, art.Size)
+		fmt.Fprintf(w, "  - SHA-256: `%s`\n", art.SHA256)
+	}
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "## Conformance")
+	fmt.Fprintf(w, "- **Minimal**: %s\n", ev.Conformance.Minimal)
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "## Health & Context")
+	if ev.Doctor != nil {
+		fmt.Fprintf(w, "- **Doctor**: %s\n", ev.Doctor.Status)
+	} else {
+		fmt.Fprintln(w, "- **Doctor**: not recorded")
+	}
+	if ev.ContextSync != nil {
+		fmt.Fprintf(w, "- **Context Sync**: %s\n", ev.ContextSync.Status)
+	} else {
+		fmt.Fprintln(w, "- **Context Sync**: not recorded")
+	}
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "## Platform / SBOM / Provenance")
+	fmt.Fprintln(w, "- **Platform matrix**: not declared in minimal evidence")
+	fmt.Fprintln(w, "- **SBOM**: not declared in minimal evidence")
+	fmt.Fprintln(w, "- **Provenance**: not declared in minimal evidence")
 }
 
 func boolToStatus(ok bool) string {
