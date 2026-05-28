@@ -1888,11 +1888,14 @@ Constraint: P1 changes must still work with the current monolithic pipeline.
 [x] Add adapter matrix schema and adapters matrix command
     - Prints capability table
     - Includes all existing adapters
-[ ] Add adapters eval
+[x] Add adapters eval (minimal)
     - Exits non-zero on contract drift
-    - Checks: completion-card instruction, accepted/withheld semantics, verifier read-only,
-      PGV/LLM advisory cannot admit, forbidden tier aliases, recovery behavior,
-      managed block hash current, no self-admission instruction
+    - Checks: each adapter in matrix has README.md and non-empty capabilities/formats
+    - JSON and text output supported
+    - Full contract checks (completion-card instruction, accepted/withheld semantics, etc.) deferred to adapters doctor / static scanner
+[ ] Add adapter doctor
+    - Included in conformance strict profile (strict profile itself is P2)
+    - Checks managed block drift
 [ ] Add adapter doctor
     - Included in conformance strict profile (strict profile itself is P2)
     - Checks managed block drift
