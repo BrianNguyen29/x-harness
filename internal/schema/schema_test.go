@@ -47,7 +47,7 @@ func TestValidGoldenCardPasses(t *testing.T) {
 		t.Fatalf("expected schema to compile, got error: %v", err)
 	}
 
-	cardPath := filepath.Join("..", "..", "examples", "golden", "success-light", "completion-card.yaml")
+	cardPath := filepath.Join("..", "..", "examples", "golden", "regression", "success-light", "completion-card.yaml")
 	var doc any
 	if err := loader.LoadDocument(cardPath, &doc); err != nil {
 		t.Fatalf("expected to load card, got error: %v", err)
@@ -65,7 +65,7 @@ func TestInvalidGoldenCardFails(t *testing.T) {
 		t.Fatalf("expected schema to compile, got error: %v", err)
 	}
 
-	cardPath := filepath.Join("..", "..", "examples", "golden", "failed-invalid-status", "completion-card.yaml")
+	cardPath := filepath.Join("..", "..", "examples", "golden", "regression", "failed-invalid-status", "completion-card.yaml")
 	var doc any
 	if err := loader.LoadDocument(cardPath, &doc); err != nil {
 		t.Fatalf("expected to load card, got error: %v", err)

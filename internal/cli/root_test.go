@@ -55,7 +55,7 @@ func TestReportCommandRendersTraceSummary(t *testing.T) {
 func TestVerifyValidCardReturnsOK(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--card", "../../examples/golden/success-light/completion-card.yaml"}, &stdout, &stderr)
+	code := Run([]string{"verify", "--card", "../../examples/golden/regression/success-light/completion-card.yaml"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
 	}
@@ -71,7 +71,7 @@ func TestVerifyValidCardReturnsOK(t *testing.T) {
 func TestVerifyInvalidCardReturnsError(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--card", "../../examples/golden/failed-invalid-status/completion-card.yaml"}, &stdout, &stderr)
+	code := Run([]string{"verify", "--card", "../../examples/golden/regression/failed-invalid-status/completion-card.yaml"}, &stdout, &stderr)
 	if code != ExitError {
 		t.Fatalf("expected exit code %d, got %d", ExitError, code)
 	}
@@ -90,7 +90,7 @@ func TestVerifyInvalidCardReturnsError(t *testing.T) {
 func TestCheckAliasWorks(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"check", "--card", "../../examples/golden/success-light/completion-card.yaml"}, &stdout, &stderr)
+	code := Run([]string{"check", "--card", "../../examples/golden/regression/success-light/completion-card.yaml"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
 	}
@@ -102,7 +102,7 @@ func TestCheckAliasWorks(t *testing.T) {
 func TestVerifyJSONOutput(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--card", "../../examples/golden/success-light/completion-card.yaml", "--json"}, &stdout, &stderr)
+	code := Run([]string{"verify", "--card", "../../examples/golden/regression/success-light/completion-card.yaml", "--json"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
 	}
@@ -244,7 +244,7 @@ func TestDoctorUnhealthyRootReturnsError(t *testing.T) {
 func TestVerifyStrictEnablesMutationGuard(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--strict", "--card", "../../examples/golden/success-light/completion-card.yaml"}, &stdout, &stderr)
+	code := Run([]string{"verify", "--strict", "--card", "../../examples/golden/regression/success-light/completion-card.yaml"}, &stdout, &stderr)
 	// In this repo (which is a git repo), strict should succeed because no mutation occurs
 	if code != ExitOK {
 		out := stdout.String()
@@ -260,7 +260,7 @@ func TestVerifyStrictEnablesMutationGuard(t *testing.T) {
 func TestVerifyMutationGuardSkipInNonGit(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--mutation-guard", "--card", "../../examples/golden/success-light/completion-card.yaml"}, &stdout, &stderr)
+	code := Run([]string{"verify", "--mutation-guard", "--card", "../../examples/golden/regression/success-light/completion-card.yaml"}, &stdout, &stderr)
 	// This repo IS a git repo, so guard should run and be clean
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d, got %d", ExitOK, code)

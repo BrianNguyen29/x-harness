@@ -53,10 +53,23 @@ func handleExamples(args []string, stdout io.Writer, stderr io.Writer) int {
 
 func handleExamplesVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	jsonMode := false
-	for _, a := range args {
+	suite := ""
+	for i, a := range args {
 		if a == "--json" {
 			jsonMode = true
 		}
+		if strings.HasPrefix(a, "--suite=") {
+			suite = strings.TrimPrefix(a, "--suite=")
+		}
+		if a == "--suite" && i+1 < len(args) {
+			suite = args[i+1]
+		}
+	}
+
+	validSuites := map[string]bool{"regression": true, "capability": true, "adversarial": true}
+	if suite != "" && !validSuites[suite] {
+		fmt.Fprintf(stderr, "error: invalid suite %q. valid suites: regression, capability, adversarial\n", suite)
+		return ExitUsage
 	}
 
 	root, err := repo.FindRoot("")
@@ -65,7 +78,7 @@ func handleExamplesVerify(args []string, stdout io.Writer, stderr io.Writer) int
 		return ExitError
 	}
 
-	examples, err := discoverGoldenExamples(root)
+	examples, err := discoverGoldenExamples(root, suite)
 	if err != nil {
 		fmt.Fprintf(stderr, "error: discovering examples: %v\n", err)
 		return ExitError
@@ -127,29 +140,78 @@ type goldenExample struct {
 	CardPath string
 }
 
-func discoverGoldenExamples(root string) ([]goldenExample, error) {
+func discoverGoldenExamples(root string, suite string) ([]goldenExample, error) {
 	goldenDir := filepath.Join(root, "examples", "golden")
-	entries, err := os.ReadDir(goldenDir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
 	var examples []goldenExample
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
+
+	if suite != "" {
+		suiteDir := filepath.Join(goldenDir, suite)
+		entries, err := os.ReadDir(suiteDir)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil, nil
+			}
+			return nil, err
 		}
-		dir := filepath.Join(goldenDir, entry.Name())
-		cardPath := filepath.Join(dir, "completion-card.yaml")
-		if _, err := os.Stat(cardPath); err == nil {
-			examples = append(examples, goldenExample{
-				Name:     entry.Name(),
-				Dir:      dir,
-				CardPath: cardPath,
-			})
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			dir := filepath.Join(suiteDir, entry.Name())
+			cardPath := filepath.Join(dir, "completion-card.yaml")
+			if _, err := os.Stat(cardPath); err == nil {
+				examples = append(examples, goldenExample{
+					Name:     suite + "/" + entry.Name(),
+					Dir:      dir,
+					CardPath: cardPath,
+				})
+			}
+		}
+	} else {
+		// Scan flat dirs for backward compatibility
+		entries, err := os.ReadDir(goldenDir)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil, nil
+			}
+			return nil, err
+		}
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			dir := filepath.Join(goldenDir, entry.Name())
+			cardPath := filepath.Join(dir, "completion-card.yaml")
+			if _, err := os.Stat(cardPath); err == nil {
+				examples = append(examples, goldenExample{
+					Name:     entry.Name(),
+					Dir:      dir,
+					CardPath: cardPath,
+				})
+			}
+		}
+
+		// Also scan known suite subdirectories
+		for _, s := range []string{"regression", "capability", "adversarial"} {
+			suiteDir := filepath.Join(goldenDir, s)
+			entries, err := os.ReadDir(suiteDir)
+			if err != nil {
+				continue
+			}
+			for _, entry := range entries {
+				if !entry.IsDir() {
+					continue
+				}
+				dir := filepath.Join(suiteDir, entry.Name())
+				cardPath := filepath.Join(dir, "completion-card.yaml")
+			if _, err := os.Stat(cardPath); err == nil {
+				examples = append(examples, goldenExample{
+					Name:     s + "/" + entry.Name(),
+					Dir:      dir,
+					CardPath: cardPath,
+				})
+			}
+			}
 		}
 	}
 

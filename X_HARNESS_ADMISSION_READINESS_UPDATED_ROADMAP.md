@@ -157,7 +157,7 @@ This table separates what is already in the repository from what remains design-
 | Profile recommend | **Implemented (minimal)** | Section 20 |
 | Repair / uninstall preview/apply | **Implemented (minimal)** | Section 21; manifest-backed; repair preview/apply and uninstall preview/apply with --force; backups before overwrite/delete; unmanaged content preserved |
 | Trace timeline / explain | **Implemented (minimal)** | Section 22; `trace timeline`, `trace explain`, `trace inspect --withheld` implemented; `trace collapse` remains planned |
-| Structured regression / capability / adversarial suites | **Partial** | Section 23; golden examples exist |
+| Structured regression / capability / adversarial suites | **Implemented (minimal)** | Section 23; `--suite regression|capability|adversarial` supported; fixtures organized under suite dirs; CI regression gate added; strict conformance suite integration remains planned |
 | Worktree-aware verification | **Planned** | Section 24 |
 | Context GC / staleness doctor | **Planned** | Section 25 |
 | Hooks bridge | **Planned / Conditional** | Section 26; P3 unless needed |
@@ -1658,10 +1658,10 @@ capability:
 ### 23.5 Acceptance criteria
 
 ```txt
-[ ] Regression suite must pass in CI.
-[ ] Adversarial suite must pass in CI.
-[ ] Capability suite can report partial capability without blocking stable release.
-[ ] Conformance strict includes regression and adversarial suites.
+[x] Regression suite must pass in CI.
+[x] Adversarial suite must pass in CI.
+[x] Capability suite can report partial capability without blocking stable release.
+[ ] Conformance strict includes regression and adversarial suites. (planned: strict profile)
 ```
 
 ---

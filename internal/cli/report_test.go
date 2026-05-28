@@ -26,7 +26,7 @@ func TestReportMissingCardReturnsUsage(t *testing.T) {
 func TestReportMetricsJSON(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"report", "--metrics", "--card", "../../examples/golden/success-standard-scoped-evidence/completion-card.yaml", "--json"}, &stdout, &stderr)
+	code := Run([]string{"report", "--metrics", "--card", "../../examples/golden/regression/success-standard-scoped-evidence/completion-card.yaml", "--json"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
 	}
@@ -161,7 +161,7 @@ func TestReportMetricsJSON(t *testing.T) {
 func TestReportMetricsWithheldJSON(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"report", "--metrics", "--card", "../../examples/golden/blocked-missing-evidence/completion-card.yaml", "--json"}, &stdout, &stderr)
+	code := Run([]string{"report", "--metrics", "--card", "../../examples/golden/regression/blocked-missing-evidence/completion-card.yaml", "--json"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
 	}
@@ -213,7 +213,7 @@ func TestReportMetricsWithheldJSON(t *testing.T) {
 func TestReportMetricsMarkdown(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"report", "--metrics", "--card", "../../examples/golden/success-standard-scoped-evidence/completion-card.yaml"}, &stdout, &stderr)
+	code := Run([]string{"report", "--metrics", "--card", "../../examples/golden/regression/success-standard-scoped-evidence/completion-card.yaml"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
 	}
@@ -372,12 +372,12 @@ func TestReportMetricsGoldenFixtures(t *testing.T) {
 		expectReason bool
 	}{
 		{
-			cardDir:      "success-standard-scoped-evidence",
+			cardDir:      "regression/success-standard-scoped-evidence",
 			fixtureName:  "expected-report-metrics.json",
 			expectReason: false,
 		},
 		{
-			cardDir:      "blocked-missing-evidence",
+			cardDir:      "regression/blocked-missing-evidence",
 			fixtureName:  "expected-report-metrics.json",
 			expectReason: true,
 		},

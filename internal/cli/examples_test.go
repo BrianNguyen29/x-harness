@@ -94,3 +94,97 @@ func TestExamplesVerifyUnknownSubcommand(t *testing.T) {
 		t.Fatalf("expected unknown subcommand message, got %q", stderr.String())
 	}
 }
+
+func TestExamplesVerifySuiteRegression(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"examples", "verify", "--suite=regression", "--json"}, &stdout, &stderr)
+
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result ExamplesVerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+
+	if result.Total == 0 {
+		t.Fatal("expected at least one regression example")
+	}
+	if result.Failed != 0 {
+		t.Fatalf("expected failed=0, got %d", result.Failed)
+	}
+	for _, r := range result.Results {
+		if !strings.HasPrefix(r.Name, "regression/") {
+			t.Fatalf("expected regression suite prefix, got %q", r.Name)
+		}
+	}
+}
+
+func TestExamplesVerifySuiteCapability(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"examples", "verify", "--suite=capability", "--json"}, &stdout, &stderr)
+
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result ExamplesVerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+
+	if result.Total == 0 {
+		t.Fatal("expected at least one capability example")
+	}
+	if result.Failed != 0 {
+		t.Fatalf("expected failed=0, got %d", result.Failed)
+	}
+	for _, r := range result.Results {
+		if !strings.HasPrefix(r.Name, "capability/") {
+			t.Fatalf("expected capability suite prefix, got %q", r.Name)
+		}
+	}
+}
+
+func TestExamplesVerifySuiteAdversarial(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"examples", "verify", "--suite=adversarial", "--json"}, &stdout, &stderr)
+
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result ExamplesVerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+
+	if result.Total == 0 {
+		t.Fatal("expected at least one adversarial example")
+	}
+	if result.Failed != 0 {
+		t.Fatalf("expected failed=0, got %d", result.Failed)
+	}
+	for _, r := range result.Results {
+		if !strings.HasPrefix(r.Name, "adversarial/") {
+			t.Fatalf("expected adversarial suite prefix, got %q", r.Name)
+		}
+	}
+}
+
+func TestExamplesVerifyInvalidSuite(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"examples", "verify", "--suite=invalid"}, &stdout, &stderr)
+
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "invalid suite") {
+		t.Fatalf("expected invalid suite error, got %q", stderr.String())
+	}
+}

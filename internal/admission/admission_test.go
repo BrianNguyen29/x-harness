@@ -1,6 +1,7 @@
 package admission
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -11,6 +12,15 @@ import (
 func loadGolden(t *testing.T, name string) map[string]any {
 	t.Helper()
 	path := filepath.Join("..", "..", "examples", "golden", name, "completion-card.yaml")
+	if _, err := os.Stat(path); err != nil {
+		for _, suite := range []string{"regression", "capability", "adversarial"} {
+			alt := filepath.Join("..", "..", "examples", "golden", suite, name, "completion-card.yaml")
+			if _, err := os.Stat(alt); err == nil {
+				path = alt
+				break
+			}
+		}
+	}
 	var doc map[string]any
 	if err := loader.LoadDocument(path, &doc); err != nil {
 		t.Fatalf("failed to load %s: %v", path, err)

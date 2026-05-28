@@ -467,7 +467,7 @@ func runLatencySample(root, name string, timeoutMs int) latencyBenchmarkSample {
 	switch name {
 	case "verify":
 		var stdout, stderr strings.Builder
-		cardPath := filepath.Join(root, "examples", "golden", "success-light", "completion-card.yaml")
+		cardPath := filepath.Join(root, "examples", "golden", "regression", "success-light", "completion-card.yaml")
 		exitCode = Run([]string{"verify", "--card", cardPath, "--json"}, &stdout, &stderr)
 	case "doctor":
 		var stdout, stderr strings.Builder

@@ -15,7 +15,7 @@ func TestVerifyStrictBlocksMutationInjectionInsideRoot(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	cardSrc := filepath.Join("..", "..", "examples", "golden", "success-light", "completion-card.yaml")
+	cardSrc := filepath.Join("..", "..", "examples", "golden", "regression", "success-light", "completion-card.yaml")
 	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
 	srcData, err := os.ReadFile(cardSrc)
 	if err != nil {
@@ -93,7 +93,7 @@ func TestVerifyRejectsMutationInjectionOutsideRoot(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	cardSrc := filepath.Join("..", "..", "examples", "golden", "success-light", "completion-card.yaml")
+	cardSrc := filepath.Join("..", "..", "examples", "golden", "regression", "success-light", "completion-card.yaml")
 	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
 	srcData, err := os.ReadFile(cardSrc)
 	if err != nil {
@@ -274,7 +274,7 @@ func TestVerifyTraceWritesEvent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cardSrc := filepath.Join("..", "..", "examples", "golden", "success-light", "completion-card.yaml")
+	cardSrc := filepath.Join("..", "..", "examples", "golden", "regression", "success-light", "completion-card.yaml")
 	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
 	srcData, err := os.ReadFile(cardSrc)
 	if err != nil {
@@ -358,7 +358,7 @@ func TestVerifyJSONWithheldIncludesTaxonomy(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cardSrc := filepath.Join("..", "..", "examples", "golden", "blocked-missing-evidence", "completion-card.yaml")
+	cardSrc := filepath.Join("..", "..", "examples", "golden", "regression", "blocked-missing-evidence", "completion-card.yaml")
 	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
 	srcData, err := os.ReadFile(cardSrc)
 	if err != nil {
@@ -426,7 +426,7 @@ func TestVerifyTraceEventIncludesTaxonomy(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cardSrc := filepath.Join("..", "..", "examples", "golden", "blocked-missing-evidence", "completion-card.yaml")
+	cardSrc := filepath.Join("..", "..", "examples", "golden", "regression", "blocked-missing-evidence", "completion-card.yaml")
 	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
 	srcData, err := os.ReadFile(cardSrc)
 	if err != nil {

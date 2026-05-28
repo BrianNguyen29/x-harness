@@ -204,7 +204,7 @@ func checkAgentsManagedContext(report *Report, root string) {
 }
 
 func checkGoldenSuccessLight(report *Report, root string) {
-	cardPath := filepath.Join(root, "examples", "golden", "success-light", "completion-card.yaml")
+	cardPath := filepath.Join(root, "examples", "golden", "regression", "success-light", "completion-card.yaml")
 	outcome, acceptance, note := checkGoldenCard(root, cardPath)
 
 	if acceptance == "accepted" {
@@ -224,7 +224,7 @@ func checkGoldenSuccessLight(report *Report, root string) {
 }
 
 func checkGoldenBlockedMissingEvidence(report *Report, root string) {
-	cardPath := filepath.Join(root, "examples", "golden", "blocked-missing-evidence", "completion-card.yaml")
+	cardPath := filepath.Join(root, "examples", "golden", "regression", "blocked-missing-evidence", "completion-card.yaml")
 	outcome, acceptance, note := checkGoldenCard(root, cardPath)
 
 	if acceptance == "withheld" {

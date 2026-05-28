@@ -10,7 +10,7 @@ import (
 func TestReadinessTaskValidCard(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"readiness", "task", "--card", "../../examples/golden/success-light/completion-card.yaml", "--json"}, &stdout, &stderr)
+	code := Run([]string{"readiness", "task", "--card", "../../examples/golden/regression/success-light/completion-card.yaml", "--json"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
 	}
@@ -41,7 +41,7 @@ func TestReadinessTaskValidCard(t *testing.T) {
 func TestReadinessTaskInvalidCard(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"readiness", "task", "--card", "../../examples/golden/blocked-missing-evidence/completion-card.yaml", "--json"}, &stdout, &stderr)
+	code := Run([]string{"readiness", "task", "--card", "../../examples/golden/regression/blocked-missing-evidence/completion-card.yaml", "--json"}, &stdout, &stderr)
 	if code != ExitError {
 		t.Fatalf("expected exit code %d, got %d", ExitError, code)
 	}
@@ -75,7 +75,7 @@ func TestReadinessTaskMissingCard(t *testing.T) {
 func TestReadinessPRValidCard(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"readiness", "pr", "--card", "../../examples/golden/success-light/completion-card.yaml", "--json"}, &stdout, &stderr)
+	code := Run([]string{"readiness", "pr", "--card", "../../examples/golden/regression/success-light/completion-card.yaml", "--json"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
 	}

@@ -95,6 +95,8 @@ jobs:
         run: ./x-harness doctor --root . --json
       - name: Go-native golden examples
         run: ./x-harness examples verify --json
+      - name: Go-native regression suite gate
+        run: ./x-harness examples verify --suite=regression --json
       - name: Go-native adversarial benchmark gate
         run: ./x-harness benchmark --filter adversarial --json
       - name: Go-native conformance minimal gate
