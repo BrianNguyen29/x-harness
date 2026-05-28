@@ -1855,14 +1855,17 @@ Constraint: all P0b changes must work with the current monolithic pipeline in in
     - Add denominator_warning when applicable
     - Event-level metrics declare not_task_level
     - Task-level coverage is not_computable unless aligned denominator exists
-[ ] Add failure taxonomy v2 to verify result
-    - Every withheld result carries typed class, blocking_predicate, stage, recoverability, next_action
-    - Recovery routing uses taxonomy classes
-    - report groups withheld results by class/stage/predicate
-[ ] Add trace/report rendering for withheld reasons
-    - JSON report includes withheld_reason block
-    - Text report includes class, stage, predicate, next_action
-    - Doctor checks that withheld cards have typed reasons
+[~] Add failure taxonomy v2 to verify result (minimal)
+    - WithheldReason struct exists in admission.Result with class, stage, recoverability, next_action
+    - Recovery routing uses taxonomy classes (basic predicates only; not full 17-class taxonomy)
+    - report groups withheld results by class/stage/predicate: metrics report only; trace grouping deferred
+[~] Add trace/report rendering for withheld reasons (metrics report only)
+    - JSON metrics report includes withheld_reason block with failure_class, failure_stage, recoverability, next_action, blocking_predicate
+    - Accepted card report omits withheld_reason
+    - Schema validates both accepted and withheld metrics reports
+    - Text report rendering of withheld_reason deferred
+    - Doctor checks that withheld cards have typed reasons deferred
+    - Trace report grouping deferred: trace event format does not reliably carry taxonomy classes today
 [ ] Add/update golden examples for new denominator and taxonomy behavior
 [ ] Update parity tests if TypeScript compatibility layer affected
 ```

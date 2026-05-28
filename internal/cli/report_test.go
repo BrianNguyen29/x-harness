@@ -144,6 +144,70 @@ func TestReportMetricsJSON(t *testing.T) {
 	if result.DenominatorWarning == "" {
 		t.Fatalf("expected denominator warning, got empty")
 	}
+	// Accepted card must omit withheld_reason
+	var rawAdmission map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &rawAdmission); err != nil {
+		t.Fatalf("expected valid JSON for admission raw check: %v", err)
+	}
+	admissionRaw, ok := raw["admission"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected admission object in raw JSON")
+	}
+	if _, hasWithheldReason := admissionRaw["withheld_reason"]; hasWithheldReason {
+		t.Fatalf("accepted card must not include withheld_reason")
+	}
+}
+
+func TestReportMetricsWithheldJSON(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"report", "--metrics", "--card", "../../examples/golden/blocked-missing-evidence/completion-card.yaml", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
+	}
+
+	var result struct {
+		Admission struct {
+			Outcome          string `json:"outcome"`
+			AcceptanceStatus string `json:"acceptance_status"`
+			WithheldReason   *struct {
+				FailureClass      string `json:"failure_class"`
+				FailureStage      string `json:"failure_stage"`
+				Recoverability    string `json:"recoverability"`
+				NextAction        string `json:"next_action"`
+				BlockingPredicate string `json:"blocking_predicate"`
+			} `json:"withheld_reason,omitempty"`
+		} `json:"admission"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON, got error: %v\noutput: %s", err, stdout.String())
+	}
+	validateReportJSON(t, stdout.Bytes())
+
+	if result.Admission.Outcome != "failed" {
+		t.Fatalf("expected admission outcome failed, got %+v", result.Admission)
+	}
+	if result.Admission.AcceptanceStatus != "withheld" {
+		t.Fatalf("expected acceptance withheld, got %+v", result.Admission)
+	}
+	if result.Admission.WithheldReason == nil {
+		t.Fatalf("expected withheld_reason for withheld card")
+	}
+	if result.Admission.WithheldReason.FailureClass == "" {
+		t.Fatalf("expected failure_class in withheld_reason")
+	}
+	if result.Admission.WithheldReason.FailureStage == "" {
+		t.Fatalf("expected failure_stage in withheld_reason")
+	}
+	if result.Admission.WithheldReason.Recoverability == "" {
+		t.Fatalf("expected recoverability in withheld_reason")
+	}
+	if result.Admission.WithheldReason.NextAction == "" {
+		t.Fatalf("expected next_action in withheld_reason")
+	}
+	if result.Admission.WithheldReason.BlockingPredicate == "" {
+		t.Fatalf("expected blocking_predicate in withheld_reason")
+	}
 }
 
 func TestReportMetricsMarkdown(t *testing.T) {

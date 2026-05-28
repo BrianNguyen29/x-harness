@@ -47,6 +47,17 @@
         },
         "notes": {
           "$ref": "#/$defs/string_array"
+        },
+        "withheld_reason": {
+          "type": "object",
+          "required": ["failure_class", "failure_stage", "recoverability", "next_action", "blocking_predicate"],
+          "properties": {
+            "failure_class": { "type": "string" },
+            "failure_stage": { "type": "string" },
+            "recoverability": { "type": "string" },
+            "next_action": { "type": "string" },
+            "blocking_predicate": { "type": "string" }
+          }
         }
       }
     },

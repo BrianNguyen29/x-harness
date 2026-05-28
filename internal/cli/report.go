@@ -72,10 +72,11 @@ type metricsData struct {
 }
 
 type admissionSummary struct {
-	Outcome          string   `json:"outcome"`
-	AcceptanceStatus string   `json:"acceptance_status"`
-	Errors           []string `json:"errors"`
-	Notes            []string `json:"notes"`
+	Outcome          string          `json:"outcome"`
+	AcceptanceStatus string          `json:"acceptance_status"`
+	Errors           []string        `json:"errors"`
+	Notes            []string        `json:"notes"`
+	WithheldReason   *withheldReason `json:"withheld_reason,omitempty"`
 }
 
 type simpleAccounting struct {
@@ -265,12 +266,24 @@ func handleReport(args []string, stdout io.Writer, stderr io.Writer) int {
 		TaskID:  taskID,
 		Tier:    tier,
 		Metrics: metrics,
-		Admission: admissionSummary{
-			Outcome:          admResult.Outcome,
-			AcceptanceStatus: admResult.AcceptanceStatus,
-			Errors:           admResult.Errors,
-			Notes:            admResult.Notes,
-		},
+		Admission: func() admissionSummary {
+			summary := admissionSummary{
+				Outcome:          admResult.Outcome,
+				AcceptanceStatus: admResult.AcceptanceStatus,
+				Errors:           admResult.Errors,
+				Notes:            admResult.Notes,
+			}
+			if admResult.WithheldReason != nil {
+				summary.WithheldReason = &withheldReason{
+					FailureClass:      admResult.WithheldReason.FailureClass,
+					FailureStage:      admResult.WithheldReason.FailureStage,
+					Recoverability:    admResult.WithheldReason.Recoverability,
+					NextAction:        admResult.WithheldReason.NextAction,
+					BlockingPredicate: admResult.BlockingPredicate,
+				}
+			}
+			return summary
+		}(),
 		VerifyEventAccounting: simpleAccounting{
 			CardsAnalyzed: 1,
 			Note:          "Single-card analysis; aggregate task denominator is not inferred.",
