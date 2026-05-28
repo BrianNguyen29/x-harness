@@ -370,6 +370,35 @@ func TestInitIdempotentSameProfile(t *testing.T) {
 	}
 }
 
+func TestInitIdempotentPreservesUnmanagedExtraFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	Run([]string{"init", tmpDir, "--profile", "minimal"}, &strings.Builder{}, &strings.Builder{})
+
+	extraFile := filepath.Join(tmpDir, "EXTRA.md")
+	if err := os.WriteFile(extraFile, []byte("extra content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{"init", tmpDir, "--profile", "minimal"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "already up-to-date") && !strings.Contains(out, "no changes needed") {
+		t.Fatalf("expected idempotent no-op message, got: %s", out)
+	}
+
+	content, err := os.ReadFile(extraFile)
+	if err != nil {
+		t.Fatalf("expected extra file to survive: %v", err)
+	}
+	if string(content) != "extra content" {
+		t.Fatalf("expected extra content to be preserved, got: %s", string(content))
+	}
+}
+
 func TestInitIdempotentModifiedFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	Run([]string{"init", tmpDir, "--profile", "minimal"}, &strings.Builder{}, &strings.Builder{})

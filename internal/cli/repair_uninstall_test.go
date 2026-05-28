@@ -295,3 +295,35 @@ func TestRepairPreviewNoDrift(t *testing.T) {
 		t.Fatalf("expected no drift message, got: %s", out)
 	}
 }
+
+func TestRepairApplyNoDriftNoBackup(t *testing.T) {
+	tmpDir := t.TempDir()
+	Run([]string{"init", tmpDir}, &strings.Builder{}, &strings.Builder{})
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{"repair", tmpDir, "--apply"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	out := stdout.String()
+	if !strings.Contains(out, "no drift detected") {
+		t.Fatalf("expected no drift message, got: %s", out)
+	}
+
+	// Ensure no backup files were created anywhere in the tree
+	var backupFound []string
+	_ = filepath.WalkDir(tmpDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if strings.Contains(d.Name(), ".bak.") {
+			backupFound = append(backupFound, path)
+		}
+		return nil
+	})
+	if len(backupFound) > 0 {
+		t.Fatalf("expected no backup files, found: %v", backupFound)
+	}
+}

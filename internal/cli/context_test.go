@@ -256,6 +256,68 @@ func TestContextSyncMissingAgentsMd(t *testing.T) {
 	}
 }
 
+func TestGenerateManagedBlockDeterministic(t *testing.T) {
+	a := generateManagedBlock()
+	b := generateManagedBlock()
+	if a != b {
+		t.Fatalf("expected deterministic output, got different blocks")
+	}
+}
+
+func TestInjectManagedBlockPreservesSurroundingContent(t *testing.T) {
+	before := "# Header\n\nSome intro text.\n\n"
+	after := "\n\n# Footer\n\nSome outro text.\n"
+	existing := before + managedBegin + "\nold content\n" + managedEnd + after
+
+	block := generateManagedBlock()
+	updated := injectManagedBlock(existing, block)
+
+	if !strings.HasPrefix(updated, before) {
+		t.Fatalf("expected prefix to be preserved, got:\n%s", updated)
+	}
+	if !strings.HasSuffix(updated, after) {
+		t.Fatalf("expected suffix to be preserved, got:\n%s", updated)
+	}
+	if !strings.Contains(updated, block) {
+		t.Fatalf("expected new block to be injected, got:\n%s", updated)
+	}
+}
+
+func TestContextSyncWritePreservesSurroundingContent(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	before := "# My Project\n\nCustom instructions here.\n\n"
+	after := "\n\n## Notes\n\nKeep this section.\n"
+	existingBlock := generateManagedBlock()
+	content := before + existingBlock + after
+	if err := os.WriteFile(agentsPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "sync", "--write", "--root", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	updated, err := os.ReadFile(agentsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updatedStr := string(updated)
+	if !strings.Contains(updatedStr, before) {
+		t.Fatalf("expected content before block to be preserved")
+	}
+	if !strings.Contains(updatedStr, after) {
+		t.Fatalf("expected content after block to be preserved")
+	}
+	valid, note := validateManagedBlock(updatedStr)
+	if !valid {
+		t.Fatalf("expected updated block to be valid: %s", note)
+	}
+}
+
 func findRepoRoot() (string, error) {
 	wd, err := os.Getwd()
 	if err != nil {

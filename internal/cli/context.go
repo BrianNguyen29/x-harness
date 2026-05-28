@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 const (
@@ -101,11 +100,9 @@ func contextHash(text string) string {
 func generateManagedBlock() string {
 	ctx := canonicalContext()
 	hash := contextHash(ctx)
-	generatedAt := time.Now().UTC().Format(time.RFC3339Nano)
 	return strings.Join([]string{
 		managedBegin,
 		"<!-- generated-by: x-harness -->",
-		fmt.Sprintf("<!-- generated-at: %s -->", generatedAt),
 		fmt.Sprintf("<!-- context-hash: %s -->", hash),
 		"",
 		ctx,
