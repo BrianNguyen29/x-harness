@@ -546,3 +546,92 @@ func TestVerifySubagentReturnContradiction(t *testing.T) {
 		t.Fatalf("expected contradiction error, got: %v", result.AdmissionErrors)
 	}
 }
+
+func TestVerifyWorktreeAwareTrace(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+
+	tmpDir := t.TempDir()
+	if err := exec.Command("git", "-C", tmpDir, "init").Run(); err != nil {
+		t.Fatalf("git init failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "config", "user.email", "test@test.com").Run(); err != nil {
+		t.Fatalf("git config failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "config", "user.name", "Test").Run(); err != nil {
+		t.Fatalf("git config failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cardSrc := filepath.Join("..", "..", "examples", "golden", "regression", "success-light", "completion-card.yaml")
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	srcData, err := os.ReadFile(cardSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cardDst, srcData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "commit", "-m", "init").Run(); err != nil {
+		t.Fatalf("git commit failed: %v", err)
+	}
+
+	traceDir := filepath.Join(tmpDir, "traces")
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--trace", "--trace-dir", traceDir, "--worktree-aware", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
+	}
+
+	events, err := ReadTrace(traceDir)
+	if err != nil {
+		t.Fatalf("failed to read trace: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+
+	event := events[0]
+	wt, ok := event["worktree"]
+	if !ok {
+		t.Fatal("expected worktree in trace event")
+	}
+	wtMap, ok := wt.(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected worktree to be a map, got %T", wt)
+	}
+	if wtMap["root"] == "" {
+		t.Fatal("expected worktree root")
+	}
+	if wtMap["commit"] == "" {
+		t.Fatal("expected worktree commit")
+	}
+}

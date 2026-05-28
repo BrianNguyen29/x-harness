@@ -5,12 +5,14 @@ import (
 	"io"
 
 	"github.com/BrianNguyen29/x-harness/internal/doctor"
+	"github.com/BrianNguyen29/x-harness/internal/worktree"
 )
 
 func handleDoctor(args []string, stdout io.Writer, stderr io.Writer) int {
 	root := ""
 	format := "json"
 	staleness := false
+	worktreeFlag := false
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -28,15 +30,34 @@ func handleDoctor(args []string, stdout io.Writer, stderr io.Writer) int {
 			format = "json"
 		case "--staleness":
 			staleness = true
+		case "--worktree":
+			worktreeFlag = true
 		}
 	}
 
 	if root == "" {
-		fmt.Fprintln(stderr, "usage: x-harness doctor --root <path> [--format json|text] [--json] [--staleness]")
+		fmt.Fprintln(stderr, "usage: x-harness doctor --root <path> [--format json|text] [--json] [--staleness] [--worktree]")
 		return ExitUsage
 	}
 
 	report := doctor.RunWithOptions(root, doctor.Options{Staleness: staleness})
+
+	if worktreeFlag {
+		wt := worktree.CollectInfo(root)
+		if wt != nil {
+			report.Checks = append(report.Checks, doctor.Check{
+				Name:   "worktree_info",
+				Status: "passed",
+				Note:   fmt.Sprintf("branch=%s commit=%s root=%s", wt.Branch, wt.Commit, wt.Root),
+			})
+		} else {
+			report.Checks = append(report.Checks, doctor.Check{
+				Name:   "worktree_info",
+				Status: "skipped",
+				Note:   "not a git repository or git unavailable",
+			})
+		}
+	}
 
 	switch format {
 	case "json":

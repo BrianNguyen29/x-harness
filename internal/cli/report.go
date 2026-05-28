@@ -450,6 +450,40 @@ func traceString(event TraceEvent, key string) string {
 	return ""
 }
 
+type worktreeInfo struct {
+	Root   string `json:"root"`
+	Branch string `json:"branch"`
+	Commit string `json:"commit"`
+}
+
+func extractWorktree(event TraceEvent) *worktreeInfo {
+	if event == nil {
+		return nil
+	}
+	raw, ok := event["worktree"]
+	if !ok {
+		return nil
+	}
+	m, ok := raw.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	wt := &worktreeInfo{}
+	if v, ok := m["root"].(string); ok {
+		wt.Root = v
+	}
+	if v, ok := m["branch"].(string); ok {
+		wt.Branch = v
+	}
+	if v, ok := m["commit"].(string); ok {
+		wt.Commit = v
+	}
+	if wt.Root == "" && wt.Branch == "" && wt.Commit == "" {
+		return nil
+	}
+	return wt
+}
+
 func renderTraceReportMarkdown(w io.Writer, report traceReportOutput) {
 	WriteLine(w, "# x-harness Report")
 	WriteLine(w, "")
@@ -463,6 +497,19 @@ func renderTraceReportMarkdown(w io.Writer, report traceReportOutput) {
 		WriteLine(w, "%d card(s) in trace.", report.TotalEvents)
 	}
 	WriteLine(w, "")
+	if wt := extractWorktree(report.Latest); wt != nil {
+		WriteLine(w, "## Worktree")
+		if wt.Root != "" {
+			WriteLine(w, "- root: %s", wt.Root)
+		}
+		if wt.Branch != "" {
+			WriteLine(w, "- branch: %s", wt.Branch)
+		}
+		if wt.Commit != "" {
+			WriteLine(w, "- commit: %s", wt.Commit)
+		}
+		WriteLine(w, "")
+	}
 	WriteLine(w, "## Verify event accounting")
 	if report.TotalEvents == 0 {
 		WriteLine(w, "No verify events recorded.")

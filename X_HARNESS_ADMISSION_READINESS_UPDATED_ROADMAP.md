@@ -158,7 +158,7 @@ This table separates what is already in the repository from what remains design-
 | Repair / uninstall preview/apply | **Implemented (minimal)** | Section 21; manifest-backed; repair preview/apply and uninstall preview/apply with --force; backups before overwrite/delete; unmanaged content preserved |
 | Trace timeline / explain | **Implemented (minimal)** | Section 22; `trace timeline`, `trace explain`, `trace inspect --withheld` implemented; `trace collapse` remains planned |
 | Structured regression / capability / adversarial suites | **Implemented (minimal)** | Section 23; `--suite regression|capability|adversarial` supported; fixtures organized under suite dirs; CI regression gate added; strict conformance suite integration remains planned |
-| Worktree-aware verification | **Planned** | Section 24 |
+| Worktree-aware verification | **Implemented (minimal)** | Section 24; metadata collection and trace/report/doctor integration done; strict path enforcement remains planned |
 | Context GC / staleness doctor | **Partial** | `context gc --check` and `context gc --write` minimally implemented; overclaim/dead-link/doc-field strict checks and conformance strict integration remain planned (Section 25) |
 | Hooks bridge | **Planned / Conditional** | Section 26; P3 unless needed |
 | MCP read-only evidence adapter | **Planned / Conditional** | Section 27; P3 unless needed |
@@ -1691,16 +1691,20 @@ Avoid trace/evidence confusion when several agents work in separate git worktree
 
 ```bash
 x-harness verify --worktree-aware
+x-harness trace add --worktree-aware
 x-harness doctor --worktree
 ```
 
 ### 24.4 Acceptance criteria
 
 ```txt
-[ ] Trace includes worktree metadata when enabled.
+[x] Trace includes worktree metadata when enabled.
+[x] report displays branch/commit/worktree for audit.
+[x] doctor --worktree includes worktree metadata as a non-blocking check.
 [ ] Artifact paths are checked against worktree root.
+    - Deferred: strict path enforcement remains planned; no rejection in this slice.
 [ ] Mutation guard baseline is bound to the worktree root.
-[ ] report displays branch/commit/worktree for audit.
+    - Deferred: mutation guard behavior changes are out of scope for this slice.
 ```
 
 ---

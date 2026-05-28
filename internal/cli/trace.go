@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/BrianNguyen29/x-harness/internal/worktree"
 )
 
 // TraceEvent is a single trace event stored as a flexible map.
@@ -230,6 +232,7 @@ func handleTraceAdd(args []string, stdout io.Writer, stderr io.Writer) int {
 	claimID := ""
 	evidenceID := ""
 	traceDir := ".x-harness/traces"
+	worktreeAware := false
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -268,6 +271,8 @@ func handleTraceAdd(args []string, stdout io.Writer, stderr io.Writer) int {
 				traceDir = args[i+1]
 				i++
 			}
+		case "--worktree-aware":
+			worktreeAware = true
 		}
 	}
 
@@ -312,6 +317,12 @@ func handleTraceAdd(args []string, stdout io.Writer, stderr io.Writer) int {
 		event["evidence_id"] = evidenceID
 	} else {
 		event["evidence_id"] = nil
+	}
+	if worktreeAware {
+		wt := worktree.CollectInfo("")
+		if wt != nil {
+			event["worktree"] = wt
+		}
 	}
 
 	enriched, err := AppendTrace(event, traceDir)

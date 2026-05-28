@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -563,5 +564,62 @@ func TestTraceCLIInspectAll(t *testing.T) {
 	}
 	if !strings.Contains(out, "TASK-1") {
 		t.Fatalf("expected TASK-1, got:\n%s", out)
+	}
+}
+
+func TestTraceCLIAddWorktreeAware(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+
+	tmpDir := t.TempDir()
+	if err := exec.Command("git", "-C", tmpDir, "init").Run(); err != nil {
+		t.Fatalf("git init failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "config", "user.email", "test@test.com").Run(); err != nil {
+		t.Fatalf("git config failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "config", "user.name", "Test").Run(); err != nil {
+		t.Fatalf("git config failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "file.txt"), []byte("hello\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "add", "file.txt").Run(); err != nil {
+		t.Fatalf("git add failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "commit", "-m", "init").Run(); err != nil {
+		t.Fatalf("git commit failed: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"trace", "add", "--trace-dir", tmpDir, "--task-id", "TASK-1", "--tier", "standard", "--worktree-aware"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	events, err := ReadTrace(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to read trace: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+
+	event := events[0]
+	wt, ok := event["worktree"]
+	if !ok {
+		t.Fatal("expected worktree in trace event")
+	}
+	wtMap, ok := wt.(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected worktree to be a map, got %T", wt)
+	}
+	if wtMap["root"] == "" {
+		t.Fatal("expected worktree root")
+	}
+	if wtMap["commit"] == "" {
+		t.Fatal("expected worktree commit")
 	}
 }

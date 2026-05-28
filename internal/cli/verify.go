@@ -14,6 +14,7 @@ import (
 	"github.com/BrianNguyen29/x-harness/internal/mutationguard"
 	"github.com/BrianNguyen29/x-harness/internal/repo"
 	"github.com/BrianNguyen29/x-harness/internal/schema"
+	"github.com/BrianNguyen29/x-harness/internal/worktree"
 )
 
 type withheldReason struct {
@@ -47,6 +48,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	strict := false
 	trace := false
 	traceDir := ".x-harness/traces"
+	worktreeAware := false
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -81,11 +83,13 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 				traceDir = args[i+1]
 				i++
 			}
+		case "--worktree-aware":
+			worktreeAware = true
 		}
 	}
 
 	if (cardPath == "" && subagentPath == "") || (cardPath != "" && subagentPath != "") {
-		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--trace] [--trace-dir <dir>]")
+		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--trace] [--trace-dir <dir>] [--worktree-aware]")
 		return ExitUsage
 	}
 
@@ -195,6 +199,12 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 		if result.SchemaError != "" {
 			event["errors"] = append(event["errors"].([]string), result.SchemaError)
+		}
+		if worktreeAware {
+			wt := worktree.CollectInfo(root)
+			if wt != nil {
+				event["worktree"] = wt
+			}
 		}
 		_, err := AppendTrace(event, traceDir)
 		if err != nil {

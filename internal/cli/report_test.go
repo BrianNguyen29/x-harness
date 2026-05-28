@@ -365,6 +365,43 @@ func TestReportTraceMarkdown(t *testing.T) {
 	}
 }
 
+func TestReportTraceMarkdownWithWorktree(t *testing.T) {
+	traceDir := t.TempDir()
+	if _, err := AppendTrace(TraceEvent{
+		"event_id":          "VE-test-1",
+		"event_type":        "verify_completed",
+		"task_id":           "TASK-1",
+		"tier":              "light",
+		"outcome":           "success",
+		"acceptance_status": "accepted",
+		"created_at":        "2026-01-01T00:00:00Z",
+		"worktree": map[string]interface{}{
+			"root":   "/tmp/repo",
+			"branch": "main",
+			"commit": "abc1234",
+		},
+	}, traceDir); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"report", "--trace-dir", traceDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "## Worktree") {
+		t.Fatalf("expected Worktree section, got:\n%s", out)
+	}
+	if !strings.Contains(out, "branch: main") {
+		t.Fatalf("expected branch main, got:\n%s", out)
+	}
+	if !strings.Contains(out, "commit: abc1234") {
+		t.Fatalf("expected commit abc1234, got:\n%s", out)
+	}
+}
+
 func TestReportMetricsGoldenFixtures(t *testing.T) {
 	cases := []struct {
 		cardDir      string
