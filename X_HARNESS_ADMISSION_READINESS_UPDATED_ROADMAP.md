@@ -151,7 +151,7 @@ This table separates what is already in the repository from what remains design-
 | Permission intent classifier | **Implemented (minimal)** | `evidence classify --command` and `--card` implemented; admission blocking and report integration deferred (Section 14) |
 | Approval receipt schema | **Planned** | Section 15 |
 | Adapter matrix / eval / doctor | **Partial** | `adapters matrix`, `adapters eval`, and `adapters doctor` implemented; managed block drift checks implemented; strict conformance profile and adapter file generation remain planned (Section 16) |
-| Admission skill-pack | **Planned / Conditional** | Section 17; P3 unless demand exists |
+| Admission skill-pack | **Implemented (minimal)** | Section 17; optional namespaced skill-pack at skills/x-harness-admission/; adapter eval integration remains planned |
 | Adapter/skill static scanner | **Implemented (minimal)** | `scan adapter`, `scan skill`, `scan managed` implemented; deterministic regex-based heuristics; JSON and text output; report-only; conformance strict blocking and waiver enforcement planned |
 | Install profiles preview/apply | **Planned** | Section 19 |
 | Profile recommend | **Planned** | Section 20 |
@@ -1982,10 +1982,11 @@ Goal: improve safety, install UX, and trace inspectability.
     - High severity blocks conformance strict unless waived: deferred
     - Waivers include reason and expiry: deferred
     - Policy: policies/scanner.yaml; schema: schemas/scanner.schema.json + runtime copy
-[ ] Add optional admission skill-pack
-    - Optional, namespaced under x-harness
+[x] Add optional admission skill-pack
+    - Optional, namespaced under x-harness at skills/x-harness-admission/
     - Generated from canonical contract text
     - Passes x-harness scan skill
+    - Adapter eval integration remains planned
 [ ] Add install profile preview/apply
     - init --preview prints exact planned mutations
     - init --apply performs only planned mutations
@@ -2125,7 +2126,7 @@ Why fourth: Go-native binary releases need machine-readable evidence.
 1. Add permission intent classifier.
 2. Add approval receipt schema.
 3. Add adapter/skill scanner.
-4. Add optional admission skill-pack.
+4. Add optional admission skill-pack. [x] Implemented.
 ```
 
 Why fifth: this adds safety without shifting x-harness into runtime ownership.

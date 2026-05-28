@@ -212,6 +212,28 @@ func TestScanSnippetTruncation(t *testing.T) {
 	}
 }
 
+func TestScanAdmissionSkillPackClean(t *testing.T) {
+	skillPath := filepath.Join("..", "..", "skills", "x-harness-admission")
+	if _, err := os.Stat(skillPath); err != nil {
+		t.Skipf("skill path not found: %s", skillPath)
+	}
+
+	rules := DefaultRules()
+	result, err := Scan(rules, []string{skillPath})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.Findings) != 0 {
+		t.Fatalf("expected 0 findings, got %d: %v", len(result.Findings), result.Findings)
+	}
+	if result.Summary.Risk != "none" {
+		t.Fatalf("expected risk none, got %s", result.Summary.Risk)
+	}
+	if result.FilesScanned < 1 {
+		t.Fatalf("expected at least 1 file scanned, got %d", result.FilesScanned)
+	}
+}
+
 func TestScanBinarySkipped(t *testing.T) {
 	tmpDir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(tmpDir, "image.png"), []byte("PNG\nrandom\n"), 0644); err != nil {

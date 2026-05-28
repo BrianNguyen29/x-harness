@@ -25,6 +25,7 @@ const requiredDirs = [
   "examples",
   "policies",
   "schemas",
+  "skills",
   "templates",
   "tools",
 ];

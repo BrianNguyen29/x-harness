@@ -1,0 +1,120 @@
+# Example completion card for the admission skill-pack
+
+This is a template/example. Copy and fill in your own values.
+
+## Light-tier example
+
+```yaml
+schema_version: "1"
+task_id: "example-task-001"
+tier: "light"
+owner: "agent-name"
+accountable: "user-name"
+claim:
+  summary: "Updated admission skill-pack documentation"
+  fix_status: "fixed"
+  evidence:
+    - type: "file"
+      value: "skills/x-harness-admission/SKILL.md"
+    - type: "file"
+      value: "skills/x-harness-admission/examples/completion-card.yaml"
+evidence:
+  files_changed:
+    - skills/x-harness-admission/SKILL.md
+    - skills/x-harness-admission/examples/completion-card.yaml
+  command_evidence:
+    - command: "./x-harness scan skill skills/x-harness-admission --json"
+      exit_code: 0
+verification:
+  status: "passed"
+  checks:
+    - name: "skill_scan"
+      status: "passed"
+      note: "no findings, risk none"
+admission:
+  outcome: "success"
+acceptance_status: "accepted"
+handoff:
+  next_action: "none"
+  owner: "agent-name"
+```
+
+## Standard-tier example
+
+```yaml
+schema_version: "1"
+task_id: "example-task-002"
+tier: "standard"
+owner: "agent-name"
+accountable: "user-name"
+state:
+  read_set:
+    - skills/x-harness-admission/SKILL.md
+  write_set:
+    - skills/x-harness-admission/SKILL.md
+    - skills/x-harness-admission/examples/completion-card.yaml
+evidence:
+  files_changed:
+    - skills/x-harness-admission/SKILL.md
+    - skills/x-harness-admission/examples/completion-card.yaml
+  command_evidence:
+    - command: "go test ./internal/scanner/..."
+      exit_code: 0
+    - command: "./x-harness scan skill skills/x-harness-admission --json"
+      exit_code: 0
+  verification_artifacts:
+    - kind: unit_test
+      command: "go test ./internal/scanner/..."
+      status: passed
+      verifies:
+        - "scanner tests pass"
+      confidence: medium
+  untested_regions:
+    - "No cross-platform path testing performed."
+claim:
+  summary: "Added admission skill-pack with tests"
+  fix_status: "fixed"
+  evidence:
+    - type: "command"
+      value: "go test ./internal/scanner/..."
+    - type: "file"
+      value: "skills/x-harness-admission/SKILL.md"
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: "Admission skill-pack is clean and scannable"
+  expected_effect: "scan skill reports no findings"
+  measurable_signal: "./x-harness scan skill skills/x-harness-admission --json"
+  falsification_method: "Run scan and inspect findings"
+  horizon: same_verify
+  confidence: high
+  verdict:
+    status: pending
+verification:
+  status: "passed"
+  checks:
+    - name: "unit_tests"
+      status: "passed"
+    - name: "skill_scan"
+      status: "passed"
+      note: "no findings, risk none"
+admission:
+  outcome: "success"
+acceptance_status: "accepted"
+handoff:
+  next_action: "none"
+  owner: "agent-name"
+```
+
+## Rules
+
+- `claim.fix_status: fixed` is only a completion candidate.
+- Accepted success requires `verification.status: passed`, `admission.outcome: success`, and `acceptance_status: accepted`.
+- `blocked`, `failed`, `skipped` outcomes must include `handoff.next_action` and `handoff.owner`.
+- PGV advice is advisory-only and never overrides admission.
