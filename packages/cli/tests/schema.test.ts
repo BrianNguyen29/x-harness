@@ -443,6 +443,22 @@ describe("schema validators", () => {
             default_context_class: "standard",
             verify_runtime_ms: 1,
           },
+          verify_event_success_rate: {
+            numerator: 1,
+            denominator: 1,
+            unit: "verify_event",
+            not_task_level: true,
+          },
+          task_completion_coverage: {
+            status: "not_computable",
+            reason: "missing_aligned_task_denominator",
+          },
+          withheld_rate: {
+            numerator: 0,
+            denominator: 1,
+            unit: "verify_event",
+            not_task_level: true,
+          },
         },
         admission: {
           outcome: "success",
@@ -517,6 +533,22 @@ describe("schema validators", () => {
           note: "None.",
         },
         latest: null,
+        verify_event_success_rate: {
+          numerator: 1,
+          denominator: 1,
+          unit: "verify_event",
+          not_task_level: true,
+        },
+        task_completion_coverage: {
+          status: "not_computable",
+          reason: "missing_aligned_task_denominator",
+        },
+        withheld_rate: {
+          numerator: 0,
+          denominator: 1,
+          unit: "verify_event",
+          not_task_level: true,
+        },
       });
       expect(validate.errors ?? []).toEqual([]);
       expect(valid).toBe(true);

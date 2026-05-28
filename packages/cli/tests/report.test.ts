@@ -53,6 +53,9 @@ describe("report command", () => {
     expect(exitCode).toBe(0);
     expect(stdout).toContain("# x-harness Report");
     expect(stdout).toContain("## Verify event accounting");
+    expect(stdout).toContain("## Rate metrics");
+    expect(stdout).toContain("- verify_event_success_rate: 1/3 verify_event (not_task_level)");
+    expect(stdout).toContain("- task_completion_coverage: not_computable (missing_aligned_task_denominator)");
     expect(stdout).toContain("## Task lifecycle accounting");
     expect(stdout).toContain("## Admission accounting");
     expect(stdout).toContain("## Withheld accounting");
@@ -88,6 +91,15 @@ describe("report command", () => {
     expect(report.withheld_accounting.blocked).toBe(1);
     expect(report.unknown_or_unlinked_events).toBeDefined();
     expect(report.unknown_or_unlinked_events.count).toBe(0);
+    expect(report.verify_event_success_rate).toBeDefined();
+    expect(report.verify_event_success_rate.unit).toBe("verify_event");
+    expect(report.verify_event_success_rate.not_task_level).toBe(true);
+    expect(report.task_completion_coverage).toBeDefined();
+    expect(report.task_completion_coverage.status).toBe("not_computable");
+    expect(report.withheld_rate).toBeDefined();
+    expect(report.withheld_rate.unit).toBe("verify_event");
+    expect(report.withheld_rate.not_task_level).toBe(true);
+    expect(report.success_rate).toBeUndefined();
   });
 
   it("shows denominator warning", async () => {
@@ -145,6 +157,16 @@ describe("report command", () => {
     expect(report.admission_accounting).toBeDefined();
     expect(report.withheld_accounting).toBeDefined();
     expect(report.unknown_or_unlinked_events).toBeDefined();
+    expect(report.metrics.verify_event_success_rate).toBeDefined();
+    expect(report.metrics.verify_event_success_rate.unit).toBe("verify_event");
+    expect(report.metrics.verify_event_success_rate.not_task_level).toBe(true);
+    expect(report.metrics.task_completion_coverage).toBeDefined();
+    expect(report.metrics.task_completion_coverage.status).toBe("not_computable");
+    expect(report.metrics.task_completion_coverage.reason).toBe("missing_aligned_task_denominator");
+    expect(report.metrics.withheld_rate).toBeDefined();
+    expect(report.metrics.withheld_rate.unit).toBe("verify_event");
+    expect(report.metrics.withheld_rate.not_task_level).toBe(true);
+    expect(report.metrics.success_rate).toBeUndefined();
   });
 
   it("outputs metrics in Markdown with --metrics", async () => {
@@ -164,6 +186,9 @@ describe("report command", () => {
     expect(exitCode).toBe(0);
     expect(stdout).toContain("# x-harness Metrics Report");
     expect(stdout).toContain("## Verification strength");
+    expect(stdout).toContain("## Rate metrics");
+    expect(stdout).toContain("- verify_event_success_rate: 1/1 verify_event (not_task_level)");
+    expect(stdout).toContain("- task_completion_coverage: not_computable (missing_aligned_task_denominator)");
     expect(stdout).toContain("## Verify event accounting");
     expect(stdout).toContain("## Task lifecycle accounting");
     expect(stdout).toContain("## Admission accounting");

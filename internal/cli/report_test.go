@@ -69,6 +69,41 @@ func TestReportMetricsJSON(t *testing.T) {
 		t.Fatalf("expected valid JSON, got error: %v\noutput: %s", err, stdout.String())
 	}
 	validateReportJSON(t, stdout.Bytes())
+
+	// Verify denominator contract fields are present in raw JSON
+	var raw map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &raw); err != nil {
+		t.Fatalf("expected valid JSON for raw check: %v", err)
+	}
+	metrics, ok := raw["metrics"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected metrics object")
+	}
+	vesr, ok := metrics["verify_event_success_rate"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected verify_event_success_rate")
+	}
+	if vesr["unit"] != "verify_event" || vesr["not_task_level"] != true {
+		t.Fatalf("unexpected verify_event_success_rate: %+v", vesr)
+	}
+	tcc, ok := metrics["task_completion_coverage"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected task_completion_coverage")
+	}
+	if tcc["status"] != "not_computable" || tcc["reason"] != "missing_aligned_task_denominator" {
+		t.Fatalf("unexpected task_completion_coverage: %+v", tcc)
+	}
+	wr, ok := metrics["withheld_rate"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected withheld_rate")
+	}
+	if wr["unit"] != "verify_event" || wr["not_task_level"] != true {
+		t.Fatalf("unexpected withheld_rate: %+v", wr)
+	}
+	if _, hasGeneric := metrics["success_rate"]; hasGeneric {
+		t.Fatalf("generic success_rate must not be present")
+	}
+
 	if result.Admission.Outcome != "success" {
 		t.Fatalf("expected admission outcome success, got %+v", result.Admission)
 	}
@@ -127,6 +162,7 @@ func TestReportMetricsMarkdown(t *testing.T) {
 		"## Recovery ability",
 		"## Replayability",
 		"## Cost",
+		"## Rate metrics",
 		"## Verify event accounting",
 		"## Task lifecycle accounting",
 		"## Admission accounting",
@@ -254,6 +290,8 @@ func TestReportTraceMarkdown(t *testing.T) {
 		"## Verify event accounting",
 		"- total_trace_events: 1",
 		"- blocked: 1/1",
+		"## Rate metrics",
+		"- withheld_rate: 1/1 verify_event (not_task_level)",
 		"## Withheld accounting",
 		"> Verify-event success must not be interpreted as task-level success",
 	} {

@@ -39,6 +39,7 @@ func RunMinimal(root string) *Report {
 	checkAgentsManagedContext(report, root)
 	checkGoldenSuccessLight(report, root)
 	checkGoldenBlockedMissingEvidence(report, root)
+	checkDenominatorContract(report, root)
 
 	for _, c := range report.Checks {
 		if c.Status != "passed" {
@@ -240,6 +241,119 @@ func checkGoldenBlockedMissingEvidence(report *Report, root string) {
 		})
 		report.OK = false
 	}
+}
+
+func checkDenominatorContract(report *Report, root string) {
+	schemaPath := filepath.Join(root, "schemas", "report.schema.json")
+	v, err := schema.Compile(schemaPath)
+	if err != nil {
+		report.Checks = append(report.Checks, Check{
+			Name:   "denominator_contract",
+			Status: "failed",
+			Note:   "report schema compile error: " + err.Error(),
+		})
+		report.OK = false
+		return
+	}
+
+		sample := map[string]any{
+		"card_id": "test",
+		"task_id": "test",
+		"tier":    "standard",
+		"metrics": map[string]any{
+			"verification_strength": map[string]any{
+				"command_evidence_count": 0,
+				"oracle_kinds":           []any{},
+				"untested_regions_count": 0,
+				"remaining_risks_count":  0,
+			},
+			"state_consistency": map[string]any{
+				"owner_present":          true,
+				"accountable_present":    true,
+				"files_changed_present":  true,
+				"admission_mapping_valid": true,
+			},
+			"recovery_ability": map[string]any{
+				"blocked_has_next_action": true,
+				"blocked_has_owner":       true,
+				"recovery_route_present":  true,
+			},
+			"replayability": map[string]any{
+				"completion_card_present": true,
+				"input_card_hash_present": true,
+				"policy_hash_present":     true,
+			},
+			"cost": map[string]any{
+				"default_context_class": "medium",
+				"verify_runtime_ms":     0,
+			},
+			"verify_event_success_rate": map[string]any{
+				"numerator":      1,
+				"denominator":    1,
+				"unit":           "verify_event",
+				"not_task_level": true,
+			},
+			"task_completion_coverage": map[string]any{
+				"status": "not_computable",
+				"reason": "missing_aligned_task_denominator",
+			},
+			"withheld_rate": map[string]any{
+				"numerator":      0,
+				"denominator":    1,
+				"unit":           "verify_event",
+				"not_task_level": true,
+			},
+		},
+		"admission": map[string]any{
+			"outcome":           "success",
+			"acceptance_status": "accepted",
+			"errors":            []any{},
+			"notes":             []any{},
+		},
+		"verify_event_accounting": map[string]any{
+			"cards_analyzed": 1,
+			"note":           "test",
+		},
+		"task_lifecycle_accounting": map[string]any{
+			"admitted": 1,
+			"withheld": 0,
+			"note":     "test",
+		},
+		"admission_accounting": map[string]any{
+			"accepted":      1,
+			"total_analyzed": 1,
+			"note":          "test",
+		},
+		"withheld_accounting": map[string]any{
+			"failed":  0,
+			"blocked": 0,
+			"skipped": 0,
+			"timeout": 0,
+			"error":   0,
+			"note":    "test",
+		},
+		"unknown_or_unlinked_events": map[string]any{
+			"count": 0,
+			"note":  "test",
+		},
+		"denominator_warning": "test",
+	}
+
+	if err := v.Validate(sample); err != nil {
+		report.Checks = append(report.Checks, Check{
+			Name:   "denominator_contract",
+			Status: "failed",
+			Note:   "sample report with denominator contract failed schema validation: " + err.Error(),
+		})
+		report.OK = false
+		return
+	}
+
+	report.Checks = append(report.Checks, Check{
+		Name:   "denominator_contract",
+		Status: "passed",
+		Note:   "report schema validates denominator-safe rate metrics",
+	})
 }
 
 func checkGoldenCard(root, cardPath string) (outcome, acceptance, note string) {

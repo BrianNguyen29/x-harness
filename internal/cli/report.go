@@ -48,12 +48,27 @@ type costMetrics struct {
 	VerifyRuntimeMs     int    `json:"verify_runtime_ms"`
 }
 
+type rateMetric struct {
+	Numerator    int    `json:"numerator"`
+	Denominator  int    `json:"denominator"`
+	Unit         string `json:"unit"`
+	NotTaskLevel bool   `json:"not_task_level"`
+}
+
+type coverageMetric struct {
+	Status string `json:"status"`
+	Reason string `json:"reason"`
+}
+
 type metricsData struct {
-	VerificationStrength verificationStrength `json:"verification_strength"`
-	StateConsistency     stateConsistency     `json:"state_consistency"`
-	RecoveryAbility      recoveryAbility      `json:"recovery_ability"`
-	Replayability        replayability        `json:"replayability"`
-	Cost                 costMetrics          `json:"cost"`
+	VerificationStrength   verificationStrength `json:"verification_strength"`
+	StateConsistency       stateConsistency     `json:"state_consistency"`
+	RecoveryAbility        recoveryAbility      `json:"recovery_ability"`
+	Replayability          replayability        `json:"replayability"`
+	Cost                   costMetrics          `json:"cost"`
+	VerifyEventSuccessRate rateMetric           `json:"verify_event_success_rate"`
+	TaskCompletionCoverage coverageMetric       `json:"task_completion_coverage"`
+	WithheldRate           rateMetric           `json:"withheld_rate"`
 }
 
 type admissionSummary struct {
@@ -116,6 +131,9 @@ type traceReportOutput struct {
 	WithheldAccounting      withheldAccounting       `json:"withheld_accounting"`
 	UnknownOrUnlinkedEvents unknownEvents            `json:"unknown_or_unlinked_events"`
 	Latest                  TraceEvent               `json:"latest"`
+	VerifyEventSuccessRate  rateMetric               `json:"verify_event_success_rate"`
+	TaskCompletionCoverage  coverageMetric           `json:"task_completion_coverage"`
+	WithheldRate            rateMetric               `json:"withheld_rate"`
 }
 
 type reportMetricsOutput struct {
@@ -203,6 +221,30 @@ func handleReport(args []string, stdout io.Writer, stderr io.Writer) int {
 	verifyRuntimeMs := int(time.Since(startTime).Milliseconds())
 
 	metrics := computeMetrics(doc, inputCardHash, policyHash, verifyRuntimeMs)
+
+	admittedCount := 0
+	withheldCount := 0
+	if admResult.AcceptanceStatus == "accepted" {
+		admittedCount = 1
+	} else {
+		withheldCount = 1
+	}
+	metrics.VerifyEventSuccessRate = rateMetric{
+		Numerator:    admittedCount,
+		Denominator:  1,
+		Unit:         "verify_event",
+		NotTaskLevel: true,
+	}
+	metrics.TaskCompletionCoverage = coverageMetric{
+		Status: "not_computable",
+		Reason: "missing_aligned_task_denominator",
+	}
+	metrics.WithheldRate = rateMetric{
+		Numerator:    withheldCount,
+		Denominator:  1,
+		Unit:         "verify_event",
+		NotTaskLevel: true,
+	}
 
 	taskID := stringValue(doc, "task_id")
 	tier := stringValue(doc, "tier")
@@ -366,6 +408,22 @@ func buildTraceReport(events []TraceEvent) traceReportOutput {
 			Note:  "Events with missing or unrecognized outcome/acceptance_status.",
 		},
 		Latest: latest,
+		VerifyEventSuccessRate: rateMetric{
+			Numerator:    accepted,
+			Denominator:  total,
+			Unit:         "verify_event",
+			NotTaskLevel: true,
+		},
+		TaskCompletionCoverage: coverageMetric{
+			Status: "not_computable",
+			Reason: "missing_aligned_task_denominator",
+		},
+		WithheldRate: rateMetric{
+			Numerator:    withheld,
+			Denominator:  total,
+			Unit:         "verify_event",
+			NotTaskLevel: true,
+		},
 	}
 }
 
@@ -455,6 +513,15 @@ func renderTraceReportMarkdown(w io.Writer, report traceReportOutput) {
 		WriteLine(w, "None.")
 	} else {
 		WriteLine(w, "%d/%d events with missing or unrecognized outcome/acceptance_status.", report.UnknownOrUnlinkedEvents.Count, report.TotalEvents)
+	}
+	WriteLine(w, "")
+	WriteLine(w, "## Rate metrics")
+	if report.TotalEvents == 0 {
+		WriteLine(w, "No rate metrics available (no events).")
+	} else {
+		WriteLine(w, "- verify_event_success_rate: %d/%d verify_event (not_task_level)", report.Accepted, report.TotalEvents)
+		WriteLine(w, "- task_completion_coverage: not_computable (missing_aligned_task_denominator)")
+		WriteLine(w, "- withheld_rate: %d/%d verify_event (not_task_level)", report.Withheld, report.TotalEvents)
 	}
 	WriteLine(w, "")
 	WriteLine(w, "## Denominator warning")
@@ -626,6 +693,11 @@ func renderMetricsMarkdown(w io.Writer, report reportMetricsOutput) {
 	WriteLine(w, "## Cost")
 	WriteLine(w, "- default_context_class: %s", report.Metrics.Cost.DefaultContextClass)
 	WriteLine(w, "- verify_runtime_ms: %d", report.Metrics.Cost.VerifyRuntimeMs)
+	WriteLine(w, "")
+	WriteLine(w, "## Rate metrics")
+	WriteLine(w, "- verify_event_success_rate: %d/%d verify_event (not_task_level)", report.Metrics.VerifyEventSuccessRate.Numerator, report.Metrics.VerifyEventSuccessRate.Denominator)
+	WriteLine(w, "- task_completion_coverage: %s (%s)", report.Metrics.TaskCompletionCoverage.Status, report.Metrics.TaskCompletionCoverage.Reason)
+	WriteLine(w, "- withheld_rate: %d/%d verify_event (not_task_level)", report.Metrics.WithheldRate.Numerator, report.Metrics.WithheldRate.Denominator)
 	WriteLine(w, "")
 	WriteLine(w, "## Verify event accounting")
 	WriteLine(w, "- cards_analyzed: 1")

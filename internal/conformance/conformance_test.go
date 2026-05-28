@@ -22,6 +22,7 @@ func TestRunMinimalHealthyRepo(t *testing.T) {
 		"agents_managed_context",
 		"golden_success_light",
 		"golden_blocked_missing_evidence",
+		"denominator_contract",
 	}
 	found := map[string]bool{}
 	for _, c := range report.Checks {

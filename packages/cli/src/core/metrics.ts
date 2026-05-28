@@ -1,5 +1,17 @@
 import type { AdmissionInput } from "./admission.js";
 
+export interface RateMetric {
+  numerator: number;
+  denominator: number;
+  unit: string;
+  not_task_level: boolean;
+}
+
+export interface CoverageMetric {
+  status: string;
+  reason: string;
+}
+
 export interface MetricsReport {
   verification_strength: {
     command_evidence_count: number;
@@ -27,6 +39,9 @@ export interface MetricsReport {
     default_context_class: "low" | "medium" | "high";
     verify_runtime_ms: number;
   };
+  verify_event_success_rate: RateMetric;
+  task_completion_coverage: CoverageMetric;
+  withheld_rate: RateMetric;
 }
 
 export function computeMetrics(
@@ -72,6 +87,9 @@ export function computeMetrics(
   const contextClass: "low" | "medium" | "high" =
     tier === "light" ? "low" : tier === "deep" ? "high" : "medium";
 
+  const acceptedCount = input.acceptance_status === "accepted" ? 1 : 0;
+  const withheldCount = input.acceptance_status === "withheld" ? 1 : 0;
+
   return {
     verification_strength: {
       command_evidence_count: verificationArtifacts.length,
@@ -103,6 +121,22 @@ export function computeMetrics(
     cost: {
       default_context_class: contextClass,
       verify_runtime_ms: options.verifyRuntimeMs ?? 0,
+    },
+    verify_event_success_rate: {
+      numerator: acceptedCount,
+      denominator: 1,
+      unit: "verify_event",
+      not_task_level: true,
+    },
+    task_completion_coverage: {
+      status: "not_computable",
+      reason: "missing_aligned_task_denominator",
+    },
+    withheld_rate: {
+      numerator: withheldCount,
+      denominator: 1,
+      unit: "verify_event",
+      not_task_level: true,
     },
   };
 }

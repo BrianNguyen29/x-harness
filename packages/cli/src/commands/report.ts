@@ -487,6 +487,17 @@ export function reportCommand(): Command {
           );
           console.log(`- verify_runtime_ms: ${metrics.cost.verify_runtime_ms}`);
           console.log("");
+          console.log("## Rate metrics");
+          console.log(
+            `- verify_event_success_rate: ${metrics.verify_event_success_rate.numerator}/${metrics.verify_event_success_rate.denominator} ${metrics.verify_event_success_rate.unit} (not_task_level)`
+          );
+          console.log(
+            `- task_completion_coverage: ${metrics.task_completion_coverage.status} (${metrics.task_completion_coverage.reason})`
+          );
+          console.log(
+            `- withheld_rate: ${metrics.withheld_rate.numerator}/${metrics.withheld_rate.denominator} ${metrics.withheld_rate.unit} (not_task_level)`
+          );
+          console.log("");
           console.log("## Verify event accounting");
           console.log("- cards_analyzed: 1");
           console.log(
@@ -605,6 +616,22 @@ export function reportCommand(): Command {
             note: "Events with missing or unrecognized outcome/acceptance_status.",
           },
           latest: events.length > 0 ? events[events.length - 1] : null,
+          verify_event_success_rate: {
+            numerator: accepted,
+            denominator: total,
+            unit: "verify_event",
+            not_task_level: true,
+          },
+          task_completion_coverage: {
+            status: "not_computable",
+            reason: "missing_aligned_task_denominator",
+          },
+          withheld_rate: {
+            numerator: withheld,
+            denominator: total,
+            unit: "verify_event",
+            not_task_level: true,
+          },
         };
         console.log(JSON.stringify(report, null, 2));
         return;
@@ -707,6 +734,15 @@ export function reportCommand(): Command {
         console.log(
           `${unknownEvents}/${total} events with missing or unrecognized outcome/acceptance_status.`
         );
+      }
+      console.log("");
+      console.log("## Rate metrics");
+      if (total === 0) {
+        console.log("No rate metrics available (no events).");
+      } else {
+        console.log(`- verify_event_success_rate: ${accepted}/${total} verify_event (not_task_level)`);
+        console.log("- task_completion_coverage: not_computable (missing_aligned_task_denominator)");
+        console.log(`- withheld_rate: ${withheld}/${total} verify_event (not_task_level)`);
       }
       console.log("");
       console.log("## Denominator warning");

@@ -120,7 +120,10 @@
             "state_consistency",
             "recovery_ability",
             "replayability",
-            "cost"
+            "cost",
+            "verify_event_success_rate",
+            "task_completion_coverage",
+            "withheld_rate"
           ],
           "properties": {
             "verification_strength": {
@@ -202,6 +205,34 @@
                   "minimum": 0
                 }
               }
+            },
+            "verify_event_success_rate": {
+              "type": "object",
+              "required": ["numerator", "denominator", "unit", "not_task_level"],
+              "properties": {
+                "numerator": { "type": "integer", "minimum": 0 },
+                "denominator": { "type": "integer", "minimum": 0 },
+                "unit": { "type": "string" },
+                "not_task_level": { "type": "boolean" }
+              }
+            },
+            "task_completion_coverage": {
+              "type": "object",
+              "required": ["status", "reason"],
+              "properties": {
+                "status": { "type": "string" },
+                "reason": { "type": "string" }
+              }
+            },
+            "withheld_rate": {
+              "type": "object",
+              "required": ["numerator", "denominator", "unit", "not_task_level"],
+              "properties": {
+                "numerator": { "type": "integer", "minimum": 0 },
+                "denominator": { "type": "integer", "minimum": 0 },
+                "unit": { "type": "string" },
+                "not_task_level": { "type": "boolean" }
+              }
             }
           }
         },
@@ -262,7 +293,10 @@
         "admission_accounting",
         "withheld_accounting",
         "unknown_or_unlinked_events",
-        "latest"
+        "latest",
+        "verify_event_success_rate",
+        "task_completion_coverage",
+        "withheld_rate"
       ],
       "properties": {
         "total_events": { "type": "integer", "minimum": 0 },
@@ -309,6 +343,34 @@
         },
         "latest": {
           "type": ["object", "null"]
+        },
+        "verify_event_success_rate": {
+          "type": "object",
+          "required": ["numerator", "denominator", "unit", "not_task_level"],
+          "properties": {
+            "numerator": { "type": "integer", "minimum": 0 },
+            "denominator": { "type": "integer", "minimum": 0 },
+            "unit": { "type": "string" },
+            "not_task_level": { "type": "boolean" }
+          }
+        },
+        "task_completion_coverage": {
+          "type": "object",
+          "required": ["status", "reason"],
+          "properties": {
+            "status": { "type": "string" },
+            "reason": { "type": "string" }
+          }
+        },
+        "withheld_rate": {
+          "type": "object",
+          "required": ["numerator", "denominator", "unit", "not_task_level"],
+          "properties": {
+            "numerator": { "type": "integer", "minimum": 0 },
+            "denominator": { "type": "integer", "minimum": 0 },
+            "unit": { "type": "string" },
+            "not_task_level": { "type": "boolean" }
+          }
         }
       }
     }

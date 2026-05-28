@@ -140,7 +140,7 @@ This table separates what is already in the repository from what remains design-
 | Release candidate cycle | **Implemented** | Cross-platform smoke tests, checksums, cosign |
 | NPM wrapper Go-only | **Implemented** | Phase 11 complete (`15afed0`) |
 | Adapter files (Generic, Claude Code, Cursor, OpenCode, Antigravity) | **Implemented** | Manual; automated drift detection not yet built |
-| Denominator-safe report JSON | **Partial** | Warning exists; strict denominator contract not yet enforced |
+| Denominator-safe report JSON | **Implemented (minimal)** | Structured rate metrics with numerator/denominator/unit; task_completion_coverage not_computable; denominator_warning preserved |
 | Failure taxonomy v2 | **Partial** | Basic predicates exist; typed taxonomy classes not yet implemented |
 | AdmissionCard / X-HarnessCard | **Implemented (minimal)** | `card generate`, `card verify`, `schemas/admission-card.schema.json` |
 | Readiness levels (task / PR / release) | **Implemented (minimal)** | `readiness task/pr/release`; `prepare` alias unchanged |
@@ -1849,7 +1849,7 @@ Goal: improve verify output safety and auditability without expanding scope or r
 Constraint: all P0b changes must work with the current monolithic pipeline in internal/admission and internal/cli.
 
 ```txt
-[ ] Add denominator contract to report JSON
+[x] Add denominator contract to report JSON
     - Reject ambiguous success_rate
     - Include numerator, denominator, unit on every rate
     - Add denominator_warning when applicable
