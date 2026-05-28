@@ -1479,9 +1479,10 @@ NOOP schemas/completion-card.schema.json
 ```txt
 [x] init --preview prints exact planned mutations.
 [x] init --apply performs only planned mutations.
+[x] init re-run with same profile on unchanged managed files is idempotent (no-op, exit 0).
 [ ] Managed blocks are idempotent. (remains planned — no managed block idempotency changes in this slice)
 [ ] Unmanaged user content is preserved. (remains planned — no broad content refactor)
-[ ] doctor can verify installed profile. (remains planned — out of scope for this slice)
+[x] doctor can verify installed profile and detect missing/modified manifest-managed files.
 ```
 
 ---

@@ -1,6 +1,8 @@
 package doctor
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,7 +28,7 @@ func TestRunHealthyRepo(t *testing.T) {
 			t.Fatalf("expected check %s to pass, got %s: %s", c.Name, c.Status, c.Note)
 		}
 	}
-	for _, name := range []string{"critical_assets", "schemas_compile", "policies_parse", "agents_managed_context", "ci_workflow", "tier_labels", "component_registry"} {
+	for _, name := range []string{"critical_assets", "schemas_compile", "policies_parse", "agents_managed_context", "ci_workflow", "tier_labels", "component_registry", "installed_profile"} {
 		if !foundChecks[name] {
 			t.Fatalf("expected check %s to be present", name)
 		}
@@ -156,4 +158,112 @@ func TestRunBrokenComponentRegistry(t *testing.T) {
 	if !found {
 		t.Fatal("expected component_registry check")
 	}
+}
+
+func TestRunManifestClean(t *testing.T) {
+	tmp := t.TempDir()
+	os.MkdirAll(filepath.Join(tmp, ".x-harness"), 0755)
+	os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte("# AGENTS\n"), 0644)
+	os.WriteFile(filepath.Join(tmp, "X_HARNESS.md"), []byte("# X-HARNESS\n"), 0644)
+	manifest := `version: "1"
+profile: minimal
+generated_at: "2026-05-28T00:00:00Z"
+entries:
+  - path: AGENTS.md
+    hash: sha256:` + hashOf("# AGENTS\n") + `
+  - path: X_HARNESS.md
+    hash: sha256:` + hashOf("# X-HARNESS\n") + `
+`
+	os.WriteFile(filepath.Join(tmp, ".x-harness", "manifest.yaml"), []byte(manifest), 0644)
+
+	report := Run(tmp)
+	found := false
+	for _, c := range report.Checks {
+		if c.Name == "installed_profile" {
+			found = true
+			if c.Status != "passed" {
+				t.Fatalf("expected installed_profile to pass, got %s: %s", c.Status, c.Note)
+			}
+			if !strings.Contains(c.Note, "minimal") {
+				t.Fatalf("expected installed_profile note to mention profile, got %s", c.Note)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("expected installed_profile check")
+	}
+}
+
+func TestRunManifestMissingFile(t *testing.T) {
+	tmp := t.TempDir()
+	os.MkdirAll(filepath.Join(tmp, ".x-harness"), 0755)
+	os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte("# AGENTS\n"), 0644)
+	manifest := `version: "1"
+profile: minimal
+generated_at: "2026-05-28T00:00:00Z"
+entries:
+  - path: AGENTS.md
+    hash: sha256:` + hashOf("# AGENTS\n") + `
+  - path: X_HARNESS.md
+    hash: sha256:0000000000000000000000000000000000000000000000000000000000000000
+`
+	os.WriteFile(filepath.Join(tmp, ".x-harness", "manifest.yaml"), []byte(manifest), 0644)
+
+	report := Run(tmp)
+	found := false
+	for _, c := range report.Checks {
+		if c.Name == "installed_profile" {
+			found = true
+			if c.Status != "failed" {
+				t.Fatalf("expected installed_profile to fail, got %s", c.Status)
+			}
+			if !strings.Contains(c.Note, "missing") {
+				t.Fatalf("expected installed_profile note to mention missing, got %s", c.Note)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("expected installed_profile check")
+	}
+	if report.Healthy {
+		t.Fatal("expected unhealthy when manifest file is missing")
+	}
+}
+
+func TestRunManifestModifiedFile(t *testing.T) {
+	tmp := t.TempDir()
+	os.MkdirAll(filepath.Join(tmp, ".x-harness"), 0755)
+	os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte("# AGENTS modified\n"), 0644)
+	manifest := `version: "1"
+profile: minimal
+generated_at: "2026-05-28T00:00:00Z"
+entries:
+  - path: AGENTS.md
+    hash: sha256:0000000000000000000000000000000000000000000000000000000000000000
+`
+	os.WriteFile(filepath.Join(tmp, ".x-harness", "manifest.yaml"), []byte(manifest), 0644)
+
+	report := Run(tmp)
+	found := false
+	for _, c := range report.Checks {
+		if c.Name == "installed_profile" {
+			found = true
+			if c.Status != "failed" {
+				t.Fatalf("expected installed_profile to fail, got %s", c.Status)
+			}
+			if !strings.Contains(c.Note, "modified") {
+				t.Fatalf("expected installed_profile note to mention modified, got %s", c.Note)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("expected installed_profile check")
+	}
+	if report.Healthy {
+		t.Fatal("expected unhealthy when manifest file is modified")
+	}
+}
+
+func hashOf(s string) string {
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(s)))
 }

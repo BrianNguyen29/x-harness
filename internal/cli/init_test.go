@@ -347,3 +347,66 @@ func TestInitUnknownProfile(t *testing.T) {
 		t.Fatalf("expected invalid profile error, got: %q", stderr.String())
 	}
 }
+
+func TestInitIdempotentSameProfile(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	code := Run([]string{"init", tmpDir, "--profile", "minimal"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("first init failed: code=%d stderr=%s", code, stderr.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"init", tmpDir, "--profile", "minimal"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "already up-to-date") && !strings.Contains(out, "no changes needed") {
+		t.Fatalf("expected idempotent no-op message, got: %s", out)
+	}
+}
+
+func TestInitIdempotentModifiedFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	Run([]string{"init", tmpDir, "--profile", "minimal"}, &strings.Builder{}, &strings.Builder{})
+
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	if err := os.WriteFile(agentsPath, []byte("modified content"), 0644); err != nil {
+		t.Fatalf("failed to modify file: %v", err)
+	}
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{"init", tmpDir, "--profile", "minimal"}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d", ExitError, code)
+	}
+	output := stdout.String() + stderr.String()
+	if !strings.Contains(output, "blocked") && !strings.Contains(output, "conflict") {
+		t.Fatalf("expected blocked/conflict message, got: %s", output)
+	}
+}
+
+func TestInitIdempotentMissingFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	Run([]string{"init", tmpDir, "--profile", "minimal"}, &strings.Builder{}, &strings.Builder{})
+
+	if err := os.Remove(filepath.Join(tmpDir, "AGENTS.md")); err != nil {
+		t.Fatalf("failed to remove file: %v", err)
+	}
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{"init", tmpDir, "--profile", "minimal"}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d", ExitError, code)
+	}
+	output := stdout.String() + stderr.String()
+	if !strings.Contains(output, "blocked") && !strings.Contains(output, "conflict") {
+		t.Fatalf("expected blocked/conflict message, got: %s", output)
+	}
+}

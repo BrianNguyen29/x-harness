@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"github.com/BrianNguyen29/x-harness/internal/components"
 	"github.com/BrianNguyen29/x-harness/internal/loader"
 	"github.com/BrianNguyen29/x-harness/internal/schema"
+	"gopkg.in/yaml.v3"
 )
 
 // Check is a single health check result.
@@ -65,6 +67,7 @@ func Run(root string) *Report {
 	checkCIWorkflow(report, root)
 	checkTierLabels(report, root)
 	checkComponentRegistry(report, root)
+	checkManifest(report, root)
 
 	report.PresentCount = len(report.Present)
 	report.MissingCount = len(report.Missing)
@@ -410,5 +413,79 @@ func checkComponentRegistry(report *Report, root string) {
 			Note:   strings.Join(result.Errors, "; "),
 		})
 		report.Healthy = false
+	}
+}
+
+func fileHash(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("sha256:%x", sha256.Sum256(data)), nil
+}
+
+func checkManifest(report *Report, root string) {
+	manifestFile := filepath.Join(root, ".x-harness", "manifest.yaml")
+	data, err := os.ReadFile(manifestFile)
+	if err != nil {
+		report.Checks = append(report.Checks, Check{
+			Name:   "installed_profile",
+			Status: "passed",
+			Note:   "no manifest installed",
+		})
+		return
+	}
+
+	var m struct {
+		Profile string `yaml:"profile"`
+		Entries []struct {
+			Path string `yaml:"path"`
+			Hash string `yaml:"hash"`
+		} `yaml:"entries"`
+	}
+	if err := yaml.Unmarshal(data, &m); err != nil {
+		report.Checks = append(report.Checks, Check{
+			Name:   "installed_profile",
+			Status: "failed",
+			Note:   "invalid manifest: " + err.Error(),
+		})
+		report.Healthy = false
+		return
+	}
+
+	missing := []string{}
+	modified := []string{}
+	for _, entry := range m.Entries {
+		entryPath := filepath.Join(root, filepath.FromSlash(entry.Path))
+		if _, err := os.Stat(entryPath); err != nil {
+			missing = append(missing, entry.Path)
+			continue
+		}
+		hash, err := fileHash(entryPath)
+		if err != nil || hash != entry.Hash {
+			modified = append(modified, entry.Path)
+		}
+	}
+
+	if len(missing) > 0 || len(modified) > 0 {
+		notes := []string{}
+		if len(missing) > 0 {
+			notes = append(notes, "missing: "+strings.Join(missing, ", "))
+		}
+		if len(modified) > 0 {
+			notes = append(notes, "modified: "+strings.Join(modified, ", "))
+		}
+		report.Checks = append(report.Checks, Check{
+			Name:   "installed_profile",
+			Status: "failed",
+			Note:   strings.Join(notes, "; "),
+		})
+		report.Healthy = false
+	} else {
+		report.Checks = append(report.Checks, Check{
+			Name:   "installed_profile",
+			Status: "passed",
+			Note:   "profile: " + m.Profile,
+		})
 	}
 }

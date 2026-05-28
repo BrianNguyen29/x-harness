@@ -131,6 +131,39 @@ func handleInit(args []string, stdout io.Writer, stderr io.Writer) int {
 		return ExitOK
 	}
 
+	// Idempotency: same profile with unchanged managed files is a no-op (unless force/merge)
+	if !force && !merge {
+		if existingManifest, err := readManifest(targetDir); err == nil {
+			if existingManifest.Profile == displayMode {
+				upToDate := true
+				for _, p := range plan {
+					if !pathExistsBool(p.dest) {
+						upToDate = false
+						break
+					}
+				}
+				if upToDate {
+					for _, entry := range existingManifest.Entries {
+						entryPath, err := resolveManifestEntryPath(targetDir, entry)
+						if err != nil {
+							upToDate = false
+							break
+						}
+						hash, err := fileHash(entryPath)
+						if err != nil || hash != entry.Hash {
+							upToDate = false
+							break
+						}
+					}
+				}
+				if upToDate {
+					WriteLine(stdout, "x-harness init (%s) already up-to-date: no changes needed", displayMode)
+					return ExitOK
+				}
+			}
+		}
+	}
+
 	var conflicts []string
 	for _, p := range plan {
 		if pathExistsBool(p.dest) && !force && !merge {
