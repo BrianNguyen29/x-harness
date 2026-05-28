@@ -145,7 +145,7 @@ This table separates what is already in the repository from what remains design-
 | AdmissionCard / X-HarnessCard | **Implemented (minimal)** | `card generate`, `card verify`, `schemas/admission-card.schema.json` |
 | Readiness levels (task / PR / release) | **Implemented (minimal)** | `readiness task/pr/release`; `prepare` alias unchanged |
 | Conformance suite | **Implemented (minimal)** | `conformance run --profile minimal` with CI gate |
-| Release evidence bundle | **Planned** | Section 11 |
+| Release evidence bundle | **Implemented (minimal)** | Schema, generator, and verify-evidence implemented; release report / SBOM / provenance / platform matrix remain planned (Section 11) |
 | Denominator contract in reports | **Planned** | Section 12 |
 | Failure taxonomy v2 | **Partial** | Section 13 |
 | Permission intent classifier | **Planned** | Section 14 |
@@ -1900,13 +1900,14 @@ Constraint: P1 changes must still work with the current monolithic pipeline.
 [ ] Add adapter doctor
     - Included in conformance strict profile (strict profile itself is P2)
     - Checks managed block drift
-[ ] Add release evidence schema draft
+[x] Add release evidence schema draft
     - JSON schema for release-evidence.v1
     - Includes artifact hashes, conformance status, doctor/context sync status
-[ ] Add release evidence generator
+[x] Add release evidence generator
     - Generates without network services
-    - Includes Go version, platforms, artifacts, SBOM, provenance references
-[ ] Add release verify-evidence
+    - Includes Go version, artifacts, conformance/doctor/context_sync status
+    - SBOM/provenance references and full platform matrix remain planned
+[x] Add release verify-evidence
     - Fails on missing artifact, checksum mismatch, or missing conformance
 ```
 
@@ -2057,10 +2058,10 @@ Why third: adapter drift becomes a real risk once x-harness supports many coding
 ### Slice 4 — Release evidence bundle (P1)
 
 ```txt
-1. Add release evidence schema.
-2. Add release evidence generator.
-3. Add release verify-evidence.
-4. Add release report.
+[x] 1. Add release evidence schema.
+[x] 2. Add release evidence generator.
+[x] 3. Add release verify-evidence.
+[ ] 4. Add release report (remains planned).
 ```
 
 Why fourth: Go-native binary releases need machine-readable evidence.

@@ -132,8 +132,8 @@ func TestReadinessReleaseJSON(t *testing.T) {
 	if !result.OK {
 		t.Fatalf("expected ok=true, got: %+v", result)
 	}
-	if !strings.Contains(result.Note, "not implemented yet") {
-		t.Fatalf("expected note about not implemented yet, got: %s", result.Note)
+	if !strings.Contains(result.Note, "local evidence generation/verification available") {
+		t.Fatalf("expected note about local evidence generation/verification available, got: %s", result.Note)
 	}
 }
 
@@ -149,8 +149,8 @@ func TestReadinessReleaseText(t *testing.T) {
 	if !strings.Contains(out, "readiness_level: release") {
 		t.Fatalf("expected readiness_level in output, got: %s", out)
 	}
-	if !strings.Contains(out, "not implemented yet") {
-		t.Fatalf("expected note about not implemented yet, got: %s", out)
+	if !strings.Contains(out, "local evidence generation/verification available") {
+		t.Fatalf("expected note about local evidence generation/verification available, got: %s", out)
 	}
 }
 

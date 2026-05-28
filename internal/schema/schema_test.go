@@ -32,6 +32,14 @@ func TestCompileAdapterMatrixSchema(t *testing.T) {
 	}
 }
 
+func TestCompileReleaseEvidenceSchema(t *testing.T) {
+	path := filepath.Join("..", "..", "schemas", "release-evidence.schema.json")
+	_, err := Compile(path)
+	if err != nil {
+		t.Fatalf("expected schema to compile, got error: %v", err)
+	}
+}
+
 func TestValidGoldenCardPasses(t *testing.T) {
 	schemaPath := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
 	v, err := Compile(schemaPath)

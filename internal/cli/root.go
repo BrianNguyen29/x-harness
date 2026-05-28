@@ -60,6 +60,7 @@ var commands = []CommandInfo{
 	{Name: "card", Description: "Generate or verify admission cards"},
 	{Name: "conformance", Description: "Run conformance checks"},
 	{Name: "readiness", Description: "Evaluate readiness levels"},
+	{Name: "release", Description: "Generate or verify release evidence"},
 	{Name: "adapters", Description: "Inspect adapter matrix"},
 }
 
@@ -151,6 +152,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleConformance(args[1:], stdout, stderr)
 	case "readiness":
 		return handleReadiness(args[1:], stdout, stderr)
+	case "release":
+		return handleRelease(args[1:], stdout, stderr)
 	case "adapters":
 		return handleAdapters(args[1:], stdout, stderr)
 	default:

@@ -207,7 +207,7 @@ func handleReadinessRelease(args []string, stdout io.Writer, stderr io.Writer) i
 		OK:               confReport.OK,
 		AdmissionOutcome: "success",
 		AcceptanceStatus: "accepted",
-		Note:             "release evidence verification is not implemented yet",
+		Note:             "local evidence generation/verification available; publish/tag readiness not claimed",
 	}
 
 	if !result.OK {

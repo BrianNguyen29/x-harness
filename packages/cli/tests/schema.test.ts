@@ -287,6 +287,7 @@ describe("schema validators", () => {
       "frozen-manifest.schema.json",
       "federation-pattern.schema.json",
       "permissions.schema.json",
+      "release-evidence.schema.json",
       "report.schema.json",
       "subagent-return.schema.json",
       "verify-event.schema.json",

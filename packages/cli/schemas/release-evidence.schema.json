@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "release-evidence",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "version", "artifacts", "conformance"],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "commit": {
+      "type": "string"
+    },
+    "go_version": {
+      "type": "string"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256", "size"],
+        "properties": {
+          "path": { "type": "string" },
+          "sha256": { "type": "string" },
+          "size": { "type": "integer" }
+        }
+      },
+      "minItems": 1
+    },
+    "conformance": {
+      "type": "object",
+      "required": ["minimal"],
+      "properties": {
+        "minimal": {
+          "enum": ["passed", "failed"]
+        }
+      }
+    },
+    "doctor": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": ["healthy", "unhealthy"]
+        }
+      }
+    },
+    "context_sync": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": ["no_drift", "drift"]
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
