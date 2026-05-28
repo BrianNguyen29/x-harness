@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "adapter-matrix",
+  "description": "Schema for the x-harness adapter capability matrix",
+  "type": "object",
+  "required": ["adapters"],
+  "properties": {
+    "adapters": {
+      "type": "array",
+      "description": "List of x-harness adapters",
+      "items": {
+        "type": "object",
+        "required": ["name", "description"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Adapter identifier"
+          },
+          "description": {
+            "type": "string",
+            "description": "Short description of the adapter"
+          },
+          "capabilities": {
+            "type": "array",
+            "description": "Supported actions or capabilities",
+            "items": { "type": "string" }
+          },
+          "formats": {
+            "type": "array",
+            "description": "File formats or asset types provided by the adapter",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

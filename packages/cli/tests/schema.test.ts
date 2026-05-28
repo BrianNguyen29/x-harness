@@ -273,6 +273,7 @@ describe("schema validators", () => {
   describe("cross-schema sync", () => {
     // Schemas that should be byte-identical between root (published contract) and runtime copies
     const syncedSchemas = [
+      "adapter-matrix.schema.json",
       "attribution.schema.json",
       "agent-profile.schema.json",
       "approval-risk.schema.json",

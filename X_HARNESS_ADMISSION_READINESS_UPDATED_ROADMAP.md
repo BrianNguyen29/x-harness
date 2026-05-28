@@ -150,7 +150,7 @@ This table separates what is already in the repository from what remains design-
 | Failure taxonomy v2 | **Partial** | Section 13 |
 | Permission intent classifier | **Planned** | Section 14 |
 | Approval receipt schema | **Planned** | Section 15 |
-| Adapter matrix / eval / doctor | **Planned** | Section 16 |
+| Adapter matrix / eval / doctor | **Partial** | Schema and `adapters matrix` command implemented; eval and doctor remain planned (Section 16) |
 | Admission skill-pack | **Planned / Conditional** | Section 17; P3 unless demand exists |
 | Adapter/skill static scanner | **Planned** | Section 18 |
 | Install profiles preview/apply | **Planned** | Section 19 |
@@ -1885,7 +1885,7 @@ Constraint: P1 changes must still work with the current monolithic pipeline.
     - Basic completion card verifies
     - Non-success maps to withheld
     - Exits non-zero on contract violation
-[ ] Add adapter matrix schema and adapters matrix command
+[x] Add adapter matrix schema and adapters matrix command
     - Prints capability table
     - Includes all existing adapters
 [ ] Add adapters eval
@@ -2041,11 +2041,11 @@ Why second: this makes x-harness contract-checkable.
 ### Slice 3 — Adapter matrix/eval (P1)
 
 ```txt
-1. Add adapter matrix schema.
-2. Add adapters matrix command.
-3. Add adapters eval.
-4. Add adapters doctor.
-5. Add managed block drift checks.
+[x] Add adapter matrix schema.
+[x] Add adapters matrix command.
+[ ] Add adapters eval.
+[ ] Add adapters doctor.
+[ ] Add managed block drift checks.
 ```
 
 Why third: adapter drift becomes a real risk once x-harness supports many coding agents.
