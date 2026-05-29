@@ -412,6 +412,14 @@ func RunStrict(root string) *Report {
 		} else {
 			deltas := mutationguard.Compare(before, after)
 			unexpected := mutationguard.FilterUnexpected(deltas)
+			// Filter out mutation guard probe files from unexpected deltas
+			var filtered []mutationguard.Delta
+			for _, d := range unexpected {
+				if !strings.HasPrefix(d.Path, ".x-harness-mutation-guard-probe-") {
+					filtered = append(filtered, d)
+				}
+			}
+			unexpected = filtered
 			if len(unexpected) > 0 {
 				var paths []string
 				for _, d := range unexpected {
