@@ -122,3 +122,37 @@ func TestValidateManagedBlockFromFile(t *testing.T) {
 		t.Fatalf("expected real AGENTS.md to pass validation: %s", note)
 	}
 }
+
+func TestCheckDeadLinksNone(t *testing.T) {
+	root := filepath.Join("..", "..")
+	dead := CheckDeadLinks(root)
+	if len(dead) > 0 {
+		t.Fatalf("expected no dead links in real repo docs, got: %v", dead)
+	}
+}
+
+func TestCheckDeadLinksDetectsBroken(t *testing.T) {
+	tmpDir := t.TempDir()
+	docsDir := filepath.Join(tmpDir, "docs")
+	if err := os.MkdirAll(docsDir, 0755); err != nil {
+		t.Fatalf("mkdir docs: %v", err)
+	}
+	content := "# Doc\n\nSee [missing](MISSING_FILE.md) for details.\n"
+	if err := os.WriteFile(filepath.Join(docsDir, "test.md"), []byte(content), 0644); err != nil {
+		t.Fatalf("write test.md: %v", err)
+	}
+
+	dead := CheckDeadLinks(tmpDir)
+	if len(dead) == 0 {
+		t.Fatal("expected dead link detection to find MISSING_FILE.md")
+	}
+	found := false
+	for _, d := range dead {
+		if strings.Contains(d, "MISSING_FILE.md") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected dead link note to contain MISSING_FILE.md, got: %v", dead)
+	}
+}

@@ -30,6 +30,27 @@ func RunDoctor(root string) ([]Result, bool) {
 	var results []Result
 	overallOK := true
 
+	// Check each registered adapter has a README.
+	if entries, err := os.ReadDir(adaptersDir); err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			readmePath := filepath.Join(adaptersDir, entry.Name(), "README.md")
+			if _, err := os.Stat(readmePath); err != nil {
+				rel, _ := filepath.Rel(root, readmePath)
+				results = append(results, Result{
+					Path: rel,
+					OK:   false,
+					Checks: []Check{
+						{Name: "adapter_readme_exists", Status: "failed", Note: "missing README.md for adapter " + entry.Name()},
+					},
+				})
+				overallOK = false
+			}
+		}
+	}
+
 	_ = filepath.Walk(adaptersDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() {
 			return nil

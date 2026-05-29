@@ -1,8 +1,8 @@
 # Conformance Strict Profile Specification
 
-> **Status:** Proposed / Review-only
-> **Version:** 0.1-draft
-> **Scope:** This document defines the intended behavior of `conformance run --profile strict`. It does **not** claim that the strict profile is currently implemented. See `internal/cli/conformance.go` for the currently supported profiles.
+> **Status:** Implemented (strict v1 minimal)
+> **Version:** 1.0-minimal
+> **Scope:** This document defines the behavior of `conformance run --profile strict`. The strict v1 minimal profile is implemented and enforced. Residual follow-ups (overclaim detection, schema-field consistency parser, full runtime card path scoping, network/remote checks, waiver subsystem, CI gate) are documented below and are not claimed as implemented.
 
 ---
 
@@ -63,7 +63,7 @@ In strict v1, the waiver subsystem is not yet runtime-enforced. High severity sc
 
 ---
 
-## 4. Proposed strict blocking checks
+## 4. Strict blocking checks (implemented)
 
 ### 4.1 Minimal conformance baseline
 
@@ -94,7 +94,9 @@ Strict runs the entire minimal profile first. If any minimal check fails, strict
 **Check:** `adapter_doctor_no_drift`
 
 - Runs `adapters doctor` (or its programmatic equivalent) against all registered adapters.
-- Checks that each adapter README exists, non-empty capabilities/formats are declared, and managed blocks in adapter files have matching contract hashes.
+- **Implemented:** Missing adapter README is blocking. Each subdirectory under `adapters/` must contain a `README.md`.
+- **Deferred:** Non-empty capabilities/formats declaration is advisory-only because no machine-readable standard exists yet.
+- Managed blocks in adapter files must have matching contract hashes.
 - Fails if any adapter has managed block drift or missing contract references.
 - This check is intentionally scoped to adapter files under `adapters/`; it does not validate external agent behavior. External URL or network checks are out of scope for v1 and may be added as an opt-in `--remote` flag in the future if needed.
 
@@ -122,7 +124,8 @@ Strict runs the entire minimal profile first. If any minimal check fails, strict
 
 **Check:** `context_gc_no_stale_drift`
 
-- Runs `context gc --check` (or equivalent) to detect stale managed blocks, dead doc links, and overclaim phrases.
+- **Implemented:** Stale managed block detection (AGENTS.md hash/body validation) and dead internal docs link detection scoped to `docs/*.md` and repo-local links only.
+- **Deferred:** Overclaim phrase detection and full runtime card path scoping are not yet implemented.
 - Fails if `doctor --staleness` reports unmanaged drift between canonical contracts and adapter instructions.
 - This check prevents README/docs from silently diverging from `policies/admission.yaml` and `schemas/`.
 
@@ -131,7 +134,8 @@ Strict runs the entire minimal profile first. If any minimal check fails, strict
 **Check:** `worktree_metadata_valid`
 
 - Verifies that trace and report outputs include worktree metadata when enabled (branch, commit, worktree root).
-- Verifies that artifact paths referenced in completion cards are within the resolved worktree root.
+- **Implemented:** Golden completion-card artifact path scoping — artifact-like paths in golden fixtures under `examples/golden/` are validated to not escape the worktree root (no absolute paths or `../` traversal).
+- **Deferred:** Full runtime card path scoping for arbitrary verification inputs is not yet implemented.
 - Verifies that mutation guard baselines are bound to the worktree root (not to an arbitrary parent directory).
 - **Note:** Strict path enforcement does not reject paths outside the worktree; it reports them as findings and fails conformance.
 
@@ -212,7 +216,21 @@ A waiver is invalid and ignored if:
 
 ---
 
-## 7. Deferred / P3 exclusions
+## 7. Residual follow-ups (not implemented)
+
+The following hardening gaps are **explicitly deferred** from strict v1 minimal. They are documented here to avoid false claims of completeness.
+
+| Feature | Rationale | Status |
+|---|---|---|
+| Overclaim phrase detection | Requires stable heuristic; false-positive risk | Deferred to v1.1 or later |
+| Schema-field consistency parser | Needs structured diff against canonical context | Deferred to v1.1 or later |
+| Full runtime card path scoping | Currently scoped to golden fixtures only | Deferred to v1.1 or later |
+| Network / remote URL checks | No external network calls in deterministic checks | Deferred; may be opt-in `--remote` flag |
+| Waiver subsystem | Not yet runtime-enforced; blocking checks remain blocking | Deferred to Phase 4 |
+| CI gate for strict | Documented but not activated in workflow | Deferred until profile is stable |
+| Adapter capability/formats advisory | No machine-readable standard exists yet | Advisory-only when standard emerges |
+
+## 8. Deferred / P3 exclusions
 
 The following features are **explicitly excluded** from strict profile v1. They may be added in future iterations if real demand exists and they do not expand x-harness into runtime ownership.
 
@@ -227,31 +245,31 @@ The following features are **explicitly excluded** from strict profile v1. They 
 
 ---
 
-## 8. Implementation plan after approval
+## 9. Implementation plan after approval
 
-This section is informational only. It will be executed only after this specification is reviewed and approved.
+The core strict runner (Phases 1–2) is **implemented** as of strict v1 minimal. The remaining phases are deferred.
 
-### 8.1 Phase 1 — Core strict runner
+### 9.1 Phase 1 — Core strict runner ✅ Done
 
-1. Add `conformance.RunStrict(root string) *Report` in `internal/conformance/`.
-2. Implement each blocking check as a standalone function, reusing existing internal packages where possible (`mutationguard`, `scanner`, `admission`, `repo`, etc.).
-3. Wire `RunStrict` into `internal/cli/conformance.go` so `conformance run --profile strict` invokes it.
-4. Update `handleConformanceRun` to accept `strict` as a valid profile.
+1. ✅ Add `conformance.RunStrict(root string) *Report` in `internal/conformance/`.
+2. ✅ Implement each blocking check as a standalone function, reusing existing internal packages where possible (`mutationguard`, `scanner`, `admission`, `repo`, etc.).
+3. ✅ Wire `RunStrict` into `internal/cli/conformance.go` so `conformance run --profile strict` invokes it.
+4. ✅ Update `handleConformanceRun` to accept `strict` as a valid profile.
 
-### 8.2 Phase 2 — Fixtures and tests
+### 9.2 Phase 2 — Fixtures and tests ✅ Done
 
-1. Add golden fixtures for strict success and strict failure cases under `examples/golden/conformance-strict/`.
-2. Add unit tests in `internal/conformance/conformance_test.go` for each strict check.
-3. Add CLI-level tests in `internal/cli/conformance_test.go` for profile parsing and exit codes.
-4. Add parity checks if the TypeScript compatibility layer exposes conformance.
+1. ✅ Add golden fixtures for strict success and strict failure cases under `examples/golden/conformance-strict/`.
+2. ✅ Add unit tests in `internal/conformance/conformance_test.go` for each strict check.
+3. ✅ Add CLI-level tests in `internal/cli/conformance_test.go` for profile parsing and exit codes.
+4. Add parity checks if the TypeScript compatibility layer exposes conformance. *(TypeScript layer does not expose strict; not required for v1 minimal.)*
 
-### 8.3 Phase 3 — Optional CI gate
+### 9.3 Phase 3 — Optional CI gate ⏳ Deferred
 
 1. Update `.github/workflows/x-harness-verify.yml` with a `conformance strict` job (disabled by default until the profile is stable).
 2. Document the CI gate in `docs/CI.md`.
 3. Update `docs/RELEASE_CANDIDATE.md` to reference strict conformance as a recommended (not required) pre-release check.
 
-### 8.4 Phase 4 — Waiver subsystem (optional)
+### 9.4 Phase 4 — Waiver subsystem ⏳ Deferred
 
 1. Add waiver file parser and validator.
 2. Integrate waiver evaluation into strict check functions.
@@ -259,7 +277,7 @@ This section is informational only. It will be executed only after this specific
 
 ---
 
-## 9. Approved policy decisions
+## 10. Approved policy decisions
 
 The following decisions have been reviewed and approved. They are encoded below for reference during implementation.
 
@@ -274,9 +292,9 @@ The following decisions have been reviewed and approved. They are encoded below 
 
 ---
 
-## 10. References
+## 11. References
 
-- `internal/conformance/conformance.go` — current minimal implementation
+- `internal/conformance/conformance.go` — current minimal and strict implementation
 - `internal/cli/conformance.go` — current CLI wiring
 - `docs/VERIFY_GATE.md` — mutation guard and read-only verification semantics
 - `docs/ADMISSION_POLICY.md` — evidence floor and tier requirements
@@ -287,7 +305,10 @@ The following decisions have been reviewed and approved. They are encoded below 
 - `internal/mutationguard/mutationguard.go` — mutation guard implementation
 - `internal/scanner/scanner.go` — static scanner rules and severity model
 - `internal/classify/classify.go` — permission intent classifier
+- `internal/adaptercheck/adaptercheck.go` — adapter doctor implementation
+- `internal/contextcheck/contextcheck.go` — context GC / staleness checks
+- `internal/worktree/worktree.go` — worktree metadata collection
 
 ---
 
-*End of specification. This document is review-only and does not imply that `conformance run --profile strict` is currently available.*
+*End of specification. The strict v1 minimal profile is implemented and runtime-enforced. Residual follow-ups are documented in Section 7.*

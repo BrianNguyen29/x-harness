@@ -3,9 +3,12 @@ package conformance
 import (
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/BrianNguyen29/x-harness/internal/contextcheck"
 )
 
 func TestRunMinimalHealthyRepo(t *testing.T) {
@@ -189,6 +192,87 @@ func TestCheckSuitePass(t *testing.T) {
 	}
 	if check.Note != "1 fixture(s) matched" {
 		t.Fatalf("unexpected note: %s", check.Note)
+	}
+}
+
+func TestWorktreeMetadataValidBlocksPathEscape(t *testing.T) {
+	tmp := t.TempDir()
+
+	// Set up a git repo
+	if err := exec.Command("git", "-C", tmp, "init").Run(); err != nil {
+		t.Fatalf("git init failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmp, "config", "user.email", "test@test.com").Run(); err != nil {
+		t.Fatalf("git config failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmp, "config", "user.name", "Test").Run(); err != nil {
+		t.Fatalf("git config failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmp, "file.txt"), []byte("hello\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec.Command("git", "-C", tmp, "add", "file.txt").Run(); err != nil {
+		t.Fatalf("git add failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmp, "commit", "-m", "init").Run(); err != nil {
+		t.Fatalf("git commit failed: %v", err)
+	}
+
+	// Create a golden fixture with an escaping path
+	fixtureDir := filepath.Join(tmp, "examples", "golden", "regression", "escape-fixture")
+	os.MkdirAll(fixtureDir, 0755)
+	card := `schema_version: "1"
+task_id: TASK-ESC-001
+tier: light
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - ../etc/passwd
+claim:
+  fix_status: fixed
+  summary: Escaping path test
+verification:
+  status: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+	os.WriteFile(filepath.Join(fixtureDir, "completion-card.yaml"), []byte(card), 0644)
+	os.WriteFile(filepath.Join(fixtureDir, "expected-verify-output.txt"), []byte("outcome: failed\nacceptance_status: withheld\n"), 0644)
+
+	check := checkWorktreeMetadata(tmp)
+	if check.Status != "failed" {
+		t.Fatalf("expected worktree_metadata_valid to fail on path escape, got status=%s note=%s", check.Status, check.Note)
+	}
+	if !strings.Contains(check.Note, "../etc/passwd") {
+		t.Fatalf("expected note to mention escaping path, got: %s", check.Note)
+	}
+}
+
+func TestContextGCNoStaleDriftBlocksDeadLinks(t *testing.T) {
+	tmp := t.TempDir()
+
+	// Write AGENTS.md with a fresh managed block
+	ctx := contextcheck.CanonicalContext()
+	hash := contextcheck.ContextHash(ctx)
+	agentsContent := "# AGENTS\n\n" + contextcheck.ManagedBegin + "\n<!-- context-hash: " + hash + " -->\n\n" + ctx + "\n\n" + contextcheck.ManagedEnd + "\n"
+	os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte(agentsContent), 0644)
+
+	// Write a docs file with a dead link
+	docsDir := filepath.Join(tmp, "docs")
+	os.MkdirAll(docsDir, 0755)
+	os.WriteFile(filepath.Join(docsDir, "broken.md"), []byte("# Broken\n\nSee [missing](NONEXISTENT.md).\n"), 0644)
+
+	check := checkContextGCNoStaleDrift(tmp)
+	if check.Status != "failed" {
+		t.Fatalf("expected context_gc_no_stale_drift to fail on dead links, got status=%s note=%s", check.Status, check.Note)
+	}
+	if !strings.Contains(check.Note, "NONEXISTENT.md") {
+		t.Fatalf("expected note to mention dead link, got: %s", check.Note)
 	}
 }
 

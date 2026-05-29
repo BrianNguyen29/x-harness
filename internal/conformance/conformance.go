@@ -524,11 +524,87 @@ func checkWorktreeMetadata(root string) Check {
 			Note:   "not a git workspace or git unavailable",
 		}
 	}
+
+	escapes := checkGoldenPathEscapes(root)
+	if len(escapes) > 0 {
+		return Check{
+			Name:   "worktree_metadata_valid",
+			Status: "failed",
+			Note:   "golden artifact path escapes worktree: " + strings.Join(escapes, "; "),
+		}
+	}
+
 	return Check{
 		Name:   "worktree_metadata_valid",
 		Status: "passed",
 		Note:   fmt.Sprintf("root=%s branch=%s commit=%s", info.Root, info.Branch, info.Commit),
 	}
+}
+
+func checkGoldenPathEscapes(root string) []string {
+	goldenDir := filepath.Join(root, "examples", "golden")
+	var escapes []string
+
+	_ = filepath.Walk(goldenDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || filepath.Base(path) != "completion-card.yaml" {
+			return nil
+		}
+		var doc map[string]any
+		if err := loader.LoadDocument(path, &doc); err != nil {
+			return nil
+		}
+		rel, _ := filepath.Rel(root, path)
+		for _, p := range collectPathLikeStrings(doc) {
+			if pathEscapesWorktree(p) {
+				escapes = append(escapes, fmt.Sprintf("%s: %s", rel, p))
+			}
+		}
+		return nil
+	})
+
+	return escapes
+}
+
+func collectPathLikeStrings(v any) []string {
+	var paths []string
+	switch val := v.(type) {
+	case string:
+		if looksLikePath(val) {
+			paths = append(paths, val)
+		}
+	case []any:
+		for _, item := range val {
+			paths = append(paths, collectPathLikeStrings(item)...)
+		}
+	case map[string]any:
+		for _, item := range val {
+			paths = append(paths, collectPathLikeStrings(item)...)
+		}
+	}
+	return paths
+}
+
+func looksLikePath(s string) bool {
+	// Heuristic: contains a slash or backslash and is not a URL
+	if strings.Contains(s, "://") {
+		return false
+	}
+	return strings.Contains(s, "/") || strings.Contains(s, "\\")
+}
+
+func pathEscapesWorktree(p string) bool {
+	// Check for absolute paths or parent-directory traversal
+	if strings.HasPrefix(p, "/") || strings.HasPrefix(p, "\\") {
+		return true
+	}
+	if len(p) > 1 && p[1] == ':' {
+		// Windows absolute path
+		return true
+	}
+	if strings.Contains(p, "../") || strings.Contains(p, "..\\") {
+		return true
+	}
+	return false
 }
 
 func checkAdapterDoctorNoDrift(root string) Check {
@@ -568,17 +644,27 @@ func checkContextGCNoStaleDrift(root string) Check {
 		}
 	}
 	valid, note := contextcheck.ValidateManagedBlock(string(b))
-	if valid {
+	if !valid {
 		return Check{
 			Name:   "context_gc_no_stale_drift",
-			Status: "passed",
+			Status: "failed",
 			Note:   note,
 		}
 	}
+
+	deadLinks := contextcheck.CheckDeadLinks(root)
+	if len(deadLinks) > 0 {
+		return Check{
+			Name:   "context_gc_no_stale_drift",
+			Status: "failed",
+			Note:   "dead internal doc links: " + strings.Join(deadLinks, "; "),
+		}
+	}
+
 	return Check{
 		Name:   "context_gc_no_stale_drift",
-		Status: "failed",
-		Note:   note,
+		Status: "passed",
+		Note:   note + "; no dead internal doc links",
 	}
 }
 

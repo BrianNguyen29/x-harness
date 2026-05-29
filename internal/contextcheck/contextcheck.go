@@ -4,6 +4,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -104,4 +107,66 @@ func ValidateManagedBlock(content string) (bool, string) {
 	}
 
 	return true, "AGENTS.md managed context block is fresh"
+}
+
+var markdownLinkRe = regexp.MustCompile(`\[([^\]]*)\]\(([^)]+)\)`)
+
+// CheckDeadLinks scans docs/*.md for repo-local markdown links and returns
+// a slice of "file: line: target" strings for any link target that does not
+// resolve to an existing file within the repository.
+func CheckDeadLinks(root string) []string {
+	docsDir := filepath.Join(root, "docs")
+	entries, err := os.ReadDir(docsDir)
+	if err != nil {
+		return []string{fmt.Sprintf("docs: %v", err)}
+	}
+
+	var dead []string
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".md" {
+			continue
+		}
+		path := filepath.Join(docsDir, entry.Name())
+		b, err := os.ReadFile(path)
+		if err != nil {
+			dead = append(dead, fmt.Sprintf("%s: %v", entry.Name(), err))
+			continue
+		}
+		fileDir := filepath.Dir(path)
+		lines := strings.Split(string(b), "\n")
+		for lineNum, line := range lines {
+			matches := markdownLinkRe.FindAllStringSubmatch(line, -1)
+			for _, m := range matches {
+				if len(m) < 3 {
+					continue
+				}
+				target := strings.TrimSpace(m[2])
+				if isExternalLink(target) {
+					continue
+				}
+				resolved := resolveLinkTarget(root, fileDir, target)
+				if _, err := os.Stat(resolved); err != nil {
+					dead = append(dead, fmt.Sprintf("%s:%d: %s", entry.Name(), lineNum+1, target))
+				}
+			}
+		}
+	}
+	return dead
+}
+
+func isExternalLink(target string) bool {
+	return strings.HasPrefix(target, "http://") ||
+		strings.HasPrefix(target, "https://") ||
+		strings.HasPrefix(target, "mailto:") ||
+		strings.HasPrefix(target, "#")
+}
+
+func resolveLinkTarget(root, fileDir, target string) string {
+	// Remove leading ./ if present
+	target = strings.TrimPrefix(target, "./")
+	if filepath.IsAbs(target) {
+		return filepath.Join(root, target)
+	}
+	// Resolve relative to the source file's directory
+	return filepath.Join(fileDir, target)
 }

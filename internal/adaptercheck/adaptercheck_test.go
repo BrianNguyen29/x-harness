@@ -203,3 +203,50 @@ func TestRunDoctorMissingHash(t *testing.T) {
 		t.Fatal("expected result for test README.md")
 	}
 }
+
+func TestRunDoctorMissingReadme(t *testing.T) {
+	tmpDir := t.TempDir()
+	adaptersDir := filepath.Join(tmpDir, "adapters", "test")
+	if err := os.MkdirAll(adaptersDir, 0755); err != nil {
+		t.Fatalf("failed to create temp adapters dir: %v", err)
+	}
+
+	// Write a valid managed block file but no README.md
+	content := `<!-- BEGIN X-HARNESS MANAGED CONTRACT: test-contract -->
+<!-- generated-by: x-harness -->
+<!-- contract-hash: ` + ComputeContractHash("## Contract\n\n- Rule 1") + ` -->
+
+## Contract
+
+- Rule 1
+
+<!-- END X-HARNESS MANAGED CONTRACT: test-contract -->
+`
+	contractPath := filepath.Join(adaptersDir, "contract.md")
+	if err := os.WriteFile(contractPath, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write temp contract: %v", err)
+	}
+
+	results, ok := RunDoctor(tmpDir)
+	if ok {
+		t.Fatal("expected missing README to fail")
+	}
+	found := false
+	for _, r := range results {
+		if strings.Contains(r.Path, filepath.Join("adapters", "test", "README.md")) {
+			found = true
+			if r.OK {
+				t.Fatal("expected result to be not ok")
+			}
+			if len(r.Checks) == 0 {
+				t.Fatal("expected at least one check")
+			}
+			if !strings.Contains(r.Checks[0].Note, "missing README.md") {
+				t.Fatalf("expected missing README note, got: %s", r.Checks[0].Note)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("expected result for missing test README.md")
+	}
+}
