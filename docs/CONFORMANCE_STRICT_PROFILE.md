@@ -36,7 +36,7 @@ The strict conformance profile turns `x-harness` from a self-checking CLI into a
 | Mutation guard | No | **Blocking** |
 | Approval receipt / provenance | No | **Blocking for high-risk** |
 | Adapter doctor / managed block drift | No | **Blocking** |
-| Scanner high-severity findings | No | **Blocking unless waived** |
+| Scanner high-severity findings | No | **Blocking** |
 | Regression and adversarial suites | No | **Blocking** |
 | Context GC / staleness checks | No | **Blocking** |
 | Worktree metadata / strict path enforcement | No | **Blocking** |
@@ -57,7 +57,9 @@ Advisory checks produce `"advisory"` status notes in the report but do **not** s
 
 ### 3.3 Waiver interaction
 
-A blocking check may be downgraded to advisory if a **valid waiver** is present (see Section 7). An expired, unscoped, or untraceable waiver does **not** downgrade a blocking check.
+When Phase 4 waiver support is implemented, a blocking check may be downgraded to advisory if a **valid waiver** is present (see Section 7). An expired, unscoped, or untraceable waiver does **not** downgrade a blocking check.
+
+In strict v1, the waiver subsystem is not yet runtime-enforced. High severity scanner findings and other blocking checks remain blocking with no waiver downgrade.
 
 ---
 
@@ -71,9 +73,9 @@ Strict runs the entire minimal profile first. If any minimal check fails, strict
 
 **Check:** `mutation_guard_verified`
 
+- Strict requires a Git workspace. Non-Git workspaces cannot pass strict conformance.
 - In a Git workspace, `strict` runs a bounded before/after snapshot of the working tree and verifies that no unexpected file changes occurred during the conformance run.
 - The `.x-harness/` directory and its contents are allowlisted.
-- If the workspace is not a Git repository, the check falls back to the non-git directory snapshot (same implementation as `verify --mutation-guard`).
 - If no baseline can be established, the check fails fail-closed.
 - **Note:** This check verifies that the *conformance runner itself* did not mutate source files. It does not require a clean worktree prior to execution.
 
@@ -94,15 +96,16 @@ Strict runs the entire minimal profile first. If any minimal check fails, strict
 - Runs `adapters doctor` (or its programmatic equivalent) against all registered adapters.
 - Checks that each adapter README exists, non-empty capabilities/formats are declared, and managed blocks in adapter files have matching contract hashes.
 - Fails if any adapter has managed block drift or missing contract references.
-- This check is intentionally scoped to adapter files under `adapters/`; it does not validate external agent behavior.
+- This check is intentionally scoped to adapter files under `adapters/`; it does not validate external agent behavior. External URL or network checks are out of scope for v1 and may be added as an opt-in `--remote` flag in the future if needed.
 
 ### 4.5 Scanner high-severity findings and waiver policy
 
 **Check:** `scanner_high_severity_clear`
 
 - Runs the deterministic static scanner (`scan adapter`, `scan skill`, `scan managed`) using built-in regex heuristics.
-- Any `high` severity finding blocks strict conformance unless a valid waiver is present.
+- Any `high` severity finding blocks strict conformance.
 - `medium` severity findings are advisory in strict v1.
+- When Phase 4 waiver support is implemented, a valid waiver may downgrade a high severity finding to advisory.
 - The scanner is report-only in minimal; strict makes it blocking.
 
 ### 4.6 Regression and adversarial suites
@@ -113,7 +116,7 @@ Strict runs the entire minimal profile first. If any minimal check fails, strict
 - Runs the structured regression suite and verifies that all fixtures under `examples/golden/regression/` produce expected outcomes.
 - Runs the adversarial benchmark suite (`benchmark --filter adversarial`) and verifies that adversarial fixtures are correctly withheld.
 - Either suite failing causes strict conformance to fail.
-- The capability suite is non-blocking by default but may be surfaced as an advisory note.
+- The capability suite is advisory indefinitely and non-blocking in strict v1.
 
 ### 4.7 Context GC / staleness checks
 
@@ -187,7 +190,7 @@ Strict runs the entire minimal profile first. If any minimal check fails, strict
 
 ### 6.2 Proposed waiver file
 
-Location: `.x-harness/conformance-waivers.yaml` (or `policies/conformance-waivers.yaml`)
+Location: `.x-harness/conformance-waivers.yaml`
 
 ```yaml
 waivers:
@@ -256,18 +259,18 @@ This section is informational only. It will be executed only after this specific
 
 ---
 
-## 9. Open decisions for user review
+## 9. Approved policy decisions
 
-The following decisions are not yet finalized and require review before implementation begins:
+The following decisions have been reviewed and approved. They are encoded below for reference during implementation.
 
-1. **Waiver file location:** Should waivers live in `.x-harness/conformance-waivers.yaml` or `policies/conformance-waivers.yaml`?
-2. **Capability suite blocking:** Should the capability suite ever be blocking in strict, or remain advisory indefinitely?
-3. **Medium severity scanner findings:** Should medium findings become blocking in strict v2, or remain advisory?
-4. **Non-git fallback weight:** Should strict conformance require a Git workspace, or should the non-git fallback snapshot be considered sufficient?
-5. **Exit code `2` usage:** Should strict conformance reserve `2` for usage errors only, or also use it for partial/minimal failures?
-6. **Golden example expansion:** Should strict add new golden fixture categories (e.g., `success-strict`, `blocked-strict-mutation-guard`) or reuse existing fixtures?
-7. **Adapters doctor scope:** Should adapter doctor check external contract URLs (e.g., linked schema references), or remain file-local only?
-8. **Release profile boundary:** Should strict conformance be a prerequisite for the future `release` profile, or should release have its own independent gate?
+1. **Waiver file location:** `.x-harness/conformance-waivers.yaml`.
+2. **Capability suite blocking:** Advisory indefinitely; non-blocking in strict v1.
+3. **Medium severity scanner findings:** Advisory in strict v1.
+4. **Non-git fallback:** Strict requires a Git workspace. Non-Git workspaces cannot pass strict conformance.
+5. **Exit code `2` usage:** Reserved for usage errors only. Conformance failures use exit code `1`.
+6. **Golden example expansion:** Strict-specific fixtures live under `examples/golden/conformance-strict/` (e.g., `success-strict`, `blocked-strict-mutation-guard`).
+7. **Adapters doctor scope:** File-local only in v1. External URL or network checks are out of scope and may be added as an opt-in `--remote` flag in the future if needed.
+8. **Release profile boundary:** Independent gate. Strict conformance is recommended but not a hard prerequisite for release.
 
 ---
 
