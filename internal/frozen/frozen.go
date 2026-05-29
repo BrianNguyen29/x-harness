@@ -33,6 +33,8 @@ var includePaths = []string{
 	"examples/golden",
 	"examples/adversarial",
 	"tools/experimental/evolve",
+	".github/workflows/x-harness-verify.yml",
+	".x-harness/managed-blocks.yaml",
 }
 
 // FrozenManifestFile represents a single file in the manifest.

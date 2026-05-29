@@ -11,19 +11,21 @@ func setupExportTestDir(t *testing.T) string {
 	t.Helper()
 	tmpDir := t.TempDir()
 	files := map[string]string{
-		"README.md":                           "# test readme\n",
-		"AGENTS.md":                           "agents\n",
-		"X_HARNESS.md":                        "contract\n",
-		"CHANGELOG.md":                        "changes\n",
-		"LICENSE":                             "MIT\n",
-		"docs/guide.md":                       "guide\n",
-		"policies/admission.yaml":             "policy\n",
-		"templates/SUBAGENT_TASK_light.md":    "light\n",
-		"adapters/opencode/README.md":         "adapter\n",
-		"components/registry.yaml":            "version: 1\ncomponents:\n  - id: test_component\n",
-		"examples/golden/basic.json":          "{}\n",
-		"examples/adversarial/tamper.json":    "{}\n",
-		"tools/experimental/evolve/README.md": "evolve\n",
+		"README.md":                              "# test readme\n",
+		"AGENTS.md":                              "agents\n",
+		"X_HARNESS.md":                           "contract\n",
+		"CHANGELOG.md":                           "changes\n",
+		"LICENSE":                                "MIT\n",
+		"docs/guide.md":                          "guide\n",
+		"policies/admission.yaml":                "policy\n",
+		"templates/SUBAGENT_TASK_light.md":       "light\n",
+		"adapters/opencode/README.md":            "adapter\n",
+		"components/registry.yaml":               "version: 1\ncomponents:\n  - id: test_component\n",
+		"examples/golden/basic.json":             "{}\n",
+		"examples/adversarial/tamper.json":       "{}\n",
+		"tools/experimental/evolve/README.md":    "evolve\n",
+		".github/workflows/x-harness-verify.yml": "name: verify\njobs:\n  test:\n    steps:\n      - run: doctor\n      - run: verify\n      - run: examples\n",
+		".x-harness/managed-blocks.yaml":         "blocks:\n  - file: AGENTS.md\n    marker: BEGIN X-HARNESS MANAGED CONTEXT\n",
 	}
 	for path, content := range files {
 		fullPath := filepath.Join(tmpDir, path)
