@@ -22,10 +22,12 @@ When verification is blocked or failed, x-harness suggests a recovery route base
 Generate a deterministic, review-required recovery playbook candidate:
 
 ```bash
-node packages/cli/dist/index.js recovery suggest \
+./x-harness recovery suggest \
   --errors "tests failed; lint errors" \
   --outcome failed
 ```
+
+> The TypeScript compatibility CLI is also available in source checkouts via `node packages/cli/dist/index.js <command>`.
 
 The playbook:
 - Maps each error to a recovery predicate deterministically
@@ -37,8 +39,8 @@ The playbook:
 
 Recovery routes are included in:
 
-- `node packages/cli/dist/index.js verify --json` under the `recovery` field.
-- `node packages/cli/dist/index.js report --metrics` as part of recovery ability metrics.
-- `node packages/cli/dist/index.js recovery suggest` generates a review-required playbook.
+- `./x-harness verify --json` under the `recovery` field.
+- `./x-harness report --metrics` as part of recovery ability metrics.
+- `./x-harness recovery suggest` generates a review-required playbook.
 
 The CLI does not mutate `completion-card.yaml` by default.

@@ -53,6 +53,12 @@ jobs:
       - name: Go-native adversarial benchmark gate
         run: ./x-harness benchmark --filter adversarial --json > benchmark-report.json
 
+      - name: Go-native regression suite gate
+        run: ./x-harness examples verify --suite=regression --json
+
+      - name: Go-native conformance minimal gate
+        run: ./x-harness conformance run --profile minimal --json
+
       - name: npm pack dry run
         run: npm -w packages/cli run pack:dry-run
 

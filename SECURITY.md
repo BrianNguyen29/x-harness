@@ -30,5 +30,5 @@ Include:
 
 ## Scope
 
-x-harness is a local, file-first TypeScript CLI. It should not require a daemon,
+x-harness is a local, file-first Go-native CLI. It should not require a daemon,
 database, server, MCP service, or external credential by default.

@@ -6,7 +6,7 @@ Success requires claim or completion card, evidence, owner, accountable, mapped 
 
 Reject success if canonical `claim.fix_status` is `partial` or `not_fixed`, if verification failed/skipped/blocked, if evidence is missing or weak, if stale ground remains, or if timeout/error occurred.
 
-**Note:** `no_active_recovery` and `no_active_veto` are policy manifest entries; they are advisory documentation and not independently runtime-enforced predicates in the admission engines. Recovery routing is handled by `policies/recovery.yaml`.
+**Note:** `no_active_recovery` is an advisory invariant in the policy manifest. Because x-harness uses a stateless, file-first architecture, it is trivially satisfied and is not independently runtime-enforced in the admission engines. Recovery routing is handled by `policies/recovery.yaml`.
 
 ## Evidence floor
 

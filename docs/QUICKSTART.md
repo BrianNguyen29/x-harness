@@ -52,7 +52,7 @@ You should see a JSON report detailing passing validations with `"healthy": true
 The repository comes built-in with reference examples demonstrating different completion scenarios. Run verification against the "Success (Light Tier)" golden example using the `check` action:
 
 ```bash
-./x-harness check --card examples/golden/success-light/completion-card.yaml
+./x-harness check --card examples/golden/regression/success-light/completion-card.yaml
 ```
 
 **Expected Success Output:**
@@ -68,7 +68,7 @@ _(The command returns an exit code of `0` because verification was successful an
 Now, try verifying an example where standard tier verification is blocked due to missing evidence:
 
 ```bash
-./x-harness check --card examples/golden/blocked-missing-evidence/completion-card.yaml
+./x-harness check --card examples/golden/regression/blocked-missing-evidence/completion-card.yaml
 ```
 
 **Expected Withheld Output:**

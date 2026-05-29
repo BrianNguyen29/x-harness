@@ -146,13 +146,13 @@ This table separates what is already in the repository from what remains design-
 | Readiness levels (task / PR / release) | **Implemented (minimal)** | `readiness task/pr/release`; `prepare` alias unchanged |
 | Conformance suite | **Implemented (minimal)** | `conformance run --profile minimal` with CI gate |
 | Release evidence bundle | **Implemented (minimal)** | Schema, generator, verify-evidence, and report implemented; SBOM / provenance / platform matrix remain planned (Section 11) |
-| Denominator contract in reports | **Planned** | Section 12 |
+| Denominator contract in reports | **Implemented (minimal)** | Section 12; basic numerator/denominator/unit and denominator_warning enforced; full HTML/Markdown display and conformance suite enforcement remain planned |
 | Failure taxonomy v2 | **Partial** | Section 13 |
 | Permission intent classifier | **Implemented (minimal)** | `evidence classify --command` and `--card` implemented; admission blocking and report integration deferred (Section 14) |
-| Approval receipt schema | **Planned** | Section 15 |
+| Approval receipt schema | **Implemented (minimal)** | Section 15; schema, admission hook, and tier-based enforcement implemented; registry/hash binding and report integration remain planned |
 | Adapter matrix / eval / doctor | **Partial** | `adapters matrix`, `adapters eval`, and `adapters doctor` implemented; managed block drift checks implemented; strict conformance profile and adapter file generation remain planned (Section 16) |
 | Admission skill-pack | **Implemented (minimal)** | Section 17; optional namespaced skill-pack at skills/x-harness-admission/; adapter eval integration remains planned |
-| Adapter/skill static scanner | **Implemented (minimal)** | `scan adapter`, `scan skill`, `scan managed` implemented; deterministic regex-based heuristics; JSON and text output; report-only; conformance strict blocking and waiver enforcement planned |
+| Adapter/skill static scanner | **Partial** | `scan adapter`, `scan skill`, `scan managed` implemented; deterministic regex-based heuristics; JSON and text output; report-only; conformance strict blocking and waiver enforcement remain planned |
 | Install profiles preview/apply | **Implemented (minimal)** | Section 19; `--profile minimal|standard|deep`, `--preview`, `--apply` supported; profile recommend implemented; repair/uninstall implemented (Section 21) |
 | Profile recommend | **Implemented (minimal)** | Section 20 |
 | Repair / uninstall preview/apply | **Implemented (minimal)** | Section 21; manifest-backed; repair preview/apply and uninstall preview/apply with --force; backups before overwrite/delete; unmanaged content preserved |
@@ -846,12 +846,14 @@ strict:
   denominator contract
   adversarial fixtures
 
-release:
+release: (deferred / not yet implemented)
   strict profile
   cross-platform smoke evidence
   release evidence bundle
   checksums/SBOM/provenance references
 ```
+
+> **Note:** Only `minimal` and `strict` conformance profiles are currently implemented. The `release` profile is a design target and remains deferred.
 
 ### 10.4 Checks
 
@@ -1948,12 +1950,9 @@ Constraint: P1 changes must still work with the current monolithic pipeline.
     - Checks: each adapter in matrix has README.md and non-empty capabilities/formats
     - JSON and text output supported
     - Full contract checks (completion-card instruction, accepted/withheld semantics, etc.) deferred to adapters doctor / static scanner
-[ ] Add adapter doctor
-    - Included in conformance strict profile (strict profile itself is P2)
+[x] Add adapter doctor (minimal)
     - Checks managed block drift
-[ ] Add adapter doctor
-    - Included in conformance strict profile (strict profile itself is P2)
-    - Checks managed block drift
+    - Included in conformance strict profile (strict profile itself is P2; strict integration remains planned)
 [x] Add release evidence schema draft
     - JSON schema for release-evidence.v1
     - Includes artifact hashes, conformance status, doctor/context sync status
@@ -1997,7 +1996,7 @@ Goal: improve safety, install UX, and trace inspectability.
     - Generated from canonical contract text
     - Passes x-harness scan skill
     - Adapter eval integration remains planned
-[ ] Add install profile preview/apply
+[x] Add install profile preview/apply (minimal)
     - init --preview prints exact planned mutations
     - init --apply performs only planned mutations
     - Managed blocks are idempotent
@@ -2018,22 +2017,23 @@ Goal: improve safety, install UX, and trace inspectability.
     - explain shows blocking predicate and next_action
     - inspect --withheld groups withheld cases by taxonomy class
     - No dashboard/server introduced
-[ ] Add worktree-aware verification metadata
+[~] Add worktree-aware verification metadata (partial)
     - Trace includes worktree metadata when enabled
-    - Artifact paths checked against worktree root
-    - Mutation guard baseline bound to worktree root
     - report displays branch/commit/worktree
+    - doctor --worktree includes worktree metadata as a non-blocking check
+    - Artifact paths checked against worktree root: remains planned
+    - Mutation guard baseline bound to worktree root: remains planned
 [x] Add context GC / staleness doctor (partial)
     - context gc --check is non-mutating
     - doctor --staleness is implemented
     - context gc --write remains planned
     - README overclaim phrases remain planned
     - doctor --staleness conformance strict integration remains planned
-[ ] Structure regression / capability / adversarial suites
+[x] Structure regression / capability / adversarial suites (minimal)
     - Regression suite is release-blocking
     - Adversarial suite is release-blocking
     - Capability suite is non-blocking by default
-    - Conformance strict includes regression and adversarial
+    - Conformance strict includes regression and adversarial: remains planned
 ```
 
 ### P3 — Conditional future integrations

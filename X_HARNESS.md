@@ -99,9 +99,11 @@ error:
 ./x-harness packet create --card completion-card.yaml
 ```
 
-The full command set is:
+Core command set includes:
 - Beginner actions: `check` (alias for verify), `prepare` (alias for handoff readiness), `recover` (alias for recovery suggest), `doctor`, `actions`, `status`, `reset`
-- Advanced commands: `init`, `add`, `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `recovery`, `packet`
+- Advanced commands: `init`, `add`, `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `recovery`, `packet`, `conformance`, `scan`, `adapters`, `card`, `profile`, `readiness`, `release`, `benchmark`
+
+Run `./x-harness --help` for the full command registry.
 
 ## Repository Structure
 
@@ -143,14 +145,23 @@ schemas/                          # Published contract (do not edit directly for
 
 policies/
   admission.yaml
+  approval-risk.yaml
+  authority.yaml
+  classifier.yaml
   cleanup.yaml
+  cost-budget.yaml
   denominator.yaml
   escalation.yaml
   evidence.yaml
+  federation.yaml
+  intake.yaml
+  mutation-guard.yaml
   ownership.yaml
+  permissions.yaml
   pgv.yaml
   recovery.yaml
   rollback.yaml
+  scanner.yaml
   stale-ground.yaml
 
 examples/
@@ -160,15 +171,28 @@ examples/
   03-multi-agent/
   04-blocked-verification/
   golden/
-    success-light/
-    success-standard-scoped-evidence/
-    blocked-missing-evidence/
-    blocked-missing-evidence-scope/
-    failed-invalid-status/
-    failed-typecheck-recovery-route/
-    withheld-partial-fix/
-    deep-approval-required/
-    multi-agent-success/
+    regression/
+      success-light/
+      success-standard-scoped-evidence/
+      blocked-missing-evidence/
+      blocked-missing-evidence-scope/
+      failed-invalid-status/
+      blocked-tier-downgrade/
+      blocked-weak-prediction/
+    capability/
+      deep-approval-required/
+      failed-typecheck-recovery-route/
+      multi-agent-success/
+      withheld-partial-fix/
+    adversarial/
+      blocked-missing-done-checklist/
+      standard-approval-missing/
+      standard-approval-present/
+    conformance-strict/
+      success-strict/
+      blocked-strict-mutation-guard/
+    recovery/
+      routes.yaml
   actions/
     x-harness-verify/            # GitHub Actions composite action
 

@@ -155,7 +155,7 @@ You can use either the alias or the full command:
 `x-harness` comes with pre-packaged reference scenarios called "Golden Examples". Let's run a verification against a successful task claim:
 
 ```bash
-./x-harness check --card examples/golden/success-light/completion-card.yaml
+./x-harness check --card examples/golden/regression/success-light/completion-card.yaml
 ```
 
 > **Expected Output:**
@@ -170,7 +170,7 @@ You can use either the alias or the full command:
 Now, let's run verification on a card that is missing mandatory evidence scopes:
 
 ```bash
-./x-harness check --card examples/golden/blocked-missing-evidence/completion-card.yaml
+./x-harness check --card examples/golden/regression/blocked-missing-evidence/completion-card.yaml
 ```
 
 > **Expected Output:**
@@ -269,8 +269,8 @@ Task delegation in `x-harness` uses **only** the following three canonical tiers
 | Tier           | Complexity & Scope                                                                     | Evidence Floor                                                                                            | Human Approval |
 | :------------- | :------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------- | :------------- |
 | **`light`**    | Narrow, low-ceremony tasks (1-3 files changed; read-only or nearly read-only).         | Files changed + command evidence OR manual rationale.                                                     | Optional       |
-| **`standard`** | Normal multi-step work (bounded synthesis, multiple sources).                          | Files changed + command evidence. Evidence scope recommended.                                             | Optional       |
-| **`deep`**     | High-stakes operations (multiple dependencies, architectural risks, migration impact). | Files changed + command evidence + evidence scope + untested regions + remaining risks + rollback policy. | Required       |
+| **`standard`** | Normal multi-step work (bounded synthesis, multiple sources).                          | Files changed + command evidence + `done_checklist` + `prediction`. Evidence scope recommended.           | Optional       |
+| **`deep`**     | High-stakes operations (multiple dependencies, architectural risks, migration impact). | Files changed + command evidence + evidence scope + untested regions + remaining risks + rollback policy + `done_checklist` + `prediction`. | Required       |
 
 ---
 
@@ -302,8 +302,13 @@ Task delegation in `x-harness` uses **only** the following three canonical tiers
 
 The Go CLI also supports the following advanced commands:
 
+- `adapters` — List and inspect platform adapters
+- `agent-profile` — Inspect agent profiles
+- `approval-risk` — Evaluate approval risk
 - `attribution` — Evaluate attribution metadata
+- `card` — Create or validate completion cards
 - `components` — Inspect component registry coverage
+- `conformance` — Run conformance checks against policies
 - `cost` — Evaluate cost budget data
 - `episode` — Create episode packages
 - `evidence` — Manage evidence corpus entries
@@ -316,8 +321,10 @@ The Go CLI also supports the following advanced commands:
 - `intake` — Evaluate task intake tiering
 - `permissions` — Evaluate permission rules
 - `prediction` — Evaluate prediction/checklist claims
-- `approval-risk` — Evaluate approval risk
-- `agent-profile` — Inspect agent profiles
+- `profile` — Manage harness profiles
+- `readiness` — Evaluate workspace readiness
+- `release` — Evaluate release criteria
+- `scan` — Scan workspace for harness issues
 
 Run `./x-harness --help` for a full list of primary commands. The TypeScript CLI is available in source checkouts via `node packages/cli/dist/index.js <command>`.
 
@@ -414,6 +421,7 @@ Running `./x-harness verify --trace` logs a JSONL event detailing the verificati
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)         | Architectural design, layer model, and validation flow                       |
 | [`docs/SCHEMAS.md`](docs/SCHEMAS.md)                   | JSON schema inventory and validation guide                                   |
 | [`docs/ADMISSION_POLICY.md`](docs/ADMISSION_POLICY.md) | Fail-closed admission rules and evidence floors                              |
+| [`docs/CONFORMANCE_STRICT_PROFILE.md`](docs/CONFORMANCE_STRICT_PROFILE.md) | Conformance strict profile rules and verification criteria                   |
 | [`docs/VERIFY_GATE.md`](docs/VERIFY_GATE.md)           | Read-only verification gate mechanics                                        |
 | [`docs/RUNTIME_CONTRACT.md`](docs/RUNTIME_CONTRACT.md) | Runtime contract between components                                          |
 | [`docs/PACKETS.md`](docs/PACKETS.md)                   | Packet design spec and claim-only implementation guide                       |

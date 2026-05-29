@@ -18,7 +18,7 @@ This is not about total absence of evidence fields — it is specifically about 
 ## Expected verify outcome
 
 ```bash
-node packages/cli/dist/index.js verify --card examples/golden/blocked-missing-evidence-scope/completion-card.yaml
+node packages/cli/dist/index.js verify --card examples/golden/regression/blocked-missing-evidence-scope/completion-card.yaml
 # -> WITHHELD
 # Reason: tier "deep" requires evidence scope declarations
 ```
@@ -28,5 +28,5 @@ node packages/cli/dist/index.js verify --card examples/golden/blocked-missing-ev
 Run the verification gate:
 
 ```bash
-node packages/cli/dist/index.js verify --card examples/golden/blocked-missing-evidence-scope/completion-card.yaml
+node packages/cli/dist/index.js verify --card examples/golden/regression/blocked-missing-evidence-scope/completion-card.yaml
 ```
