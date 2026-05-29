@@ -389,17 +389,9 @@ func RunStrict(root string) *Report {
 	strictChecks = append(strictChecks, checkContextGCNoStaleDrift(root))
 	strictChecks = append(strictChecks, checkApprovalReceiptForHighRisk(root))
 
-	// Deferred checks (Slice 3)
-	strictChecks = append(strictChecks, Check{
-		Name:   "regression_suite_passed",
-		Status: "not_implemented",
-		Note:   "deferred to future slice",
-	})
-	strictChecks = append(strictChecks, Check{
-		Name:   "adversarial_suite_passed",
-		Status: "not_implemented",
-		Note:   "deferred to future slice",
-	})
+	// Suite checks (Slice 3)
+	strictChecks = append(strictChecks, checkSuite(root, "regression", "regression_suite_passed"))
+	strictChecks = append(strictChecks, checkSuite(root, "adversarial", "adversarial_suite_passed"))
 
 	// Mutation guard evaluation
 	if beforeErr != nil {
@@ -648,6 +640,134 @@ func checkApprovalReceiptForHighRisk(root string) Check {
 		Status: "failed",
 		Note:   strings.Join(failures, "; "),
 	}
+}
+
+func checkSuite(root, suiteType, checkName string) Check {
+	suiteDir := filepath.Join(root, "examples", "golden", suiteType)
+	entries, err := os.ReadDir(suiteDir)
+	if err != nil {
+		return Check{
+			Name:   checkName,
+			Status: "failed",
+			Note:   "suite directory not readable: " + err.Error(),
+		}
+	}
+
+	schemaPath := filepath.Join(root, "schemas", "completion-card.schema.json")
+	validator, err := schema.Compile(schemaPath)
+	if err != nil {
+		return Check{
+			Name:   checkName,
+			Status: "failed",
+			Note:   "schema compile error: " + err.Error(),
+		}
+	}
+
+	var fixtures []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		fixtureDir := filepath.Join(suiteDir, entry.Name())
+		cardPath := filepath.Join(fixtureDir, "completion-card.yaml")
+		expectedPath := filepath.Join(fixtureDir, "expected-verify-output.txt")
+		if _, err := os.Stat(cardPath); err != nil {
+			continue
+		}
+		if _, err := os.Stat(expectedPath); err != nil {
+			continue
+		}
+		fixtures = append(fixtures, entry.Name())
+	}
+
+	if len(fixtures) == 0 {
+		return Check{
+			Name:   checkName,
+			Status: "failed",
+			Note:   "no fixtures found in " + suiteDir,
+		}
+	}
+
+	var failures []string
+	for _, fixture := range fixtures {
+		fixtureDir := filepath.Join(suiteDir, fixture)
+		cardPath := filepath.Join(fixtureDir, "completion-card.yaml")
+		expectedPath := filepath.Join(fixtureDir, "expected-verify-output.txt")
+
+		expectedOutcome, expectedAcceptance, err := parseExpectedVerifyOutput(expectedPath)
+		if err != nil {
+			failures = append(failures, fmt.Sprintf("%s: %v", fixture, err))
+			continue
+		}
+
+		var doc map[string]any
+		if err := loader.LoadDocument(cardPath, &doc); err != nil {
+			failures = append(failures, fmt.Sprintf("%s: load error: %v", fixture, err))
+			continue
+		}
+
+		var errors []string
+		if schemaErr := validator.Validate(doc); schemaErr != nil {
+			errors = append(errors, schemaErr.Error())
+		}
+		admResult := admission.Run(doc, false)
+		errors = append(errors, admResult.Errors...)
+
+		outcome := admResult.Outcome
+		if len(errors) > 0 {
+			outcome = "failed"
+		}
+		acceptance := "withheld"
+		if outcome == "success" {
+			acceptance = "accepted"
+		}
+
+		if outcome != expectedOutcome {
+			failures = append(failures, fmt.Sprintf("%s: expected outcome=%s got=%s", fixture, expectedOutcome, outcome))
+		}
+		if acceptance != expectedAcceptance {
+			failures = append(failures, fmt.Sprintf("%s: expected acceptance=%s got=%s", fixture, expectedAcceptance, acceptance))
+		}
+	}
+
+	if len(failures) == 0 {
+		return Check{
+			Name:   checkName,
+			Status: "passed",
+			Note:   fmt.Sprintf("%d fixture(s) matched", len(fixtures)),
+		}
+	}
+	return Check{
+		Name:   checkName,
+		Status: "failed",
+		Note:   strings.Join(failures, "; "),
+	}
+}
+
+func parseExpectedVerifyOutput(path string) (outcome, acceptance string, err error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "", "", err
+	}
+	for _, line := range strings.Split(string(b), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if strings.HasPrefix(line, "outcome:") {
+			outcome = strings.TrimSpace(strings.TrimPrefix(line, "outcome:"))
+		}
+		if strings.HasPrefix(line, "acceptance_status:") {
+			acceptance = strings.TrimSpace(strings.TrimPrefix(line, "acceptance_status:"))
+		}
+	}
+	if outcome == "" {
+		return "", "", fmt.Errorf("missing outcome in expected output")
+	}
+	if acceptance == "" {
+		return "", "", fmt.Errorf("missing acceptance_status in expected output")
+	}
+	return outcome, acceptance, nil
 }
 
 func checkGoldenCard(root, cardPath string) (outcome, acceptance, note string) {

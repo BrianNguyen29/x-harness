@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -126,6 +127,68 @@ func TestRunStrictNonGit(t *testing.T) {
 	}
 	if !foundMutation {
 		t.Fatal("expected mutation_guard_verified to fail")
+	}
+}
+
+func TestCheckSuiteMissingExpectedOutput(t *testing.T) {
+	tmp := t.TempDir()
+
+	// Set up minimal schema and a fixture with card but missing expected output
+	os.MkdirAll(filepath.Join(tmp, "schemas"), 0755)
+	copyFile(t, filepath.Join("..", "..", "schemas", "completion-card.schema.json"), filepath.Join(tmp, "schemas", "completion-card.schema.json"))
+
+	fixtureDir := filepath.Join(tmp, "examples", "golden", "regression", "test-fixture")
+	os.MkdirAll(fixtureDir, 0755)
+	copyFile(t, filepath.Join("..", "..", "examples", "golden", "regression", "success-light", "completion-card.yaml"), filepath.Join(fixtureDir, "completion-card.yaml"))
+	// Deliberately omit expected-verify-output.txt
+
+	check := checkSuite(tmp, "regression", "regression_suite_passed")
+	if check.Status != "failed" {
+		t.Fatalf("expected suite to fail when expected output missing, got status=%s note=%s", check.Status, check.Note)
+	}
+	if check.Note != "no fixtures found in "+filepath.Join(tmp, "examples", "golden", "regression") {
+		t.Fatalf("unexpected note: %s", check.Note)
+	}
+}
+
+func TestCheckSuiteMismatch(t *testing.T) {
+	tmp := t.TempDir()
+
+	os.MkdirAll(filepath.Join(tmp, "schemas"), 0755)
+	copyFile(t, filepath.Join("..", "..", "schemas", "completion-card.schema.json"), filepath.Join(tmp, "schemas", "completion-card.schema.json"))
+
+	fixtureDir := filepath.Join(tmp, "examples", "golden", "regression", "mismatch-fixture")
+	os.MkdirAll(fixtureDir, 0755)
+	copyFile(t, filepath.Join("..", "..", "examples", "golden", "regression", "success-light", "completion-card.yaml"), filepath.Join(fixtureDir, "completion-card.yaml"))
+	// Write wrong expected output
+	os.WriteFile(filepath.Join(fixtureDir, "expected-verify-output.txt"), []byte("outcome: failed\nacceptance_status: withheld\n"), 0644)
+
+	check := checkSuite(tmp, "regression", "regression_suite_passed")
+	if check.Status != "failed" {
+		t.Fatalf("expected suite to fail on mismatch, got status=%s note=%s", check.Status, check.Note)
+	}
+	if !strings.Contains(check.Note, "expected outcome=failed got=success") {
+		t.Fatalf("expected mismatch note to contain outcome mismatch, got: %s", check.Note)
+	}
+}
+
+func TestCheckSuitePass(t *testing.T) {
+	tmp := t.TempDir()
+
+	os.MkdirAll(filepath.Join(tmp, "schemas"), 0755)
+	copyFile(t, filepath.Join("..", "..", "schemas", "completion-card.schema.json"), filepath.Join(tmp, "schemas", "completion-card.schema.json"))
+
+	fixtureDir := filepath.Join(tmp, "examples", "golden", "regression", "success-fixture")
+	os.MkdirAll(fixtureDir, 0755)
+	copyFile(t, filepath.Join("..", "..", "examples", "golden", "regression", "success-light", "completion-card.yaml"), filepath.Join(fixtureDir, "completion-card.yaml"))
+	os.WriteFile(filepath.Join(fixtureDir, "expected-verify-output.txt"), []byte("outcome: success\nacceptance_status: accepted\n"), 0644)
+
+	check := checkSuite(tmp, "regression", "regression_suite_passed")
+	if check.Status != "passed" {
+		t.Fatalf("expected suite to pass, got status=%s note=%s", check.Status, check.Note)
+	}
+	if check.Note != "1 fixture(s) matched" {
+		t.Fatalf("unexpected note: %s", check.Note)
 	}
 }
 
