@@ -216,6 +216,22 @@ func TestValidateManagedBlockGenericFresh(t *testing.T) {
 	}
 }
 
+func TestValidateManagedBlockGenericCRLF(t *testing.T) {
+	body := "## Generated Contract\n\n- Rule one.\n- Rule two."
+	hash := ContextHash(body)
+	begin := "<!-- BEGIN MANAGED BLOCK: test -->"
+	end := "<!-- END MANAGED BLOCK: test -->"
+	// Block uses CRLF line endings, but hash was computed from LF body
+	block := begin + "\r\n<!-- hash: " + hash + " -->\r\n\r\n" + body + "\r\n\r\n" + end
+	valid, note := ValidateManagedBlockGeneric(block, begin, end, "<!-- hash: ")
+	if !valid {
+		t.Fatalf("expected CRLF block to validate against LF hash, got: %s", note)
+	}
+	if !strings.Contains(note, "fresh") {
+		t.Fatalf("expected note to mention fresh, got: %s", note)
+	}
+}
+
 func TestValidateManagedBlockGenericStaleHash(t *testing.T) {
 	body := "## Generated Contract\n\n- Rule one.\n- Rule two."
 	begin := "<!-- BEGIN MANAGED BLOCK: test -->"

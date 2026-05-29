@@ -71,6 +71,7 @@ func ExtractManagedBlock(content string) (string, bool) {
 }
 
 func ValidateManagedBlock(content string) (bool, string) {
+	content = strings.ReplaceAll(content, "\r\n", "\n")
 	block, ok := ExtractManagedBlock(content)
 	if !ok {
 		return false, "AGENTS.md missing managed context block"
@@ -244,6 +245,7 @@ func resolveLinkTarget(root, fileDir, target string) string {
 // It extracts the block between beginMarker and endMarker, finds the hash after hashPrefix,
 // and verifies that the hash of the block body (excluding markers and HTML comments) matches.
 func ValidateManagedBlockGeneric(content, beginMarker, endMarker, hashPrefix string) (bool, string) {
+	content = strings.ReplaceAll(content, "\r\n", "\n")
 	beginIndex := strings.Index(content, beginMarker)
 	endIndex := strings.Index(content, endMarker)
 	if beginIndex == -1 || endIndex == -1 || endIndex < beginIndex {
