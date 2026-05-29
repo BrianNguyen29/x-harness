@@ -1,0 +1,142 @@
+version: "1"
+blocks:
+  - path: AGENTS.md
+    type: context
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTEXT -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTEXT -->"
+    hash_prefix: "<!-- context-hash: "
+  - path: templates/HARNESS_CHANGE_CONTRACT.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: harness-change-template-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: harness-change-template-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: templates/SUBAGENT_TASK_standard.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: subagent-standard-template-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: subagent-standard-template-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: templates/COMPLETION_CARD.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: completion-card-template-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: completion-card-template-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: templates/SUBAGENT_TASK_deep.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: subagent-deep-template-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: subagent-deep-template-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: templates/SUBAGENT_TASK_light.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: subagent-light-template-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: subagent-light-template-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: templates/VERIFY_REPORT.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: verify-report-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: verify-report-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/generic/AGENTS.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: generic-agents-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: generic-agents-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/generic/README.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: generic-adapter-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: generic-adapter-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/antigravity/rules/x-harness.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: antigravity-rules-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: antigravity-rules-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/antigravity/README.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: antigravity-readme-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: antigravity-readme-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/antigravity/workflows/x-harness-implementation.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: antigravity-implementation-workflow-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: antigravity-implementation-workflow-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/antigravity/workflows/x-harness-verify.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: antigravity-verify-workflow-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: antigravity-verify-workflow-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/antigravity/workflows/x-harness-recover.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: antigravity-recover-workflow-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: antigravity-recover-workflow-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/claude-code/agents/implementation-worker.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: claude-implementation-worker-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: claude-implementation-worker-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/claude-code/agents/admission-verifier.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: claude-admission-verifier-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: claude-admission-verifier-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/claude-code/README.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: claude-readme-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: claude-readme-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/claude-code/CLAUDE.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: claude-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: claude-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/claude-code/skills/verify/SKILL.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: claude-verify-skill-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: claude-verify-skill-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/claude-code/skills/handoff/SKILL.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: claude-handoff-skill-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: claude-handoff-skill-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/claude-code/skills/recovery/SKILL.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: claude-recovery-skill-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: claude-recovery-skill-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/cursor/rules/x-harness.mdc
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: cursor-rules-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: cursor-rules-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/cursor/README.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: cursor-readme-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: cursor-readme-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/opencode/agents/x-harness-verify.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: opencode-verify-agent-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: opencode-verify-agent-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/opencode/agents/x-harness-recover.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: opencode-recover-agent-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: opencode-recover-agent-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/opencode/orchestrator_append.example.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: opencode-orchestrator-append-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: opencode-orchestrator-append-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/opencode/README.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: opencode-readme-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: opencode-readme-contract -->"
+    hash_prefix: "<!-- contract-hash: "
+  - path: adapters/opencode/verify-agent.md
+    type: contract
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: opencode-verify-agent-redirect-contract -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: opencode-verify-agent-redirect-contract -->"
+    hash_prefix: "<!-- contract-hash: "

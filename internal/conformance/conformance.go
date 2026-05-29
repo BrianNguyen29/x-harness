@@ -387,6 +387,7 @@ func RunStrict(root string) *Report {
 	// Real strict checks (Slice 2)
 	strictChecks = append(strictChecks, checkAdapterDoctorNoDrift(root))
 	strictChecks = append(strictChecks, checkContextGCNoStaleDrift(root))
+	strictChecks = append(strictChecks, checkManagedBlocksRegistry(root))
 	strictChecks = append(strictChecks, checkApprovalReceiptForHighRisk(root))
 
 	// Suite checks (Slice 3)
@@ -665,6 +666,29 @@ func checkContextGCNoStaleDrift(root string) Check {
 		Name:   "context_gc_no_stale_drift",
 		Status: "passed",
 		Note:   note + "; no dead internal doc links",
+	}
+}
+
+func checkManagedBlocksRegistry(root string) Check {
+	failures, err := contextcheck.ValidateRegistry(root)
+	if err != nil {
+		return Check{
+			Name:   "managed_blocks_registry",
+			Status: "failed",
+			Note:   err.Error(),
+		}
+	}
+	if len(failures) > 0 {
+		return Check{
+			Name:   "managed_blocks_registry",
+			Status: "failed",
+			Note:   strings.Join(failures, "; "),
+		}
+	}
+	return Check{
+		Name:   "managed_blocks_registry",
+		Status: "passed",
+		Note:   "all registered managed blocks present and valid",
 	}
 }
 

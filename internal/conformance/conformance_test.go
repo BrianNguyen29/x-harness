@@ -85,6 +85,7 @@ func TestRunStrictHealthyRepo(t *testing.T) {
 		"mutation_guard_verified",
 		"adapter_doctor_no_drift",
 		"context_gc_no_stale_drift",
+		"managed_blocks_registry",
 		"approval_receipt_for_high_risk",
 		"regression_suite_passed",
 		"adversarial_suite_passed",
@@ -250,6 +251,52 @@ handoff:
 	}
 	if !strings.Contains(check.Note, "../etc/passwd") {
 		t.Fatalf("expected note to mention escaping path, got: %s", check.Note)
+	}
+}
+
+func TestManagedBlocksRegistryStrict(t *testing.T) {
+	report := RunStrict("../..")
+	found := false
+	for _, c := range report.Checks {
+		if c.Name == "managed_blocks_registry" {
+			found = true
+			if c.Status != "passed" {
+				t.Fatalf("expected managed_blocks_registry to pass, got %s: %s", c.Status, c.Note)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("expected managed_blocks_registry check in strict conformance")
+	}
+}
+
+func TestManagedBlocksRegistryFailsOnStale(t *testing.T) {
+	tmp := t.TempDir()
+	registryDir := filepath.Join(tmp, ".x-harness")
+	os.MkdirAll(registryDir, 0755)
+
+	// Create a stale managed block
+	begin := "<!-- BEGIN MANAGED BLOCK: test -->"
+	end := "<!-- END MANAGED BLOCK: test -->"
+	content := "# File\n\n" + begin + "\n<!-- hash: deadbeef -->\n\nBody\n\n" + end + "\n"
+	os.WriteFile(filepath.Join(tmp, "test.md"), []byte(content), 0644)
+
+	registry := `version: "1"
+blocks:
+  - path: test.md
+    type: contract
+    begin_marker: "<!-- BEGIN MANAGED BLOCK: test -->"
+    end_marker: "<!-- END MANAGED BLOCK: test -->"
+    hash_prefix: "<!-- hash: "
+`
+	os.WriteFile(filepath.Join(registryDir, "managed-blocks.yaml"), []byte(registry), 0644)
+
+	check := checkManagedBlocksRegistry(tmp)
+	if check.Status != "failed" {
+		t.Fatalf("expected managed_blocks_registry to fail on stale block, got status=%s note=%s", check.Status, check.Note)
+	}
+	if !strings.Contains(check.Note, "stale") {
+		t.Fatalf("expected note to mention stale, got: %s", check.Note)
 	}
 }
 

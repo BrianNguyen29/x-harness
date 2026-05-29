@@ -1,0 +1,35 @@
+task_id: subagent-fix-typo
+tier: light
+current_owner: fixer
+verify_state: pending
+stale_ground: false
+goal: Fix a typo in the README.
+context:
+  repo: /home/uong_guyen/work/x-harness
+  constraints:
+    - bounded change
+scope:
+  in:
+    - Correct typo in README.md
+  out:
+    - Refactor unrelated sections
+success_criteria:
+  - Typo is corrected.
+  - No unrelated changes.
+return:
+  result:
+    summary: Fixed typo in README.
+    fix_status: fixed
+    key_findings: []
+  evidence:
+    files_changed:
+      - README.md
+    commands_ran: []
+    key_outputs: []
+  verification:
+    status: passed
+  confidence: HIGH
+  handoff:
+    next_action: next step
+    owner: user
+  pgv_advice: null

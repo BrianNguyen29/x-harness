@@ -51,7 +51,7 @@ jobs:
         run: ./x-harness examples verify --json
 
       - name: Go-native adversarial benchmark gate
-        run: ./x-harness benchmark --filter adversarial --json > benchmark-report.json
+        run: ./x-harness benchmark --filter adversarial --gate --json > benchmark-report.json
 
       - name: Go-native regression suite gate
         run: ./x-harness examples verify --suite=regression --json
@@ -221,7 +221,7 @@ jobs:
         run: node packages/cli/dist/index.js examples verify
 
       - name: "TypeScript compatibility: adversarial benchmark"
-        run: node packages/cli/dist/index.js benchmark --filter adversarial --json
+        run: node packages/cli/dist/index.js benchmark --filter adversarial --gate --json
 
       - uses: actions/upload-artifact@v4
         with:
@@ -281,12 +281,6 @@ jobs:
         with:
           name: x-harness-release-artifacts
           path: .x-harness/release
-      - name: Note on arm64 build-vs-smoke gap
-        shell: bash
-        run: |
-          echo "Note: arm64 binaries are built (linux/arm64, darwin/arm64, windows/arm64) but are not smoke-tested here."
-          echo "Cross-platform smoke currently covers amd64 only because arm64 runners are not universally available."
-
       - name: Smoke test on ${{ matrix.os }}
         shell: bash
         run: |
@@ -303,5 +297,24 @@ jobs:
               BIN=".x-harness/release/go-binaries/x-harness-${VERSION}-windows-amd64.exe"
               ;;
           esac
+          chmod +x "$BIN"
+          bash tests/smoke/go-binary-smoke.sh "$BIN"
+
+  arm64-smoke:
+    needs: release
+    name: arm64-smoke / ubuntu-24.04-arm
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: x-harness-release-artifacts
+          path: .x-harness/release
+      - name: Smoke test on ubuntu-24.04-arm
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME:-dev}"
+          BIN=".x-harness/release/go-binaries/x-harness-${VERSION}-linux-arm64"
           chmod +x "$BIN"
           bash tests/smoke/go-binary-smoke.sh "$BIN"

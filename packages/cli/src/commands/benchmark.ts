@@ -49,6 +49,7 @@ interface BenchmarkOptions {
   mutationFiles?: string;
   mutationConcurrency?: string;
   json?: boolean;
+  gate?: boolean;
 }
 
 interface BenchmarkCaseDefinition {
@@ -373,20 +374,29 @@ async function discoverCaseDefinitions(
   const suiteDir = path.join(repoRoot, "examples", suite);
   if (!(await fs.pathExists(suiteDir))) return [];
 
-  const entries = await fs.readdir(suiteDir, { withFileTypes: true });
   const definitions: BenchmarkCaseDefinition[] = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const cardPath = path.join(suiteDir, entry.name, "completion-card.yaml");
-    if (!(await fs.pathExists(cardPath))) continue;
-    definitions.push({
-      suite,
-      name: entry.name,
-      cardPath,
-      expectedAcceptance:
-        suite === "golden" ? expectedGoldenAcceptance(entry.name) : "withheld",
-    });
+
+  async function scan(dir: string) {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const subDir = path.join(dir, entry.name);
+      const cardPath = path.join(subDir, "completion-card.yaml");
+      if (await fs.pathExists(cardPath)) {
+        definitions.push({
+          suite,
+          name: entry.name,
+          cardPath,
+          expectedAcceptance:
+            suite === "golden" ? expectedGoldenAcceptance(entry.name) : "withheld",
+        });
+      } else {
+        await scan(subDir);
+      }
+    }
   }
+
+  await scan(suiteDir);
   return definitions.sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -993,6 +1003,7 @@ export function benchmarkCommand(): Command {
       "Reserved for human-approved benchmark boundary updates",
       false
     )
+    .option("--gate", "Fail the benchmark if any unsafe metric is detected", false)
     .option("--json", "Output JSON instead of Markdown", false)
     .action(async (opts: BenchmarkOptions) => {
       let names: BenchmarkName[];
@@ -1073,6 +1084,7 @@ export function benchmarkCommand(): Command {
           JSON.stringify(
             {
               ok,
+              gated: Boolean(opts.gate),
               generated_at: new Date().toISOString(),
               iterations,
               timeout_ms: timeoutMs,

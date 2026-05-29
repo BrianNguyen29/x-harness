@@ -98,7 +98,7 @@ jobs:
       - name: Go-native regression suite gate
         run: ./x-harness examples verify --suite=regression --json
       - name: Go-native adversarial benchmark gate
-        run: ./x-harness benchmark --filter adversarial --json
+        run: ./x-harness benchmark --filter adversarial --gate --json
       - name: Go-native conformance minimal gate
         run: ./x-harness conformance run --profile minimal --json
       - name: "TypeScript compatibility: strict verify"
@@ -108,4 +108,4 @@ jobs:
       - name: "TypeScript compatibility: golden examples"
         run: node packages/cli/dist/index.js examples verify
       - name: "TypeScript compatibility: adversarial benchmark"
-        run: node packages/cli/dist/index.js benchmark --filter adversarial --json
+        run: node packages/cli/dist/index.js benchmark --filter adversarial --gate --json

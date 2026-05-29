@@ -1,5 +1,6 @@
 {
   "filter": "mutation-guard",
+  "gated": false,
   "generated_at": "<dynamic-string>",
   "integration": null,
   "iterations": 1,

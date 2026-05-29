@@ -89,7 +89,7 @@ describe("release packaging", () => {
       "templates/COMPLETION_CARD.md",
       "adapters/generic/AGENTS.md",
       "examples/00-minimal/completion-card.yaml",
-      "examples/golden/success-light/completion-card.yaml",
+      "examples/golden/regression/success-light/completion-card.yaml",
       "docs/README.md",
       "docs/RELEASE_SECURITY.md",
       "components/registry.yaml",
@@ -144,7 +144,7 @@ describe("release packaging", () => {
       path.join(repoRoot, ".github", "workflows", "sbom.yml"),
       "utf-8"
     );
-    expect(releaseWorkflow).toContain("benchmark --filter adversarial --json");
+    expect(releaseWorkflow).toContain("benchmark --filter adversarial --gate --json");
     expect(releaseWorkflow).toContain("npm -w packages/cli run pack:dry-run");
     expect(releaseWorkflow).toContain("npm sbom --workspace x-harness");
     expect(releaseWorkflow).toContain(

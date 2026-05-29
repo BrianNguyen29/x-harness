@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/BrianNguyen29/x-harness/internal/conformance"
+	"github.com/BrianNguyen29/x-harness/internal/contextcheck"
 	"github.com/BrianNguyen29/x-harness/internal/doctor"
 	"github.com/BrianNguyen29/x-harness/internal/release"
 	"github.com/BrianNguyen29/x-harness/internal/repo"
@@ -96,7 +97,7 @@ func handleReleaseEvidence(args []string, stdout io.Writer, stderr io.Writer) in
 	agentsContentBytes, err := os.ReadFile(agentsPath)
 	contextSyncStatus := "drift"
 	if err == nil {
-		valid, _ := validateManagedBlock(string(agentsContentBytes))
+		valid, _ := contextcheck.ValidateManagedBlock(string(agentsContentBytes))
 		if valid {
 			contextSyncStatus = "no_drift"
 		}

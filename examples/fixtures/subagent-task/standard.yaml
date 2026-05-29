@@ -1,0 +1,71 @@
+task_id: subagent-template-validation-schema
+tier: standard
+current_owner: fixer
+verify_state: pending
+stale_ground: false
+goal: Add a bounded schema for subagent handoff/task templates and a simple validation hook/test.
+context:
+  repo: /home/uong_guyen/work/x-harness
+  refs:
+    - templates/SUBAGENT_TASK_light.md
+    - templates/SUBAGENT_TASK_standard.md
+    - templates/SUBAGENT_TASK_deep.md
+    - schemas/subagent-return.schema.json
+  constraints:
+    - minimal schema + tests/docs
+    - avoid building full markdown parser unless existing helper exists
+scope:
+  in:
+    - Add schemas/subagent-task.schema.json capturing required task handoff structure
+    - Add test or doctor/schema compilation coverage
+    - Optionally add fixture/example validating representative extracted YAML
+  out:
+    - full parser for all markdown template variants
+    - generated template engine
+inputs:
+  required:
+    - schema definition
+  optional:
+    - fixture YAML examples
+verification:
+  - Run schema compilation tests / go test ./internal/schema/... ./internal/doctor/... -count=1
+success_criteria:
+  - New schema compiles with existing schema tooling.
+  - Schema encodes tier, goal/context/scope/return basics and canonical tiers only.
+  - Docs/templates reference schema where appropriate.
+return:
+  result:
+    summary: one-line outcome
+    fix_status: fixed
+    key_findings: []
+  evidence:
+    files_changed: []
+    commands_ran: []
+    sources_consulted: []
+    key_outputs: []
+  verification:
+    status: passed
+    checks: []
+  confidence: HIGH
+  handoff:
+    next_action: next step
+    owner: user
+  pgv_advice: null
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+  notes: []
+prediction:
+  claim: The subagent-task schema compiles and validates representative fixtures.
+  expected_effect: go test ./internal/schema/... passes with the new schema and fixture.
+  measurable_signal: go test ./internal/schema/... -count=1
+  falsification_method: Schema compile or validation test fails.
+  horizon: same_verify
+  confidence: high
+  verdict:
+    status: pending

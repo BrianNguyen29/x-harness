@@ -9,7 +9,59 @@
         "tier \"standard\" requires done_checklist",
         "tier \"standard\" requires prediction"
       ],
-      "name": "blocked-missing-done-checklist",
+      "name": "adversarial/blocked-missing-done-checklist",
+      "outcome": "failed",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
+      "acceptance_status": "accepted",
+      "errors": [],
+      "name": "adversarial/standard-approval-missing",
+      "outcome": "success",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
+      "acceptance_status": "accepted",
+      "errors": [],
+      "name": "adversarial/standard-approval-present",
+      "outcome": "success",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
+      "acceptance_status": "withheld",
+      "errors": [
+        "deep task requires human approval before admission"
+      ],
+      "name": "capability/deep-approval-required",
+      "outcome": "failed",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
+      "acceptance_status": "withheld",
+      "errors": [
+        "evidence.command_evidence has non-zero exit_code 1 for command \"npm run typecheck\""
+      ],
+      "name": "capability/failed-typecheck-recovery-route",
+      "outcome": "failed",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
+      "acceptance_status": "accepted",
+      "errors": [],
+      "name": "capability/multi-agent-success",
+      "outcome": "success",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
+      "acceptance_status": "withheld",
+      "errors": [],
+      "name": "capability/withheld-partial-fix",
       "outcome": "failed",
       "output_mismatch": null,
       "passed": true
@@ -23,7 +75,7 @@
         "tier \"standard\" requires evidence.command_evidence",
         "done_checklist.evidence_attached is false but evidence is present"
       ],
-      "name": "blocked-missing-evidence",
+      "name": "regression/blocked-missing-evidence",
       "outcome": "failed",
       "output_mismatch": null,
       "passed": true
@@ -34,7 +86,7 @@
         "tier \"deep\" requires evidence scope declared (verifies/does_not_verify)",
         "done_checklist.scope_explained is true but verification_artifacts lacks verifies/does_not_verify scope"
       ],
-      "name": "blocked-missing-evidence-scope",
+      "name": "regression/blocked-missing-evidence-scope",
       "outcome": "failed",
       "output_mismatch": null,
       "passed": true
@@ -44,7 +96,7 @@
       "errors": [
         "intake tier downgrade requires governance intervention approval: declared light, mapped deep"
       ],
-      "name": "blocked-tier-downgrade",
+      "name": "regression/blocked-tier-downgrade",
       "outcome": "failed",
       "output_mismatch": null,
       "passed": true
@@ -58,17 +110,7 @@
         "prediction.falsification_method is required and must be non-empty string",
         "prediction.horizon is required"
       ],
-      "name": "blocked-weak-prediction",
-      "outcome": "failed",
-      "output_mismatch": null,
-      "passed": true
-    },
-    {
-      "acceptance_status": "withheld",
-      "errors": [
-        "deep task requires human approval before admission"
-      ],
-      "name": "deep-approval-required",
+      "name": "regression/blocked-weak-prediction",
       "outcome": "failed",
       "output_mismatch": null,
       "passed": true
@@ -80,17 +122,7 @@
         "canonical contradiction: acceptance_status is \"accepted\" but admission.outcome is \"failed\" (must be \"success\")",
         "canonical contradiction: non-success outcome \"failed\" cannot have acceptance_status \"accepted\""
       ],
-      "name": "failed-invalid-status",
-      "outcome": "failed",
-      "output_mismatch": null,
-      "passed": true
-    },
-    {
-      "acceptance_status": "withheld",
-      "errors": [
-        "evidence.command_evidence has non-zero exit_code 1 for command \"npm run typecheck\""
-      ],
-      "name": "failed-typecheck-recovery-route",
+      "name": "regression/failed-invalid-status",
       "outcome": "failed",
       "output_mismatch": null,
       "passed": true
@@ -98,7 +130,7 @@
     {
       "acceptance_status": "accepted",
       "errors": [],
-      "name": "multi-agent-success",
+      "name": "regression/success-light",
       "outcome": "success",
       "output_mismatch": null,
       "passed": true
@@ -106,40 +138,8 @@
     {
       "acceptance_status": "accepted",
       "errors": [],
-      "name": "standard-approval-missing",
+      "name": "regression/success-standard-scoped-evidence",
       "outcome": "success",
-      "output_mismatch": null,
-      "passed": true
-    },
-    {
-      "acceptance_status": "accepted",
-      "errors": [],
-      "name": "standard-approval-present",
-      "outcome": "success",
-      "output_mismatch": null,
-      "passed": true
-    },
-    {
-      "acceptance_status": "accepted",
-      "errors": [],
-      "name": "success-light",
-      "outcome": "success",
-      "output_mismatch": null,
-      "passed": true
-    },
-    {
-      "acceptance_status": "accepted",
-      "errors": [],
-      "name": "success-standard-scoped-evidence",
-      "outcome": "success",
-      "output_mismatch": null,
-      "passed": true
-    },
-    {
-      "acceptance_status": "withheld",
-      "errors": [],
-      "name": "withheld-partial-fix",
-      "outcome": "failed",
       "output_mismatch": null,
       "passed": true
     }

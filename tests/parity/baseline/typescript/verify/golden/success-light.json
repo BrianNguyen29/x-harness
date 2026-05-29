@@ -15,7 +15,7 @@
   "checks": [
     {
       "name": "completion card valid",
-      "note": "completion card valid: examples/golden/success-light/completion-card.yaml",
+      "note": "completion card valid: examples/golden/regression/success-light/completion-card.yaml",
       "severity": "info",
       "status": "passed"
     },

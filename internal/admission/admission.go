@@ -133,6 +133,13 @@ func Run(doc map[string]any, strict bool) Result {
 		}
 	}
 
+	// Tier guard: warn/block suspicious low-tier declarations for high-risk content
+	tgResult := evaluateTierGuard(doc, tier)
+	notes = append(notes, tgResult.notes...)
+	for _, e := range tgResult.errors {
+		applyFinding(e.message, e.predicate, false)
+	}
+
 	// Evidence floor
 	evResult := evaluateEvidenceFloor(doc, tier)
 	notes = append(notes, evResult.notes...)
@@ -609,6 +616,80 @@ func intLikeValue(v any) (int, bool) {
 	default:
 		return 0, false
 	}
+}
+
+func evaluateTierGuard(doc map[string]any, tier string) evidenceResult {
+	result := evidenceResult{errors: []evidenceFinding{}, notes: []string{}}
+	if tier == "" {
+		return result
+	}
+
+	evidence := mapValue(doc, "evidence")
+	files := sliceInMap(evidence, "files_changed")
+
+	var highRiskFiles []string
+	for _, item := range files {
+		path, ok := item.(string)
+		if !ok {
+			continue
+		}
+		lower := strings.ToLower(path)
+		if strings.Contains(lower, "schema") ||
+			strings.Contains(lower, "policy") ||
+			strings.Contains(lower, "admission") ||
+			strings.Contains(lower, "permission") ||
+			strings.Contains(lower, ".github/workflows") ||
+			strings.Contains(lower, "ci/") ||
+			strings.Contains(lower, "/ci/") {
+			highRiskFiles = append(highRiskFiles, path)
+		}
+	}
+
+	var highRiskCommands []string
+	for _, item := range sliceInMap(evidence, "command_evidence") {
+		record, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		cmd := stringInMap(record, "command")
+		if cmd != "" {
+			classification := classify.ClassifyCommand(cmd)
+			if classification.Risk == "high" || classification.Unknown {
+				highRiskCommands = append(highRiskCommands, cmd)
+			}
+		}
+	}
+	for _, item := range sliceInMap(evidence, "verification_artifacts") {
+		record, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		cmd := stringInMap(record, "command")
+		if cmd != "" {
+			classification := classify.ClassifyCommand(cmd)
+			if classification.Risk == "high" || classification.Unknown {
+				highRiskCommands = append(highRiskCommands, cmd)
+			}
+		}
+	}
+
+	if tier == "light" {
+		if len(highRiskFiles) > 0 {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("tier guard: light tier declared but high-risk files detected (%v); consider standard or deep", highRiskFiles),
+				predicate: "admission_failed",
+			})
+		}
+		if len(highRiskCommands) > 0 {
+			result.notes = append(result.notes, fmt.Sprintf("tier guard warning: light tier with high-risk command(s) (%v); consider raising tier", highRiskCommands))
+		}
+	}
+
+	if tier == "standard" && len(highRiskFiles) > 0 && len(highRiskCommands) > 0 {
+		result.notes = append(result.notes, fmt.Sprintf("tier guard warning: standard tier with both high-risk files (%v) and high-risk commands (%v); consider deep", highRiskFiles, highRiskCommands))
+	}
+
+	return result
 }
 
 func evaluateCommandSafety(doc map[string]any) evidenceResult {

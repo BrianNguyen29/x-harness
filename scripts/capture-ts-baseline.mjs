@@ -64,18 +64,27 @@ function ensureSuccess(result, label) {
 
 function listCardCases(group) {
   const root = path.join(repoRoot, "examples", group);
-  return readdirSync(root, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .filter((entry) =>
-      existsSync(path.join(root, entry.name, "completion-card.yaml")),
-    )
-    .map((entry) => entry.name)
-    .sort()
-    .map((name) => ({
-      group,
-      name,
-      cardPath: path.join("examples", group, name, "completion-card.yaml"),
-    }));
+  const cases = [];
+
+  function scan(dir, prefix) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const subDir = path.join(dir, entry.name);
+      const cardPath = path.join(subDir, "completion-card.yaml");
+      if (existsSync(cardPath)) {
+        cases.push({
+          group,
+          name: entry.name,
+          cardPath: path.join("examples", group, prefix, entry.name, "completion-card.yaml"),
+        });
+      } else {
+        scan(subDir, path.join(prefix, entry.name));
+      }
+    }
+  }
+
+  scan(root, "");
+  return cases.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function isDynamicKey(key) {

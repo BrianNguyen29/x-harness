@@ -15,7 +15,7 @@
   "checks": [
     {
       "name": "completion card valid",
-      "note": "completion card valid: examples/golden/blocked-tier-downgrade/completion-card.yaml",
+      "note": "completion card valid: examples/golden/regression/blocked-tier-downgrade/completion-card.yaml",
       "severity": "info",
       "status": "passed"
     },

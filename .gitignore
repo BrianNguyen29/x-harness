@@ -50,4 +50,5 @@ temp/
 
 # x-harness local state
 .x-harness/
+!.x-harness/managed-blocks.yaml
 .codegraph/

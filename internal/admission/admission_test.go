@@ -1283,3 +1283,459 @@ func TestStrictDeepMissingArtifactsProvenanceFails(t *testing.T) {
 		t.Fatalf("expected verification_artifacts error, got %v", result.Errors)
 	}
 }
+
+// TestEvidenceFloorDriftGuard compares policies/admission.yaml evidence-floor
+// declarations against the Go runtime admission behavior. It fails if either
+// side changes without a matching change on the other.
+func TestEvidenceFloorDriftGuard(t *testing.T) {
+	var policyDoc map[string]any
+	if err := loader.LoadDocument("../../policies/admission.yaml", &policyDoc); err != nil {
+		t.Fatalf("failed to load policies/admission.yaml: %v", err)
+	}
+
+	stringSlice := func(m map[string]any, key string) []string {
+		raw := sliceInMap(m, key)
+		out := make([]string, 0, len(raw))
+		for _, v := range raw {
+			if s, ok := v.(string); ok {
+				out = append(out, s)
+			}
+		}
+		return out
+	}
+
+	evidenceFloor := mapValue(policyDoc, "evidence_floor")
+	lightRequired := stringSlice(mapValue(evidenceFloor, "light"), "required")
+	lightOneOf := stringSlice(mapValue(evidenceFloor, "light"), "one_of")
+	standardRequired := stringSlice(mapValue(evidenceFloor, "standard"), "required")
+	deepRequired := stringSlice(mapValue(evidenceFloor, "deep"), "required")
+	deepRuntime := stringSlice(mapValue(evidenceFloor, "deep"), "runtime_enforced")
+
+	minimalCard := func(tier string) map[string]any {
+		card := map[string]any{
+			"schema_version": "1",
+			"task_id":        "T",
+			"tier":           tier,
+			"owner":          "a",
+			"accountable":    "b",
+			"claim": map[string]any{
+				"fix_status": "fixed",
+				"summary":    "s",
+				"evidence":   []any{"e"},
+			},
+			"verification": map[string]any{
+				"status": "passed",
+				"checks": []any{},
+			},
+			"admission": map[string]any{
+				"outcome": "success",
+			},
+			"acceptance_status": "accepted",
+			"handoff": map[string]any{
+				"next_action": "n",
+				"owner":       "o",
+			},
+		}
+		switch tier {
+		case "light":
+			card["evidence"] = map[string]any{
+				"files_changed": []any{"f.go"},
+				"command_evidence": []any{
+					map[string]any{"command": "go test", "exit_code": 0},
+				},
+			}
+		case "standard":
+			card["done_checklist"] = map[string]any{"item": true}
+			card["prediction"] = map[string]any{"claim": "p"}
+			card["evidence"] = map[string]any{
+				"files_changed": []any{"f.go"},
+				"command_evidence": []any{
+					map[string]any{"command": "go test", "exit_code": 0},
+				},
+			}
+		case "deep":
+			card["done_checklist"] = map[string]any{"item": true}
+			card["prediction"] = map[string]any{"claim": "p"}
+			card["state"] = map[string]any{
+				"read_set":  []any{"r"},
+				"write_set": []any{"w"},
+			}
+			card["evidence"] = map[string]any{
+				"files_changed": []any{"f.go"},
+				"command_evidence": []any{
+					map[string]any{"command": "go test", "exit_code": 0},
+				},
+				"verification_artifacts": []any{
+					map[string]any{
+						"kind":     "k",
+						"command":  "go test",
+						"status":   "passed",
+						"verifies": []any{"v"},
+					},
+				},
+				"untested_regions":   []any{"u"},
+				"remaining_risks":    []any{"r"},
+				"rollback_policy":    []any{"rp"},
+				"execution_controls": []any{"ec"},
+			}
+		}
+		return card
+	}
+
+	type fieldCheck struct {
+		remove    func(card map[string]any)
+		expectErr string
+	}
+	fieldChecks := map[string]fieldCheck{
+		"files_changed": {
+			remove:    func(c map[string]any) { c["evidence"].(map[string]any)["files_changed"] = []any{} },
+			expectErr: "files_changed",
+		},
+		"command_evidence": {
+			remove:    func(c map[string]any) { c["evidence"].(map[string]any)["command_evidence"] = []any{} },
+			expectErr: "command_evidence",
+		},
+		"manual_rationale": {
+			remove:    func(c map[string]any) { delete(c["evidence"].(map[string]any), "manual_rationale") },
+			expectErr: "manual_rationale",
+		},
+		"done_checklist": {
+			remove:    func(c map[string]any) { delete(c, "done_checklist") },
+			expectErr: "done_checklist",
+		},
+		"prediction": {
+			remove:    func(c map[string]any) { delete(c, "prediction") },
+			expectErr: "prediction",
+		},
+		"evidence_scope_declared": {
+			remove: func(c map[string]any) {
+				c["evidence"].(map[string]any)["verification_artifacts"] = []any{
+					map[string]any{"kind": "k", "command": "go test", "status": "passed"},
+				}
+			},
+			expectErr: "evidence scope declared",
+		},
+		"untested_regions_declared": {
+			remove:    func(c map[string]any) { c["evidence"].(map[string]any)["untested_regions"] = []any{} },
+			expectErr: "untested_regions",
+		},
+		"remaining_risks_declared": {
+			remove:    func(c map[string]any) { c["evidence"].(map[string]any)["remaining_risks"] = []any{} },
+			expectErr: "remaining_risks",
+		},
+		"execution_controls_present": {
+			remove:    func(c map[string]any) { c["evidence"].(map[string]any)["execution_controls"] = []any{} },
+			expectErr: "execution_controls",
+		},
+		"rollback_policy_present": {
+			remove:    func(c map[string]any) { c["evidence"].(map[string]any)["rollback_policy"] = []any{} },
+			expectErr: "rollback_policy",
+		},
+		"verification_artifacts": {
+			remove:    func(c map[string]any) { c["evidence"].(map[string]any)["verification_artifacts"] = []any{} },
+			expectErr: "verification_artifacts",
+		},
+		"state.read_set": {
+			remove:    func(c map[string]any) { c["state"].(map[string]any)["read_set"] = []any{} },
+			expectErr: "state.read_set",
+		},
+		"state.write_set": {
+			remove:    func(c map[string]any) { c["state"].(map[string]any)["write_set"] = []any{} },
+			expectErr: "state.write_set",
+		},
+	}
+
+	type tierConfig struct {
+		name            string
+		required        []string
+		oneOf           []string
+		runtimeEnforced []string
+	}
+	tiers := []tierConfig{
+		{name: "light", required: lightRequired, oneOf: lightOneOf},
+		{name: "standard", required: standardRequired},
+		{name: "deep", required: deepRequired, runtimeEnforced: deepRuntime},
+	}
+
+	expectedFields := map[string]map[string]struct{}{
+		"light": {
+			"files_changed":    {},
+			"command_evidence": {},
+			"manual_rationale": {},
+		},
+		"standard": {
+			"files_changed":    {},
+			"command_evidence": {},
+			"done_checklist":   {},
+			"prediction":       {},
+		},
+		"deep": {
+			"files_changed":              {},
+			"command_evidence":           {},
+			"evidence_scope_declared":    {},
+			"untested_regions_declared":  {},
+			"remaining_risks_declared":   {},
+			"execution_controls_present": {},
+			"rollback_policy_present":    {},
+			"done_checklist":             {},
+			"prediction":                 {},
+			"verification_artifacts":     {},
+			"state.read_set":             {},
+			"state.write_set":            {},
+		},
+	}
+
+	for _, tc := range tiers {
+		t.Run(tc.name, func(t *testing.T) {
+			allDeclared := make(map[string]struct{})
+			for _, f := range tc.required {
+				allDeclared[f] = struct{}{}
+			}
+			for _, f := range tc.oneOf {
+				allDeclared[f] = struct{}{}
+			}
+			for _, f := range tc.runtimeEnforced {
+				allDeclared[f] = struct{}{}
+			}
+			expected := expectedFields[tc.name]
+			for f := range expected {
+				if _, ok := allDeclared[f]; !ok {
+					t.Fatalf("runtime expects field %q but policy does not declare it for tier %s", f, tc.name)
+				}
+			}
+			for f := range allDeclared {
+				if _, ok := expected[f]; !ok {
+					t.Fatalf("policy declares field %q but runtime drift guard does not expect it for tier %s", f, tc.name)
+				}
+			}
+
+			card := minimalCard(tc.name)
+			result := Run(card, false)
+			if result.Outcome != "success" {
+				t.Fatalf("minimal %s card should pass; got outcome=%s errors=%v", tc.name, result.Outcome, result.Errors)
+			}
+
+			checkFields := append([]string{}, tc.required...)
+			checkFields = append(checkFields, tc.runtimeEnforced...)
+			for _, field := range checkFields {
+				check, ok := fieldChecks[field]
+				if !ok {
+					t.Fatalf("drift guard missing check for field %q in tier %s", field, tc.name)
+				}
+				t.Run("missing_"+field, func(t *testing.T) {
+					c := minimalCard(tc.name)
+					check.remove(c)
+					r := Run(c, false)
+					if r.Outcome != "failed" && r.Outcome != "blocked" {
+						t.Fatalf("expected failed/blocked when %s missing, got %s", field, r.Outcome)
+					}
+					found := false
+					for _, e := range r.Errors {
+						if strings.Contains(strings.ToLower(e), strings.ToLower(check.expectErr)) {
+							found = true
+							break
+						}
+					}
+					if !found {
+						t.Fatalf("expected error mentioning %q when %s missing, got %v", check.expectErr, field, r.Errors)
+					}
+				})
+			}
+
+			if tc.name == "light" {
+				t.Run("one_of_manual_rationale_only", func(t *testing.T) {
+					c := minimalCard("light")
+					ev := c["evidence"].(map[string]any)
+					delete(ev, "command_evidence")
+					ev["manual_rationale"] = "rationale text"
+					r := Run(c, false)
+					if r.Outcome != "success" {
+						t.Fatalf("light should pass with manual_rationale only; got outcome=%s errors=%v", r.Outcome, r.Errors)
+					}
+				})
+				t.Run("one_of_neither", func(t *testing.T) {
+					c := minimalCard("light")
+					ev := c["evidence"].(map[string]any)
+					delete(ev, "command_evidence")
+					delete(ev, "manual_rationale")
+					r := Run(c, false)
+					if r.Outcome != "failed" && r.Outcome != "blocked" {
+						t.Fatalf("light should fail without command_evidence or manual_rationale, got %s", r.Outcome)
+					}
+					found := false
+					for _, e := range r.Errors {
+						if strings.Contains(e, "command_evidence or manual_rationale") {
+							found = true
+							break
+						}
+					}
+					if !found {
+						t.Fatalf("expected one_of error, got %v", r.Errors)
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestTierGuardBlocksLightWithSchemaPath(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "light",
+		"owner":          "a",
+		"accountable":    "b",
+		"evidence": map[string]any{
+			"files_changed": []any{"schemas/completion-card.schema.json"},
+			"command_evidence": []any{
+				map[string]any{"command": "go test", "exit_code": 0},
+			},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false)
+	if result.Outcome != "failed" && result.Outcome != "blocked" {
+		t.Fatalf("expected failed/blocked, got %s", result.Outcome)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if strings.Contains(e, "tier guard: light tier declared but high-risk files detected") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected tier guard error, got %v", result.Errors)
+	}
+}
+
+func TestTierGuardWarnsLightWithHighRiskCommand(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "light",
+		"owner":          "a",
+		"accountable":    "b",
+		"evidence": map[string]any{
+			"files_changed": []any{"f"},
+			"command_evidence": []any{
+				map[string]any{"command": "rm -rf dist", "exit_code": 0},
+			},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false)
+	// Should still pass (warning as note, not error) for conservative false-positive control
+	if result.Outcome != "success" {
+		t.Fatalf("expected success for conservative light-tier command warning, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	found := false
+	for _, n := range result.Notes {
+		if strings.Contains(n, "tier guard warning: light tier with high-risk command(s)") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected tier guard warning in notes, got %v", result.Notes)
+	}
+}
+
+func TestTierGuardWarnsStandardWithBoth(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction": map[string]any{
+			"claim":               "p",
+			"expected_effect":     "e",
+			"falsification_method": "f",
+			"measurable_signal":   "m",
+			"horizon":             "same_verify",
+		},
+		"evidence": map[string]any{
+			"files_changed": []any{"policies/admission.yaml"},
+			"command_evidence": []any{
+				map[string]any{"command": "rm -rf dist", "exit_code": 0},
+			},
+		},
+		"approval_receipt": map[string]any{
+			"decision": "approved",
+			"approver": "user",
+			"classified_commands": []any{
+				map[string]any{
+					"command": "rm -rf dist",
+					"risk":    "high",
+				},
+			},
+			"aggregate_risk": "high",
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false)
+	// Should still pass because it's only a warning for standard tier
+	if result.Outcome != "success" {
+		t.Fatalf("expected success for standard-tier warning, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	found := false
+	for _, n := range result.Notes {
+		if strings.Contains(n, "tier guard warning: standard tier with both high-risk files") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected tier guard warning in notes, got %v", result.Notes)
+	}
+}

@@ -17,7 +17,7 @@
   "checks": [
     {
       "name": "completion card valid",
-      "note": "completion card valid: examples/golden/deep-approval-required/completion-card.yaml",
+      "note": "completion card valid: examples/golden/capability/deep-approval-required/completion-card.yaml",
       "severity": "info",
       "status": "passed"
     },

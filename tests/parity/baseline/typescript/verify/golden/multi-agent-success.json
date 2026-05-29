@@ -25,7 +25,7 @@
   "checks": [
     {
       "name": "completion card valid",
-      "note": "completion card valid: examples/golden/multi-agent-success/completion-card.yaml",
+      "note": "completion card valid: examples/golden/capability/multi-agent-success/completion-card.yaml",
       "severity": "info",
       "status": "passed"
     },

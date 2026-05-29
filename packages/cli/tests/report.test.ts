@@ -131,6 +131,7 @@ describe("report command", () => {
       repoRoot,
       "examples",
       "golden",
+      "regression",
       "success-standard-scoped-evidence",
       "completion-card.yaml"
     );
@@ -174,6 +175,7 @@ describe("report command", () => {
       repoRoot,
       "examples",
       "golden",
+      "regression",
       "success-standard-scoped-evidence",
       "completion-card.yaml"
     );

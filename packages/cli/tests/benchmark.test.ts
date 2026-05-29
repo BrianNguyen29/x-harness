@@ -150,6 +150,20 @@ describe("benchmark command", () => {
     ).toContain("non-git");
   });
 
+  it("includes gated flag when --gate is passed", async () => {
+    const { stdout, exitCode } = await execaNode([
+      "benchmark",
+      "--filter",
+      "adversarial",
+      "--gate",
+      "--json",
+    ]);
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.gated).toBe(true);
+    expect(parsed.ok).toBe(true);
+  });
+
   it("rejects benchmark snapshot updates without human approval workflow", async () => {
     const { stderr, exitCode } = await execaNode([
       "benchmark",

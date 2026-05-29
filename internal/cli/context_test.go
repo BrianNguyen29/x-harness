@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/BrianNguyen29/x-harness/internal/contextcheck"
 )
 
 func TestContextContractPlain(t *testing.T) {
@@ -187,7 +189,7 @@ func TestContextSyncWriteUpdatesBlock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	valid, note := validateManagedBlock(string(updatedContent))
+	valid, note := contextcheck.ValidateManagedBlock(string(updatedContent))
 	if !valid {
 		t.Fatalf("expected updated block to be valid: %s", note)
 	}
@@ -360,7 +362,7 @@ func TestContextGCWriteUpdatesStaleBlock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	valid, note := validateManagedBlock(string(updatedContent))
+	valid, note := contextcheck.ValidateManagedBlock(string(updatedContent))
 	if !valid {
 		t.Fatalf("expected updated block to be valid: %s", note)
 	}
@@ -424,7 +426,7 @@ func TestContextGCWritePreservesSurroundingContent(t *testing.T) {
 	if !strings.Contains(updatedStr, after) {
 		t.Fatalf("expected content after block to be preserved")
 	}
-	valid, note := validateManagedBlock(updatedStr)
+	valid, note := contextcheck.ValidateManagedBlock(updatedStr)
 	if !valid {
 		t.Fatalf("expected updated block to be valid: %s", note)
 	}
@@ -497,7 +499,7 @@ func TestGenerateManagedBlockDeterministic(t *testing.T) {
 func TestInjectManagedBlockPreservesSurroundingContent(t *testing.T) {
 	before := "# Header\n\nSome intro text.\n\n"
 	after := "\n\n# Footer\n\nSome outro text.\n"
-	existing := before + managedBegin + "\nold content\n" + managedEnd + after
+	existing := before + contextcheck.ManagedBegin + "\nold content\n" + contextcheck.ManagedEnd + after
 
 	block := generateManagedBlock()
 	updated := injectManagedBlock(existing, block)
@@ -542,7 +544,7 @@ func TestContextSyncWritePreservesSurroundingContent(t *testing.T) {
 	if !strings.Contains(updatedStr, after) {
 		t.Fatalf("expected content after block to be preserved")
 	}
-	valid, note := validateManagedBlock(updatedStr)
+	valid, note := contextcheck.ValidateManagedBlock(updatedStr)
 	if !valid {
 		t.Fatalf("expected updated block to be valid: %s", note)
 	}

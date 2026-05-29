@@ -19,6 +19,19 @@ TypeScript is frozen as a compatibility source when:
 4. The npm wrapper (`bin/x-harness.js`) defaults to Go and falls back to Node automatically.
 5. No P0 or P1 bugs remain open against the Go CLI.
 
+## Sunset Timeline
+
+| Milestone | Target | Status |
+|---|---|---|
+| Freeze declaration | Go CLI primary, TS in maintenance mode | **Done** |
+| Parity gate stabilization | All golden fixtures pass in Go and TS | **Done** |
+| Cross-platform smoke (amd64 + arm64) | Release workflow validates Linux, macOS, Windows | **Done** |
+| TS deprecation notice | Add `packages/cli/README.md` deprecation banner | **Pending** |
+| TS source removal readiness | No critical fallback usage reported for 90 days | **Pending** |
+| TS source removal | Remove `packages/cli/src/`, `packages/cli/dist/`, and related build scripts | **Pending** |
+
+**Current compatibility window:** The TypeScript source remains in the repository for a minimum of two minor releases or 90 days after the freeze declaration, whichever is longer. The freeze was declared when the Go CLI became primary (v0.x). Removal will be considered only after the compatibility window ends, parity tests are retired, and no critical fallback usage is reported.
+
 ## Maintenance Mode Rules
 
 Once frozen, the TypeScript source in `packages/cli/src` is governed by these rules:
@@ -29,6 +42,17 @@ Once frozen, the TypeScript source in `packages/cli/src` is governed by these ru
 4. **Contract compatibility**: The TypeScript fallback must continue to produce the same admission decisions as the Go CLI for all golden fixtures.
 5. **Deprecation timeline**: The TypeScript source remains in the repository for a minimum compatibility window (recommended: two minor releases or 90 days, whichever is longer).
 6. **Removal**: TypeScript source removal is considered only after the compatibility window ends and no critical fallback usage is reported.
+
+### Sunset Checklist
+
+Before removing TypeScript source:
+
+- [ ] Parity tests (`npm run parity:check-go`) have been stable for 30+ days.
+- [ ] No P0/P1 bugs filed against the TypeScript fallback in the last 90 days.
+- [ ] CI no longer requires TypeScript build steps for release validation.
+- [ ] `docs/CI.md` is updated to reflect Go-only verification.
+- [ ] `CHANGELOG.md` documents the removal with migration notes.
+- [ ] A deprecation notice is printed by the wrapper shim for one minor release before removal.
 
 ## What Is Frozen
 

@@ -8,6 +8,25 @@ import (
 	"testing"
 )
 
+func TestBenchmarkGateFlag(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"benchmark", "--filter", "adversarial", "--gate", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	var result benchmarkResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if !result.Gated {
+		t.Fatalf("expected gated=true, got gated=%v", result.Gated)
+	}
+	if !result.OK {
+		t.Fatalf("expected ok=true, got ok=%v", result.OK)
+	}
+}
+
 func TestBenchmarkUpdateSnapshotsRejects(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

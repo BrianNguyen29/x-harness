@@ -164,6 +164,7 @@ describe("evidence corpus", () => {
       repoRoot,
       "examples",
       "golden",
+      "regression",
       "success-standard-scoped-evidence",
       "completion-card.yaml"
     );

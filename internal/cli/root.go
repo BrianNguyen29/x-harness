@@ -14,58 +14,68 @@ func SetVersion(v string) {
 	}
 }
 
+type Maturity string
+
+const (
+	MaturityStable      Maturity = "stable"
+	MaturityBeta        Maturity = "beta"
+	MaturityExperimental Maturity = "experimental"
+	MaturitySkeletal    Maturity = "skeletal"
+)
+
 type CommandInfo struct {
 	Name        string
 	Description string
 	Primary     bool
+	Maturity    Maturity
 }
 
 var commands = []CommandInfo{
-	{Name: "verify", Description: "Run read-only verification against a completion card", Primary: true},
-	{Name: "check", Description: "Alias for verify", Primary: true},
-	{Name: "doctor", Description: "Validate workspace health and configuration", Primary: true},
-	{Name: "examples", Description: "Verify bundled examples", Primary: true},
-	{Name: "context", Description: "Show canonical context and runtime contract", Primary: true},
-	{Name: "benchmark", Description: "Measure latency and verification benchmark behavior", Primary: true},
-	{Name: "handoff", Description: "Generate structured handoff prompts", Primary: true},
-	{Name: "prepare", Description: "Alias for handoff readiness", Primary: true},
-	{Name: "report", Description: "Show trace summary or metrics report", Primary: true},
-	{Name: "status", Description: "Alias for report", Primary: true},
-	{Name: "trace", Description: "Append or verify trace events", Primary: true},
-	{Name: "clean", Description: "Clean generated harness state", Primary: true},
-	{Name: "reset", Description: "Alias for safe generated-state cleanup", Primary: true},
-	{Name: "init", Description: "Install harness assets into a workspace"},
-	{Name: "add", Description: "Add claim, evidence, or completion card helpers"},
-	{Name: "recovery", Description: "Generate recovery suggestions"},
-	{Name: "recover", Description: "Alias for recovery suggest"},
-	{Name: "packet", Description: "Work with claim/evidence packets"},
-	{Name: "intake", Description: "Evaluate task intake tiering"},
-	{Name: "governance", Description: "Evaluate governance rules"},
-	{Name: "intervention", Description: "Record governance interventions"},
-	{Name: "prediction", Description: "Evaluate prediction/checklist claims"},
-	{Name: "components", Description: "Inspect component registry coverage"},
-	{Name: "evidence", Description: "Manage evidence corpus entries"},
-	{Name: "episode", Description: "Create episode packages"},
-	{Name: "attribution", Description: "Evaluate attribution metadata"},
-	{Name: "permissions", Description: "Evaluate permission rules"},
-	{Name: "evolve", Description: "Evaluate evolution candidates"},
-	{Name: "export", Description: "Export frozen artifacts"},
-	{Name: "import", Description: "Import frozen artifacts"},
-	{Name: "frozen", Description: "Inspect frozen manifests"},
-	{Name: "federation", Description: "Evaluate federation patterns"},
-	{Name: "approval-risk", Description: "Evaluate approval risk"},
-	{Name: "agent-profile", Description: "Inspect agent profiles"},
-	{Name: "cost", Description: "Evaluate cost budget data"},
-	{Name: "profile", Description: "Recommend installation profiles"},
-	{Name: "repair", Description: "Repair managed files from manifest"},
-	{Name: "uninstall", Description: "Uninstall managed files using manifest"},
-	{Name: "actions", Description: "List beginner-friendly actions"},
-	{Name: "card", Description: "Generate or verify admission cards"},
-	{Name: "conformance", Description: "Run conformance checks"},
-	{Name: "readiness", Description: "Evaluate readiness levels"},
-	{Name: "release", Description: "Generate or verify release evidence"},
-	{Name: "adapters", Description: "Inspect adapter matrix"},
-	{Name: "scan", Description: "Run static security scan on adapter or skill files"},
+	{Name: "verify", Description: "Run read-only verification against a completion card", Primary: true, Maturity: MaturityStable},
+	{Name: "check", Description: "Alias for verify", Primary: true, Maturity: MaturityStable},
+	{Name: "doctor", Description: "Validate workspace health and configuration", Primary: true, Maturity: MaturityStable},
+	{Name: "examples", Description: "Verify bundled examples", Primary: true, Maturity: MaturityStable},
+	{Name: "context", Description: "Show canonical context and runtime contract", Primary: true, Maturity: MaturityStable},
+	{Name: "benchmark", Description: "Measure latency and verification benchmark behavior", Primary: true, Maturity: MaturityStable},
+	{Name: "handoff", Description: "Generate structured handoff prompts", Primary: true, Maturity: MaturityStable},
+	{Name: "prepare", Description: "Alias for handoff readiness", Primary: true, Maturity: MaturityStable},
+	{Name: "report", Description: "Show trace summary or metrics report", Primary: true, Maturity: MaturityStable},
+	{Name: "status", Description: "Alias for report", Primary: true, Maturity: MaturityStable},
+	{Name: "trace", Description: "Append or verify trace events", Primary: true, Maturity: MaturityStable},
+	{Name: "clean", Description: "Clean generated harness state", Primary: true, Maturity: MaturityStable},
+	{Name: "reset", Description: "Alias for safe generated-state cleanup", Primary: true, Maturity: MaturityStable},
+	{Name: "init", Description: "Install harness assets into a workspace", Maturity: MaturityStable},
+	{Name: "add", Description: "Add claim, evidence, or completion card helpers", Maturity: MaturityStable},
+	{Name: "recovery", Description: "Generate recovery suggestions", Maturity: MaturityStable},
+	{Name: "recover", Description: "Alias for recovery suggest", Maturity: MaturityStable},
+	{Name: "packet", Description: "Work with claim/evidence packets", Maturity: MaturityBeta},
+	{Name: "intake", Description: "Evaluate task intake tiering", Maturity: MaturityExperimental},
+	{Name: "governance", Description: "Evaluate governance rules", Maturity: MaturityExperimental},
+	{Name: "intervention", Description: "Record governance interventions", Maturity: MaturityExperimental},
+	{Name: "prediction", Description: "Evaluate prediction/checklist claims", Maturity: MaturityExperimental},
+	{Name: "components", Description: "Inspect component registry coverage", Maturity: MaturityExperimental},
+	{Name: "evidence", Description: "Manage evidence corpus entries", Maturity: MaturityExperimental},
+	{Name: "episode", Description: "Create episode packages", Maturity: MaturityExperimental},
+	{Name: "attribution", Description: "Evaluate attribution metadata", Maturity: MaturityExperimental},
+	{Name: "permissions", Description: "Evaluate permission rules", Maturity: MaturityExperimental},
+	{Name: "evolve", Description: "Evaluate evolution candidates", Maturity: MaturityExperimental},
+	{Name: "export", Description: "Export frozen artifacts", Maturity: MaturityExperimental},
+	{Name: "import", Description: "Import frozen artifacts", Maturity: MaturityExperimental},
+	{Name: "frozen", Description: "Inspect frozen manifests", Maturity: MaturityExperimental},
+	{Name: "federation", Description: "Evaluate federation patterns", Maturity: MaturityExperimental},
+	{Name: "approval-risk", Description: "Evaluate approval risk", Maturity: MaturityExperimental},
+	{Name: "agent-profile", Description: "Inspect agent profiles", Maturity: MaturityExperimental},
+	{Name: "cost", Description: "Evaluate cost budget data", Maturity: MaturityExperimental},
+	{Name: "profile", Description: "Recommend installation profiles", Maturity: MaturityBeta},
+	{Name: "repair", Description: "Repair managed files from manifest", Maturity: MaturityBeta},
+	{Name: "uninstall", Description: "Uninstall managed files using manifest", Maturity: MaturityBeta},
+	{Name: "actions", Description: "List beginner-friendly actions", Maturity: MaturityBeta},
+	{Name: "card", Description: "Generate or verify admission cards", Maturity: MaturityBeta},
+	{Name: "conformance", Description: "Run conformance checks", Maturity: MaturityBeta},
+	{Name: "readiness", Description: "Evaluate readiness levels", Maturity: MaturityBeta},
+	{Name: "release", Description: "Generate or verify release evidence", Maturity: MaturityBeta},
+	{Name: "adapters", Description: "Inspect adapter matrix", Maturity: MaturityBeta},
+	{Name: "scan", Description: "Run static security scan on adapter or skill files", Maturity: MaturityBeta},
 }
 
 func Run(args []string, stdout io.Writer, stderr io.Writer) int {
@@ -77,6 +87,9 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 	switch args[0] {
 	case "-h", "--help", "help":
 		printHelp(stdout)
+		return ExitOK
+	case "--help-maturity":
+		printHelpMaturity(stdout)
 		return ExitOK
 	case "-v", "--version", "version":
 		WriteLine(stdout, "x-harness %s", Version)
@@ -209,27 +222,60 @@ func printHelp(w io.Writer) {
 	WriteLine(w, "Primary commands:")
 	for _, command := range commands {
 		if command.Primary {
-			WriteLine(w, "  %-12s %s", command.Name, command.Description)
+			WriteLine(w, "  %-12s [%s] %s", command.Name, command.Maturity, command.Description)
 		}
 	}
 	WriteLine(w, "")
 	WriteLine(w, "Global options:")
-	WriteLine(w, "  -h, --help       Show help")
-	WriteLine(w, "  -v, --version    Show version")
+	WriteLine(w, "  -h, --help          Show help")
+	WriteLine(w, "  --help-maturity     Show help with maturity labels for all commands")
+	WriteLine(w, "  -v, --version       Show version")
+}
+
+func printHelpMaturity(w io.Writer) {
+	WriteLine(w, "x-harness %s", Version)
+	WriteLine(w, "")
+	WriteLine(w, "A lightweight verify-gated harness for AI-agent workflows.")
+	WriteLine(w, "")
+	WriteLine(w, "Maturity labels:")
+	WriteLine(w, "  stable       Core command; tested and relied on in CI")
+	WriteLine(w, "  beta         Functional but may change; feedback welcome")
+	WriteLine(w, "  experimental New or advanced; semantics may shift")
+	WriteLine(w, "  skeletal     Declared but not yet implemented")
+	WriteLine(w, "")
+	WriteLine(w, "Usage:")
+	WriteLine(w, "  x-harness <command> [options]")
+	WriteLine(w, "")
+	WriteLine(w, "Primary commands:")
+	for _, command := range commands {
+		if command.Primary {
+			WriteLine(w, "  %-12s [%s] %s", command.Name, command.Maturity, command.Description)
+		}
+	}
+	WriteLine(w, "")
+	WriteLine(w, "Other commands:")
+	for _, command := range commands {
+		if !command.Primary {
+			WriteLine(w, "  %-12s [%s] %s", command.Name, command.Maturity, command.Description)
+		}
+	}
+	WriteLine(w, "")
+	WriteLine(w, "Global options:")
+	WriteLine(w, "  -h, --help          Show help")
+	WriteLine(w, "  --help-maturity     Show help with maturity labels for all commands")
+	WriteLine(w, "  -v, --version       Show version")
 }
 
 func printActions(w io.Writer) {
 	WriteLine(w, "# x-harness Beginner Actions")
 	WriteLine(w, "")
-	WriteLine(w, "| Action | Description |")
-	WriteLine(w, "| :-- | :-- |")
-	WriteLine(w, "| prepare | Check if workspace is ready for agent task handoff |")
-	WriteLine(w, "| check | Run read-only verification against a completion card |")
-	WriteLine(w, "| recover | Get recovery playbook suggestions from errors or trace |")
-	WriteLine(w, "| doctor | Validate workspace health and configuration |")
-	WriteLine(w, "| actions | Show this list of actions |")
-	WriteLine(w, "| status | Show trace summary or card metrics |")
-	WriteLine(w, "| reset | Clean generated harness state |")
+	WriteLine(w, "| Action | Maturity | Description |")
+	WriteLine(w, "| :-- | :-- | :-- |")
+	for _, command := range commands {
+		if command.Name == "prepare" || command.Name == "check" || command.Name == "recover" || command.Name == "doctor" || command.Name == "actions" || command.Name == "status" || command.Name == "reset" {
+			WriteLine(w, "| %s | %s | %s |", command.Name, command.Maturity, command.Description)
+		}
+	}
 }
 
 func PrimaryCommandNames() []string {

@@ -20,6 +20,7 @@ async function createWithheldEpisode(episodesDir: string): Promise<string> {
     repoRoot,
     "examples",
     "golden",
+    "capability",
     "failed-typecheck-recovery-route",
     "completion-card.yaml"
   );

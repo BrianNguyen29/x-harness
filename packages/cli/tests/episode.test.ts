@@ -35,6 +35,7 @@ describe("episode package", () => {
       repoRoot,
       "examples",
       "golden",
+      "regression",
       "success-light",
       "completion-card.yaml"
     );
@@ -81,6 +82,7 @@ describe("episode package", () => {
       repoRoot,
       "examples",
       "golden",
+      "regression",
       "success-light",
       "completion-card.yaml"
     );
@@ -132,6 +134,7 @@ describe("episode package", () => {
       repoRoot,
       "examples",
       "golden",
+      "regression",
       "success-light",
       "completion-card.yaml"
     );
@@ -179,6 +182,7 @@ describe("episode package", () => {
       repoRoot,
       "examples",
       "golden",
+      "regression",
       "success-light",
       "completion-card.yaml"
     );
@@ -215,6 +219,7 @@ describe("episode package", () => {
       repoRoot,
       "examples",
       "golden",
+      "regression",
       "success-light",
       "completion-card.yaml"
     );

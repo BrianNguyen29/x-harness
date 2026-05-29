@@ -1,0 +1,369 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "XHarnessSubagentTask",
+  "type": "object",
+  "required": ["task_id", "tier", "goal", "scope", "success_criteria"],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for the task handoff."
+    },
+    "tier": {
+      "enum": ["light", "standard", "deep"],
+      "description": "Canonical tier of the task. Only light, standard, and deep are accepted."
+    },
+    "current_owner": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Current agent or role responsible for the task."
+    },
+    "verify_state": {
+      "enum": ["pending", "in_progress", "completed", "blocked"],
+      "description": "Current verification state of the task."
+    },
+    "stale_ground": {
+      "type": "boolean",
+      "description": "Indicates the task context may be stale."
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1,
+      "description": "One clear objective for the task."
+    },
+    "context": {
+      "type": "object",
+      "description": "Contextual information for the task.",
+      "properties": {
+        "repo": {
+          "type": "string"
+        },
+        "refs": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "constraints": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "background": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "required": ["in"],
+      "properties": {
+        "in": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Areas or actions included in the task scope."
+        },
+        "out": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Areas or actions explicitly excluded from the task scope."
+        }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "optional": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "tools": {
+      "type": "object",
+      "properties": {
+        "allowed": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "preferred": {
+          "type": "string"
+        },
+        "disallowed": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "verification": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Bounded checks or verification steps for the task."
+    },
+    "success_criteria": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Success criteria that must be met for task completion."
+    },
+    "execution": {
+      "type": "object",
+      "description": "Execution controls, typically used for deep tasks.",
+      "properties": {
+        "mode": {
+          "enum": ["read_only", "limited_edit", "full_edit"]
+        },
+        "max_files_changed": {
+          "type": ["integer", "string"]
+        },
+        "stop_conditions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "failure_fallback": {
+          "type": "string"
+        }
+      }
+    },
+    "rollback_policy": {
+      "type": "object",
+      "description": "Rollback policy, typically used for deep tasks.",
+      "properties": {
+        "class": {
+          "enum": ["none", "soft", "code_revert", "state_restore"]
+        },
+        "trigger": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "validation": {
+          "type": "string"
+        }
+      }
+    },
+    "return": {
+      "$ref": "#/$defs/return_payload",
+      "description": "Expected compatibility subagent return payload."
+    },
+    "state": {
+      "type": "object",
+      "description": "State declarations, typically required for deep tasks.",
+      "properties": {
+        "read_set": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "write_set": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "conflict_policy": {
+          "type": "object",
+          "properties": {
+            "if_files_changed_after_claim": { "type": "string" },
+            "if_tests_changed_after_claim": { "type": "string" }
+          }
+        }
+      }
+    },
+    "evidence_scope": {
+      "type": "object",
+      "description": "Scoped evidence declarations for standard and deep tasks.",
+      "properties": {
+        "verification_artifacts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/verification_artifact" }
+        },
+        "untested_regions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "remaining_risks": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "done_checklist": {
+      "type": "object",
+      "description": "Done checklist, required for standard and deep tasks.",
+      "properties": {
+        "source_of_truth_read": { "type": "boolean" },
+        "scope_explained": { "type": "boolean" },
+        "read_write_sets_declared": { "type": "boolean" },
+        "evidence_attached": { "type": "boolean" },
+        "coverage_gap_declared": { "type": "boolean" },
+        "risk_and_rollback_declared": { "type": "boolean" },
+        "prediction_declared": { "type": "boolean" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "prediction": {
+      "type": "object",
+      "description": "Falsifiable prediction, required for standard and deep tasks.",
+      "properties": {
+        "claim": { "type": "string", "minLength": 1 },
+        "expected_effect": { "type": "string", "minLength": 1 },
+        "measurable_signal": { "type": "string", "minLength": 1 },
+        "falsification_method": { "type": "string", "minLength": 1 },
+        "horizon": {
+          "enum": ["same_verify", "next_ci_run", "next_release", "manual_review", "production_7d", "production_30d"]
+        },
+        "confidence": {
+          "enum": ["low", "medium", "high"]
+        },
+        "verdict": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "enum": ["pending", "confirmed", "falsified", "inconclusive"]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["claim", "expected_effect", "falsification_method", "horizon"]
+    },
+    "governance": {
+      "type": "object",
+      "description": "Governance controls, typically used for deep tasks.",
+      "properties": {
+        "risk_class": {
+          "enum": ["low", "medium", "high"]
+        },
+        "requires_human_approval": { "type": "boolean" },
+        "approval_required_for": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "approval_status": {
+          "enum": ["not_required", "pending", "approved", "rejected"]
+        },
+        "approver": { "type": "string" }
+      }
+    },
+    "pgv_advice": {
+      "type": ["object", "null"],
+      "description": "Optional PGV advice. Advisory-only."
+    }
+  },
+  "$defs": {
+    "return_payload": {
+      "type": "object",
+      "required": ["result", "evidence", "verification", "confidence", "handoff"],
+      "properties": {
+        "result": {
+          "type": "object",
+          "required": ["summary", "fix_status", "key_findings"],
+          "properties": {
+            "summary": { "type": "string" },
+            "fix_status": {
+              "enum": ["fixed", "not_fixed", "partial"]
+            },
+            "key_findings": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "recommendations": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "decisions": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "unsupported_or_unclear": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "evidence": {
+          "type": "object"
+        },
+        "verification": {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status": {
+              "enum": ["passed", "failed", "skipped", "blocked", "timeout", "error"]
+            },
+            "checks": {
+              "type": "array"
+            }
+          }
+        },
+        "confidence": {
+          "enum": ["LOW", "MED", "HIGH"]
+        },
+        "handoff": {
+          "type": "object",
+          "required": ["next_action", "owner"],
+          "properties": {
+            "next_action": { "type": "string" },
+            "owner": { "type": "string" },
+            "escalation_needed": {
+              "type": ["boolean", "string"]
+            }
+          }
+        },
+        "pgv_advice": {
+          "type": ["object", "null"]
+        }
+      }
+    },
+    "verification_artifact": {
+      "type": "object",
+      "required": ["kind", "status"],
+      "properties": {
+        "kind": {
+          "enum": [
+            "typecheck",
+            "unit_test",
+            "integration_test",
+            "e2e_test",
+            "lint",
+            "build",
+            "static_analysis",
+            "security_scan",
+            "fuzz",
+            "performance_profile",
+            "manual_review",
+            "model_critique",
+            "custom"
+          ]
+        },
+        "command": { "type": "string" },
+        "status": {
+          "enum": ["passed", "failed", "blocked", "skipped", "timeout", "error"]
+        },
+        "verifies": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "does_not_verify": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "confidence": {
+          "enum": ["low", "medium", "high"]
+        }
+      }
+    }
+  }
+}

@@ -30,7 +30,7 @@ func TestRunHealthyRepo(t *testing.T) {
 			t.Fatalf("expected check %s to pass, got %s: %s", c.Name, c.Status, c.Note)
 		}
 	}
-	for _, name := range []string{"critical_assets", "schemas_compile", "policies_parse", "agents_managed_context", "ci_workflow", "tier_labels", "component_registry", "installed_profile"} {
+	for _, name := range []string{"critical_assets", "schemas_compile", "policies_parse", "agents_managed_context", "ci_workflow", "tier_labels", "component_registry", "installed_profile", "managed_blocks_registry"} {
 		if !foundChecks[name] {
 			t.Fatalf("expected check %s to be present", name)
 		}
@@ -333,6 +333,85 @@ func TestRunStalenessStaleBody(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("expected agents_context_staleness check")
+	}
+}
+
+func TestRunManagedBlocksRegistryMissing(t *testing.T) {
+	tmp := t.TempDir()
+	// Create minimal required assets but no registry
+	os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte("# AGENTS\n<!-- BEGIN X-HARNESS MANAGED CONTEXT -->\n<!-- END X-HARNESS MANAGED CONTEXT -->\n"), 0644)
+	os.MkdirAll(filepath.Join(tmp, "policies"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "schemas"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "templates"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "examples", "golden"), 0755)
+	os.WriteFile(filepath.Join(tmp, "policies", "mutation-guard.yaml"), []byte("{}\n"), 0644)
+	os.MkdirAll(filepath.Join(tmp, ".github", "workflows"), 0755)
+	os.WriteFile(filepath.Join(tmp, ".github", "workflows", "x-harness-verify.yml"), []byte("name: ci\njobs:\n  verify:\n    steps:\n      - run: echo ok\n"), 0644)
+
+	report := Run(tmp)
+	found := false
+	for _, c := range report.Checks {
+		if c.Name == "managed_blocks_registry" {
+			found = true
+			if c.Status != "failed" {
+				t.Fatalf("expected managed_blocks_registry to fail, got %s", c.Status)
+			}
+			if !strings.Contains(c.Note, "managed-blocks registry not found") {
+				t.Fatalf("expected note about missing registry, got: %s", c.Note)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("expected managed_blocks_registry check")
+	}
+}
+
+func TestRunManagedBlocksRegistryStale(t *testing.T) {
+	tmp := t.TempDir()
+	registryDir := filepath.Join(tmp, ".x-harness")
+	os.MkdirAll(registryDir, 0755)
+
+	// Create a stale managed block
+	begin := "<!-- BEGIN MANAGED BLOCK: test -->"
+	end := "<!-- END MANAGED BLOCK: test -->"
+	content := "# File\n\n" + begin + "\n<!-- hash: deadbeef -->\n\nBody\n\n" + end + "\n"
+	os.WriteFile(filepath.Join(tmp, "test.md"), []byte(content), 0644)
+
+	registry := `version: "1"
+blocks:
+  - path: test.md
+    type: contract
+    begin_marker: "<!-- BEGIN MANAGED BLOCK: test -->"
+    end_marker: "<!-- END MANAGED BLOCK: test -->"
+    hash_prefix: "<!-- hash: "
+`
+	os.WriteFile(filepath.Join(registryDir, "managed-blocks.yaml"), []byte(registry), 0644)
+
+	// Create minimal required assets
+	os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte("# AGENTS\n<!-- BEGIN X-HARNESS MANAGED CONTEXT -->\n<!-- END X-HARNESS MANAGED CONTEXT -->\n"), 0644)
+	os.MkdirAll(filepath.Join(tmp, "policies"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "schemas"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "templates"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "examples", "golden"), 0755)
+	os.WriteFile(filepath.Join(tmp, "policies", "mutation-guard.yaml"), []byte("{}\n"), 0644)
+	os.MkdirAll(filepath.Join(tmp, ".github", "workflows"), 0755)
+	os.WriteFile(filepath.Join(tmp, ".github", "workflows", "x-harness-verify.yml"), []byte("name: ci\njobs:\n  verify:\n    steps:\n      - run: echo ok\n"), 0644)
+
+	report := Run(tmp)
+	found := false
+	for _, c := range report.Checks {
+		if c.Name == "managed_blocks_registry" {
+			found = true
+			if c.Status != "failed" {
+				t.Fatalf("expected managed_blocks_registry to fail, got %s", c.Status)
+			}
+			if !strings.Contains(c.Note, "stale") {
+				t.Fatalf("expected note about stale hash, got: %s", c.Note)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("expected managed_blocks_registry check")
 	}
 }
 

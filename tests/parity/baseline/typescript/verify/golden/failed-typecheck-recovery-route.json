@@ -15,7 +15,7 @@
   "checks": [
     {
       "name": "completion card valid",
-      "note": "completion card valid: examples/golden/failed-typecheck-recovery-route/completion-card.yaml",
+      "note": "completion card valid: examples/golden/capability/failed-typecheck-recovery-route/completion-card.yaml",
       "severity": "info",
       "status": "passed"
     },

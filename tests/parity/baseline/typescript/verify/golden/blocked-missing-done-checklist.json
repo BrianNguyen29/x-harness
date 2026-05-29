@@ -17,7 +17,7 @@
   "checks": [
     {
       "name": "completion card valid",
-      "note": "completion card valid: examples/golden/blocked-missing-done-checklist/completion-card.yaml",
+      "note": "completion card valid: examples/golden/adversarial/blocked-missing-done-checklist/completion-card.yaml",
       "severity": "info",
       "status": "passed"
     },

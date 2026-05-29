@@ -16,7 +16,7 @@ const strictFixturePath = path.join(
 const strictVerifyCommand =
   "node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json";
 const adversarialBenchmarkCommand =
-  "node packages/cli/dist/index.js benchmark --filter adversarial --json";
+  "node packages/cli/dist/index.js benchmark --filter adversarial --gate --json";
 
 function execFileAsync(
   file: string,

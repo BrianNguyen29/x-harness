@@ -24,6 +24,7 @@ import (
 
 type benchmarkResult struct {
 	OK                     bool                    `json:"ok"`
+	Gated                  bool                    `json:"gated"`
 	Filter                 string                  `json:"filter"`
 	GeneratedAt            string                  `json:"generated_at"`
 	Integration            interface{}             `json:"integration"`
@@ -135,6 +136,7 @@ func handleBenchmark(args []string, stdout io.Writer, stderr io.Writer) int {
 	timeoutMs := 120000
 	jsonMode := false
 	updateSnapshots := false
+	gate := false
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -180,6 +182,8 @@ func handleBenchmark(args []string, stdout io.Writer, stderr io.Writer) int {
 			}
 		case "--json":
 			jsonMode = true
+		case "--gate":
+			gate = true
 		case "--update-snapshots":
 			updateSnapshots = true
 		}
@@ -226,6 +230,7 @@ func handleBenchmark(args []string, stdout io.Writer, stderr io.Writer) int {
 
 		result := benchmarkResult{
 			OK:                     mgReport.OK,
+			Gated:                  gate,
 			Filter:                 filter,
 			GeneratedAt:            time.Now().UTC().Format(time.RFC3339),
 			Integration:            nil,
@@ -271,6 +276,7 @@ func handleBenchmark(args []string, stdout io.Writer, stderr io.Writer) int {
 		metrics.RuntimeMs = int(time.Since(started).Milliseconds())
 		result := benchmarkResult{
 			OK:                     ok,
+			Gated:                  gate,
 			Filter:                 filter,
 			GeneratedAt:            time.Now().UTC().Format(time.RFC3339),
 			Integration:            nil,
@@ -332,6 +338,7 @@ func handleBenchmark(args []string, stdout io.Writer, stderr io.Writer) int {
 
 		result := benchmarkResult{
 			OK:                     ok,
+			Gated:                  gate,
 			Filter:                 filter,
 			GeneratedAt:            time.Now().UTC().Format(time.RFC3339),
 			Integration:            integration,

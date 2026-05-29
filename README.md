@@ -326,7 +326,7 @@ The Go CLI also supports the following advanced commands:
 - `release` — Evaluate release criteria
 - `scan` — Scan workspace for harness issues
 
-Run `./x-harness --help` for a full list of primary commands. The TypeScript CLI is available in source checkouts via `node packages/cli/dist/index.js <command>`.
+Run `./x-harness --help` for a full list of primary commands. Use `./x-harness --help-maturity` to see all commands annotated with their maturity label (`stable`, `beta`, `experimental`, `skeletal`). The TypeScript CLI is available in source checkouts via `node packages/cli/dist/index.js <command>`.
 
 ---
 

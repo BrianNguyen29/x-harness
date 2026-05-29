@@ -16,6 +16,7 @@ const requiredFiles = [
   "CONTRIBUTING.md",
   "SECURITY.md",
   "SUPPORT.md",
+  "X_HARNESS_ADMISSION_READINESS_UPDATED_ROADMAP.md",
 ];
 
 const requiredDirs = [
@@ -23,6 +24,7 @@ const requiredDirs = [
   "components",
   "docs",
   "examples",
+  "packaging",
   "policies",
   "schemas",
   "skills",

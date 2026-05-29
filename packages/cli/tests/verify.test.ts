@@ -185,6 +185,7 @@ describe("verify command", () => {
       repoRoot,
       "examples",
       "golden",
+      "regression",
       "blocked-tier-downgrade",
       "completion-card.yaml"
     );

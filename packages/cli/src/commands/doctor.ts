@@ -354,6 +354,7 @@ async function checkTierLabels(
     path.join(root, "docs", "RUNTIME_CONTRACT.md"),
     path.join(root, "packages", "cli", "src", "commands", "doctor.ts"),
     path.join(root, "docs", "METRICS.md"),
+    path.join(root, "docs", "CONFORMANCE_STRICT_PROFILE.md"),
     path.join(root, "packages", "cli", "src", "core", "metrics.ts"),
     path.join(root, "packages", "cli", "src", "core", "context.ts"),
     path.join(root, "packages", "cli", "src", "core", "contract.ts"),

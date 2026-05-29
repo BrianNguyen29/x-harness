@@ -285,7 +285,7 @@ handoff:
     it("confirms a same-verify prediction when the episode is accepted", async () => {
       const episodesDir = path.join(makeTempDir(), "episodes");
       const episodeDir = await createVerifyEpisode(
-        "examples/golden/success-standard-scoped-evidence/completion-card.yaml",
+        "examples/golden/regression/success-standard-scoped-evidence/completion-card.yaml",
         episodesDir,
         0
       );
@@ -308,7 +308,7 @@ handoff:
     it("falsifies a same-verify prediction when the episode is withheld", async () => {
       const episodesDir = path.join(makeTempDir(), "episodes");
       const episodeDir = await createVerifyEpisode(
-        "examples/golden/failed-typecheck-recovery-route/completion-card.yaml",
+        "examples/golden/capability/failed-typecheck-recovery-route/completion-card.yaml",
         episodesDir,
         1
       );
@@ -333,12 +333,12 @@ handoff:
     it("counts confirmed, falsified, and inconclusive episode predictions", async () => {
       const episodesDir = path.join(makeTempDir(), "episodes");
       await createVerifyEpisode(
-        "examples/golden/success-standard-scoped-evidence/completion-card.yaml",
+        "examples/golden/regression/success-standard-scoped-evidence/completion-card.yaml",
         episodesDir,
         0
       );
       await createVerifyEpisode(
-        "examples/golden/failed-typecheck-recovery-route/completion-card.yaml",
+        "examples/golden/capability/failed-typecheck-recovery-route/completion-card.yaml",
         episodesDir,
         1
       );

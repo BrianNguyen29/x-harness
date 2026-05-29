@@ -43,7 +43,9 @@
     "CODE_OF_CONDUCT.md",
     "CONTRIBUTING.md",
     "SECURITY.md",
-    "SUPPORT.md"
+    "SUPPORT.md",
+    "X_HARNESS_ADMISSION_READINESS_UPDATED_ROADMAP.md",
+    "packaging"
   ],
   "bin": {
     "x-harness": "./bin/x-harness.js",
@@ -56,7 +58,7 @@
     "test:fast": "npm run test:smoke",
     "test:smoke": "vitest run admission.test.ts verify.test.ts doctor.test.ts examples.test.ts mutation-guard.test.ts ci-workflow.test.ts",
     "test:integration": "vitest run episode.test.ts frozen.test.ts federation.test.ts evidence.test.ts attribution.test.ts prediction.test.ts permissions.test.ts components.test.ts",
-    "test:release": "npm run test && npm run pack:dry-run && node dist/index.js examples verify && node dist/index.js benchmark --filter adversarial --json",
+    "test:release": "npm run test && npm run pack:dry-run && node dist/index.js examples verify && node dist/index.js benchmark --filter adversarial --gate --json",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",

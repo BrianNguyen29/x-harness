@@ -77,6 +77,7 @@ func RunWithOptions(root string, opts Options) *Report {
 	if opts.Staleness {
 		checkAgentsContextStaleness(report, root)
 	}
+	checkManagedBlocksRegistry(report, root)
 	checkCIWorkflow(report, root)
 	checkTierLabels(report, root)
 	checkComponentRegistry(report, root)
@@ -529,6 +530,34 @@ func checkAgentsContextStaleness(report *Report, root string) {
 			Name:   "agents_context_staleness",
 			Status: "failed",
 			Note:   note,
+		})
+		report.Healthy = false
+	}
+}
+
+func checkManagedBlocksRegistry(report *Report, root string) {
+	failures, err := contextcheck.ValidateRegistry(root)
+	if err != nil {
+		report.Checks = append(report.Checks, Check{
+			Name:   "managed_blocks_registry",
+			Status: "failed",
+			Note:   err.Error(),
+		})
+		report.Healthy = false
+		return
+	}
+
+	if len(failures) == 0 {
+		report.Checks = append(report.Checks, Check{
+			Name:   "managed_blocks_registry",
+			Status: "passed",
+			Note:   "all registered managed blocks present and valid",
+		})
+	} else {
+		report.Checks = append(report.Checks, Check{
+			Name:   "managed_blocks_registry",
+			Status: "failed",
+			Note:   strings.Join(failures, "; "),
 		})
 		report.Healthy = false
 	}

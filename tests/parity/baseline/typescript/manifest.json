@@ -24,7 +24,7 @@
         "packages/cli/dist/index.js",
         "verify",
         "--card",
-        "examples/golden/blocked-missing-done-checklist/completion-card.yaml",
+        "examples/golden/adversarial/blocked-missing-done-checklist/completion-card.yaml",
         "--json"
       ],
       "exit_code": 1,
@@ -38,7 +38,7 @@
         "packages/cli/dist/index.js",
         "verify",
         "--card",
-        "examples/golden/blocked-missing-evidence/completion-card.yaml",
+        "examples/golden/regression/blocked-missing-evidence/completion-card.yaml",
         "--json"
       ],
       "exit_code": 1,
@@ -52,7 +52,7 @@
         "packages/cli/dist/index.js",
         "verify",
         "--card",
-        "examples/golden/blocked-missing-evidence-scope/completion-card.yaml",
+        "examples/golden/regression/blocked-missing-evidence-scope/completion-card.yaml",
         "--json"
       ],
       "exit_code": 1,
@@ -66,7 +66,7 @@
         "packages/cli/dist/index.js",
         "verify",
         "--card",
-        "examples/golden/blocked-tier-downgrade/completion-card.yaml",
+        "examples/golden/regression/blocked-tier-downgrade/completion-card.yaml",
         "--json"
       ],
       "exit_code": 1,
@@ -80,7 +80,7 @@
         "packages/cli/dist/index.js",
         "verify",
         "--card",
-        "examples/golden/blocked-weak-prediction/completion-card.yaml",
+        "examples/golden/regression/blocked-weak-prediction/completion-card.yaml",
         "--json"
       ],
       "exit_code": 1,
@@ -94,7 +94,7 @@
         "packages/cli/dist/index.js",
         "verify",
         "--card",
-        "examples/golden/deep-approval-required/completion-card.yaml",
+        "examples/golden/capability/deep-approval-required/completion-card.yaml",
         "--json"
       ],
       "exit_code": 1,
@@ -108,7 +108,7 @@
         "packages/cli/dist/index.js",
         "verify",
         "--card",
-        "examples/golden/failed-invalid-status/completion-card.yaml",
+        "examples/golden/regression/failed-invalid-status/completion-card.yaml",
         "--json"
       ],
       "exit_code": 1,
@@ -122,7 +122,7 @@
         "packages/cli/dist/index.js",
         "verify",
         "--card",
-        "examples/golden/failed-typecheck-recovery-route/completion-card.yaml",
+        "examples/golden/capability/failed-typecheck-recovery-route/completion-card.yaml",
         "--json"
       ],
       "exit_code": 1,
@@ -136,7 +136,7 @@
         "packages/cli/dist/index.js",
         "verify",
         "--card",
-        "examples/golden/multi-agent-success/completion-card.yaml",
+        "examples/golden/capability/multi-agent-success/completion-card.yaml",
         "--json"
       ],
       "exit_code": 0,
@@ -150,7 +150,7 @@
         "packages/cli/dist/index.js",
         "verify",
         "--card",
-        "examples/golden/standard-approval-missing/completion-card.yaml",
+        "examples/golden/adversarial/standard-approval-missing/completion-card.yaml",
         "--json"
       ],
       "exit_code": 0,
@@ -164,7 +164,7 @@
         "packages/cli/dist/index.js",
         "verify",
         "--card",
-        "examples/golden/standard-approval-present/completion-card.yaml",
+        "examples/golden/adversarial/standard-approval-present/completion-card.yaml",
         "--json"
       ],
       "exit_code": 0,
@@ -178,7 +178,7 @@
         "packages/cli/dist/index.js",
         "verify",
         "--card",
-        "examples/golden/success-light/completion-card.yaml",
+        "examples/golden/regression/success-light/completion-card.yaml",
         "--json"
       ],
       "exit_code": 0,
@@ -192,7 +192,7 @@
         "packages/cli/dist/index.js",
         "verify",
         "--card",
-        "examples/golden/success-standard-scoped-evidence/completion-card.yaml",
+        "examples/golden/regression/success-standard-scoped-evidence/completion-card.yaml",
         "--json"
       ],
       "exit_code": 0,
@@ -206,7 +206,7 @@
         "packages/cli/dist/index.js",
         "verify",
         "--card",
-        "examples/golden/withheld-partial-fix/completion-card.yaml",
+        "examples/golden/capability/withheld-partial-fix/completion-card.yaml",
         "--json"
       ],
       "exit_code": 1,

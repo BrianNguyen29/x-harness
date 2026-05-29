@@ -1,5 +1,6 @@
 {
   "filter": "adversarial",
+  "gated": false,
   "generated_at": "<dynamic-string>",
   "integration": {
     "adversarial": {

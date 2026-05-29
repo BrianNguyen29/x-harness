@@ -125,6 +125,7 @@ describe("report --format html", () => {
       repoRoot,
       "examples",
       "golden",
+      "regression",
       "success-standard-scoped-evidence",
       "completion-card.yaml"
     );
@@ -146,6 +147,7 @@ describe("report --format html", () => {
       repoRoot,
       "examples",
       "golden",
+      "regression",
       "success-standard-scoped-evidence",
       "completion-card.yaml"
     );

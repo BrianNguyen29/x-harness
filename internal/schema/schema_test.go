@@ -40,6 +40,68 @@ func TestCompileReleaseEvidenceSchema(t *testing.T) {
 	}
 }
 
+func TestCompileSubagentTaskSchema(t *testing.T) {
+	path := filepath.Join("..", "..", "schemas", "subagent-task.schema.json")
+	_, err := Compile(path)
+	if err != nil {
+		t.Fatalf("expected schema to compile, got error: %v", err)
+	}
+}
+
+func TestValidSubagentTaskLightPasses(t *testing.T) {
+	schemaPath := filepath.Join("..", "..", "schemas", "subagent-task.schema.json")
+	v, err := Compile(schemaPath)
+	if err != nil {
+		t.Fatalf("expected schema to compile, got error: %v", err)
+	}
+
+	taskPath := filepath.Join("..", "..", "examples", "fixtures", "subagent-task", "light.yaml")
+	var doc any
+	if err := loader.LoadDocument(taskPath, &doc); err != nil {
+		t.Fatalf("expected to load task fixture, got error: %v", err)
+	}
+
+	if err := v.Validate(doc); err != nil {
+		t.Fatalf("expected valid light task to pass validation, got error: %v", err)
+	}
+}
+
+func TestValidSubagentTaskStandardPasses(t *testing.T) {
+	schemaPath := filepath.Join("..", "..", "schemas", "subagent-task.schema.json")
+	v, err := Compile(schemaPath)
+	if err != nil {
+		t.Fatalf("expected schema to compile, got error: %v", err)
+	}
+
+	taskPath := filepath.Join("..", "..", "examples", "fixtures", "subagent-task", "standard.yaml")
+	var doc any
+	if err := loader.LoadDocument(taskPath, &doc); err != nil {
+		t.Fatalf("expected to load task fixture, got error: %v", err)
+	}
+
+	if err := v.Validate(doc); err != nil {
+		t.Fatalf("expected valid standard task to pass validation, got error: %v", err)
+	}
+}
+
+func TestInvalidSubagentTaskFails(t *testing.T) {
+	schemaPath := filepath.Join("..", "..", "schemas", "subagent-task.schema.json")
+	v, err := Compile(schemaPath)
+	if err != nil {
+		t.Fatalf("expected schema to compile, got error: %v", err)
+	}
+
+	// Invalid: missing required 'goal' and 'scope', and invalid tier
+	invalidDoc := map[string]any{
+		"task_id": "bad-task",
+		"tier":    "invalid-tier",
+	}
+
+	if err := v.Validate(invalidDoc); err == nil {
+		t.Fatal("expected invalid task to fail validation, but it passed")
+	}
+}
+
 func TestValidGoldenCardPasses(t *testing.T) {
 	schemaPath := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
 	v, err := Compile(schemaPath)

@@ -18,17 +18,25 @@ async function discoverGoldenExamples(): Promise<GoldenExample[]> {
   if (!(await fs.pathExists(goldenDir))) {
     return [];
   }
-  const entries = await fs.readdir(goldenDir, { withFileTypes: true });
   const examples: GoldenExample[] = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const dir = path.join(goldenDir, entry.name);
-    const cardPath = path.join(dir, "completion-card.yaml");
-    const expectedOutputPath = path.join(dir, "expected-verify-output.txt");
-    if (await fs.pathExists(cardPath)) {
-      examples.push({ name: entry.name, dir, cardPath, expectedOutputPath });
+
+  async function scan(dir: string, prefix: string) {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const subDir = path.join(dir, entry.name);
+      const cardPath = path.join(subDir, "completion-card.yaml");
+      const expectedOutputPath = path.join(subDir, "expected-verify-output.txt");
+      if (await fs.pathExists(cardPath)) {
+        const name = prefix ? `${prefix}/${entry.name}` : entry.name;
+        examples.push({ name, dir: subDir, cardPath, expectedOutputPath });
+      } else {
+        await scan(subDir, prefix ? `${prefix}/${entry.name}` : entry.name);
+      }
     }
   }
+
+  await scan(goldenDir, "");
   return examples.sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -123,7 +131,7 @@ async function verifyExample(example: GoldenExample): Promise<{
     // Known divergence: TypeScript compatibility baseline does not implement
     // approval receipt enforcement (Go-only feature). This example is intentionally
     // Go-only and its mismatch is accepted as documented divergence.
-    if (example.name === "standard-approval-missing" && outputMismatch) {
+    if (example.name === "adversarial/standard-approval-missing" && outputMismatch) {
       outputMismatch = undefined;
     }
 
