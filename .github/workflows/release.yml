@@ -207,7 +207,7 @@ jobs:
           X_HARNESS_GO=1 "$TMP_REPO/node_modules/.bin/xh" --version
           X_HARNESS_GO=1 "$TMP_REPO/node_modules/.bin/xh" doctor --root "$PWD" --json >/dev/null
           X_HARNESS_GO=1 "$TMP_REPO/node_modules/.bin/xh" examples verify --json >/dev/null
-          X_HARNESS_GO=1 "$TMP_REPO/node_modules/.bin/xh" verify --card "$PWD/examples/golden/success-light/completion-card.yaml" --json >/dev/null
+          X_HARNESS_GO=1 "$TMP_REPO/node_modules/.bin/xh" verify --card "$PWD/examples/golden/regression/success-light/completion-card.yaml" --json >/dev/null
 
       - name: Frozen transfer compatibility
         shell: bash
