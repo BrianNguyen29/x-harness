@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/BrianNguyen29/x-harness/internal/adaptercheck"
 	"github.com/BrianNguyen29/x-harness/internal/admission"
+	"github.com/BrianNguyen29/x-harness/internal/contextcheck"
 	"github.com/BrianNguyen29/x-harness/internal/loader"
 	"github.com/BrianNguyen29/x-harness/internal/mutationguard"
 	"github.com/BrianNguyen29/x-harness/internal/scanner"
@@ -382,22 +384,12 @@ func RunStrict(root string) *Report {
 	strictChecks = append(strictChecks, checkScannerHighSeverity(root))
 	strictChecks = append(strictChecks, checkWorktreeMetadata(root))
 
-	// Deferred checks as not_implemented (advisory, non-blocking)
-	strictChecks = append(strictChecks, Check{
-		Name:   "adapter_doctor_no_drift",
-		Status: "not_implemented",
-		Note:   "deferred to future slice",
-	})
-	strictChecks = append(strictChecks, Check{
-		Name:   "context_gc_no_stale_drift",
-		Status: "not_implemented",
-		Note:   "deferred to future slice",
-	})
-	strictChecks = append(strictChecks, Check{
-		Name:   "approval_receipt_for_high_risk",
-		Status: "not_implemented",
-		Note:   "deferred to future slice",
-	})
+	// Real strict checks (Slice 2)
+	strictChecks = append(strictChecks, checkAdapterDoctorNoDrift(root))
+	strictChecks = append(strictChecks, checkContextGCNoStaleDrift(root))
+	strictChecks = append(strictChecks, checkApprovalReceiptForHighRisk(root))
+
+	// Deferred checks (Slice 3)
 	strictChecks = append(strictChecks, Check{
 		Name:   "regression_suite_passed",
 		Status: "not_implemented",
@@ -544,6 +536,117 @@ func checkWorktreeMetadata(root string) Check {
 		Name:   "worktree_metadata_valid",
 		Status: "passed",
 		Note:   fmt.Sprintf("root=%s branch=%s commit=%s", info.Root, info.Branch, info.Commit),
+	}
+}
+
+func checkAdapterDoctorNoDrift(root string) Check {
+	results, ok := adaptercheck.RunDoctor(root)
+	if ok {
+		return Check{
+			Name:   "adapter_doctor_no_drift",
+			Status: "passed",
+			Note:   fmt.Sprintf("%d adapter file(s) checked", len(results)),
+		}
+	}
+	var notes []string
+	for _, r := range results {
+		if !r.OK {
+			for _, c := range r.Checks {
+				if c.Status != "passed" {
+					notes = append(notes, fmt.Sprintf("%s: %s (%s)", r.Path, c.Name, c.Note))
+				}
+			}
+		}
+	}
+	return Check{
+		Name:   "adapter_doctor_no_drift",
+		Status: "failed",
+		Note:   strings.Join(notes, "; "),
+	}
+}
+
+func checkContextGCNoStaleDrift(root string) Check {
+	path := filepath.Join(root, "AGENTS.md")
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return Check{
+			Name:   "context_gc_no_stale_drift",
+			Status: "failed",
+			Note:   "AGENTS.md not readable: " + err.Error(),
+		}
+	}
+	valid, note := contextcheck.ValidateManagedBlock(string(b))
+	if valid {
+		return Check{
+			Name:   "context_gc_no_stale_drift",
+			Status: "passed",
+			Note:   note,
+		}
+	}
+	return Check{
+		Name:   "context_gc_no_stale_drift",
+		Status: "failed",
+		Note:   note,
+	}
+}
+
+func checkApprovalReceiptForHighRisk(root string) Check {
+	fixtures := []struct {
+		path               string
+		expectedOutcome    string
+		expectedAcceptance string
+		expectedPredicate  string
+	}{
+		{
+			path:               filepath.Join(root, "examples", "golden", "adversarial", "standard-approval-present", "completion-card.yaml"),
+			expectedOutcome:    "success",
+			expectedAcceptance: "accepted",
+			expectedPredicate:  "",
+		},
+		{
+			path:               filepath.Join(root, "examples", "golden", "adversarial", "standard-approval-missing", "completion-card.yaml"),
+			expectedOutcome:    "failed",
+			expectedAcceptance: "withheld",
+			expectedPredicate:  "classifier_approval_required",
+		},
+		{
+			path:               filepath.Join(root, "examples", "golden", "capability", "deep-approval-required", "completion-card.yaml"),
+			expectedOutcome:    "failed",
+			expectedAcceptance: "withheld",
+			expectedPredicate:  "approval_missing",
+		},
+	}
+
+	var failures []string
+	for _, f := range fixtures {
+		var doc map[string]any
+		if err := loader.LoadDocument(f.path, &doc); err != nil {
+			failures = append(failures, fmt.Sprintf("%s: load error: %v", filepath.Base(f.path), err))
+			continue
+		}
+		result := admission.Run(doc, false)
+		if result.Outcome != f.expectedOutcome {
+			failures = append(failures, fmt.Sprintf("%s: expected outcome=%s got=%s", filepath.Base(f.path), f.expectedOutcome, result.Outcome))
+		}
+		if result.AcceptanceStatus != f.expectedAcceptance {
+			failures = append(failures, fmt.Sprintf("%s: expected acceptance=%s got=%s", filepath.Base(f.path), f.expectedAcceptance, result.AcceptanceStatus))
+		}
+		if result.BlockingPredicate != f.expectedPredicate {
+			failures = append(failures, fmt.Sprintf("%s: expected predicate=%s got=%s", filepath.Base(f.path), f.expectedPredicate, result.BlockingPredicate))
+		}
+	}
+
+	if len(failures) == 0 {
+		return Check{
+			Name:   "approval_receipt_for_high_risk",
+			Status: "passed",
+			Note:   fmt.Sprintf("%d approval fixture(s) validated", len(fixtures)),
+		}
+	}
+	return Check{
+		Name:   "approval_receipt_for_high_risk",
+		Status: "failed",
+		Note:   strings.Join(failures, "; "),
 	}
 }
 

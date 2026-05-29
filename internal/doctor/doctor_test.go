@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/BrianNguyen29/x-harness/internal/contextcheck"
 )
 
 func TestRunHealthyRepo(t *testing.T) {
@@ -286,8 +288,8 @@ func TestRunStalenessFresh(t *testing.T) {
 
 func TestRunStalenessStaleHash(t *testing.T) {
 	tmp := t.TempDir()
-	ctx := canonicalContext()
-	block := managedBegin + "\n<!-- generated-by: x-harness -->\n<!-- context-hash: deadbeefdeadbeef -->\n\n" + ctx + "\n\n" + managedEnd
+	ctx := contextcheck.CanonicalContext()
+	block := contextcheck.ManagedBegin + "\n<!-- generated-by: x-harness -->\n<!-- context-hash: deadbeefdeadbeef -->\n\n" + ctx + "\n\n" + contextcheck.ManagedEnd
 	os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte("# AGENTS\n\n"+block+"\n"), 0644)
 
 	report := RunWithOptions(tmp, Options{Staleness: true})
@@ -310,10 +312,10 @@ func TestRunStalenessStaleHash(t *testing.T) {
 
 func TestRunStalenessStaleBody(t *testing.T) {
 	tmp := t.TempDir()
-	ctx := canonicalContext()
-	hash := contextHash(ctx)
+	ctx := contextcheck.CanonicalContext()
+	hash := contextcheck.ContextHash(ctx)
 	modifiedCtx := strings.Replace(ctx, "admitted, not claimed", "admitted, not claimed. (modified)", 1)
-	block := managedBegin + "\n<!-- generated-by: x-harness -->\n<!-- context-hash: " + hash + " -->\n\n" + modifiedCtx + "\n\n" + managedEnd
+	block := contextcheck.ManagedBegin + "\n<!-- generated-by: x-harness -->\n<!-- context-hash: " + hash + " -->\n\n" + modifiedCtx + "\n\n" + contextcheck.ManagedEnd
 	os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte("# AGENTS\n\n"+block+"\n"), 0644)
 
 	report := RunWithOptions(tmp, Options{Staleness: true})

@@ -1,12 +1,13 @@
 package cli
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/BrianNguyen29/x-harness/internal/adaptercheck"
 )
 
 type adapterInfo struct {
@@ -219,11 +220,6 @@ type adapterDoctorResult struct {
 	Checks []adapterDoctorCheck `json:"checks"`
 }
 
-type managedBlock struct {
-	ID        string
-	BodyLines []string
-}
-
 func handleAdaptersDoctor(args []string, stdout io.Writer, stderr io.Writer) int {
 	jsonMode := false
 	for i := 0; i < len(args); i++ {
@@ -289,138 +285,22 @@ func handleAdaptersDoctor(args []string, stdout io.Writer, stderr io.Writer) int
 }
 
 func runAdaptersDoctor(root string) ([]adapterDoctorResult, bool) {
-	adaptersDir := filepath.Join(root, "adapters")
-	var results []adapterDoctorResult
-	overallOK := true
-
-	_ = filepath.Walk(adaptersDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
-			return nil
-		}
-		rel, _ := filepath.Rel(root, path)
-		content, err := os.ReadFile(path)
-		if err != nil {
-			results = append(results, adapterDoctorResult{
-				Path: rel,
-				OK:   false,
-				Checks: []adapterDoctorCheck{
-					{Name: "readable", Status: "failed", Note: err.Error()},
-				},
+	results, ok := adaptercheck.RunDoctor(root)
+	var out []adapterDoctorResult
+	for _, r := range results {
+		var checks []adapterDoctorCheck
+		for _, c := range r.Checks {
+			checks = append(checks, adapterDoctorCheck{
+				Name:   c.Name,
+				Status: c.Status,
+				Note:   c.Note,
 			})
-			overallOK = false
-			return nil
 		}
-
-		blocks := findManagedBlocks(string(content))
-		if len(blocks) == 0 {
-			return nil
-		}
-
-		result := adapterDoctorResult{
-			Path:   rel,
-			OK:     true,
-			Checks: []adapterDoctorCheck{},
-		}
-
-		for _, block := range blocks {
-			check := validateAdapterManagedBlock(block)
-			result.Checks = append(result.Checks, check)
-			if check.Status != "passed" {
-				result.OK = false
-				overallOK = false
-			}
-		}
-
-		results = append(results, result)
-		return nil
-	})
-
-	return results, overallOK
-}
-
-func findManagedBlocks(content string) []managedBlock {
-	var blocks []managedBlock
-	var current *managedBlock
-	lines := strings.Split(content, "\n")
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "<!-- BEGIN X-HARNESS MANAGED CONTRACT:") {
-			id := extractMarkerID(trimmed, "<!-- BEGIN X-HARNESS MANAGED CONTRACT:", "-->")
-			current = &managedBlock{
-				ID:        id,
-				BodyLines: []string{},
-			}
-		} else if strings.HasPrefix(trimmed, "<!-- END X-HARNESS MANAGED CONTRACT:") && current != nil {
-			id := extractMarkerID(trimmed, "<!-- END X-HARNESS MANAGED CONTRACT:", "-->")
-			if id == current.ID {
-				blocks = append(blocks, *current)
-				current = nil
-			}
-		} else if current != nil {
-			current.BodyLines = append(current.BodyLines, line)
-		}
+		out = append(out, adapterDoctorResult{
+			Path:   r.Path,
+			OK:     r.OK,
+			Checks: checks,
+		})
 	}
-
-	return blocks
-}
-
-func extractMarkerID(trimmed, prefix, suffix string) string {
-	s := strings.TrimPrefix(trimmed, prefix)
-	s = strings.TrimSuffix(s, suffix)
-	return strings.TrimSpace(s)
-}
-
-func validateAdapterManagedBlock(block managedBlock) adapterDoctorCheck {
-	hash := ""
-	for _, line := range block.BodyLines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "<!-- contract-hash:") {
-			parts := strings.SplitN(trimmed, ":", 2)
-			if len(parts) == 2 {
-				hash = strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(parts[1]), "-->"))
-			}
-		}
-	}
-
-	if hash == "" {
-		return adapterDoctorCheck{
-			Name:   "managed_block_" + block.ID,
-			Status: "failed",
-			Note:   "missing contract-hash",
-		}
-	}
-
-	body := extractBodyForHash(block)
-	expectedHash := computeContractHash(body)
-
-	if hash != expectedHash {
-		return adapterDoctorCheck{
-			Name:   "managed_block_" + block.ID,
-			Status: "failed",
-			Note:   fmt.Sprintf("hash mismatch: expected %s, found %s", expectedHash, hash),
-		}
-	}
-
-	return adapterDoctorCheck{
-		Name:   "managed_block_" + block.ID,
-		Status: "passed",
-	}
-}
-
-func extractBodyForHash(block managedBlock) string {
-	var filtered []string
-	for _, line := range block.BodyLines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "<!--") {
-			continue
-		}
-		filtered = append(filtered, line)
-	}
-	return strings.TrimSpace(strings.Join(filtered, "\n"))
-}
-
-func computeContractHash(text string) string {
-	h := sha256.Sum256([]byte(text))
-	return fmt.Sprintf("%x", h)[:16]
+	return out, ok
 }

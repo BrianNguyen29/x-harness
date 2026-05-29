@@ -3,7 +3,6 @@ package doctor
 import (
 	"bufio"
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/BrianNguyen29/x-harness/internal/components"
+	"github.com/BrianNguyen29/x-harness/internal/contextcheck"
 	"github.com/BrianNguyen29/x-harness/internal/loader"
 	"github.com/BrianNguyen29/x-harness/internal/schema"
 	"gopkg.in/yaml.v3"
@@ -108,9 +108,9 @@ func checkCriticalAssets(report *Report, root string) {
 			report.Present = append(report.Present, asset.name)
 		} else {
 			report.Missing = append(report.Missing, asset.name)
-			report.Healthy = false
-		}
+		report.Healthy = false
 	}
+}
 
 	if len(report.Missing) > 0 {
 		report.Checks = append(report.Checks, Check{
@@ -505,105 +505,6 @@ func checkManifest(report *Report, root string) {
 	}
 }
 
-const (
-	managedBegin = "<!-- BEGIN X-HARNESS MANAGED CONTEXT -->"
-	managedEnd   = "<!-- END X-HARNESS MANAGED CONTEXT -->"
-)
-
-func canonicalContext() string {
-	return `# x-harness Canonical Context
-
-- Completion is admitted, not claimed.
-- Verifier is read-only.
-- Success is the only accepted outcome.
-- Canonical tiers: light, standard, deep.
-- PGV is advisory-only.
-
-## Source-of-Truth Reading Order
-
-The managed context block in AGENTS.md is authoritative. Files are read in this order:
-
-1. AGENTS.md (managed block)
-1. X_HARNESS.md
-1. policies/admission.yaml
-1. policies/recovery.yaml
-1. policies/intake.yaml
-1. schemas/completion-card.schema.json
-
-## Rules
-
-### Completion is admitted, not claimed
-Agents may propose completion but cannot self-admit. A completion card with ` + "`" + `claim.fix_status: fixed` + "`" + ` is only a completion candidate. Compatibility subagent returns may use ` + "`" + `result.fix_status` + "`" + `.
-
-### Verifier is read-only
-The verifier may inspect files, evidence, diffs, and trace events. It must not edit source files or repair the work product while verifying.
-
-### Success is the only accepted outcome
-` + "`" + `admission.outcome: success` + "`" + ` and ` + "`" + `acceptance_status: accepted` + "`" + ` are required for admission. All other outcomes are withheld.
-
-### Canonical tiers
-Use only ` + "`" + `light` + "`" + `, ` + "`" + `standard` + "`" + `, and ` + "`" + `deep` + "`" + `. Do not use ` + "`" + `small` + "`" + `, ` + "`" + `medium` + "`" + `, or ` + "`" + `large` + "`" + ` in active runtime handoffs.
-
-### PGV is advisory-only
-Pre-gate validation (PGV) advice never overrides the verify gate and never grants admission authority by default.`
-}
-
-func contextHash(text string) string {
-	h := sha256.Sum256([]byte(text))
-	return hex.EncodeToString(h[:])[:16]
-}
-
-func extractManagedBlock(content string) (string, bool) {
-	beginIndex := strings.Index(content, managedBegin)
-	endIndex := strings.Index(content, managedEnd)
-	if beginIndex == -1 || endIndex == -1 || endIndex < beginIndex {
-		return "", false
-	}
-	return content[beginIndex : endIndex+len(managedEnd)], true
-}
-
-func validateManagedBlock(content string) (bool, string) {
-	block, ok := extractManagedBlock(content)
-	if !ok {
-		return false, "AGENTS.md missing managed context block"
-	}
-
-	idx := strings.Index(block, "<!-- context-hash: ")
-	if idx == -1 {
-		return false, "AGENTS.md managed block missing context-hash"
-	}
-	hashStart := idx + len("<!-- context-hash: ")
-	hashEnd := strings.Index(block[hashStart:], " -->")
-	if hashEnd == -1 {
-		return false, "AGENTS.md managed block missing context-hash"
-	}
-	actualHash := block[hashStart : hashStart+hashEnd]
-
-	currentContext := canonicalContext()
-	expectedHash := contextHash(currentContext)
-
-	if actualHash != expectedHash {
-		return false, fmt.Sprintf("AGENTS.md context hash stale: expected %s, found %s", expectedHash, actualHash)
-	}
-
-	lines := strings.Split(block, "\n")
-	var filtered []string
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == managedBegin || trimmed == managedEnd || strings.HasPrefix(trimmed, "<!--") {
-			continue
-		}
-		filtered = append(filtered, line)
-	}
-	actualContext := strings.TrimSpace(strings.Join(filtered, "\n"))
-
-	if actualContext != strings.TrimSpace(currentContext) {
-		return false, "AGENTS.md managed context body differs from canonical context"
-	}
-
-	return true, "AGENTS.md managed context block is fresh"
-}
-
 func checkAgentsContextStaleness(report *Report, root string) {
 	path := filepath.Join(root, "AGENTS.md")
 	b, err := os.ReadFile(path)
@@ -617,7 +518,7 @@ func checkAgentsContextStaleness(report *Report, root string) {
 		return
 	}
 
-	valid, note := validateManagedBlock(string(b))
+	valid, note := contextcheck.ValidateManagedBlock(string(b))
 	if valid {
 		report.Checks = append(report.Checks, Check{
 			Name:   "agents_context_staleness",
