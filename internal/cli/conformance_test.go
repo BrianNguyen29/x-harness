@@ -130,6 +130,11 @@ func TestConformanceStrictPasses(t *testing.T) {
 		"mutation_guard_verified",
 		"scanner_high_severity_clear",
 		"worktree_metadata_valid",
+		"adapter_doctor_no_drift",
+		"context_gc_no_stale_drift",
+		"approval_receipt_for_high_risk",
+		"regression_suite_passed",
+		"adversarial_suite_passed",
 	}
 	found := map[string]bool{}
 	for _, c := range result.Checks {
