@@ -100,13 +100,15 @@ describe("examples command", () => {
     expect(multi.acceptance_status).toBe("accepted");
 
     const scoped = output.results.find(
-      (r: { name: string }) => r.name === "regression/success-standard-scoped-evidence"
+      (r: { name: string }) =>
+        r.name === "regression/success-standard-scoped-evidence"
     );
     expect(scoped.outcome).toBe("success");
     expect(scoped.acceptance_status).toBe("accepted");
 
     const blockedScope = output.results.find(
-      (r: { name: string }) => r.name === "regression/blocked-missing-evidence-scope"
+      (r: { name: string }) =>
+        r.name === "regression/blocked-missing-evidence-scope"
     );
     expect(blockedScope.outcome).toBe("failed");
     expect(blockedScope.acceptance_status).toBe("withheld");
@@ -118,25 +120,29 @@ describe("examples command", () => {
     expect(approval.acceptance_status).toBe("withheld");
 
     const recovery = output.results.find(
-      (r: { name: string }) => r.name === "capability/failed-typecheck-recovery-route"
+      (r: { name: string }) =>
+        r.name === "capability/failed-typecheck-recovery-route"
     );
     expect(recovery.outcome).toBe("failed");
     expect(recovery.acceptance_status).toBe("withheld");
 
     const missingChecklist = output.results.find(
-      (r: { name: string }) => r.name === "adversarial/blocked-missing-done-checklist"
+      (r: { name: string }) =>
+        r.name === "adversarial/blocked-missing-done-checklist"
     );
     expect(missingChecklist.outcome).toBe("failed");
     expect(missingChecklist.acceptance_status).toBe("withheld");
 
     const approvalMissing = output.results.find(
-      (r: { name: string }) => r.name === "adversarial/standard-approval-missing"
+      (r: { name: string }) =>
+        r.name === "adversarial/standard-approval-missing"
     );
     expect(approvalMissing.outcome).toBe("failed");
     expect(approvalMissing.acceptance_status).toBe("withheld");
 
     const approvalPresent = output.results.find(
-      (r: { name: string }) => r.name === "adversarial/standard-approval-present"
+      (r: { name: string }) =>
+        r.name === "adversarial/standard-approval-present"
     );
     expect(approvalPresent.outcome).toBe("success");
     expect(approvalPresent.acceptance_status).toBe("accepted");

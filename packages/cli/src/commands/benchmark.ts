@@ -388,7 +388,9 @@ async function discoverCaseDefinitions(
           name: entry.name,
           cardPath,
           expectedAcceptance:
-            suite === "golden" ? expectedGoldenAcceptance(entry.name) : "withheld",
+            suite === "golden"
+              ? expectedGoldenAcceptance(entry.name)
+              : "withheld",
         });
       } else {
         await scan(subDir);
@@ -1003,7 +1005,11 @@ export function benchmarkCommand(): Command {
       "Reserved for human-approved benchmark boundary updates",
       false
     )
-    .option("--gate", "Fail the benchmark if any unsafe metric is detected", false)
+    .option(
+      "--gate",
+      "Fail the benchmark if any unsafe metric is detected",
+      false
+    )
     .option("--json", "Output JSON instead of Markdown", false)
     .action(async (opts: BenchmarkOptions) => {
       let names: BenchmarkName[];
