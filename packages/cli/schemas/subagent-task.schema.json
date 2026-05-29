@@ -222,7 +222,14 @@
         "measurable_signal": { "type": "string", "minLength": 1 },
         "falsification_method": { "type": "string", "minLength": 1 },
         "horizon": {
-          "enum": ["same_verify", "next_ci_run", "next_release", "manual_review", "production_7d", "production_30d"]
+          "enum": [
+            "same_verify",
+            "next_ci_run",
+            "next_release",
+            "manual_review",
+            "production_7d",
+            "production_30d"
+          ]
         },
         "confidence": {
           "enum": ["low", "medium", "high"]
@@ -237,7 +244,12 @@
           "additionalProperties": false
         }
       },
-      "required": ["claim", "expected_effect", "falsification_method", "horizon"]
+      "required": [
+        "claim",
+        "expected_effect",
+        "falsification_method",
+        "horizon"
+      ]
     },
     "governance": {
       "type": "object",
@@ -265,7 +277,13 @@
   "$defs": {
     "return_payload": {
       "type": "object",
-      "required": ["result", "evidence", "verification", "confidence", "handoff"],
+      "required": [
+        "result",
+        "evidence",
+        "verification",
+        "confidence",
+        "handoff"
+      ],
       "properties": {
         "result": {
           "type": "object",
@@ -301,7 +319,14 @@
           "required": ["status"],
           "properties": {
             "status": {
-              "enum": ["passed", "failed", "skipped", "blocked", "timeout", "error"]
+              "enum": [
+                "passed",
+                "failed",
+                "skipped",
+                "blocked",
+                "timeout",
+                "error"
+              ]
             },
             "checks": {
               "type": "array"

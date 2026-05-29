@@ -125,44 +125,44 @@ It can integrate with systems that provide those capabilities, but it should not
 
 This table separates what is already in the repository from what remains design-only. Use it to avoid overclaiming in README, docs, and adapter instructions.
 
-| Feature | Status | Notes |
-|---|---|---|
-| Go-native CLI (verify, doctor, report, benchmark, trace, handoff, init, add, recovery, packet, context, clean, examples, and advanced commands) | **Implemented** | Primary commands stable; some advanced commands are skeletal |
-| TypeScript compatibility CLI | **Implemented (frozen)** | Source-checkout only; npm wrapper is Go-only |
-| Tiered completion cards (light / standard / deep) | **Implemented** | `schemas/completion-card.schema.json` enforced |
-| Read-only verify gate with mutation guard | **Implemented** | `--strict` path active in CI |
-| Admission policy (`policies/admission.yaml`) | **Implemented** | Single source of truth for evidence floor |
-| Recovery routing | **Implemented** | Basic routing with `next_action` and `owner` |
-| Packet chain | **Implemented** | Immutable claim packets |
-| Frozen artifacts, import/export | **Implemented** | |
-| Golden examples (success, blocked, recovery) | **Implemented** | CI-enforced |
-| Adversarial benchmark | **Implemented** | CI-enforced |
-| Release candidate cycle | **Implemented** | Cross-platform smoke tests, checksums, cosign |
-| NPM wrapper Go-only | **Implemented** | Phase 11 complete (`15afed0`) |
-| Adapter files (Generic, Claude Code, Cursor, OpenCode, Antigravity) | **Implemented** | Manual; automated drift detection not yet built |
-| Denominator-safe report JSON | **Implemented (minimal)** | Structured rate metrics with numerator/denominator/unit; task_completion_coverage not_computable; denominator_warning preserved |
-| Failure taxonomy v2 | **Partial** | Basic predicates exist; typed taxonomy classes not yet implemented |
-| AdmissionCard / X-HarnessCard | **Implemented (minimal)** | `card generate`, `card verify`, `schemas/admission-card.schema.json` |
-| Readiness levels (task / PR / release) | **Implemented (minimal)** | `readiness task/pr/release`; `prepare` alias unchanged |
-| Conformance suite | **Implemented (minimal)** | `conformance run --profile minimal` with CI gate |
-| Release evidence bundle | **Implemented (minimal)** | Schema, generator, verify-evidence, and report implemented; SBOM / provenance / platform matrix remain planned (Section 11) |
-| Denominator contract in reports | **Implemented (minimal)** | Section 12; basic numerator/denominator/unit and denominator_warning enforced; full HTML/Markdown display and conformance suite enforcement remain planned |
-| Failure taxonomy v2 | **Partial** | Section 13 |
-| Permission intent classifier | **Implemented (minimal)** | `evidence classify --command` and `--card` implemented; admission blocking and report integration deferred (Section 14) |
-| Approval receipt schema | **Implemented (minimal)** | Section 15; schema, admission hook, and tier-based enforcement implemented; registry/hash binding and report integration remain planned |
-| Adapter matrix / eval / doctor | **Partial** | `adapters matrix`, `adapters eval`, and `adapters doctor` implemented; managed block drift checks implemented; strict conformance profile and adapter file generation remain planned (Section 16) |
-| Admission skill-pack | **Implemented (minimal)** | Section 17; optional namespaced skill-pack at skills/x-harness-admission/; adapter eval integration remains planned |
-| Adapter/skill static scanner | **Partial** | `scan adapter`, `scan skill`, `scan managed` implemented; deterministic regex-based heuristics; JSON and text output; report-only; conformance strict blocking and waiver enforcement remain planned |
-| Install profiles preview/apply | **Implemented (minimal)** | Section 19; `--profile minimal|standard|deep`, `--preview`, `--apply` supported; profile recommend implemented; repair/uninstall implemented (Section 21) |
-| Profile recommend | **Implemented (minimal)** | Section 20 |
-| Repair / uninstall preview/apply | **Implemented (minimal)** | Section 21; manifest-backed; repair preview/apply and uninstall preview/apply with --force; backups before overwrite/delete; unmanaged content preserved |
-| Trace timeline / explain | **Implemented (minimal)** | Section 22; `trace timeline`, `trace explain`, `trace inspect --withheld` implemented; `trace collapse` remains planned |
-| Structured regression / capability / adversarial suites | **Implemented (minimal)** | Section 23; `--suite regression|capability|adversarial` supported; fixtures organized under suite dirs; CI regression gate added; strict conformance suite integration remains planned |
-| Worktree-aware verification | **Implemented (minimal)** | Section 24; metadata collection and trace/report/doctor integration done; strict path enforcement remains planned |
-| Context GC / staleness doctor | **Partial** | `context gc --check` and `context gc --write` minimally implemented; overclaim/dead-link/doc-field strict checks and conformance strict integration remain planned (Section 25) |
-| Hooks bridge | **Planned / Conditional** | Section 26; P3 unless needed |
-| MCP read-only evidence adapter | **Planned / Conditional** | Section 27; P3 unless needed |
-| Sandbox bridge | **Planned / Conditional** | Section 28; P3 unless needed |
+| Feature                                                                                                                                         | Status                    | Notes                                                                                                                                                                                                |
+| ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Go-native CLI (verify, doctor, report, benchmark, trace, handoff, init, add, recovery, packet, context, clean, examples, and advanced commands) | **Implemented**           | Primary commands stable; some advanced commands are skeletal                                                                                                                                         |
+| TypeScript compatibility CLI                                                                                                                    | **Implemented (frozen)**  | Source-checkout only; npm wrapper is Go-only                                                                                                                                                         |
+| Tiered completion cards (light / standard / deep)                                                                                               | **Implemented**           | `schemas/completion-card.schema.json` enforced                                                                                                                                                       |
+| Read-only verify gate with mutation guard                                                                                                       | **Implemented**           | `--strict` path active in CI                                                                                                                                                                         |
+| Admission policy (`policies/admission.yaml`)                                                                                                    | **Implemented**           | Single source of truth for evidence floor                                                                                                                                                            |
+| Recovery routing                                                                                                                                | **Implemented**           | Basic routing with `next_action` and `owner`                                                                                                                                                         |
+| Packet chain                                                                                                                                    | **Implemented**           | Immutable claim packets                                                                                                                                                                              |
+| Frozen artifacts, import/export                                                                                                                 | **Implemented**           |                                                                                                                                                                                                      |
+| Golden examples (success, blocked, recovery)                                                                                                    | **Implemented**           | CI-enforced                                                                                                                                                                                          |
+| Adversarial benchmark                                                                                                                           | **Implemented**           | CI-enforced                                                                                                                                                                                          |
+| Release candidate cycle                                                                                                                         | **Implemented**           | Cross-platform smoke tests, checksums, cosign                                                                                                                                                        |
+| NPM wrapper Go-only                                                                                                                             | **Implemented**           | Phase 11 complete (`15afed0`)                                                                                                                                                                        |
+| Adapter files (Generic, Claude Code, Cursor, OpenCode, Antigravity)                                                                             | **Implemented**           | Manual; automated drift detection not yet built                                                                                                                                                      |
+| Denominator-safe report JSON                                                                                                                    | **Implemented (minimal)** | Structured rate metrics with numerator/denominator/unit; task_completion_coverage not_computable; denominator_warning preserved                                                                      |
+| Failure taxonomy v2                                                                                                                             | **Partial**               | Basic predicates exist; typed taxonomy classes not yet implemented                                                                                                                                   |
+| AdmissionCard / X-HarnessCard                                                                                                                   | **Implemented (minimal)** | `card generate`, `card verify`, `schemas/admission-card.schema.json`                                                                                                                                 |
+| Readiness levels (task / PR / release)                                                                                                          | **Implemented (minimal)** | `readiness task/pr/release`; `prepare` alias unchanged                                                                                                                                               |
+| Conformance suite                                                                                                                               | **Implemented (minimal)** | `conformance run --profile minimal` with CI gate                                                                                                                                                     |
+| Release evidence bundle                                                                                                                         | **Implemented (minimal)** | Schema, generator, verify-evidence, and report implemented; SBOM / provenance / platform matrix remain planned (Section 11)                                                                          |
+| Denominator contract in reports                                                                                                                 | **Implemented (minimal)** | Section 12; basic numerator/denominator/unit and denominator_warning enforced; full HTML/Markdown display and conformance suite enforcement remain planned                                           |
+| Failure taxonomy v2                                                                                                                             | **Partial**               | Section 13                                                                                                                                                                                           |
+| Permission intent classifier                                                                                                                    | **Implemented (minimal)** | `evidence classify --command` and `--card` implemented; admission blocking and report integration deferred (Section 14)                                                                              |
+| Approval receipt schema                                                                                                                         | **Implemented (minimal)** | Section 15; schema, admission hook, and tier-based enforcement implemented; registry/hash binding and report integration remain planned                                                              |
+| Adapter matrix / eval / doctor                                                                                                                  | **Partial**               | `adapters matrix`, `adapters eval`, and `adapters doctor` implemented; managed block drift checks implemented; strict conformance profile and adapter file generation remain planned (Section 16)    |
+| Admission skill-pack                                                                                                                            | **Implemented (minimal)** | Section 17; optional namespaced skill-pack at skills/x-harness-admission/; adapter eval integration remains planned                                                                                  |
+| Adapter/skill static scanner                                                                                                                    | **Partial**               | `scan adapter`, `scan skill`, `scan managed` implemented; deterministic regex-based heuristics; JSON and text output; report-only; conformance strict blocking and waiver enforcement remain planned |
+| Install profiles preview/apply                                                                                                                  | **Implemented (minimal)** | Section 19; `--profile minimal                                                                                                                                                                       | standard   | deep`, `--preview`, `--apply` supported; profile recommend implemented; repair/uninstall implemented (Section 21)                           |
+| Profile recommend                                                                                                                               | **Implemented (minimal)** | Section 20                                                                                                                                                                                           |
+| Repair / uninstall preview/apply                                                                                                                | **Implemented (minimal)** | Section 21; manifest-backed; repair preview/apply and uninstall preview/apply with --force; backups before overwrite/delete; unmanaged content preserved                                             |
+| Trace timeline / explain                                                                                                                        | **Implemented (minimal)** | Section 22; `trace timeline`, `trace explain`, `trace inspect --withheld` implemented; `trace collapse` remains planned                                                                              |
+| Structured regression / capability / adversarial suites                                                                                         | **Implemented (minimal)** | Section 23; `--suite regression                                                                                                                                                                      | capability | adversarial` supported; fixtures organized under suite dirs; CI regression gate added; strict conformance suite integration remains planned |
+| Worktree-aware verification                                                                                                                     | **Implemented (minimal)** | Section 24; metadata collection and trace/report/doctor integration done; strict path enforcement remains planned                                                                                    |
+| Context GC / staleness doctor                                                                                                                   | **Partial**               | `context gc --check` and `context gc --write` minimally implemented; overclaim/dead-link/doc-field strict checks and conformance strict integration remain planned (Section 25)                      |
+| Hooks bridge                                                                                                                                    | **Planned / Conditional** | Section 26; P3 unless needed                                                                                                                                                                         |
+| MCP read-only evidence adapter                                                                                                                  | **Planned / Conditional** | Section 27; P3 unless needed                                                                                                                                                                         |
+| Sandbox bridge                                                                                                                                  | **Planned / Conditional** | Section 28; P3 unless needed                                                                                                                                                                         |
 
 ---
 
@@ -354,10 +354,10 @@ It does not guarantee that code is correct.
 It does one bounded job:
 
 AI agent work
-  -> completion claim
-  -> evidence
-  -> read-only verify gate
-  -> accepted or withheld
+-> completion claim
+-> evidence
+-> read-only verify gate
+-> accepted or withheld
 
 Use x-harness when you want AI-generated changes to carry explicit evidence,
 fail closed when evidence is weak, and produce auditable readiness records before review,
@@ -376,7 +376,7 @@ It integrates with AI coding agents; it does not replace them.
 
 Add a short "Core contract" section:
 
-```md
+````md
 ## Core contract
 
 Completion is admitted, not claimed.
@@ -388,17 +388,19 @@ admission:
   outcome: success
   acceptance_status: accepted
 ```
+````
 
 All non-success outcomes are withheld.
 The verifier is read-only.
 PGV and LLM advisory checks are advisory-only.
-```
+
+````
 
 Add a short "Roadmap" link:
 
 ```md
 See [`X_HARNESS_ADMISSION_READINESS_UPDATED_ROADMAP.md`](X_HARNESS_ADMISSION_READINESS_UPDATED_ROADMAP.md) for the current implementation status and phased execution plan.
-```
+````
 
 ---
 

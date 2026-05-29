@@ -339,7 +339,12 @@
     "approval_receipt": {
       "type": "object",
       "description": "Optional approval receipt for high-risk command evidence. Required for standard/deep when evidence contains high-risk or unknown commands (standard: high/unknown; deep: medium/high/unknown).",
-      "required": ["decision", "approver", "classified_commands", "aggregate_risk"],
+      "required": [
+        "decision",
+        "approver",
+        "classified_commands",
+        "aggregate_risk"
+      ],
       "properties": {
         "decision": {
           "enum": ["approved", "rejected"]

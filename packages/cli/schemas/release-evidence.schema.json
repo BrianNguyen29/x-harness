@@ -2,7 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "release-evidence",
   "type": "object",
-  "required": ["schema_version", "generated_at", "version", "artifacts", "conformance"],
+  "required": [
+    "schema_version",
+    "generated_at",
+    "version",
+    "artifacts",
+    "conformance"
+  ],
   "properties": {
     "schema_version": {
       "type": "string"
