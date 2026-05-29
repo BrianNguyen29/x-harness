@@ -45,7 +45,7 @@ func handleConformanceRun(args []string, stdout io.Writer, stderr io.Writer) int
 		return ExitUsage
 	}
 
-	if profile != "minimal" {
+	if profile != "minimal" && profile != "strict" {
 		fmt.Fprintf(stderr, "unknown profile: %s\n", profile)
 		return ExitUsage
 	}
@@ -56,7 +56,12 @@ func handleConformanceRun(args []string, stdout io.Writer, stderr io.Writer) int
 		return ExitError
 	}
 
-	report := conformance.RunMinimal(root)
+	var report *conformance.Report
+	if profile == "minimal" {
+		report = conformance.RunMinimal(root)
+	} else {
+		report = conformance.RunStrict(root)
+	}
 
 	if jsonMode {
 		if err := WriteJSON(stdout, report); err != nil {

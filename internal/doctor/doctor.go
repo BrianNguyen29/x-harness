@@ -324,6 +324,7 @@ func isAllowedTierReference(line string) bool {
 func checkTierLabels(report *Report, root string) {
 	excludedFiles := map[string]bool{
 		filepath.Join(root, "docs", "RUNTIME_CONTRACT.md"):              true,
+		filepath.Join(root, "docs", "CONFORMANCE_STRICT_PROFILE.md"):   true,
 		filepath.Join(root, "packages", "cli", "src", "commands", "doctor.ts"): true,
 		filepath.Join(root, "packages", "cli", "src", "core", "metrics.ts"):    true,
 		filepath.Join(root, "packages", "cli", "src", "core", "context.ts"):    true,
@@ -335,6 +336,7 @@ func checkTierLabels(report *Report, root string) {
 		filepath.Join(root, "internal", "doctor", "doctor.go"):                 true,
 		filepath.Join(root, "internal", "scanner", "scanner.go"):               true,
 		filepath.Join(root, "internal", "cli", "scan.go"):                     true,
+		filepath.Join(root, "internal", "conformance", "conformance.go"):      true,
 	}
 
 	labelRe := regexp.MustCompile(`(?i)\b(small|medium|large)\b`)

@@ -8,7 +8,10 @@ import (
 
 	"github.com/BrianNguyen29/x-harness/internal/admission"
 	"github.com/BrianNguyen29/x-harness/internal/loader"
+	"github.com/BrianNguyen29/x-harness/internal/mutationguard"
+	"github.com/BrianNguyen29/x-harness/internal/scanner"
 	"github.com/BrianNguyen29/x-harness/internal/schema"
+	"github.com/BrianNguyen29/x-harness/internal/worktree"
 )
 
 // Check is a single conformance check result.
@@ -256,7 +259,7 @@ func checkDenominatorContract(report *Report, root string) {
 		return
 	}
 
-		sample := map[string]any{
+	sample := map[string]any{
 		"card_id": "test",
 		"task_id": "test",
 		"tier":    "standard",
@@ -268,9 +271,9 @@ func checkDenominatorContract(report *Report, root string) {
 				"remaining_risks_count":  0,
 			},
 			"state_consistency": map[string]any{
-				"owner_present":          true,
-				"accountable_present":    true,
-				"files_changed_present":  true,
+				"owner_present":           true,
+				"accountable_present":     true,
+				"files_changed_present":   true,
 				"admission_mapping_valid": true,
 			},
 			"recovery_ability": map[string]any{
@@ -320,9 +323,9 @@ func checkDenominatorContract(report *Report, root string) {
 			"note":     "test",
 		},
 		"admission_accounting": map[string]any{
-			"accepted":      1,
+			"accepted":       1,
 			"total_analyzed": 1,
-			"note":          "test",
+			"note":           "test",
 		},
 		"withheld_accounting": map[string]any{
 			"failed":  0,
@@ -354,6 +357,194 @@ func checkDenominatorContract(report *Report, root string) {
 		Status: "passed",
 		Note:   "report schema validates denominator-safe rate metrics",
 	})
+}
+
+// RunStrict performs the strict conformance profile checks.
+func RunStrict(root string) *Report {
+	// Run minimal first
+	minimalReport := RunMinimal(root)
+
+	report := &Report{
+		Profile: "strict",
+		OK:      minimalReport.OK,
+		Checks:  append([]Check{}, minimalReport.Checks...),
+	}
+
+	if !report.OK {
+		return report
+	}
+
+	// Take before snapshot for mutation guard
+	before, beforeErr := mutationguard.TakeSnapshot(root)
+
+	// Run strict-specific checks
+	strictChecks := []Check{}
+	strictChecks = append(strictChecks, checkScannerHighSeverity(root))
+	strictChecks = append(strictChecks, checkWorktreeMetadata(root))
+
+	// Deferred checks as not_implemented (advisory, non-blocking)
+	strictChecks = append(strictChecks, Check{
+		Name:   "adapter_doctor_no_drift",
+		Status: "not_implemented",
+		Note:   "deferred to future slice",
+	})
+	strictChecks = append(strictChecks, Check{
+		Name:   "context_gc_no_stale_drift",
+		Status: "not_implemented",
+		Note:   "deferred to future slice",
+	})
+	strictChecks = append(strictChecks, Check{
+		Name:   "approval_receipt_for_high_risk",
+		Status: "not_implemented",
+		Note:   "deferred to future slice",
+	})
+	strictChecks = append(strictChecks, Check{
+		Name:   "regression_suite_passed",
+		Status: "not_implemented",
+		Note:   "deferred to future slice",
+	})
+	strictChecks = append(strictChecks, Check{
+		Name:   "adversarial_suite_passed",
+		Status: "not_implemented",
+		Note:   "deferred to future slice",
+	})
+
+	// Mutation guard evaluation
+	if beforeErr != nil {
+		strictChecks = append([]Check{{
+			Name:   "mutation_guard_verified",
+			Status: "failed",
+			Note:   "before snapshot failed: " + beforeErr.Error(),
+		}}, strictChecks...)
+	} else {
+		after, afterErr := mutationguard.TakeSnapshot(root)
+		if afterErr != nil {
+			strictChecks = append([]Check{{
+				Name:   "mutation_guard_verified",
+				Status: "failed",
+				Note:   "after snapshot failed: " + afterErr.Error(),
+			}}, strictChecks...)
+		} else {
+			deltas := mutationguard.Compare(before, after)
+			unexpected := mutationguard.FilterUnexpected(deltas)
+			if len(unexpected) > 0 {
+				var paths []string
+				for _, d := range unexpected {
+					paths = append(paths, d.Path)
+				}
+				strictChecks = append([]Check{{
+					Name:   "mutation_guard_verified",
+					Status: "failed",
+					Note:   "unexpected delta: " + strings.Join(paths, ", "),
+				}}, strictChecks...)
+			} else {
+				strictChecks = append([]Check{{
+					Name:   "mutation_guard_verified",
+					Status: "passed",
+					Note:   "no unexpected changes detected",
+				}}, strictChecks...)
+			}
+		}
+	}
+
+	report.Checks = append(report.Checks, strictChecks...)
+
+	// Recalculate OK
+	report.OK = true
+	for _, c := range report.Checks {
+		if c.Status == "failed" {
+			report.OK = false
+			break
+		}
+	}
+
+	return report
+}
+
+func checkScannerHighSeverity(root string) Check {
+	rules := scanner.DefaultRules()
+
+	// Slice 1 scope: scan adapters, skills, and templates directories
+	var paths []string
+	for _, dir := range []string{"adapters", "skills", "templates"} {
+		p := filepath.Join(root, dir)
+		if info, err := os.Stat(p); err == nil && info.IsDir() {
+			paths = append(paths, p)
+		}
+	}
+
+	if len(paths) == 0 {
+		return Check{
+			Name:   "scanner_high_severity_clear",
+			Status: "passed",
+			Note:   "no scan directories present",
+		}
+	}
+
+	result, err := scanner.Scan(rules, paths)
+	if err != nil {
+		return Check{
+			Name:   "scanner_high_severity_clear",
+			Status: "failed",
+			Note:   "scan error: " + err.Error(),
+		}
+	}
+
+	var highFindings, mediumFindings []scanner.Finding
+	for _, f := range result.Findings {
+		switch f.Severity {
+		case string(scanner.SeverityHigh):
+			highFindings = append(highFindings, f)
+		case string(scanner.SeverityMedium):
+			mediumFindings = append(mediumFindings, f)
+		}
+	}
+
+	if len(highFindings) > 0 {
+		var notes []string
+		for _, f := range highFindings {
+			notes = append(notes, fmt.Sprintf("%s in %s:%d (%s)", f.RuleID, f.File, f.Line, f.Snippet))
+		}
+		return Check{
+			Name:   "scanner_high_severity_clear",
+			Status: "failed",
+			Note:   strings.Join(notes, "; "),
+		}
+	}
+
+	if len(mediumFindings) > 0 {
+		var notes []string
+		for _, f := range mediumFindings {
+			notes = append(notes, fmt.Sprintf("%s in %s:%d", f.RuleID, f.File, f.Line))
+		}
+		return Check{
+			Name:   "scanner_high_severity_clear",
+			Status: "advisory",
+			Note:   strings.Join(notes, "; "),
+		}
+	}
+
+	return Check{
+		Name:   "scanner_high_severity_clear",
+		Status: "passed",
+		Note:   fmt.Sprintf("no high or medium severity findings (%d files scanned)", result.FilesScanned),
+	}
+}
+
+func checkWorktreeMetadata(root string) Check {
+	info := worktree.CollectInfo(root)
+	if info == nil {
+		return Check{
+			Name:   "worktree_metadata_valid",
+			Status: "failed",
+			Note:   "not a git workspace or git unavailable",
+		}
+	}
+	return Check{
+		Name:   "worktree_metadata_valid",
+		Status: "passed",
+		Note:   fmt.Sprintf("root=%s branch=%s commit=%s", info.Root, info.Branch, info.Commit),
+	}
 }
 
 func checkGoldenCard(root, cardPath string) (outcome, acceptance, note string) {
