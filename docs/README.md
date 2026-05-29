@@ -20,6 +20,7 @@ enforces.
 - [Schemas](SCHEMAS.md)
 - [Recovery](RECOVERY.md)
 - [Packets](PACKETS.md)
+- [Governance Approval Workflow Design](GOVERNANCE_DESIGN.md) — Design-gated specification for request/approve/status flow, HITL boundaries, and approval artifacts
 
 ## Operations
 

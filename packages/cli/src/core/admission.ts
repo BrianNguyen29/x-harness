@@ -12,6 +12,7 @@ import {
 } from "./admission-accessors.js";
 import { evaluateEvidenceRules } from "./admission-evidence.js";
 import { evaluateDoneChecklistAndPrediction } from "./admission-prediction.js";
+import { evaluateApprovalReceipt } from "./admission-approval.js";
 import {
   collectCanonicalStatusContradictions,
   collectFixStatusContradictions,
@@ -87,6 +88,8 @@ export interface AdmissionInput {
   isCardMode?: boolean;
   // Strict verify mode strengthens evidence provenance checks for standard/deep.
   strict?: boolean;
+  // Approval receipt for high-risk commands
+  approval_receipt?: Record<string, unknown>;
   // Backward compatibility: subagent-return shape
   subagentReturn?: Record<string, unknown>;
 }
@@ -185,6 +188,12 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
   const evidenceResult = evaluateEvidenceRules(input);
   notes.push(...evidenceResult.notes);
   for (const item of evidenceResult.errors) {
+    applyFinding(item);
+  }
+
+  const approvalResult = evaluateApprovalReceipt(input, input.tier);
+  notes.push(...approvalResult.notes);
+  for (const item of approvalResult.errors) {
     applyFinding(item);
   }
 

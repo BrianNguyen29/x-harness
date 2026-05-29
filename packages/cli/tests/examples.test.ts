@@ -27,6 +27,8 @@ describe("examples command", () => {
     expect(names).toContain("capability/deep-approval-required");
     expect(names).toContain("capability/failed-typecheck-recovery-route");
     expect(names).toContain("adversarial/blocked-missing-done-checklist");
+    expect(names).toContain("adversarial/standard-approval-missing");
+    expect(names).toContain("adversarial/standard-approval-present");
     expect(names).toContain("regression/blocked-weak-prediction");
     expect(names).toContain("regression/blocked-tier-downgrade");
   });
@@ -45,6 +47,8 @@ describe("examples command", () => {
     expect(stdout).toContain("capability/deep-approval-required");
     expect(stdout).toContain("capability/failed-typecheck-recovery-route");
     expect(stdout).toContain("adversarial/blocked-missing-done-checklist");
+    expect(stdout).toContain("adversarial/standard-approval-missing");
+    expect(stdout).toContain("adversarial/standard-approval-present");
     expect(stdout).toContain("regression/blocked-weak-prediction");
     expect(stdout).toContain("regression/blocked-tier-downgrade");
     expect(stdout).toContain("All golden examples passed.");
@@ -124,6 +128,18 @@ describe("examples command", () => {
     );
     expect(missingChecklist.outcome).toBe("failed");
     expect(missingChecklist.acceptance_status).toBe("withheld");
+
+    const approvalMissing = output.results.find(
+      (r: { name: string }) => r.name === "adversarial/standard-approval-missing"
+    );
+    expect(approvalMissing.outcome).toBe("failed");
+    expect(approvalMissing.acceptance_status).toBe("withheld");
+
+    const approvalPresent = output.results.find(
+      (r: { name: string }) => r.name === "adversarial/standard-approval-present"
+    );
+    expect(approvalPresent.outcome).toBe("success");
+    expect(approvalPresent.acceptance_status).toBe("accepted");
 
     const weakPrediction = output.results.find(
       (r: { name: string }) => r.name === "regression/blocked-weak-prediction"

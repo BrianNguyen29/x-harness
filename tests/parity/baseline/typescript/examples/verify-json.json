@@ -15,10 +15,12 @@
       "passed": true
     },
     {
-      "acceptance_status": "accepted",
-      "errors": [],
+      "acceptance_status": "withheld",
+      "errors": [
+        "tier standard requires approval receipt for 1 high-risk command(s)"
+      ],
       "name": "adversarial/standard-approval-missing",
-      "outcome": "success",
+      "outcome": "failed",
       "output_mismatch": null,
       "passed": true
     },

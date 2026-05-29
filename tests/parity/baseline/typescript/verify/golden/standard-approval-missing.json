@@ -1,6 +1,6 @@
 {
-  "acceptance_status": "accepted",
-  "admission_outcome": "success",
+  "acceptance_status": "withheld",
+  "admission_outcome": "failed",
   "card_id": null,
   "changed_files": {
     "card_files": [
@@ -44,24 +44,28 @@
       "status": "passed"
     },
     {
-      "name": "admission checks passed",
-      "note": "admission checks passed",
-      "severity": "info",
-      "status": "passed"
+      "name": "tier standard requires approval receipt for 1 high-risk command(s)",
+      "note": "tier standard requires approval receipt for 1 high-risk command(s)",
+      "severity": "error",
+      "status": "failed"
     }
   ],
   "decision": {
-    "acceptance_status": "accepted",
-    "outcome": "success"
+    "acceptance_status": "withheld",
+    "outcome": "failed"
   },
   "denominator_warning": "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
   "episode": null,
   "input_card_hash": "sha256:ef4df6be6a344cea7ea4071fa039a7f840864f31d884a426c8ff659cb2b83a56",
-  "ok": true,
+  "ok": false,
   "policy_hash": "sha256:5c08082dadbc591d27f6e9b8640fe4c430d17afba75e179abab1633110b231cc",
-  "recovery": null,
+  "recovery": {
+    "next_action": "Request human approval before admission.",
+    "owner": "user",
+    "predicate": "classifier_approval_required"
+  },
   "schema_version": 1,
   "strict": false,
   "task_id": "TASK-GOLDEN-STD-APPR-MISS-001",
-  "withheld_reason": null
+  "withheld_reason": "tier standard requires approval receipt for 1 high-risk command(s)"
 }

@@ -1784,4 +1784,419 @@ describe("admission", () => {
       result.notes.some((note) => note.includes("tier downgrade approved"))
     ).toBe(true);
   });
+
+  // Approval receipt tests
+  it("withholds standard tier with high-risk command missing approval receipt", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["scripts/clean.sh"],
+        command_evidence: [{ command: "rm -rf dist", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.acceptance_status).toBe("withheld");
+    expect(
+      result.errors.some((e) => e.includes("approval receipt") && e.includes("high-risk"))
+    ).toBe(true);
+    expect(result.blocking_predicate).toBe("classifier_approval_required");
+  });
+
+  it("accepts standard tier with high-risk command and valid approval receipt", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      approval_receipt: {
+        decision: "approved",
+        approver: "user",
+        classified_commands: [{ command: "rm -rf dist", risk: "high" }],
+        aggregate_risk: "high",
+      },
+      evidence: {
+        files_changed: ["scripts/clean.sh"],
+        command_evidence: [{ command: "rm -rf dist", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(
+      result.notes.some((n) => n.includes("approval_receipt validated"))
+    ).toBe(true);
+  });
+
+  it("accepts standard tier with low-risk command without approval receipt", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+  });
+
+  it("withholds deep tier with medium-risk command missing approval receipt", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "go build ./cmd/app", exit_code: 0 }],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.acceptance_status).toBe("withheld");
+    expect(
+      result.errors.some((e) => e.includes("approval receipt"))
+    ).toBe(true);
+    expect(result.blocking_predicate).toBe("classifier_approval_required");
+  });
+
+  it("accepts deep tier with medium-risk command and valid approval receipt", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      approval_receipt: {
+        decision: "approved",
+        approver: "user",
+        classified_commands: [{ command: "go build ./cmd/app", risk: "medium" }],
+        aggregate_risk: "medium",
+      },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "go build ./cmd/app", exit_code: 0 }],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+  });
+
+  it("withholds when approval receipt decision is not approved", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      approval_receipt: {
+        decision: "denied",
+        approver: "user",
+        classified_commands: [{ command: "rm -rf dist", risk: "high" }],
+        aggregate_risk: "high",
+      },
+      evidence: {
+        files_changed: ["scripts/clean.sh"],
+        command_evidence: [{ command: "rm -rf dist", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("decision is") && e.includes("denied"))).toBe(true);
+  });
+
+  it("withholds when approval receipt approver is missing", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      approval_receipt: {
+        decision: "approved",
+        approver: "",
+        classified_commands: [{ command: "rm -rf dist", risk: "high" }],
+        aggregate_risk: "high",
+      },
+      evidence: {
+        files_changed: ["scripts/clean.sh"],
+        command_evidence: [{ command: "rm -rf dist", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("approver is required"))).toBe(true);
+  });
+
+  it("withholds when approval receipt classified_commands is empty", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      approval_receipt: {
+        decision: "approved",
+        approver: "user",
+        classified_commands: [],
+        aggregate_risk: "high",
+      },
+      evidence: {
+        files_changed: ["scripts/clean.sh"],
+        command_evidence: [{ command: "rm -rf dist", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("classified_commands is required"))).toBe(true);
+  });
+
+  it("withholds when approval receipt does not cover all high-risk commands", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      approval_receipt: {
+        decision: "approved",
+        approver: "user",
+        classified_commands: [{ command: "rm -rf other", risk: "high" }],
+        aggregate_risk: "high",
+      },
+      evidence: {
+        files_changed: ["scripts/clean.sh"],
+        command_evidence: [
+          { command: "rm -rf dist", exit_code: 0 },
+          { command: "rm -rf other", exit_code: 0 },
+        ],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("does not cover command") && e.includes("rm -rf dist"))).toBe(true);
+  });
+
+  it("withholds when approval receipt aggregate_risk is below threshold", () => {
+    const result = runAdmission({
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      approval_receipt: {
+        decision: "approved",
+        approver: "user",
+        classified_commands: [{ command: "rm -rf dist", risk: "high" }],
+        aggregate_risk: "low",
+      },
+      evidence: {
+        files_changed: ["scripts/clean.sh"],
+        command_evidence: [{ command: "rm -rf dist", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.errors.some((e) => e.includes("aggregate_risk") && e.includes("below required threshold"))).toBe(true);
+  });
 });

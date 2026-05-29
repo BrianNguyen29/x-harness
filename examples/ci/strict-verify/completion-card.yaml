@@ -34,6 +34,13 @@ done_checklist:
   prediction_declared: true
   notes:
     - CI fixture intentionally validates strict verifier behavior, not a product feature.
+approval_receipt:
+  decision: approved
+  approver: ci
+  classified_commands:
+    - command: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
+      risk: high
+  aggregate_risk: high
 prediction:
   claim: Strict verify accepts a representative standard completion card without mutating the repository.
   expected_effect: verify --strict exits 0 and reports mutation guard passed.

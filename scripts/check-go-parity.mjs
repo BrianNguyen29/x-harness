@@ -70,9 +70,8 @@ function isSupported(caseId) {
   // Known divergences: Go does not yet implement these specific TS checks
   const knownDivergences = [
   ];
-  // Known divergences: TypeScript does not yet implement approval receipt checks
+  // Known divergences: TypeScript does not yet implement these specific Go checks
   const knownTsDivergences = [
-    "verify:golden:standard-approval-missing",
   ];
   return !knownDivergences.includes(caseId) && !knownTsDivergences.includes(caseId);
 }

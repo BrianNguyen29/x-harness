@@ -38,6 +38,12 @@
       "status": "warning"
     },
     {
+      "name": "approval_receipt validated for 1 high-risk command(s)",
+      "note": "approval_receipt validated for 1 high-risk command(s)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "severity": "info",

@@ -153,7 +153,7 @@
         "examples/golden/adversarial/standard-approval-missing/completion-card.yaml",
         "--json"
       ],
-      "exit_code": 0,
+      "exit_code": 1,
       "signal": null,
       "output": "verify/golden/standard-approval-missing.json"
     },

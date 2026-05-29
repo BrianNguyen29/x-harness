@@ -46,6 +46,9 @@ export function buildAdmissionInput(
         | Record<string, unknown>
         | undefined,
       prediction: card.prediction as Record<string, unknown> | undefined,
+      approval_receipt: card.approval_receipt as
+        | Record<string, unknown>
+        | undefined,
       pgv_advice: card.pgv_advice as Record<string, unknown> | undefined,
       isCardMode: true,
       staleGround: effectiveStaleGround,

@@ -86,6 +86,9 @@ async function verifyExample(example: GoldenExample): Promise<{
         | Record<string, unknown>
         | undefined,
       prediction: card.prediction as Record<string, unknown> | undefined,
+      approval_receipt: card.approval_receipt as
+        | Record<string, unknown>
+        | undefined,
       isCardMode: true,
       staleGround: false,
     };
@@ -126,13 +129,6 @@ async function verifyExample(example: GoldenExample): Promise<{
       if (actualOutput.trim() !== expectedOutput.trim()) {
         outputMismatch = `Output mismatch.\nExpected:\n${expectedOutput}\nActual:\n${actualOutput}`;
       }
-    }
-
-    // Known divergence: TypeScript compatibility baseline does not implement
-    // approval receipt enforcement (Go-only feature). This example is intentionally
-    // Go-only and its mismatch is accepted as documented divergence.
-    if (example.name === "adversarial/standard-approval-missing" && outputMismatch) {
-      outputMismatch = undefined;
     }
 
     const passed = !outputMismatch;
