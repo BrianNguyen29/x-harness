@@ -11,20 +11,19 @@ func setupExportTestDir(t *testing.T) string {
 	t.Helper()
 	tmpDir := t.TempDir()
 	files := map[string]string{
-		"README.md":                              "# test readme\n",
-		"AGENTS.md":                              "agents\n",
-		"X_HARNESS.md":                           "contract\n",
-		"CHANGELOG.md":                           "changes\n",
-		"LICENSE":                                "MIT\n",
-		"docs/guide.md":                          "guide\n",
-		"schemas/frozen-manifest.schema.json":    "{}\n",
-		"policies/admission.yaml":                "policy\n",
-		"templates/SUBAGENT_TASK_light.md":       "light\n",
-		"adapters/opencode/README.md":            "adapter\n",
-		"components/registry.yaml":               "version: 1\ncomponents:\n  - id: test_component\n",
-		"examples/golden/basic.json":             "{}\n",
-		"examples/adversarial/tamper.json":       "{}\n",
-		"tools/experimental/evolve/README.md":    "evolve\n",
+		"README.md":                           "# test readme\n",
+		"AGENTS.md":                           "agents\n",
+		"X_HARNESS.md":                        "contract\n",
+		"CHANGELOG.md":                        "changes\n",
+		"LICENSE":                             "MIT\n",
+		"docs/guide.md":                       "guide\n",
+		"policies/admission.yaml":             "policy\n",
+		"templates/SUBAGENT_TASK_light.md":    "light\n",
+		"adapters/opencode/README.md":         "adapter\n",
+		"components/registry.yaml":            "version: 1\ncomponents:\n  - id: test_component\n",
+		"examples/golden/basic.json":          "{}\n",
+		"examples/adversarial/tamper.json":    "{}\n",
+		"tools/experimental/evolve/README.md": "evolve\n",
 	}
 	for path, content := range files {
 		fullPath := filepath.Join(tmpDir, path)
@@ -34,6 +33,19 @@ func setupExportTestDir(t *testing.T) string {
 		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 			t.Fatal(err)
 		}
+	}
+	// Copy the real frozen-manifest schema so validation exercises the actual schema.
+	schemaSrc := filepath.Join("..", "..", "schemas", "frozen-manifest.schema.json")
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatalf("failed to read real frozen-manifest schema: %v", err)
+	}
+	schemaDst := filepath.Join(tmpDir, "schemas", "frozen-manifest.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
 	}
 	return tmpDir
 }
