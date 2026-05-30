@@ -118,7 +118,7 @@ brew update && brew upgrade x-harness
 | Action        | Alias for               | Description                                            |
 | :------------ | :---------------------- | :----------------------------------------------------- |
 | **`prepare`** | `handoff readiness`     | Check if workspace is ready for agent task handoff     |
-| **`check`**   | `verify`                | Run read-only verification against a completion card   |
+| **`check`**   | `verify`                | Run read-only verification against a completion card (for rule-based contract assertions, see `contract` and `verify --contract-oracles`) |
 | **`recover`** | `recovery suggest`      | Get recovery playbook suggestions from errors or trace |
 | **`doctor`**  | (standalone)            | Validate workspace health and configuration            |
 | **`actions`** | (standalone)            | List all beginner-friendly actions                     |
@@ -285,8 +285,8 @@ Task delegation in `x-harness` uses **only** the following three canonical tiers
 | **`init`**      | `./x-harness init [target_dir] [--minimal / --standard / --full]`                                                                                                                                             | Installs the core harness assets, schemas, policies, and adapters. Default is `--minimal`.                                 |
 | **`handoff`**   | `./x-harness handoff <light / standard / deep> [--title <text>] [--task <text>]`                                                                                                                              | Generates a clean markdown handoff task prompt structure.                                                                  |
 | **`add`**       | `./x-harness add <claim / evidence / completion-card> [key=value]`                                                                                                                                            | Adds a metadata helper file for compatibility modes.                                                                       |
-| **`verify`**    | `./x-harness verify [--card <path>] [--json] [--verbose] [--trace] [--trace-dir <dir>] [--subagent-return <path>] [--tier <tier>] [--task-id <id>] [--mutation-guard] [--strict]`                             | Executes the read-only verification policy against a completion card or compatibility subagent return. Supports tracing.   |
-| **`doctor`**    | `./x-harness doctor [--root <path>] [--json] [--format <json\|text>]`                                                                                                                                         | Checks critical file presence, schemas compilation, policies, and wording. JSON remains the default output for automation. |
+| **`verify`**    | `./x-harness verify [--card <path>] [--json] [--verbose] [--trace] [--trace-dir <dir>] [--subagent-return <path>] [--tier <tier>] [--task-id <id>] [--context-floor] [--mutation-guard] [--strict] [--strict-withheld-reason] [--contract-oracles] [--contract-oracles-policy <path>]` | Executes the read-only verification policy against a completion card or compatibility subagent return. Supports tracing, context-floor validation, mutation guard, strict withheld reason, and opt-in contract oracle assertions. |
+| **`doctor`**  | `./x-harness doctor [--root <path>] [--json] [--format <json\|text>] [--context] [--staleness] [--overclaim]`                                                                                                | Checks critical file presence, schemas compilation, policies, wording, context refs, managed context freshness, and overclaim phrases. |
 | **`report`**    | `./x-harness report [--metrics] [--card <path>] [--json] [--format <markdown\|json>]`                                                                                                                         | Summarizes verification events or calculates local card metrics. HTML remains available through the TypeScript CLI.        |
 | **`trace`**     | `./x-harness trace add [--outcome <status>] [--task-id <id>] [--acceptance-status <status>] [--tier <tier>] [--claim-id <id>] [--evidence-id <id>]`                                                           | Manually appends verify events to the trace log. Supports full event metadata.                                             |
 | **`clean`**     | `./x-harness clean [--tmp / --reset-card / --archive-success] [--force]`                                                                                                                                      | Defaults to a dry run; add `--force` to mutate tmp artifacts, reset a completion card, or archive accepted-card snapshots. |
@@ -309,6 +309,7 @@ The Go CLI also supports the following advanced commands:
 - `card` — Create or validate completion cards
 - `components` — Inspect component registry coverage
 - `conformance` — Run conformance checks against policies
+- `contract` — Run contract oracle checks
 - `cost` — Evaluate cost budget data
 - `episode` — Create episode packages
 - `evidence` — Manage evidence corpus entries

@@ -33,6 +33,8 @@ var includePaths = []string{
 	"examples/golden",
 	"examples/adversarial",
 	"tools/experimental/evolve",
+	".github/workflows/x-harness-verify.yml",
+	".x-harness/managed-blocks.yaml",
 }
 
 // FrozenManifestFile represents a single file in the manifest.
@@ -213,7 +215,16 @@ func validateManifest(manifest *FrozenManifest, root string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := v.Validate(manifest); err != nil {
+	// jsonschema/v6 requires JSON-compatible input, not a Go struct pointer.
+	data, err := json.Marshal(manifest)
+	if err != nil {
+		return []string{err.Error()}, nil
+	}
+	var doc any
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return []string{err.Error()}, nil
+	}
+	if err := v.Validate(doc); err != nil {
 		return []string{err.Error()}, nil
 	}
 	return nil, nil

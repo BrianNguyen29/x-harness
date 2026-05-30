@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "context-alignment",
+  "type": "object",
+  "required": [
+    "stale_ground_checked",
+    "product_contract_refs",
+    "architecture_refs",
+    "decision_refs",
+    "test_matrix_refs",
+    "unresolved_context_questions",
+    "context_evidence"
+  ],
+  "properties": {
+    "context_pack_id": {
+      "type": ["string", "null"],
+      "description": "Reference to the context pack that guided this task."
+    },
+    "product_contract_refs": {
+      "type": "array",
+      "description": "Product contract documents referenced for this task.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "architecture_refs": {
+      "type": "array",
+      "description": "Architecture boundary documents referenced for this task.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "decision_refs": {
+      "type": "array",
+      "description": "Decision records (ADRs) referenced for this task.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "test_matrix_refs": {
+      "type": "array",
+      "description": "Test matrix entries referenced for this task.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "stale_ground_checked": {
+      "type": "boolean",
+      "description": "Whether stale ground (outdated context) has been checked before claiming completion."
+    },
+    "unresolved_context_questions": {
+      "type": "array",
+      "description": "Open context questions that were identified but not resolved.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "context_delta": {
+      "type": ["string", "null"],
+      "description": "Summary of changes to context artifacts during this task (e.g., contract updated, boundary changed)."
+    },
+    "context_evidence": {
+      "type": "array",
+      "description": "Evidence artifacts documenting context verification.",
+      "items": {
+        "type": "object",
+        "required": ["ref", "kind"],
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Reference to the context artifact or evidence file.",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "description": "Kind of context evidence (e.g., contract_oracle, staleness_check, decision_record).",
+            "minLength": 1
+          },
+          "note": {
+            "type": ["string", "null"],
+            "description": "Optional note about this evidence."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

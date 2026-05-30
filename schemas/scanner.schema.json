@@ -24,7 +24,15 @@
   "$defs": {
     "finding": {
       "type": "object",
-      "required": ["severity", "category", "rule_id", "file", "line", "snippet", "waivable"],
+      "required": [
+        "severity",
+        "category",
+        "rule_id",
+        "file",
+        "line",
+        "snippet",
+        "waivable"
+      ],
       "properties": {
         "severity": {
           "type": "string",

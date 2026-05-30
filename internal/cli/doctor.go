@@ -12,6 +12,8 @@ func handleDoctor(args []string, stdout io.Writer, stderr io.Writer) int {
 	root := ""
 	format := "json"
 	staleness := false
+	overclaim := false
+	context := false
 	worktreeFlag := false
 
 	for i := 0; i < len(args); i++ {
@@ -30,17 +32,21 @@ func handleDoctor(args []string, stdout io.Writer, stderr io.Writer) int {
 			format = "json"
 		case "--staleness":
 			staleness = true
+		case "--overclaim":
+			overclaim = true
+		case "--context":
+			context = true
 		case "--worktree":
 			worktreeFlag = true
 		}
 	}
 
 	if root == "" {
-		fmt.Fprintln(stderr, "usage: x-harness doctor --root <path> [--format json|text] [--json] [--staleness] [--worktree]")
+		fmt.Fprintln(stderr, "usage: x-harness doctor --root <path> [--format json|text] [--json] [--staleness] [--overclaim] [--context] [--worktree]")
 		return ExitUsage
 	}
 
-	report := doctor.RunWithOptions(root, doctor.Options{Staleness: staleness})
+	report := doctor.RunWithOptions(root, doctor.Options{Staleness: staleness, Overclaim: overclaim, Context: context})
 
 	if worktreeFlag {
 		wt := worktree.CollectInfo(root)

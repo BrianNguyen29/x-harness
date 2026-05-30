@@ -96,3 +96,20 @@ func TestDoctorWorktreeNotGit(t *testing.T) {
 	}
 	_ = code
 }
+
+func TestDoctorHelpDocumentsFlags(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"doctor", "--help"}, &stdout, &stderr)
+
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d for usage, got %d. stdout: %s\nstderr: %s", ExitUsage, code, stdout.String(), stderr.String())
+	}
+
+	usage := stderr.String()
+	for _, flag := range []string{"--context", "--staleness", "--overclaim"} {
+		if !strings.Contains(usage, flag) {
+			t.Fatalf("expected usage to contain %s, got: %s", flag, usage)
+		}
+	}
+}

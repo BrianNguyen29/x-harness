@@ -144,7 +144,9 @@ describe("release packaging", () => {
       path.join(repoRoot, ".github", "workflows", "sbom.yml"),
       "utf-8"
     );
-    expect(releaseWorkflow).toContain("benchmark --filter adversarial --gate --json");
+    expect(releaseWorkflow).toContain(
+      "benchmark --filter adversarial --gate --json"
+    );
     expect(releaseWorkflow).toContain("npm -w packages/cli run pack:dry-run");
     expect(releaseWorkflow).toContain("npm sbom --workspace x-harness");
     expect(releaseWorkflow).toContain(

@@ -1818,7 +1818,9 @@ describe("admission", () => {
     expect(result.outcome).toBe("failed");
     expect(result.acceptance_status).toBe("withheld");
     expect(
-      result.errors.some((e) => e.includes("approval receipt") && e.includes("high-risk"))
+      result.errors.some(
+        (e) => e.includes("approval receipt") && e.includes("high-risk")
+      )
     ).toBe(true);
     expect(result.blocking_predicate).toBe("classifier_approval_required");
   });
@@ -1943,9 +1945,9 @@ describe("admission", () => {
     });
     expect(result.outcome).toBe("failed");
     expect(result.acceptance_status).toBe("withheld");
-    expect(
-      result.errors.some((e) => e.includes("approval receipt"))
-    ).toBe(true);
+    expect(result.errors.some((e) => e.includes("approval receipt"))).toBe(
+      true
+    );
     expect(result.blocking_predicate).toBe("classifier_approval_required");
   });
 
@@ -1962,7 +1964,9 @@ describe("admission", () => {
       approval_receipt: {
         decision: "approved",
         approver: "user",
-        classified_commands: [{ command: "go build ./cmd/app", risk: "medium" }],
+        classified_commands: [
+          { command: "go build ./cmd/app", risk: "medium" },
+        ],
         aggregate_risk: "medium",
       },
       evidence: {
@@ -2038,7 +2042,11 @@ describe("admission", () => {
       },
     });
     expect(result.outcome).toBe("failed");
-    expect(result.errors.some((e) => e.includes("decision is") && e.includes("denied"))).toBe(true);
+    expect(
+      result.errors.some(
+        (e) => e.includes("decision is") && e.includes("denied")
+      )
+    ).toBe(true);
   });
 
   it("withholds when approval receipt approver is missing", () => {
@@ -2077,7 +2085,9 @@ describe("admission", () => {
       },
     });
     expect(result.outcome).toBe("failed");
-    expect(result.errors.some((e) => e.includes("approver is required"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("approver is required"))).toBe(
+      true
+    );
   });
 
   it("withholds when approval receipt classified_commands is empty", () => {
@@ -2116,7 +2126,9 @@ describe("admission", () => {
       },
     });
     expect(result.outcome).toBe("failed");
-    expect(result.errors.some((e) => e.includes("classified_commands is required"))).toBe(true);
+    expect(
+      result.errors.some((e) => e.includes("classified_commands is required"))
+    ).toBe(true);
   });
 
   it("withholds when approval receipt does not cover all high-risk commands", () => {
@@ -2158,7 +2170,11 @@ describe("admission", () => {
       },
     });
     expect(result.outcome).toBe("failed");
-    expect(result.errors.some((e) => e.includes("does not cover command") && e.includes("rm -rf dist"))).toBe(true);
+    expect(
+      result.errors.some(
+        (e) => e.includes("does not cover command") && e.includes("rm -rf dist")
+      )
+    ).toBe(true);
   });
 
   it("withholds when approval receipt aggregate_risk is below threshold", () => {
@@ -2197,6 +2213,11 @@ describe("admission", () => {
       },
     });
     expect(result.outcome).toBe("failed");
-    expect(result.errors.some((e) => e.includes("aggregate_risk") && e.includes("below required threshold"))).toBe(true);
+    expect(
+      result.errors.some(
+        (e) =>
+          e.includes("aggregate_risk") && e.includes("below required threshold")
+      )
+    ).toBe(true);
   });
 });

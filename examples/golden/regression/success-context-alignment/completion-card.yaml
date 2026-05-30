@@ -1,0 +1,94 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-CONTEXT-ALIGN-001
+tier: standard
+owner: alice
+accountable: bob
+state:
+  read_set:
+    - src/context/contract.md
+  write_set:
+    - src/context/contract.md
+    - src/context/contract.test.ts
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Updated context contract with new validation rules
+  expected_effect: Context contract validates new field requirements
+  measurable_signal: npm test -- context-contract && npm run typecheck
+  falsification_method: Run tests without the fix; validation should not enforce new rules
+  horizon: same_verify
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - src/context/contract.md
+  architecture_refs:
+    - src/context/architecture.md
+  decision_refs:
+    - src/context/adr-001.md
+  test_matrix_refs:
+    - src/context/test-matrix.yaml
+  unresolved_context_questions:
+    - "Follow-up: Should we add backward compatibility for legacy field names?"
+  context_evidence:
+    - ref: src/context/staleness-check.txt
+      kind: staleness_check
+      note: Verified no stale context artifacts were used
+    - ref: src/context/contract-oracle.json
+      kind: contract_oracle
+      note: Confirmed contract schema matches product requirements
+    - ref: src/context/adr-001.md
+      kind: decision_record
+evidence:
+  files_changed:
+    - src/context/contract.md
+    - src/context/contract.test.ts
+  command_evidence:
+    - command: npm test -- context-contract
+      exit_code: 0
+  verification_artifacts:
+    - kind: unit_test
+      command: npm test -- context-contract
+      status: passed
+      verifies:
+        - "new validation rules are enforced"
+      does_not_verify:
+        - "legacy field compatibility"
+      confidence: medium
+    - kind: typecheck
+      command: npm run typecheck
+      status: passed
+      verifies:
+        - "TypeScript type consistency"
+      does_not_verify:
+        - "runtime behavior"
+      confidence: medium
+  untested_regions:
+    - "No E2E test for legacy field backward compatibility."
+claim:
+  fix_status: fixed
+  summary: Added context alignment fixture with context_alignment block
+  evidence:
+    - description: Source file src/context/contract.md
+      url: ./src/context/contract.md
+    - description: Test output
+      result: passed
+      command: npm test -- context-contract
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice

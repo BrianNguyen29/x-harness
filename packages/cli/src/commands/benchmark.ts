@@ -381,6 +381,11 @@ async function discoverCaseDefinitions(
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
       const subDir = path.join(dir, entry.name);
+      // Skip TS benchmark for fixtures marked with .skip-ts-benchmark
+      // (e.g., Go-only or opt-in features not implemented in TS pipeline)
+      if (await fs.pathExists(path.join(subDir, ".skip-ts-benchmark"))) {
+        continue;
+      }
       const cardPath = path.join(subDir, "completion-card.yaml");
       if (await fs.pathExists(cardPath)) {
         definitions.push({
@@ -388,7 +393,9 @@ async function discoverCaseDefinitions(
           name: entry.name,
           cardPath,
           expectedAcceptance:
-            suite === "golden" ? expectedGoldenAcceptance(entry.name) : "withheld",
+            suite === "golden"
+              ? expectedGoldenAcceptance(entry.name)
+              : "withheld",
         });
       } else {
         await scan(subDir);
@@ -1003,7 +1010,11 @@ export function benchmarkCommand(): Command {
       "Reserved for human-approved benchmark boundary updates",
       false
     )
-    .option("--gate", "Fail the benchmark if any unsafe metric is detected", false)
+    .option(
+      "--gate",
+      "Fail the benchmark if any unsafe metric is detected",
+      false
+    )
     .option("--json", "Output JSON instead of Markdown", false)
     .action(async (opts: BenchmarkOptions) => {
       let names: BenchmarkName[];

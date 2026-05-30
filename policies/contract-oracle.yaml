@@ -1,0 +1,55 @@
+version: 1
+
+# Contract Oracle Policy
+# This policy defines grep-based rules and dependency rules for contract checking.
+#
+# Design principles:
+# - Deterministic: same file always produces same violations.
+# - Safe defaults: rules are crafted to avoid false positives in typical repos.
+# - Exit code 0 when no violations, exit code 1 when violations found.
+#
+# Default policy is intentionally empty (no active rules) to ensure
+# the current repository passes by default. Custom rules can be added
+# via --policy flag for targeted violation testing.
+#
+# Example rules (commented out - uncomment to enable):
+#
+# grep_rules:
+#   # Detect console.log in TypeScript files
+#   - id: console-log-typescript
+#     description: "console.log statement in TypeScript"
+#     file_pattern: "*.ts"
+#     pattern: 'console\.log\('
+#     message: "Remove console.log statements before committing"
+#
+#   # Detect TODO comments without owners in Go files
+#   - id: todo-without-owner
+#     description: "TODO comment without owner identifier"
+#     file_pattern: "*.go"
+#     pattern: '(?i)//\s*TODO:'
+#     message: "TODO comments should include an owner or ticket reference"
+#
+# dependency_rules:
+#   # Detect forbidden package imports in Go files
+#   - id: no-forbidden-packages
+#     description: "No forbidden packages"
+#     file_pattern: "*.go"
+#     forbidden_imports:
+#       - "github.com/forbidden"
+#       - "internal/secret"
+#     allowed_imports:
+#       - "github.com/forbidden/public"  # exception for public fork
+#     exclude:
+#       - "vendor"
+#       - "examples"
+#     message: "Do not import forbidden packages"
+#
+#   # Detect forbidden npm packages in TypeScript/JavaScript
+#   - id: no-insecure-libs
+#     description: "No insecure libraries"
+#     file_pattern: "*.ts"
+#     forbidden_imports:
+#       - "insecure-package"
+
+grep_rules: []
+dependency_rules: []

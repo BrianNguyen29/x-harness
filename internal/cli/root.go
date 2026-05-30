@@ -76,6 +76,7 @@ var commands = []CommandInfo{
 	{Name: "release", Description: "Generate or verify release evidence", Maturity: MaturityBeta},
 	{Name: "adapters", Description: "Inspect adapter matrix", Maturity: MaturityBeta},
 	{Name: "scan", Description: "Run static security scan on adapter or skill files", Maturity: MaturityBeta},
+	{Name: "contract", Description: "Run contract oracle checks", Maturity: MaturityExperimental},
 }
 
 func Run(args []string, stdout io.Writer, stderr io.Writer) int {
@@ -175,6 +176,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleAdapters(args[1:], stdout, stderr)
 	case "scan":
 		return handleScan(args[1:], stdout, stderr)
+	case "contract":
+		return handleContract(args[1:], stdout, stderr)
 	case "profile":
 		return handleProfile(args[1:], stdout, stderr)
 	case "repair":

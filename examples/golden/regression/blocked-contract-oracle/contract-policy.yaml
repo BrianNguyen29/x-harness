@@ -1,0 +1,14 @@
+version: 1
+
+# Contract Oracle Policy for blocked-contract-oracle fixture
+# This policy is deterministic - it only matches the unique marker file.
+
+grep_rules:
+  # Detect marker file with specific violation content
+  - id: contract-oracle-marker-violation
+    description: "Contract oracle test marker file contains forbidden marker"
+    file_pattern: "contract-oracle-violation-marker.txt"
+    pattern: 'FORBIDDEN_MARKER_CONTRACT_ORACLE_TEST_2026'
+    message: "Contract oracle violation detected in test marker file"
+    exclude:
+      - packages/cli/examples

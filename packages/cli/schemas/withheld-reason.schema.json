@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "withheld-reason",
+  "type": "object",
+  "required": ["class", "blocking_predicate", "stage", "recoverability", "owner", "next_action"],
+  "properties": {
+    "class": {
+      "enum": [
+        "schema_or_policy_invalid",
+        "verifier_not_read_only",
+        "evidence_floor_missing",
+        "claim_status_mismatch",
+        "admission_mapping_invalid",
+        "unresolved_blocker",
+        "done_checklist_missing",
+        "prediction_missing",
+        "approval_receipt_missing",
+        "approval_scope_invalid",
+        "state_drift_detected",
+        "deep_control_missing",
+        "rollback_policy_missing",
+        "external_dependency_unverified",
+        "freshness_missing",
+        "context_pack_missing",
+        "context_stale",
+        "context_insufficient",
+        "architecture_mismatch",
+        "contract_mismatch",
+        "test_matrix_gap",
+        "source_of_truth_missing",
+        "context_floor_blocked"
+      ]
+    },
+    "blocking_predicate": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stage": {
+      "enum": ["schema", "policy", "verification", "admission", "evidence", "handoff", "approval", "state", "context", "recovery", "unknown"]
+    },
+    "recoverability": {
+      "enum": ["automatic", "manual", "blocked", "unknown"]
+    },
+    "schema_recoverability": {
+      "description": "Schema enum value derived from legacy recoverability field. Present during compatibility phase.",
+      "enum": ["automatic", "manual", "blocked", "unknown"]
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "next_action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "missing_field": {
+      "type": "string"
+    },
+    "policy_path": {
+      "type": "string"
+    },
+    "trace_event_id": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

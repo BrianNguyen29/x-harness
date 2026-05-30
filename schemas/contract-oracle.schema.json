@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "contract-oracle-result",
+  "type": "object",
+  "required": ["ok", "policy", "files_scanned", "violations"],
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "description": "True if no violations were found"
+    },
+    "policy": {
+      "type": "string",
+      "description": "Path to the policy file used"
+    },
+    "files_scanned": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of files scanned"
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/violation"
+      },
+      "description": "List of rule violations found"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "violation": {
+      "type": "object",
+      "required": ["rule_id", "file", "line", "snippet", "message"],
+      "properties": {
+        "rule_id": {
+          "type": "string",
+          "description": "Identifier of the matched rule (grep_rule or dependency_rule)"
+        },
+        "file": {
+          "type": "string",
+          "description": "Path to the file containing the match"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Line number of the match"
+        },
+        "snippet": {
+          "type": "string",
+          "description": "Matched line content (truncated to 120 chars if longer)"
+        },
+        "message": {
+          "type": "string",
+          "description": "Descriptive message for the violation"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

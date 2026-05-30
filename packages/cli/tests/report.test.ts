@@ -54,8 +54,12 @@ describe("report command", () => {
     expect(stdout).toContain("# x-harness Report");
     expect(stdout).toContain("## Verify event accounting");
     expect(stdout).toContain("## Rate metrics");
-    expect(stdout).toContain("- verify_event_success_rate: 1/3 verify_event (not_task_level)");
-    expect(stdout).toContain("- task_completion_coverage: not_computable (missing_aligned_task_denominator)");
+    expect(stdout).toContain(
+      "- verify_event_success_rate: 1/3 verify_event (not_task_level)"
+    );
+    expect(stdout).toContain(
+      "- task_completion_coverage: not_computable (missing_aligned_task_denominator)"
+    );
     expect(stdout).toContain("## Task lifecycle accounting");
     expect(stdout).toContain("## Admission accounting");
     expect(stdout).toContain("## Withheld accounting");
@@ -162,8 +166,12 @@ describe("report command", () => {
     expect(report.metrics.verify_event_success_rate.unit).toBe("verify_event");
     expect(report.metrics.verify_event_success_rate.not_task_level).toBe(true);
     expect(report.metrics.task_completion_coverage).toBeDefined();
-    expect(report.metrics.task_completion_coverage.status).toBe("not_computable");
-    expect(report.metrics.task_completion_coverage.reason).toBe("missing_aligned_task_denominator");
+    expect(report.metrics.task_completion_coverage.status).toBe(
+      "not_computable"
+    );
+    expect(report.metrics.task_completion_coverage.reason).toBe(
+      "missing_aligned_task_denominator"
+    );
     expect(report.metrics.withheld_rate).toBeDefined();
     expect(report.metrics.withheld_rate.unit).toBe("verify_event");
     expect(report.metrics.withheld_rate.not_task_level).toBe(true);
@@ -189,8 +197,12 @@ describe("report command", () => {
     expect(stdout).toContain("# x-harness Metrics Report");
     expect(stdout).toContain("## Verification strength");
     expect(stdout).toContain("## Rate metrics");
-    expect(stdout).toContain("- verify_event_success_rate: 1/1 verify_event (not_task_level)");
-    expect(stdout).toContain("- task_completion_coverage: not_computable (missing_aligned_task_denominator)");
+    expect(stdout).toContain(
+      "- verify_event_success_rate: 1/1 verify_event (not_task_level)"
+    );
+    expect(stdout).toContain(
+      "- task_completion_coverage: not_computable (missing_aligned_task_denominator)"
+    );
     expect(stdout).toContain("## Verify event accounting");
     expect(stdout).toContain("## Task lifecycle accounting");
     expect(stdout).toContain("## Admission accounting");

@@ -1,0 +1,5 @@
+# Contract Oracle Violation Marker File
+# This file exists solely to trigger the contract-oracle-violation-marker rule
+# in the contract-policy.yaml for testing purposes.
+# DO NOT USE this pattern in production code.
+FORBIDDEN_MARKER_CONTRACT_ORACLE_TEST_2026

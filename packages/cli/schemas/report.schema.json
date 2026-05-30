@@ -50,11 +50,18 @@
         },
         "withheld_reason": {
           "type": "object",
-          "required": ["failure_class", "failure_stage", "recoverability", "next_action", "blocking_predicate"],
+          "required": [
+            "failure_class",
+            "failure_stage",
+            "recoverability",
+            "next_action",
+            "blocking_predicate"
+          ],
           "properties": {
             "failure_class": { "type": "string" },
             "failure_stage": { "type": "string" },
             "recoverability": { "type": "string" },
+            "schema_recoverability": { "type": "string" },
             "next_action": { "type": "string" },
             "blocking_predicate": { "type": "string" }
           }
@@ -219,7 +226,12 @@
             },
             "verify_event_success_rate": {
               "type": "object",
-              "required": ["numerator", "denominator", "unit", "not_task_level"],
+              "required": [
+                "numerator",
+                "denominator",
+                "unit",
+                "not_task_level"
+              ],
               "properties": {
                 "numerator": { "type": "integer", "minimum": 0 },
                 "denominator": { "type": "integer", "minimum": 0 },
@@ -237,7 +249,12 @@
             },
             "withheld_rate": {
               "type": "object",
-              "required": ["numerator", "denominator", "unit", "not_task_level"],
+              "required": [
+                "numerator",
+                "denominator",
+                "unit",
+                "not_task_level"
+              ],
               "properties": {
                 "numerator": { "type": "integer", "minimum": 0 },
                 "denominator": { "type": "integer", "minimum": 0 },

@@ -1,0 +1,2 @@
+This fixture tests Go-only context-floor (missing contract oracle ref) verification that is not implemented in the TS pipeline.
+TS benchmark should skip this case to avoid false accepts.

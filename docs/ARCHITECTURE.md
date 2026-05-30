@@ -54,6 +54,8 @@ Enforces complete structure verification on inputs via **JSON Schema** validatio
 
 Loads `policies/admission.yaml` and executes the core verification logic. It operates in a **strictly read-only** mode, ensuring the verification process does not mutate the directory files to fix logical or lint failures during checking.
 
+> **Note:** Contract Oracle (`verify --contract-oracles`) and Context Floor (`verify --context-floor`) are **optional** verify stages. Both default to off and must be explicitly enabled. Contract Oracle performs line-level grep/dependency rule checks. Context Floor performs minimal file/ref presence checks.
+
 ### 5. Metrics & Reporting Layer
 
 Computes deterministic, local-first performance metrics analyzing verification strength, state consistency, recovery ability, replayability, and execution costs without relying on external SaaS APIs or monitoring dashboards.

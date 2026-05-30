@@ -9,6 +9,18 @@ const __dirname = dirname(__filename);
 
 const ajv = new Ajv2020({ strict: false });
 
+// Pre-register context-alignment.schema.json for cross-file $ref resolution
+// in completion-card.schema.json and other schemas that reference it.
+try {
+  const contextAlignmentPath = join(__dirname, "..", "..", "schemas", "context-alignment.schema.json");
+  const contextAlignmentSchema = fs.readJsonSync(contextAlignmentPath);
+  ajv.addSchema(contextAlignmentSchema, "context-alignment.schema.json");
+} catch (err) {
+  // Re-throw to fail fast if the packaged schema is missing — avoids silent
+  // failures that would hide missing schema in tests or production.
+  throw new Error(`Failed to pre-register context-alignment.schema.json: ${err instanceof Error ? err.message : String(err)}`);
+}
+
 ajv.addFormat("date-time", {
   type: "string",
   validate: (value: string) =>

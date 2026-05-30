@@ -37,6 +37,15 @@ The verification tool yields a non-zero exit code (`1`) and outputs a structured
 
 No. `x-harness` sits on top of your test suite. It uses your test logs and code compilation as **evidence** (via `command_evidence`) to decide if a task should be admitted, but it does not execute the actual application tests itself.
 
+### What is Contract Oracle?
+
+Contract Oracle is an **opt-in** verification stage that enforces line-level policy rules via `verify --contract-oracles` or as a standalone check via `contract check`. It supports two rule types:
+
+- **`grep_rules`**: pattern matches against file contents (no AST, package graph, or lockfile parsing).
+- **`dependency_rules`**: checks for required or forbidden file references.
+
+Contract Oracle is off by default and must be explicitly enabled. It is useful for enforcing lightweight contractual constraints without full static analysis.
+
 ---
 
 ## 🔌 Integration & Adapters

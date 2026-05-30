@@ -29,7 +29,7 @@ $BINARY examples verify --json >/dev/null
 echo "  examples verify ok"
 
 # 4. Verify a local golden example (local, no network)
-$BINARY verify --card examples/golden/success-light/completion-card.yaml --json >/dev/null
+$BINARY verify --card examples/golden/regression/success-light/completion-card.yaml --json >/dev/null
 echo "  verify golden example ok"
 
 echo "All smoke tests passed."

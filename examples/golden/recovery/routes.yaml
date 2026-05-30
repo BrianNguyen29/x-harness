@@ -44,3 +44,7 @@ recovery_routing:
   state_read_write_missing:
     next_action: "Declare state.read_set and state.write_set for the task."
     owner: implementation-worker
+
+  context_floor_blocked:
+    next_action: "Add context_alignment with stale_ground_checked, at least one ref array, and resolve context questions."
+    owner: implementation-worker

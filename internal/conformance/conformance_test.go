@@ -140,6 +140,7 @@ func TestCheckSuiteMissingExpectedOutput(t *testing.T) {
 	// Set up minimal schema and a fixture with card but missing expected output
 	os.MkdirAll(filepath.Join(tmp, "schemas"), 0755)
 	copyFile(t, filepath.Join("..", "..", "schemas", "completion-card.schema.json"), filepath.Join(tmp, "schemas", "completion-card.schema.json"))
+	copyFile(t, filepath.Join("..", "..", "schemas", "context-alignment.schema.json"), filepath.Join(tmp, "schemas", "context-alignment.schema.json"))
 
 	fixtureDir := filepath.Join(tmp, "examples", "golden", "regression", "test-fixture")
 	os.MkdirAll(fixtureDir, 0755)
@@ -160,6 +161,7 @@ func TestCheckSuiteMismatch(t *testing.T) {
 
 	os.MkdirAll(filepath.Join(tmp, "schemas"), 0755)
 	copyFile(t, filepath.Join("..", "..", "schemas", "completion-card.schema.json"), filepath.Join(tmp, "schemas", "completion-card.schema.json"))
+	copyFile(t, filepath.Join("..", "..", "schemas", "context-alignment.schema.json"), filepath.Join(tmp, "schemas", "context-alignment.schema.json"))
 
 	fixtureDir := filepath.Join(tmp, "examples", "golden", "regression", "mismatch-fixture")
 	os.MkdirAll(fixtureDir, 0755)
@@ -181,6 +183,7 @@ func TestCheckSuitePass(t *testing.T) {
 
 	os.MkdirAll(filepath.Join(tmp, "schemas"), 0755)
 	copyFile(t, filepath.Join("..", "..", "schemas", "completion-card.schema.json"), filepath.Join(tmp, "schemas", "completion-card.schema.json"))
+	copyFile(t, filepath.Join("..", "..", "schemas", "context-alignment.schema.json"), filepath.Join(tmp, "schemas", "context-alignment.schema.json"))
 
 	fixtureDir := filepath.Join(tmp, "examples", "golden", "regression", "success-fixture")
 	os.MkdirAll(fixtureDir, 0755)

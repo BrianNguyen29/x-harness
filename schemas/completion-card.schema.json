@@ -336,10 +336,20 @@
       "type": "boolean",
       "description": "Advisory-only flag indicating the worker acknowledged context constraints. Missing or false does not block admission."
     },
+    "context_alignment": {
+      "type": "object",
+      "description": "Optional context alignment evidence. References context-alignment.schema.json. Required for standard/deep per context-floor policy but optional at schema level for forward compatibility.",
+      "$ref": "context-alignment.schema.json"
+    },
     "approval_receipt": {
       "type": "object",
       "description": "Optional approval receipt for high-risk command evidence. Required for standard/deep when evidence contains high-risk or unknown commands (standard: high/unknown; deep: medium/high/unknown).",
-      "required": ["decision", "approver", "classified_commands", "aggregate_risk"],
+      "required": [
+        "decision",
+        "approver",
+        "classified_commands",
+        "aggregate_risk"
+      ],
       "properties": {
         "decision": {
           "enum": ["approved", "rejected"]

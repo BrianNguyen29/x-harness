@@ -36,10 +36,10 @@ blocks:
     end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: verify-report-contract -->"
     hash_prefix: "<!-- contract-hash: "
   - path: adapters/generic/AGENTS.md
-    type: contract
-    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: generic-agents-contract -->"
-    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: generic-agents-contract -->"
-    hash_prefix: "<!-- contract-hash: "
+    type: context
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTEXT -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTEXT -->"
+    hash_prefix: "<!-- context-hash: "
   - path: adapters/generic/README.md
     type: contract
     begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: generic-adapter-contract -->"
@@ -51,10 +51,10 @@ blocks:
     end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: antigravity-rules-contract -->"
     hash_prefix: "<!-- contract-hash: "
   - path: adapters/antigravity/README.md
-    type: contract
-    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: antigravity-readme-contract -->"
-    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: antigravity-readme-contract -->"
-    hash_prefix: "<!-- contract-hash: "
+    type: context
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTEXT -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTEXT -->"
+    hash_prefix: "<!-- context-hash: "
   - path: adapters/antigravity/workflows/x-harness-implementation.md
     type: contract
     begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: antigravity-implementation-workflow-contract -->"
@@ -86,10 +86,10 @@ blocks:
     end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: claude-readme-contract -->"
     hash_prefix: "<!-- contract-hash: "
   - path: adapters/claude-code/CLAUDE.md
-    type: contract
-    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: claude-contract -->"
-    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: claude-contract -->"
-    hash_prefix: "<!-- contract-hash: "
+    type: context
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTEXT -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTEXT -->"
+    hash_prefix: "<!-- context-hash: "
   - path: adapters/claude-code/skills/verify/SKILL.md
     type: contract
     begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: claude-verify-skill-contract -->"
@@ -111,10 +111,10 @@ blocks:
     end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: cursor-rules-contract -->"
     hash_prefix: "<!-- contract-hash: "
   - path: adapters/cursor/README.md
-    type: contract
-    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: cursor-readme-contract -->"
-    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: cursor-readme-contract -->"
-    hash_prefix: "<!-- contract-hash: "
+    type: context
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTEXT -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTEXT -->"
+    hash_prefix: "<!-- context-hash: "
   - path: adapters/opencode/agents/x-harness-verify.md
     type: contract
     begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: opencode-verify-agent-contract -->"
@@ -131,10 +131,10 @@ blocks:
     end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: opencode-orchestrator-append-contract -->"
     hash_prefix: "<!-- contract-hash: "
   - path: adapters/opencode/README.md
-    type: contract
-    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: opencode-readme-contract -->"
-    end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: opencode-readme-contract -->"
-    hash_prefix: "<!-- contract-hash: "
+    type: context
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTEXT -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTEXT -->"
+    hash_prefix: "<!-- context-hash: "
   - path: adapters/opencode/verify-agent.md
     type: contract
     begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: opencode-verify-agent-redirect-contract -->"

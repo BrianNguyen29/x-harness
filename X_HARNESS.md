@@ -12,7 +12,7 @@ Agents may perform work and propose completion. Agents may not self-admit comple
 
 - **File-first**: The source of truth is repository files — Markdown templates, JSON schemas, YAML policies, examples, and adapters. The CLI validates and generates files, but does not replace the files as the canonical contract.
 - **Lightweight**: No daemon, database, server, MCP, or AI-specific runtime is required.
-- **Go-native with TypeScript compatibility**: Core tooling is migrating to the native Go CLI while the TypeScript CLI remains the compatibility baseline. Python utilities, if ever added, must live under `legacy/python/` or `tools/experimental/` and be marked non-canonical.
+- **Go-native, file-first**: The Go CLI is the canonical runtime; TypeScript provides source-checkout compatibility. Python utilities, if ever added, must live under `legacy/python/` or `tools/experimental/` and be marked non-canonical.
 - **Tiered**: Use `light`, `standard`, and `deep` for task handoffs. Do not use `small`, `medium`, or `large` in active runtime handoffs.
 - **Verify-gated**: Verification is read-only and must not edit source files.
 - **Advisory PGV**: PGV is optional and advisory-only. It never overrides verify and never grants admission authority by default.
@@ -101,7 +101,7 @@ error:
 
 Core command set includes:
 - Beginner actions: `check` (alias for verify), `prepare` (alias for handoff readiness), `recover` (alias for recovery suggest), `doctor`, `actions`, `status`, `reset`
-- Advanced commands: `init`, `add`, `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `recovery`, `packet`, `conformance`, `scan`, `adapters`, `card`, `profile`, `readiness`, `release`, `benchmark`
+- Advanced commands: `init`, `add`, `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `recovery`, `packet`, `conformance`, `scan`, `adapters`, `card`, `profile`, `readiness`, `release`, `benchmark`, `contract`
 
 Run `./x-harness --help` for the full command registry.
 
@@ -142,6 +142,7 @@ schemas/                          # Published contract (do not edit directly for
   claim.schema.json
   evidence.schema.json
   packet.schema.json              # Packet chain schema
+  contract-oracle.schema.json
 
 policies/
   admission.yaml
@@ -149,6 +150,7 @@ policies/
   authority.yaml
   classifier.yaml
   cleanup.yaml
+  contract-oracle.yaml
   cost-budget.yaml
   denominator.yaml
   escalation.yaml
@@ -176,6 +178,7 @@ examples/
       success-standard-scoped-evidence/
       blocked-missing-evidence/
       blocked-missing-evidence-scope/
+      blocked-contract-oracle/
       failed-invalid-status/
       blocked-tier-downgrade/
       blocked-weak-prediction/

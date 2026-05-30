@@ -1,0 +1,63 @@
+version: 1
+
+# Context Floor — admission-level context alignment policy.
+#
+# Controls which context artifacts (product contracts, architecture boundaries,
+# decision records, test matrices) are required per tier before a completion
+# claim can be admitted.
+#
+# Phase 1 wiring is complete: context_alignment schema, verify --context-floor,
+# and doctor --context are implemented. Hard anchor enforcement (referenced_anchor_missing)
+# remains advanced deferred. See docs/VERIFY_GATE.md §7.
+#
+# Reference: schemas/context-alignment.schema.json
+# See also: policies/stale-ground.yaml
+
+context_floor:
+  light:
+    required: []
+    advisory:
+      - stale_ground_checked
+    blocks_if: []
+
+  standard:
+    required:
+      - stale_ground_checked
+    one_of:
+      - product_contract_refs
+      - architecture_refs
+      - decision_refs
+      - test_matrix_refs
+    blocks_if:
+      - stale_ground_checked_missing
+      - context_ref_missing
+
+  deep:
+    required:
+      - stale_ground_checked
+      - context_pack_id
+      - unresolved_context_questions_empty
+    required_if_changed:
+      product_behavior:
+        - product_contract_refs
+        - test_matrix_refs
+      architecture_boundary:
+        - architecture_refs
+        - decision_refs
+      validation_expectation:
+        - test_matrix_refs
+    blocks_if:
+      - stale_ground_checked_missing
+      - context_pack_missing
+      - context_stale
+      - context_ref_missing
+      - referenced_file_missing
+      - referenced_anchor_missing
+
+# Blocking predicates for future enforcement wiring:
+# - stale_ground_checked_missing: stale_ground_checked field absent or false
+# - context_pack_missing: context_pack_id required but absent (deep tier)
+# - context_stale: context artifacts have been updated since context_pack creation
+# - context_ref_missing: one_of refs required but no ref present
+# - referenced_file_missing: a context ref points to a missing file
+# - referenced_anchor_missing: a context ref contains a missing #anchor

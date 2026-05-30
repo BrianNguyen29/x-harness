@@ -162,6 +162,8 @@ func TestIsAllowlisted(t *testing.T) {
 		{".x-harness/trace.json", true},
 		{"foo/.x-harness/bar", true},
 		{"foo.x-harness", true},
+		{".x-harness-mutation-guard-probe-123-456.probe", false},
+		{".x-harness-mutation-guard-probe-foo", false},
 		{"src/main.go", false},
 		{"README.md", false},
 	}

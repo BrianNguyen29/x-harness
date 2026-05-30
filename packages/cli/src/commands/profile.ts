@@ -16,7 +16,13 @@ interface ProfileRecommendation {
 function recommendProfile(goal: string): ProfileRecommendation {
   const goalLower = goal.toLowerCase();
 
-  const deepKeywords = ["release", "security", "deep", "governance", "approval"];
+  const deepKeywords = [
+    "release",
+    "security",
+    "deep",
+    "governance",
+    "approval",
+  ];
   const standardKeywords = ["pr", "ci", "team", "verification"];
   const minimalKeywords = ["local", "basic", "quick", "single-agent"];
 
@@ -84,11 +90,7 @@ function recommendProfile(goal: string): ProfileRecommendation {
     reason: `Goal "${goal}" does not match a specific pattern; defaulting to standard profile for general verification.`,
     required_commands: ["x-harness verify", "x-harness report --format json"],
     recommended_checks: ["mutation_guard", "evidence_provenance"],
-    not_needed: [
-      "packet_chain",
-      "release_evidence_bundle",
-      "approval_receipt",
-    ],
+    not_needed: ["packet_chain", "release_evidence_bundle", "approval_receipt"],
   };
 }
 
@@ -105,7 +107,9 @@ export function profileCommand(): Command {
     .action((opts: ProfileRecommendOptions) => {
       const goal = opts.goal ?? "";
       if (!goal) {
-        console.error("usage: x-harness profile recommend --goal <goal> [--json]");
+        console.error(
+          "usage: x-harness profile recommend --goal <goal> [--json]"
+        );
         process.exit(2);
       }
       const rec = recommendProfile(goal);
