@@ -1,0 +1,16 @@
+task_id: TASK-GOLDEN-CONTEXT-REF-001
+tier: standard
+admission_outcome: failed
+acceptance_status: withheld
+admission_error: referenced file does not exist: src/docs/missing-product-contract.md
+admission_error: referenced file does not exist: src/docs/architecture.md
+admission_error: context_evidence ref file does not exist: src/docs/missing-product-contract.md
+withheld_reason:
+  class: context_floor_blocked
+  stage: context
+  owner: implementation-worker
+  failure_class: context_missing
+  failure_stage: context_floor
+  recoverability: retry_with_fixes
+  next_action: review_and_resubmit
+  blocking_predicate: context_floor_blocked

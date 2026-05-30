@@ -1,0 +1,28 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-CONTRACT-ORACLE-001
+tier: light
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - contract-oracle-violation-marker.txt
+  manual_rationale: Simple marker file for contract oracle testing
+claim:
+  fix_status: fixed
+  summary: Added contract oracle violation marker for testing
+  evidence:
+    - description: Marker file
+      url: ./contract-oracle-violation-marker.txt
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice

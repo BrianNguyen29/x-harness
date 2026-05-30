@@ -1,0 +1,9 @@
+{
+  "class": "evidence_floor_missing",
+  "blocking_predicate": "files_changed_empty",
+  "stage": "evidence",
+  "recoverability": "manual",
+  "schema_recoverability": "manual",
+  "owner": "bob",
+  "next_action": "add_evidence"
+}

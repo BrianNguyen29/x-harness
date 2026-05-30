@@ -10,6 +10,7 @@ import (
 
 	"github.com/BrianNguyen29/x-harness/internal/admission"
 	"github.com/BrianNguyen29/x-harness/internal/assets"
+	"github.com/BrianNguyen29/x-harness/internal/contract"
 	"github.com/BrianNguyen29/x-harness/internal/loader"
 	"github.com/BrianNguyen29/x-harness/internal/mutationguard"
 	"github.com/BrianNguyen29/x-harness/internal/repo"
@@ -17,25 +18,106 @@ import (
 	"github.com/BrianNguyen29/x-harness/internal/worktree"
 )
 
+// withheldReason is a compatibility superset that includes both schema-like fields
+// (class, stage, owner, schema_recoverability) and legacy fields (failure_class, failure_stage, recoverability)
+// for backward compatibility. The class/stage/owner fields are derived from failure_class/failure_stage
+// and blocking_predicate respectively. schema_recoverability is the schema enum value derived from
+// the legacy recoverability field.
 type withheldReason struct {
-	FailureClass      string `json:"failure_class"`
-	FailureStage      string `json:"failure_stage"`
-	Recoverability    string `json:"recoverability"`
-	NextAction        string `json:"next_action"`
-	BlockingPredicate string `json:"blocking_predicate"`
+	// Schema-like fields (as per withheld-reason.schema.json)
+	Class                string `json:"class"`
+	Stage                string `json:"stage"`
+	Owner                string `json:"owner"`
+	Recoverability       string `json:"recoverability"`
+	SchemaRecoverability string `json:"schema_recoverability"`
+	NextAction           string `json:"next_action"`
+	BlockingPredicate    string `json:"blocking_predicate"`
+	// Legacy fields for backward compatibility (omitted in strict mode)
+	FailureClass string `json:"failure_class,omitempty"`
+	FailureStage string `json:"failure_stage,omitempty"`
+}
+
+// schemaRecoverabilityFromLegacy maps legacy recoverability values to schema enum values.
+// Legacy values: retry_after_refresh, retry_with_fixes, human_intervention, manual_review, or empty/unknown.
+// Schema enum: automatic, manual, blocked, unknown.
+func schemaRecoverabilityFromLegacy(legacy string) string {
+	switch legacy {
+	case "retry_after_refresh":
+		return "automatic"
+	case "retry_with_fixes", "human_intervention", "manual_review":
+		return "manual"
+	case "blocked":
+		return "blocked"
+	default:
+		return "unknown"
+	}
+}
+
+// ownerFromBlockingPredicate derives owner based on blocking_predicate value.
+func ownerFromBlockingPredicate(predicate string) string {
+	switch predicate {
+	case "context_floor_blocked", "admission_failed":
+		return "implementation-worker"
+	case "verifier_not_read_only":
+		return "admission-verifier"
+	case "approval_missing", "permission_denied", "Fpermission":
+		return "user"
+	default:
+		// Also map schema_invalid and schema_or_policy_invalid style predicates
+		if strings.Contains(predicate, "schema_invalid") || strings.Contains(predicate, "schema_or_policy_invalid") {
+			return "implementation-worker"
+		}
+		return "implementation-worker"
+	}
+}
+
+// classFromFailureClass maps legacy failure_class to schema class enum value.
+// This is a best-effort mapping for the compatibility superset.
+func classFromFailureClass(failureClass string) string {
+	switch failureClass {
+	case "context_missing":
+		return "context_floor_blocked"
+	case "schema_invalid":
+		return "schema_or_policy_invalid"
+	case "mutation_detected":
+		return "verifier_not_read_only"
+	case "evidence_missing", "evidence_floor_missing":
+		return "evidence_floor_missing"
+	case "prediction_missing":
+		return "prediction_missing"
+	case "done_checklist_missing":
+		return "done_checklist_missing"
+	case "admission_mapping_invalid":
+		return "admission_mapping_invalid"
+	default:
+		return failureClass
+	}
+}
+
+// stageFromFailureStage maps legacy failure_stage to schema stage enum value.
+// This is a best-effort mapping for the compatibility superset.
+func stageFromFailureStage(failureStage string) string {
+	switch failureStage {
+	case "context_floor":
+		return "context"
+	case "verify_pipeline":
+		return "verification"
+	default:
+		return failureStage
+	}
 }
 
 // VerifyResult is the minimal output of the verify command.
 type VerifyResult struct {
-	OK               bool                   `json:"ok"`
-	TaskID           string                 `json:"task_id"`
-	Tier             string                 `json:"tier"`
-	AdmissionOutcome string                 `json:"admission_outcome"`
-	AcceptanceStatus string                 `json:"acceptance_status"`
-	SchemaError      string                 `json:"schema_error,omitempty"`
-	AdmissionErrors  []string               `json:"admission_errors,omitempty"`
-	MutationGuard    *mutationguard.Result  `json:"mutation_guard,omitempty"`
-	WithheldReason   *withheldReason        `json:"withheld_reason,omitempty"`
+	OK               bool                  `json:"ok"`
+	TaskID           string                `json:"task_id"`
+	Tier             string                `json:"tier"`
+	AdmissionOutcome string                `json:"admission_outcome"`
+	AcceptanceStatus string                `json:"acceptance_status"`
+	SchemaError      string                `json:"schema_error,omitempty"`
+	AdmissionErrors  []string              `json:"admission_errors,omitempty"`
+	MutationGuard    *mutationguard.Result `json:"mutation_guard,omitempty"`
+	WithheldReason   *withheldReason       `json:"withheld_reason,omitempty"`
 }
 
 func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
@@ -46,9 +128,13 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	verbose := false
 	useMutationGuard := false
 	strict := false
+	strictWithheldReason := false
 	trace := false
 	traceDir := ".x-harness/traces"
 	worktreeAware := false
+	contextFloor := false
+	contractOracles := false
+	contractOraclesPolicy := ""
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -76,6 +162,8 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		case "--strict":
 			strict = true
 			useMutationGuard = true
+		case "--strict-withheld-reason":
+			strictWithheldReason = true
 		case "--trace":
 			trace = true
 		case "--trace-dir":
@@ -85,11 +173,20 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			}
 		case "--worktree-aware":
 			worktreeAware = true
+		case "--context-floor":
+			contextFloor = true
+		case "--contract-oracles":
+			contractOracles = true
+		case "--contract-oracles-policy":
+			if i+1 < len(args) {
+				contractOraclesPolicy = args[i+1]
+				i++
+			}
 		}
 	}
 
 	if (cardPath == "" && subagentPath == "") || (cardPath != "" && subagentPath != "") {
-		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--trace] [--trace-dir <dir>] [--worktree-aware]")
+		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--strict-withheld-reason] [--trace] [--trace-dir <dir>] [--worktree-aware] [--context-floor] [--contract-oracles] [--contract-oracles-policy <path>]")
 		return ExitUsage
 	}
 
@@ -126,8 +223,8 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 		schemaErr = v.Validate(subagentDoc)
 		if schemaErr != nil {
-			result := buildVerifyResult(nil, schemaErr, nil, strict)
-			renderVerifyResult(result, jsonMode, verbose, stdout, sourcePath, schemaPath)
+			result := buildVerifyResult(nil, schemaErr, nil, strict, false, "")
+			renderVerifyResult(result, jsonMode, verbose, strictWithheldReason, stdout, sourcePath, schemaPath)
 			return ExitError
 		}
 		mappedDoc := map[string]any{
@@ -157,7 +254,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			}
 			validateFn = func() error { return v.Validate(doc) }
 		}
-		result = runWithMutationGuard(root, strict, doc, validateFn, stderr)
+		result = runWithMutationGuard(root, strict, doc, validateFn, stderr, contextFloor, cardPath)
 	} else {
 		if cardPath != "" {
 			v, err := schema.Compile(schemaPath)
@@ -167,10 +264,56 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			}
 			schemaErr = v.Validate(doc)
 		}
-		result = buildVerifyResult(doc, schemaErr, nil, strict)
+		result = buildVerifyResult(doc, schemaErr, nil, strict, contextFloor, cardPath)
 	}
 
-	renderVerifyResult(result, jsonMode, verbose, stdout, sourcePath, schemaPath)
+	// Contract Oracle check (opt-in via --contract-oracles flag)
+	if contractOracles && result.OK {
+		policyPath := contractOraclesPolicy
+		if policyPath == "" {
+			policyPath = filepath.Join(root, "policies", "contract-oracle.yaml")
+		}
+		contractResult, contractErr := contract.Check(policyPath, []string{root})
+		if contractErr != nil {
+			fmt.Fprintf(stderr, "error: contract oracle check failed: %v\n", contractErr)
+			return ExitError
+		}
+		if !contractResult.OK {
+			result.OK = false
+			result.AdmissionOutcome = "blocked"
+			result.AcceptanceStatus = "withheld"
+			// Build compact violation summary (first few violations)
+			var violationSummaries []string
+			maxViolations := 3
+			if len(contractResult.Violations) < maxViolations {
+				maxViolations = len(contractResult.Violations)
+			}
+			for i := 0; i < maxViolations; i++ {
+				v := contractResult.Violations[i]
+				relPath, _ := filepath.Rel(root, v.File)
+				violationSummaries = append(violationSummaries, fmt.Sprintf("%s:%d: %s (%s)", relPath, v.Line, v.Message, v.RuleID))
+			}
+			if len(contractResult.Violations) > maxViolations {
+				violationSummaries = append(violationSummaries, fmt.Sprintf("... and %d more violations", len(contractResult.Violations)-maxViolations))
+			}
+			predicate := "contract_oracle_blocked"
+			recoverability := "retry_with_fixes"
+			result.WithheldReason = &withheldReason{
+				Class:                "contract_mismatch",
+				Stage:                "verification",
+				Owner:                ownerFromBlockingPredicate(predicate),
+				FailureClass:         "contract_mismatch",
+				FailureStage:         "verify_pipeline",
+				Recoverability:       recoverability,
+				SchemaRecoverability: schemaRecoverabilityFromLegacy(recoverability),
+				NextAction:           "review_and_resubmit",
+				BlockingPredicate:    predicate,
+			}
+			result.AdmissionErrors = violationSummaries
+		}
+	}
+
+	renderVerifyResult(result, jsonMode, verbose, strictWithheldReason, stdout, sourcePath, schemaPath)
 
 	if trace {
 		event := TraceEvent{
@@ -257,7 +400,7 @@ func injectTestMutation(root string, stderr io.Writer) {
 	}
 }
 
-func runWithMutationGuard(root string, strict bool, doc map[string]any, validateFn func() error, stderr io.Writer) VerifyResult {
+func runWithMutationGuard(root string, strict bool, doc map[string]any, validateFn func() error, stderr io.Writer, contextFloor bool, cardPath string) VerifyResult {
 	var useGit bool
 	var gitRoot string
 	var gitErr error
@@ -296,7 +439,7 @@ func runWithMutationGuard(root string, strict bool, doc map[string]any, validate
 
 	if guardErr != nil {
 		mg := &mutationguard.Result{Enabled: true, SkippedReason: guardErr.Error(), Violated: strict}
-		result := buildVerifyResult(doc, schemaErr, mg, strict)
+		result := buildVerifyResult(doc, schemaErr, mg, strict, contextFloor, cardPath)
 		if strict {
 			fmt.Fprintf(stderr, "mutation_guard_error: guard failed in strict mode: %v\n", guardErr)
 			result.OK = false
@@ -306,7 +449,7 @@ func runWithMutationGuard(root string, strict bool, doc map[string]any, validate
 		return result
 	}
 
-	result := buildVerifyResult(doc, schemaErr, mgResult, strict)
+	result := buildVerifyResult(doc, schemaErr, mgResult, strict, contextFloor, cardPath)
 	if mgResult != nil && mgResult.Violated {
 		result.OK = false
 		result.AdmissionOutcome = "blocked"
@@ -315,7 +458,7 @@ func runWithMutationGuard(root string, strict bool, doc map[string]any, validate
 	return result
 }
 
-func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationguard.Result, strict bool) VerifyResult {
+func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationguard.Result, strict bool, contextFloor bool, cardPath string) VerifyResult {
 	result := VerifyResult{
 		TaskID: stringValue(doc, "task_id"),
 		Tier:   stringValue(doc, "tier"),
@@ -327,17 +470,28 @@ func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationgu
 		result.AcceptanceStatus = "withheld"
 		result.OK = false
 		result.MutationGuard = mgResult
+		predicate := "schema_invalid"
+		recoverability := "retry_with_fixes"
 		result.WithheldReason = &withheldReason{
-			FailureClass:      "schema_invalid",
-			FailureStage:      "verify_pipeline",
-			Recoverability:    "retry_with_fixes",
-			NextAction:        "review_and_resubmit",
-			BlockingPredicate: "schema_invalid",
+			Class:                "schema_or_policy_invalid",
+			Stage:                "verification",
+			Owner:                ownerFromBlockingPredicate(predicate),
+			FailureClass:         "schema_invalid",
+			FailureStage:         "verify_pipeline",
+			Recoverability:       recoverability,
+			SchemaRecoverability: schemaRecoverabilityFromLegacy(recoverability),
+			NextAction:           "review_and_resubmit",
+			BlockingPredicate:    predicate,
 		}
 		return result
 	}
 
-	admResult := admission.Run(doc, strict)
+	// Inject cardPath for context floor file resolution
+	if cardPath != "" {
+		doc["_cardPath"] = cardPath
+	}
+
+	admResult := admission.Run(doc, strict, contextFloor)
 	result.AdmissionOutcome = admResult.Outcome
 	result.AcceptanceStatus = admResult.AcceptanceStatus
 	result.AdmissionErrors = admResult.Errors
@@ -346,11 +500,15 @@ func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationgu
 
 	if admResult.WithheldReason != nil {
 		result.WithheldReason = &withheldReason{
-			FailureClass:      admResult.WithheldReason.FailureClass,
-			FailureStage:      admResult.WithheldReason.FailureStage,
-			Recoverability:    admResult.WithheldReason.Recoverability,
-			NextAction:        admResult.WithheldReason.NextAction,
-			BlockingPredicate: admResult.BlockingPredicate,
+			Class:                classFromFailureClass(admResult.WithheldReason.FailureClass),
+			Stage:                stageFromFailureStage(admResult.WithheldReason.FailureStage),
+			Owner:                ownerFromBlockingPredicate(admResult.BlockingPredicate),
+			FailureClass:         admResult.WithheldReason.FailureClass,
+			FailureStage:         admResult.WithheldReason.FailureStage,
+			Recoverability:       admResult.WithheldReason.Recoverability,
+			SchemaRecoverability: schemaRecoverabilityFromLegacy(admResult.WithheldReason.Recoverability),
+			NextAction:           admResult.WithheldReason.NextAction,
+			BlockingPredicate:    admResult.BlockingPredicate,
 		}
 	}
 
@@ -358,21 +516,38 @@ func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationgu
 		result.OK = false
 		result.AdmissionOutcome = "blocked"
 		result.AcceptanceStatus = "withheld"
+		predicate := "verifier_not_read_only"
+		recoverability := "manual_review"
 		result.WithheldReason = &withheldReason{
-			FailureClass:      "mutation_detected",
-			FailureStage:      "verify_pipeline",
-			Recoverability:    "manual_review",
-			NextAction:        "review_and_resubmit",
-			BlockingPredicate: "verifier_not_read_only",
+			Class:                "verifier_not_read_only",
+			Stage:                "verification",
+			Owner:                ownerFromBlockingPredicate(predicate),
+			FailureClass:         "mutation_detected",
+			FailureStage:         "verify_pipeline",
+			Recoverability:       recoverability,
+			SchemaRecoverability: schemaRecoverabilityFromLegacy(recoverability),
+			NextAction:           "review_and_resubmit",
+			BlockingPredicate:    predicate,
 		}
 	}
 
 	return result
 }
 
-func renderVerifyResult(result VerifyResult, jsonMode, verbose bool, stdout io.Writer, sourcePath, schemaPath string) {
+func renderVerifyResult(result VerifyResult, jsonMode, verbose, strictWithheldReason bool, stdout io.Writer, sourcePath, schemaPath string) {
 	if jsonMode {
-		WriteJSON(stdout, result)
+		if strictWithheldReason && result.WithheldReason != nil {
+			strictResult := result
+			strictWR := *result.WithheldReason
+			strictWR.FailureClass = ""
+			strictWR.FailureStage = ""
+			// In strict mode, recoverability shows schema enum value
+			strictWR.Recoverability = strictWR.SchemaRecoverability
+			strictResult.WithheldReason = &strictWR
+			WriteJSON(stdout, strictResult)
+		} else {
+			WriteJSON(stdout, result)
+		}
 		return
 	}
 	if verbose {
@@ -391,9 +566,18 @@ func renderVerifyResult(result VerifyResult, jsonMode, verbose bool, stdout io.W
 	}
 	if result.WithheldReason != nil {
 		WriteLine(stdout, "withheld_reason:")
-		WriteLine(stdout, "  failure_class: %s", result.WithheldReason.FailureClass)
-		WriteLine(stdout, "  failure_stage: %s", result.WithheldReason.FailureStage)
-		WriteLine(stdout, "  recoverability: %s", result.WithheldReason.Recoverability)
+		WriteLine(stdout, "  class: %s", result.WithheldReason.Class)
+		WriteLine(stdout, "  stage: %s", result.WithheldReason.Stage)
+		WriteLine(stdout, "  owner: %s", result.WithheldReason.Owner)
+		if strictWithheldReason {
+			WriteLine(stdout, "  recoverability: %s", result.WithheldReason.SchemaRecoverability)
+			WriteLine(stdout, "  schema_recoverability: %s", result.WithheldReason.SchemaRecoverability)
+		} else {
+			WriteLine(stdout, "  failure_class: %s", result.WithheldReason.FailureClass)
+			WriteLine(stdout, "  failure_stage: %s", result.WithheldReason.FailureStage)
+			WriteLine(stdout, "  recoverability: %s", result.WithheldReason.Recoverability)
+			WriteLine(stdout, "  schema_recoverability: %s", result.WithheldReason.SchemaRecoverability)
+		}
 		WriteLine(stdout, "  next_action: %s", result.WithheldReason.NextAction)
 		WriteLine(stdout, "  blocking_predicate: %s", result.WithheldReason.BlockingPredicate)
 	}

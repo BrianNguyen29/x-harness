@@ -6,7 +6,9 @@ import (
 )
 
 // Run evaluates a parsed completion card and returns an admission result.
-func Run(doc map[string]any, strict bool) Result {
+// When contextFloor is true, additional context alignment checks are enforced
+// for standard and deep tier cards.
+func Run(doc map[string]any, strict bool, contextFloor bool) Result {
 	errors := make([]string, 0)
 	notes := make([]string, 0)
 	blockingPredicate := ""
@@ -102,6 +104,15 @@ func Run(doc map[string]any, strict bool) Result {
 	notes = append(notes, evResult.notes...)
 	for _, e := range evResult.errors {
 		applyFinding(e.message, e.predicate, false)
+	}
+
+	// Context floor (opt-in via --context-floor flag)
+	if contextFloor {
+		cfResult := evaluateContextFloor(doc, tier)
+		notes = append(notes, cfResult.notes...)
+		for _, errMsg := range cfResult.errors {
+			applyFinding(errMsg, "context_floor_blocked", false)
+		}
 	}
 
 	// Command safety

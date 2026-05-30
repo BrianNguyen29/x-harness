@@ -11,10 +11,9 @@ describe("examples command", () => {
     expect(exitCode).toBe(0);
     const output = JSON.parse(stdout);
     expect(output.ok).toBe(true);
-    expect(output.total).toBe(14);
-    expect(output.passed).toBe(14);
-    expect(output.failed).toBe(0);
-    expect(output.results).toHaveLength(14);
+    expect(output.total).toBe(17);
+    expect(output.passed).toBe(17);
+    expect(output.results).toHaveLength(17);
 
     const names = output.results.map((r: { name: string }) => r.name);
     expect(names).toContain("regression/success-light");
@@ -31,12 +30,15 @@ describe("examples command", () => {
     expect(names).toContain("adversarial/standard-approval-present");
     expect(names).toContain("regression/blocked-weak-prediction");
     expect(names).toContain("regression/blocked-tier-downgrade");
+    expect(names).toContain("regression/success-context-alignment");
+    expect(names).toContain("regression/blocked-missing-context-ref");
+    expect(names).toContain("regression/blocked-contract-oracle");
   });
 
   it("verify subcommand prints human-readable summary", async () => {
     const { stdout, exitCode } = await execaNode(["examples", "verify"]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("Golden examples: 14 total");
+    expect(stdout).toContain("Golden examples: 17 total");
     expect(stdout).toContain("regression/success-light");
     expect(stdout).toContain("regression/blocked-missing-evidence");
     expect(stdout).toContain("regression/failed-invalid-status");
@@ -51,6 +53,8 @@ describe("examples command", () => {
     expect(stdout).toContain("adversarial/standard-approval-present");
     expect(stdout).toContain("regression/blocked-weak-prediction");
     expect(stdout).toContain("regression/blocked-tier-downgrade");
+    expect(stdout).toContain("regression/success-context-alignment");
+    expect(stdout).toContain("regression/blocked-missing-context-ref");
     expect(stdout).toContain("All golden examples passed.");
   });
 
@@ -152,5 +156,26 @@ describe("examples command", () => {
     );
     expect(weakPrediction.outcome).toBe("failed");
     expect(weakPrediction.acceptance_status).toBe("withheld");
+
+    const contextAlignment = output.results.find(
+      (r: { name: string }) =>
+        r.name === "regression/success-context-alignment"
+    );
+    expect(contextAlignment.outcome).toBe("success");
+    expect(contextAlignment.acceptance_status).toBe("accepted");
+
+    const missingContextRef = output.results.find(
+      (r: { name: string }) =>
+        r.name === "regression/blocked-missing-context-ref"
+    );
+    expect(missingContextRef.outcome).toBe("success");
+    expect(missingContextRef.acceptance_status).toBe("accepted");
+
+    const blockedContractOracle = output.results.find(
+      (r: { name: string }) =>
+        r.name === "regression/blocked-contract-oracle"
+    );
+    expect(blockedContractOracle.outcome).toBe("success");
+    expect(blockedContractOracle.acceptance_status).toBe("accepted");
   });
 });

@@ -47,7 +47,15 @@ You should see a JSON report detailing passing validations with `"healthy": true
 | **`status`** | Show trace summary (alias for report without --metrics)  |
 | **`reset`**  | Clean generated harness state (requires --confirm)        |
 
-### 4. Verify a Golden Example
+### 4. Run Contract Oracle Checks (Optional)
+
+Contract oracles are opt-in rule-based assertions. The default policy is empty-safe (no-op if no policy is present):
+
+```bash
+./x-harness contract check --policy policies/contract-oracle.yaml --json .
+```
+
+### 5. Verify a Golden Example
 
 The repository comes built-in with reference examples demonstrating different completion scenarios. Run verification against the "Success (Light Tier)" golden example using the `check` action:
 
@@ -65,6 +73,12 @@ checks: 1 passed, 0 failed
 
 _(The command returns an exit code of `0` because verification was successful and completion has been officially admitted)._
 
+To run the same verification with contract oracle assertions enabled:
+
+```bash
+./x-harness verify --card examples/golden/regression/success-light/completion-card.yaml --contract-oracles
+```
+
 Now, try verifying an example where standard tier verification is blocked due to missing evidence:
 
 ```bash
@@ -81,7 +95,7 @@ checks: 1 passed, 1 failed
 
 _(The command returns a non-zero exit code `1` because the evidence floor policy was not met. The task remains withheld)._
 
-### 5. Initialize x-harness in Another Repository
+### 6. Initialize x-harness in Another Repository
 
 To integrate `x-harness` into a separate development project, run the `init` command in the root of that project:
 
@@ -98,7 +112,7 @@ To integrate `x-harness` into a separate development project, run the `init` com
 
 If `init` finds conflicting harness files in the target workspace, it stops with a blocked summary and exits with a non-zero code instead of silently half-installing. Use `--force` only when you intend to overwrite those files.
 
-### 6. Verify Your Own Completion Cards
+### 7. Verify Your Own Completion Cards
 
 When working on a task, write your completion card to `completion-card.yaml` and execute the verify gate using `check`:
 
@@ -118,5 +132,6 @@ To learn more about configuring and designing your agent verification workflow:
 
 - 📑 [docs/SCHEMAS.md](SCHEMAS.md) — Learn about completion cards, subagent returns, and events validation schemas.
 - 🚦 [docs/VERIFY_GATE.md](VERIFY_GATE.md) — Understand how the read-only admission verification policies operate.
+- 📄 [docs/RUNTIME_CONTRACT.md](RUNTIME_CONTRACT.md) — Understand the runtime contract between harness components.
 - 🔌 [docs/ADAPTERS.md](ADAPTERS.md) — Connect with Claude Code, Cursor, OpenCode, or Antigravity.
 - 📚 [docs/README.md](README.md) — Browse the public documentation index.

@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`verify --contract-oracles`**: New opt-in flag that runs rule-based oracle assertions from `policies/contract-oracle.yaml` (or custom path via `--contract-oracles-policy`). Supports both `grep_rules` and `dependency_rules` (line-level import scanning). Default policy is empty/safe; no assertions run without a policy file.
+- **Contract Oracle `dependency_rule` MVP**: Line-level import scanning rule type alongside `grep_rules`. Fields: `id`, `description`, `file_pattern`, `forbidden_imports`, optional `allowed_imports`, optional `exclude`, optional `message`. Detection scans for import-like lines (Go `import`, TypeScript/JavaScript `import ... from`, `require()`) and matches import paths against `forbidden_imports` substrings. No AST, package graph, or lockfile parsing.
+- **withheld_reason migration-mode planning docs**: Added `### Migration modes` subsection to `docs/VERIFY_GATE.md` documenting compatibility-superset (current), transitional strict mode (`--strict-withheld-reason` flag, now implemented), and strict-only (future).
+- **`verify --strict-withheld-reason`**: New opt-in flag that omits legacy `failure_class` and `failure_stage` fields from `withheld_reason` JSON/text output and shows schema enum `recoverability` instead of the legacy value. Default output unchanged.
+- **Contract Oracle grep_rule MVP**: Added `contract-oracle.schema.json` for `x-harness contract check --json` output validation. Mirrored to `packages/cli/schemas/contract-oracle.schema.json`. Documented in `docs/SCHEMAS.md` feature schema table.
+- **Strict-schema withheld-reason fixture**: Added `packages/cli/tests/fixtures/withheld-reason-strict.json` as a file-based strict-schema-valid sample, loaded by the corresponding schema test.
+- **Strict-schema boundary documentation**: Added `Compatibility boundary` subsection to `docs/VERIFY_GATE.md` and footnote in `docs/SCHEMAS.md` explaining runtime superset vs strict schema target for `withheld_reason`.
+- **Strict-schema validator tests for withheld-reason**: Added tests in `packages/cli/tests/schema.test.ts` confirming strict schema accepts canonical target (no legacy fields) and rejects runtime compatibility superset (legacy fields).
+- **Typed withheld_reason output**: Go runtime now emits structured `class`, `stage`, and `owner` fields in `withheld_reason` output while preserving legacy `failure_class`/`failure_stage` for backward compatibility.
+- **Schema recoverability field**: Added `schema_recoverability` to `withheld_reason` output as schema enum value (`automatic`, `manual`, `blocked`, `unknown`) derived from legacy `recoverability`. Legacy `recoverability` values unchanged for backward compatibility. Compatibility phase field.
+- **Context Floor MVP**: `verify --context-floor` validates presence, tier, and file refs for context alignment. Anchors are stripped for file existence (hard anchor enforcement deferred).
+- **Blocked context fixture**: Added `examples/golden/regression/blocked-missing-context-ref/` golden fixture covering `--context-floor` failure due to missing referenced file.
+- **doctor --context**: Scans `examples` + `skills`, validates referenced files, skips cards without `context_alignment`, reports missing anchors as warnings only, counts unreadable/unparseable cards.
+- **doctor --staleness / --overclaim**: Validates managed context freshness and hash; checks for overclaim phrases.
+- **Schema additions**: `context-alignment.schema.json` (context alignment evidence) and `withheld-reason.schema.json` (typed withheld reason taxonomy) added to schema inventory.
+- **Recovery hardening**: `context_floor_blocked` and `stale_ground` predicates now routed in recovery.
 - **Documentation completeness pass**: Updated stale roadmap statuses for implemented strict/conformance features; added `prediction` to the standard-tier evidence floor in `docs/ADMISSION_POLICY.md`; added missing README for the `blocked-weak-prediction` golden fixture.
 
 ### Changed

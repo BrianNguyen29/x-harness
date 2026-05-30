@@ -61,6 +61,7 @@
             "failure_class": { "type": "string" },
             "failure_stage": { "type": "string" },
             "recoverability": { "type": "string" },
+            "schema_recoverability": { "type": "string" },
             "next_action": { "type": "string" },
             "blocking_predicate": { "type": "string" }
           }

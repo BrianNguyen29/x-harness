@@ -47,15 +47,18 @@ These schemas are included in the package and used by command-specific features 
 | `attribution.schema.json`             | Attribution report artifacts.                |
 | `benchmark-report.schema.json`        | Benchmark JSON output.                       |
 | `components-registry.schema.json`     | Component registry validation.               |
+| `context-alignment.schema.json`       | Context alignment evidence for verify --context-floor. |
+| `contract-oracle.schema.json`         | Contract oracle rule violations (grep_rules and dependency_rules) from `x-harness contract check --json`. |
 | `cost-budget.schema.json`             | Cost budget policy/report structures.        |
 | `episode-manifest.schema.json`        | Episode package manifests.                   |
 | `evidence-index.schema.json`          | Evidence index entries.                      |
 | `evolution-constitution.schema.json`  | Experimental evolution constitution files.   |
 | `federation-pattern.schema.json`      | Federation pattern exchange.                 |
 | `frozen-manifest.schema.json`         | Frozen transfer manifests.                   |
-| `intervention.schema.json`            | Governance intervention artifacts.           |
+| `intervention.schema.json`            | Governance intervention artifacts.            |
 | `packet.schema.json`                  | Immutable packet records.                    |
 | `permissions.schema.json`             | Permissions policy validation.               |
+| `withheld-reason.schema.json`        | Typed withheld reason taxonomy for blocked/failed outcomes. See [compatibility boundary](VERIFY_GATE.md) for runtime superset vs strict schema. |
 
 ## Future schemas (not shipped in v0.1)
 

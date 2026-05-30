@@ -171,11 +171,12 @@ func TestReportMetricsWithheldJSON(t *testing.T) {
 			Outcome          string `json:"outcome"`
 			AcceptanceStatus string `json:"acceptance_status"`
 			WithheldReason   *struct {
-				FailureClass      string `json:"failure_class"`
-				FailureStage      string `json:"failure_stage"`
-				Recoverability    string `json:"recoverability"`
-				NextAction        string `json:"next_action"`
-				BlockingPredicate string `json:"blocking_predicate"`
+				FailureClass         string `json:"failure_class"`
+				FailureStage         string `json:"failure_stage"`
+				Recoverability       string `json:"recoverability"`
+				SchemaRecoverability string `json:"schema_recoverability"`
+				NextAction           string `json:"next_action"`
+				BlockingPredicate    string `json:"blocking_predicate"`
 			} `json:"withheld_reason,omitempty"`
 		} `json:"admission"`
 	}
@@ -201,6 +202,9 @@ func TestReportMetricsWithheldJSON(t *testing.T) {
 	}
 	if result.Admission.WithheldReason.Recoverability == "" {
 		t.Fatalf("expected recoverability in withheld_reason")
+	}
+	if result.Admission.WithheldReason.SchemaRecoverability == "" {
+		t.Fatalf("expected schema_recoverability in withheld_reason")
 	}
 	if result.Admission.WithheldReason.NextAction == "" {
 		t.Fatalf("expected next_action in withheld_reason")

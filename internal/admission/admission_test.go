@@ -30,7 +30,7 @@ func loadGolden(t *testing.T, name string) map[string]any {
 
 func TestSuccessLight(t *testing.T) {
 	doc := loadGolden(t, "success-light")
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -44,7 +44,7 @@ func TestSuccessLight(t *testing.T) {
 
 func TestWithheldPartialFix(t *testing.T) {
 	doc := loadGolden(t, "withheld-partial-fix")
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -55,7 +55,7 @@ func TestWithheldPartialFix(t *testing.T) {
 
 func TestSuccessStandardScopedEvidence(t *testing.T) {
 	doc := loadGolden(t, "success-standard-scoped-evidence")
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -69,7 +69,7 @@ func TestSuccessStandardScopedEvidence(t *testing.T) {
 
 func TestDeepApprovalRequired(t *testing.T) {
 	doc := loadGolden(t, "deep-approval-required")
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -90,7 +90,7 @@ func TestDeepApprovalRequired(t *testing.T) {
 
 func TestBlockedTierDowngrade(t *testing.T) {
 	doc := loadGolden(t, "blocked-tier-downgrade")
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -111,7 +111,7 @@ func TestBlockedTierDowngrade(t *testing.T) {
 
 func TestMultiAgentSuccess(t *testing.T) {
 	doc := loadGolden(t, "multi-agent-success")
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -125,7 +125,7 @@ func TestMultiAgentSuccess(t *testing.T) {
 
 func TestBlockedMissingEvidence(t *testing.T) {
 	doc := loadGolden(t, "blocked-missing-evidence")
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -136,7 +136,7 @@ func TestBlockedMissingEvidence(t *testing.T) {
 
 func TestBlockedMissingEvidenceScope(t *testing.T) {
 	doc := loadGolden(t, "blocked-missing-evidence-scope")
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -157,7 +157,7 @@ func TestBlockedMissingEvidenceScope(t *testing.T) {
 
 func TestFailedTypecheckRecoveryRoute(t *testing.T) {
 	doc := loadGolden(t, "failed-typecheck-recovery-route")
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -182,7 +182,7 @@ func TestHiddenDangerousCommand(t *testing.T) {
 	if err := loader.LoadDocument(path, &doc); err != nil {
 		t.Fatalf("failed to load card: %v", err)
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -207,7 +207,7 @@ func TestLyingCommandExitCode(t *testing.T) {
 	if err := loader.LoadDocument(path, &doc); err != nil {
 		t.Fatalf("failed to load card: %v", err)
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -242,7 +242,7 @@ func TestStaleGroundTaxonomy(t *testing.T) {
 		},
 		"stale_ground": true,
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.WithheldReason == nil {
 		t.Fatal("expected withheld_reason for stale_ground")
 	}
@@ -288,7 +288,7 @@ func TestMissingEvidenceTaxonomy(t *testing.T) {
 			"files_changed": []any{},
 		},
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.WithheldReason == nil {
 		t.Fatal("expected withheld_reason for missing evidence")
 	}
@@ -302,7 +302,7 @@ func TestMissingEvidenceTaxonomy(t *testing.T) {
 
 func TestDeepApprovalTaxonomy(t *testing.T) {
 	doc := loadGolden(t, "deep-approval-required")
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.WithheldReason == nil {
 		t.Fatal("expected withheld_reason for deep approval missing")
 	}
@@ -343,7 +343,7 @@ func TestStaleGroundBlocks(t *testing.T) {
 		},
 		"stale_ground": true,
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "blocked" {
 		t.Fatalf("expected blocked, got %s", result.Outcome)
 	}
@@ -397,7 +397,7 @@ func TestAcceptanceStatusMapping(t *testing.T) {
 					"owner":       "o",
 				},
 			}
-			result := Run(doc, false)
+			result := Run(doc, false, false)
 			if result.Outcome != tt.outcome {
 				t.Fatalf("expected outcome %s, got %s", tt.outcome, result.Outcome)
 			}
@@ -417,17 +417,17 @@ func TestStrictStandardMissingFieldsFails(t *testing.T) {
 		"accountable":    "b",
 		"done_checklist": map[string]any{"source_of_truth_read": true},
 		"prediction": map[string]any{
-			"claim":               "p",
-			"expected_effect":     "e",
+			"claim":                "p",
+			"expected_effect":      "e",
 			"falsification_method": "f",
-			"measurable_signal":   "m",
-			"horizon":             "same_verify",
+			"measurable_signal":    "m",
+			"horizon":              "same_verify",
 		},
 		"evidence": map[string]any{
 			"files_changed": []any{"f"},
 			"command_evidence": []any{
 				map[string]any{
-					"command":  "npm test",
+					"command":   "npm test",
 					"exit_code": 0,
 					// missing runner and started_at
 				},
@@ -451,7 +451,7 @@ func TestStrictStandardMissingFieldsFails(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, true)
+	result := Run(doc, true, false)
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -488,11 +488,11 @@ func TestStrictStandardFullFieldsPasses(t *testing.T) {
 		"accountable":    "b",
 		"done_checklist": map[string]any{"source_of_truth_read": true},
 		"prediction": map[string]any{
-			"claim":               "p",
-			"expected_effect":     "e",
+			"claim":                "p",
+			"expected_effect":      "e",
 			"falsification_method": "f",
-			"measurable_signal":   "m",
-			"horizon":             "same_verify",
+			"measurable_signal":    "m",
+			"horizon":              "same_verify",
 		},
 		"evidence": map[string]any{
 			"files_changed": []any{"f"},
@@ -532,7 +532,7 @@ func TestStrictStandardFullFieldsPasses(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, true)
+	result := Run(doc, true, false)
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -555,7 +555,7 @@ func TestStrictLightMissingFieldsExempt(t *testing.T) {
 			"files_changed": []any{"f"},
 			"command_evidence": []any{
 				map[string]any{
-					"command":  "npm test",
+					"command":   "npm test",
 					"exit_code": 0,
 					// missing runner and started_at
 				},
@@ -579,7 +579,7 @@ func TestStrictLightMissingFieldsExempt(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, true)
+	result := Run(doc, true, false)
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -597,11 +597,11 @@ func TestStandardHighRiskMissingReceipt(t *testing.T) {
 		"accountable":    "b",
 		"done_checklist": map[string]any{"source_of_truth_read": true},
 		"prediction": map[string]any{
-			"claim":               "p",
-			"expected_effect":     "e",
+			"claim":                "p",
+			"expected_effect":      "e",
 			"falsification_method": "f",
-			"measurable_signal":   "m",
-			"horizon":             "same_verify",
+			"measurable_signal":    "m",
+			"horizon":              "same_verify",
 		},
 		"evidence": map[string]any{
 			"files_changed": []any{"f"},
@@ -630,7 +630,7 @@ func TestStandardHighRiskMissingReceipt(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -661,11 +661,11 @@ func TestStandardHighRiskWithReceipt(t *testing.T) {
 		"accountable":    "b",
 		"done_checklist": map[string]any{"source_of_truth_read": true},
 		"prediction": map[string]any{
-			"claim":               "p",
-			"expected_effect":     "e",
+			"claim":                "p",
+			"expected_effect":      "e",
 			"falsification_method": "f",
-			"measurable_signal":   "m",
-			"horizon":             "same_verify",
+			"measurable_signal":    "m",
+			"horizon":              "same_verify",
 		},
 		"evidence": map[string]any{
 			"files_changed": []any{"f"},
@@ -705,7 +705,7 @@ func TestStandardHighRiskWithReceipt(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -726,11 +726,11 @@ func TestDeepMediumRiskMissingReceipt(t *testing.T) {
 		"accountable":    "b",
 		"done_checklist": map[string]any{"source_of_truth_read": true},
 		"prediction": map[string]any{
-			"claim":               "p",
-			"expected_effect":     "e",
+			"claim":                "p",
+			"expected_effect":      "e",
 			"falsification_method": "f",
-			"measurable_signal":   "m",
-			"horizon":             "same_verify",
+			"measurable_signal":    "m",
+			"horizon":              "same_verify",
 		},
 		"state": map[string]any{
 			"read_set":  []any{"r"},
@@ -775,7 +775,7 @@ func TestDeepMediumRiskMissingReceipt(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -803,11 +803,11 @@ func TestDeepMediumRiskWithReceipt(t *testing.T) {
 		"accountable":    "b",
 		"done_checklist": map[string]any{"source_of_truth_read": true},
 		"prediction": map[string]any{
-			"claim":               "p",
-			"expected_effect":     "e",
+			"claim":                "p",
+			"expected_effect":      "e",
 			"falsification_method": "f",
-			"measurable_signal":   "m",
-			"horizon":             "same_verify",
+			"measurable_signal":    "m",
+			"horizon":              "same_verify",
 		},
 		"state": map[string]any{
 			"read_set":  []any{"r"},
@@ -863,7 +863,7 @@ func TestDeepMediumRiskWithReceipt(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -909,7 +909,7 @@ func TestLightHighRiskNoReceiptAllowed(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -930,11 +930,11 @@ func TestApprovalReceiptTaxonomy(t *testing.T) {
 		"accountable":    "b",
 		"done_checklist": map[string]any{"source_of_truth_read": true},
 		"prediction": map[string]any{
-			"claim":               "p",
-			"expected_effect":     "e",
+			"claim":                "p",
+			"expected_effect":      "e",
 			"falsification_method": "f",
-			"measurable_signal":   "m",
-			"horizon":             "same_verify",
+			"measurable_signal":    "m",
+			"horizon":              "same_verify",
 		},
 		"evidence": map[string]any{
 			"files_changed": []any{"f"},
@@ -963,7 +963,7 @@ func TestApprovalReceiptTaxonomy(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.WithheldReason == nil {
 		t.Fatal("expected withheld_reason for missing approval receipt")
 	}
@@ -987,11 +987,11 @@ func TestApprovalReceiptInvalidDecision(t *testing.T) {
 		"accountable":    "b",
 		"done_checklist": map[string]any{"source_of_truth_read": true},
 		"prediction": map[string]any{
-			"claim":               "p",
-			"expected_effect":     "e",
+			"claim":                "p",
+			"expected_effect":      "e",
 			"falsification_method": "f",
-			"measurable_signal":   "m",
-			"horizon":             "same_verify",
+			"measurable_signal":    "m",
+			"horizon":              "same_verify",
 		},
 		"evidence": map[string]any{
 			"files_changed": []any{"f"},
@@ -1031,7 +1031,7 @@ func TestApprovalReceiptInvalidDecision(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -1056,11 +1056,11 @@ func TestApprovalReceiptInsufficientAggregateRisk(t *testing.T) {
 		"accountable":    "b",
 		"done_checklist": map[string]any{"source_of_truth_read": true},
 		"prediction": map[string]any{
-			"claim":               "p",
-			"expected_effect":     "e",
+			"claim":                "p",
+			"expected_effect":      "e",
 			"falsification_method": "f",
-			"measurable_signal":   "m",
-			"horizon":             "same_verify",
+			"measurable_signal":    "m",
+			"horizon":              "same_verify",
 		},
 		"state": map[string]any{
 			"read_set":  []any{"r"},
@@ -1116,7 +1116,7 @@ func TestApprovalReceiptInsufficientAggregateRisk(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -1141,11 +1141,11 @@ func TestApprovalReceiptMissingCommandCoverage(t *testing.T) {
 		"accountable":    "b",
 		"done_checklist": map[string]any{"source_of_truth_read": true},
 		"prediction": map[string]any{
-			"claim":               "p",
-			"expected_effect":     "e",
+			"claim":                "p",
+			"expected_effect":      "e",
 			"falsification_method": "f",
-			"measurable_signal":   "m",
-			"horizon":             "same_verify",
+			"measurable_signal":    "m",
+			"horizon":              "same_verify",
 		},
 		"evidence": map[string]any{
 			"files_changed": []any{"f"},
@@ -1185,7 +1185,7 @@ func TestApprovalReceiptMissingCommandCoverage(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -1210,11 +1210,11 @@ func TestStrictDeepMissingArtifactsProvenanceFails(t *testing.T) {
 		"accountable":    "b",
 		"done_checklist": map[string]any{"source_of_truth_read": true},
 		"prediction": map[string]any{
-			"claim":               "p",
-			"expected_effect":     "e",
+			"claim":                "p",
+			"expected_effect":      "e",
 			"falsification_method": "f",
-			"measurable_signal":   "m",
-			"horizon":             "same_verify",
+			"measurable_signal":    "m",
+			"horizon":              "same_verify",
 		},
 		"state": map[string]any{
 			"read_set":  []any{"r"},
@@ -1232,16 +1232,16 @@ func TestStrictDeepMissingArtifactsProvenanceFails(t *testing.T) {
 			},
 			"verification_artifacts": []any{
 				map[string]any{
-					"command":  "npm test",
+					"command":   "npm test",
 					"exit_code": 0,
 					// missing runner and started_at
 					"status":   "passed",
 					"verifies": []any{"v"},
 				},
 			},
-			"untested_regions": []any{"u"},
-			"remaining_risks":  []any{"r"},
-			"rollback_policy":  []any{"rp"},
+			"untested_regions":   []any{"u"},
+			"remaining_risks":    []any{"r"},
+			"rollback_policy":    []any{"rp"},
 			"execution_controls": []any{"ec"},
 		},
 		"claim": map[string]any{
@@ -1262,7 +1262,7 @@ func TestStrictDeepMissingArtifactsProvenanceFails(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, true)
+	result := Run(doc, true, false)
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -1510,7 +1510,7 @@ func TestEvidenceFloorDriftGuard(t *testing.T) {
 			}
 
 			card := minimalCard(tc.name)
-			result := Run(card, false)
+			result := Run(card, false, false)
 			if result.Outcome != "success" {
 				t.Fatalf("minimal %s card should pass; got outcome=%s errors=%v", tc.name, result.Outcome, result.Errors)
 			}
@@ -1525,7 +1525,7 @@ func TestEvidenceFloorDriftGuard(t *testing.T) {
 				t.Run("missing_"+field, func(t *testing.T) {
 					c := minimalCard(tc.name)
 					check.remove(c)
-					r := Run(c, false)
+					r := Run(c, false, false)
 					if r.Outcome != "failed" && r.Outcome != "blocked" {
 						t.Fatalf("expected failed/blocked when %s missing, got %s", field, r.Outcome)
 					}
@@ -1548,7 +1548,7 @@ func TestEvidenceFloorDriftGuard(t *testing.T) {
 					ev := c["evidence"].(map[string]any)
 					delete(ev, "command_evidence")
 					ev["manual_rationale"] = "rationale text"
-					r := Run(c, false)
+					r := Run(c, false, false)
 					if r.Outcome != "success" {
 						t.Fatalf("light should pass with manual_rationale only; got outcome=%s errors=%v", r.Outcome, r.Errors)
 					}
@@ -1558,7 +1558,7 @@ func TestEvidenceFloorDriftGuard(t *testing.T) {
 					ev := c["evidence"].(map[string]any)
 					delete(ev, "command_evidence")
 					delete(ev, "manual_rationale")
-					r := Run(c, false)
+					r := Run(c, false, false)
 					if r.Outcome != "failed" && r.Outcome != "blocked" {
 						t.Fatalf("light should fail without command_evidence or manual_rationale, got %s", r.Outcome)
 					}
@@ -1609,7 +1609,7 @@ func TestTierGuardBlocksLightWithSchemaPath(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	if result.Outcome != "failed" && result.Outcome != "blocked" {
 		t.Fatalf("expected failed/blocked, got %s", result.Outcome)
 	}
@@ -1656,7 +1656,7 @@ func TestTierGuardWarnsLightWithHighRiskCommand(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	// Should still pass (warning as note, not error) for conservative false-positive control
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for conservative light-tier command warning, got %s errors=%v", result.Outcome, result.Errors)
@@ -1682,11 +1682,11 @@ func TestTierGuardWarnsStandardWithBoth(t *testing.T) {
 		"accountable":    "b",
 		"done_checklist": map[string]any{"source_of_truth_read": true},
 		"prediction": map[string]any{
-			"claim":               "p",
-			"expected_effect":     "e",
+			"claim":                "p",
+			"expected_effect":      "e",
 			"falsification_method": "f",
-			"measurable_signal":   "m",
-			"horizon":             "same_verify",
+			"measurable_signal":    "m",
+			"horizon":              "same_verify",
 		},
 		"evidence": map[string]any{
 			"files_changed": []any{"policies/admission.yaml"},
@@ -1723,7 +1723,7 @@ func TestTierGuardWarnsStandardWithBoth(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false)
+	result := Run(doc, false, false)
 	// Should still pass because it's only a warning for standard tier
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for standard-tier warning, got %s errors=%v", result.Outcome, result.Errors)
@@ -1737,5 +1737,491 @@ func TestTierGuardWarnsStandardWithBoth(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("expected tier guard warning in notes, got %v", result.Notes)
+	}
+}
+
+// TestContextFloorStandardMissingContextAlignment tests that standard tier fails when
+// context_alignment is missing and --context-floor is enabled.
+func TestContextFloorStandardMissingContextAlignment(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"item": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"evidence": map[string]any{
+			"files_changed":    []any{"f.go"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false, true)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed for missing context_alignment, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if e == "context_alignment is required for standard/deep tier when --context-floor is enabled" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected context_alignment missing error, got %v", result.Errors)
+	}
+}
+
+// TestContextFloorStandardMissingStaleGroundChecked tests that standard tier fails when
+// stale_ground_checked is false.
+func TestContextFloorStandardMissingStaleGroundChecked(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"item": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"context_alignment": map[string]any{
+			"stale_ground_checked":  false,
+			"product_contract_refs": []any{"src/context/contract.md"},
+		},
+		"evidence": map[string]any{
+			"files_changed":    []any{"f.go"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false, true)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed for stale_ground_checked=false, got %s", result.Outcome)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if e == "context_alignment.stale_ground_checked must be true for standard/deep tier" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected stale_ground_checked error, got %v", result.Errors)
+	}
+}
+
+// TestContextFloorStandardMissingRefs tests that standard tier fails when no ref arrays are populated.
+func TestContextFloorStandardMissingRefs(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"item": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"context_alignment": map[string]any{
+			"stale_ground_checked":  true,
+			"product_contract_refs": []any{},
+			"architecture_refs":     []any{},
+			"decision_refs":         []any{},
+			"test_matrix_refs":      []any{},
+		},
+		"evidence": map[string]any{
+			"files_changed":    []any{"f.go"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false, true)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed for missing refs, got %s", result.Outcome)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if e == "context_alignment must have at least one non-empty ref array (product_contract_refs, architecture_refs, decision_refs, or test_matrix_refs)" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected ref array error, got %v", result.Errors)
+	}
+}
+
+// TestContextFloorDeepMissingContextPackID tests that deep tier fails when context_pack_id is missing.
+func TestContextFloorDeepMissingContextPackID(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "deep",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"item": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"state": map[string]any{
+			"read_set":  []any{"r"},
+			"write_set": []any{"w"},
+		},
+		"context_alignment": map[string]any{
+			"stale_ground_checked":         true,
+			"product_contract_refs":        []any{"src/context/contract.md"},
+			"unresolved_context_questions": []any{},
+		},
+		"evidence": map[string]any{
+			"files_changed":    []any{"f.go"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+			"verification_artifacts": []any{
+				map[string]any{"kind": "k", "command": "go test", "status": "passed", "verifies": []any{"v"}},
+			},
+			"untested_regions":   []any{"u"},
+			"remaining_risks":    []any{"r"},
+			"rollback_policy":    []any{"rp"},
+			"execution_controls": []any{"ec"},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false, true)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed for missing context_pack_id, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if e == "context_alignment.context_pack_id is required for deep tier" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected context_pack_id error, got %v", result.Errors)
+	}
+}
+
+// TestContextFloorDeepUnresolvedQuestions tests that deep tier fails when unresolved_context_questions is non-empty.
+func TestContextFloorDeepUnresolvedQuestions(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "deep",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"item": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"state": map[string]any{
+			"read_set":  []any{"r"},
+			"write_set": []any{"w"},
+		},
+		"context_alignment": map[string]any{
+			"stale_ground_checked":         true,
+			"context_pack_id":              "ctx-123",
+			"product_contract_refs":        []any{"src/context/contract.md"},
+			"unresolved_context_questions": []any{"Is this the right approach?"},
+		},
+		"evidence": map[string]any{
+			"files_changed":    []any{"f.go"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+			"verification_artifacts": []any{
+				map[string]any{"kind": "k", "command": "go test", "status": "passed", "verifies": []any{"v"}},
+			},
+			"untested_regions":   []any{"u"},
+			"remaining_risks":    []any{"r"},
+			"rollback_policy":    []any{"rp"},
+			"execution_controls": []any{"ec"},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false, true)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed for unresolved questions, got %s", result.Outcome)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if e == "context_alignment.unresolved_context_questions must be empty for deep tier" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected unresolved_context_questions error, got %v", result.Errors)
+	}
+}
+
+// TestContextFloorLightAdvisoryOnly tests that light tier does not block on context floor.
+func TestContextFloorLightAdvisoryOnly(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "light",
+		"owner":          "a",
+		"accountable":    "b",
+		"evidence": map[string]any{
+			"files_changed":    []any{"f.go"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false, true)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success for light tier (advisory only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	foundNote := false
+	for _, n := range result.Notes {
+		if n == "context floor advisory only for light tier" {
+			foundNote = true
+			break
+		}
+	}
+	if !foundNote {
+		t.Fatalf("expected advisory note for light tier, got %v", result.Notes)
+	}
+}
+
+// TestContextFloorNoFlagNoBlock tests that without the flag, context_alignment is not required.
+func TestContextFloorNoFlagNoBlock(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"item": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"evidence": map[string]any{
+			"files_changed":    []any{"f.go"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success without context floor flag, got %s errors=%v", result.Outcome, result.Errors)
+	}
+}
+
+// TestContextFloorMissingReferencedFile tests that standard tier fails when a referenced
+// file in context_alignment does not exist.
+func TestContextFloorMissingReferencedFile(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"item": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"context_alignment": map[string]any{
+			"stale_ground_checked":  true,
+			"product_contract_refs": []any{"nonexistent/path/contract.md"},
+		},
+		"evidence": map[string]any{
+			"files_changed":    []any{"f.go"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false, true)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed for missing referenced file, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if e == "referenced file does not exist: nonexistent/path/contract.md" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected missing file error, got %v", result.Errors)
+	}
+}
+
+// TestContextFloorTaxonomy tests that context floor failures have correct taxonomy.
+func TestContextFloorTaxonomy(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"item": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"evidence": map[string]any{
+			"files_changed":    []any{"f.go"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false, true)
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason for context floor failure")
+	}
+	if result.WithheldReason.FailureClass != "context_missing" {
+		t.Fatalf("expected failure_class context_missing, got %s", result.WithheldReason.FailureClass)
+	}
+	if result.WithheldReason.FailureStage != "context_floor" {
+		t.Fatalf("expected failure_stage context_floor, got %s", result.WithheldReason.FailureStage)
+	}
+	if result.BlockingPredicate != "context_floor_blocked" {
+		t.Fatalf("expected blocking_predicate context_floor_blocked, got %s", result.BlockingPredicate)
 	}
 }

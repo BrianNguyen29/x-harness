@@ -734,7 +734,7 @@ func checkApprovalReceiptForHighRisk(root string) Check {
 			failures = append(failures, fmt.Sprintf("%s: load error: %v", filepath.Base(f.path), err))
 			continue
 		}
-		result := admission.Run(doc, false)
+		result := admission.Run(doc, false, false)
 		if result.Outcome != f.expectedOutcome {
 			failures = append(failures, fmt.Sprintf("%s: expected outcome=%s got=%s", filepath.Base(f.path), f.expectedOutcome, result.Outcome))
 		}
@@ -828,7 +828,7 @@ func checkSuite(root, suiteType, checkName string) Check {
 		if schemaErr := validator.Validate(doc); schemaErr != nil {
 			errors = append(errors, schemaErr.Error())
 		}
-		admResult := admission.Run(doc, false)
+		admResult := admission.Run(doc, false, false)
 		errors = append(errors, admResult.Errors...)
 
 		outcome := admResult.Outcome
@@ -905,6 +905,6 @@ func checkGoldenCard(root, cardPath string) (outcome, acceptance, note string) {
 		return "failed", "withheld", fmt.Sprintf("schema invalid: outcome=failed acceptance=withheld")
 	}
 
-	result := admission.Run(doc, false)
+	result := admission.Run(doc, false, false)
 	return result.Outcome, result.AcceptanceStatus, fmt.Sprintf("outcome=%s acceptance=%s errors=%v", result.Outcome, result.AcceptanceStatus, result.Errors)
 }
