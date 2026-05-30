@@ -1,5 +1,9 @@
 import type { AdmissionInput } from "./admission.js";
-import { classifyCommand, riskMeetsThreshold, type CommandClassification } from "./classify.js";
+import {
+  classifyCommand,
+  riskMeetsThreshold,
+  type CommandClassification,
+} from "./classify.js";
 import { getEvidenceRecord } from "./admission-accessors.js";
 
 export interface ApprovalFinding {
@@ -12,21 +16,31 @@ export interface ApprovalEvaluation {
   notes: string[];
 }
 
-function stringInMap(m: Record<string, unknown> | undefined, key: string): string {
+function stringInMap(
+  m: Record<string, unknown> | undefined,
+  key: string
+): string {
   if (!m) return "";
   const v = m[key];
   if (typeof v === "string") return v;
   return "";
 }
 
-function mapValue(doc: Record<string, unknown> | undefined, key: string): Record<string, unknown> | undefined {
+function mapValue(
+  doc: Record<string, unknown> | undefined,
+  key: string
+): Record<string, unknown> | undefined {
   if (!doc) return undefined;
   const v = doc[key];
-  if (v && typeof v === "object" && !Array.isArray(v)) return v as Record<string, unknown>;
+  if (v && typeof v === "object" && !Array.isArray(v))
+    return v as Record<string, unknown>;
   return undefined;
 }
 
-function sliceInMap(m: Record<string, unknown> | undefined, key: string): unknown[] {
+function sliceInMap(
+  m: Record<string, unknown> | undefined,
+  key: string
+): unknown[] {
   if (!m) return [];
   const v = m[key];
   if (Array.isArray(v)) return v;
@@ -73,7 +87,11 @@ export function evaluateApprovalReceipt(
         }
         break;
       case "deep":
-        if (classification.risk === "medium" || classification.risk === "high" || classification.unknown) {
+        if (
+          classification.risk === "medium" ||
+          classification.risk === "high" ||
+          classification.unknown
+        ) {
           needsApproval = true;
         }
         break;
@@ -90,7 +108,10 @@ export function evaluateApprovalReceipt(
     return result;
   }
 
-  const receipt = mapValue(input as unknown as Record<string, unknown>, "approval_receipt");
+  const receipt = mapValue(
+    input as unknown as Record<string, unknown>,
+    "approval_receipt"
+  );
   if (receipt === undefined) {
     result.errors.push({
       message: `tier ${tier} requires approval receipt for ${requiringApproval.length} high-risk command(s)`,
@@ -122,7 +143,10 @@ export function evaluateApprovalReceipt(
       predicate: "classifier_approval_required",
     });
   }
-  if (maxRequiredRisk !== "" && !riskMeetsThreshold(aggregateRisk, maxRequiredRisk)) {
+  if (
+    maxRequiredRisk !== "" &&
+    !riskMeetsThreshold(aggregateRisk, maxRequiredRisk)
+  ) {
     result.errors.push({
       message: `approval_receipt aggregate_risk "${aggregateRisk}" is below required threshold "${maxRequiredRisk}"`,
       predicate: "classifier_approval_required",
@@ -148,7 +172,9 @@ export function evaluateApprovalReceipt(
   }
 
   if (result.errors.length === 0) {
-    result.notes.push(`approval_receipt validated for ${requiringApproval.length} high-risk command(s)`);
+    result.notes.push(
+      `approval_receipt validated for ${requiringApproval.length} high-risk command(s)`
+    );
   }
 
   return result;

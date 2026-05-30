@@ -57,6 +57,49 @@ This will place the rules under `rules/` and execution workflows under `workflow
 
 Use this adapter when running the **Antigravity** agent framework to ensure that its development loops, verification checks, and recovery routines align seamlessly with the repository's x-harness policies.
 
+<!-- BEGIN X-HARNESS MANAGED CONTEXT -->
+<!-- generated-by: x-harness -->
+<!-- generated-at: 2026-05-25T03:35:44.539Z -->
+<!-- context-hash: 8817d535c4e04a79 -->
+
+# x-harness Canonical Context
+
+- Completion is admitted, not claimed.
+- Verifier is read-only.
+- Success is the only accepted outcome.
+- Canonical tiers: light, standard, deep.
+- PGV is advisory-only.
+
+## Source-of-Truth Reading Order
+
+The managed context block in AGENTS.md is authoritative. Files are read in this order:
+
+1. AGENTS.md (managed block)
+1. X_HARNESS.md
+1. policies/admission.yaml
+1. policies/recovery.yaml
+1. policies/intake.yaml
+1. schemas/completion-card.schema.json
+
+## Rules
+
+### Completion is admitted, not claimed
+Agents may propose completion but cannot self-admit. A completion card with `claim.fix_status: fixed` is only a completion candidate. Compatibility subagent returns may use `result.fix_status`.
+
+### Verifier is read-only
+The verifier may inspect files, evidence, diffs, and trace events. It must not edit source files or repair the work product while verifying.
+
+### Success is the only accepted outcome
+`admission.outcome: success` and `acceptance_status: accepted` are required for admission. All other outcomes are withheld.
+
+### Canonical tiers
+Use only `light`, `standard`, and `deep`. Do not use `small`, `medium`, or `large` in active runtime handoffs.
+
+### PGV is advisory-only
+Pre-gate validation (PGV) advice never overrides the verify gate and never grants admission authority by default.
+
+<!-- END X-HARNESS MANAGED CONTEXT -->
+
 <!-- BEGIN X-HARNESS MANAGED CONTRACT: antigravity-readme-contract -->
 <!-- generated-by: x-harness -->
 <!-- contract-hash: ec6438371a039c93 -->

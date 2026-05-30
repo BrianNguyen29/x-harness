@@ -204,11 +204,7 @@ describe("init command", () => {
   it("--apply behaves like default apply", async () => {
     const tmpDir = mkdtempSync(path.join(tmpdir(), "x-harness-init-"));
     try {
-      const { stdout, exitCode } = await execaNode([
-        "init",
-        tmpDir,
-        "--apply",
-      ]);
+      const { stdout, exitCode } = await execaNode(["init", tmpDir, "--apply"]);
       expect(exitCode).toBe(0);
       expect(stdout).toContain("init (minimal) complete");
       expect(await fs.pathExists(path.join(tmpDir, "AGENTS.md"))).toBe(true);

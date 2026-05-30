@@ -204,13 +204,13 @@ func discoverGoldenExamples(root string, suite string) ([]goldenExample, error) 
 				}
 				dir := filepath.Join(suiteDir, entry.Name())
 				cardPath := filepath.Join(dir, "completion-card.yaml")
-			if _, err := os.Stat(cardPath); err == nil {
-				examples = append(examples, goldenExample{
-					Name:     s + "/" + entry.Name(),
-					Dir:      dir,
-					CardPath: cardPath,
-				})
-			}
+				if _, err := os.Stat(cardPath); err == nil {
+					examples = append(examples, goldenExample{
+						Name:     s + "/" + entry.Name(),
+						Dir:      dir,
+						CardPath: cardPath,
+					})
+				}
 			}
 		}
 	}
@@ -248,7 +248,7 @@ func verifyExample(ex goldenExample, validator *schema.Validator, root string) E
 		errors = append(errors, fmt.Sprintf("completion card validation failed: %v", schemaErr))
 	}
 
-	admResult := admission.Run(doc, false)
+	admResult := admission.Run(doc, false, false)
 	errors = append(errors, admResult.Errors...)
 
 	outcome := admResult.Outcome

@@ -36,6 +36,15 @@ func TestVerifyStrictBlocksMutationInjectionInsideRoot(t *testing.T) {
 	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
 		t.Fatal(err)
 	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	origWd, err := os.Getwd()
 	if err != nil {
@@ -112,6 +121,15 @@ func TestVerifyRejectsMutationInjectionOutsideRoot(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := exec.Command("git", "-C", tmpDir, "add", "completion-card.yaml", "go.mod").Run(); err != nil {
@@ -295,6 +313,15 @@ func TestVerifyTraceWritesEvent(t *testing.T) {
 	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
 		t.Fatal(err)
 	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	traceDir := filepath.Join(tmpDir, "traces")
 
@@ -379,6 +406,15 @@ func TestVerifyJSONWithheldIncludesTaxonomy(t *testing.T) {
 	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
 		t.Fatal(err)
 	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	origWd, err := os.Getwd()
 	if err != nil {
@@ -403,20 +439,35 @@ func TestVerifyJSONWithheldIncludesTaxonomy(t *testing.T) {
 	if result.WithheldReason == nil {
 		t.Fatal("expected withheld_reason in JSON output")
 	}
-	if result.WithheldReason.FailureClass == "" {
-		t.Fatal("expected failure_class in withheld_reason")
+	// Schema validation failure path: blocked-missing-evidence card has schema validation errors
+	// that trigger schema_invalid blocking_predicate with direct FailureClass/FailureStage values
+	if result.WithheldReason.BlockingPredicate != "schema_invalid" {
+		t.Fatalf("expected blocking_predicate=schema_invalid, got %s", result.WithheldReason.BlockingPredicate)
 	}
-	if result.WithheldReason.FailureStage == "" {
-		t.Fatal("expected failure_stage in withheld_reason")
+	if result.WithheldReason.FailureClass != "schema_invalid" {
+		t.Fatalf("expected failure_class=schema_invalid, got %s", result.WithheldReason.FailureClass)
 	}
-	if result.WithheldReason.Recoverability == "" {
-		t.Fatal("expected recoverability in withheld_reason")
+	if result.WithheldReason.FailureStage != "verify_pipeline" {
+		t.Fatalf("expected failure_stage=verify_pipeline, got %s", result.WithheldReason.FailureStage)
 	}
-	if result.WithheldReason.NextAction == "" {
-		t.Fatal("expected next_action in withheld_reason")
+	if result.WithheldReason.Recoverability != "retry_with_fixes" {
+		t.Fatalf("expected recoverability=retry_with_fixes, got %s", result.WithheldReason.Recoverability)
 	}
-	if result.WithheldReason.BlockingPredicate == "" {
-		t.Fatal("expected blocking_predicate in withheld_reason")
+	if result.WithheldReason.SchemaRecoverability != "manual" {
+		t.Fatalf("expected schema_recoverability=manual, got %s", result.WithheldReason.SchemaRecoverability)
+	}
+	if result.WithheldReason.NextAction != "review_and_resubmit" {
+		t.Fatalf("expected next_action=review_and_resubmit, got %s", result.WithheldReason.NextAction)
+	}
+	// Check schema-like fields exact values (derived from schema_invalid -> schema_or_policy_invalid)
+	if result.WithheldReason.Class != "schema_or_policy_invalid" {
+		t.Fatalf("expected class=schema_or_policy_invalid, got %s", result.WithheldReason.Class)
+	}
+	if result.WithheldReason.Stage != "verification" {
+		t.Fatalf("expected stage=verification, got %s", result.WithheldReason.Stage)
+	}
+	if result.WithheldReason.Owner != "implementation-worker" {
+		t.Fatalf("expected owner=implementation-worker, got %s", result.WithheldReason.Owner)
 	}
 }
 
@@ -445,6 +496,15 @@ func TestVerifyTraceEventIncludesTaxonomy(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -586,6 +646,15 @@ func TestVerifyWorktreeAwareTrace(t *testing.T) {
 	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
 		t.Fatal(err)
 	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
 	if err := exec.Command("git", "-C", tmpDir, "add", ".").Run(); err != nil {
 		t.Fatalf("git add failed: %v", err)
 	}
@@ -633,5 +702,1381 @@ func TestVerifyWorktreeAwareTrace(t *testing.T) {
 	}
 	if wtMap["commit"] == "" {
 		t.Fatal("expected worktree commit")
+	}
+}
+
+func TestVerifyContextFloorMissingContextAlignment(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Standard-tier card without context_alignment
+	cardYAML := `schema_version: "1"
+task_id: TASK-CF-MISSING-001
+tier: standard
+owner: alice
+accountable: bob
+state:
+  read_set:
+    - src/utils/format.ts
+  write_set:
+    - src/utils/format.ts
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Added format utility
+  expected_effect: Format utility is available
+  measurable_signal: npm test -- format
+  falsification_method: Run without fix; utility should not exist
+  horizon: same_verify
+evidence:
+  files_changed:
+    - src/utils/format.ts
+  command_evidence:
+    - command: npm test -- format
+      exit_code: 0
+claim:
+  fix_status: fixed
+  summary: Added format utility
+  evidence:
+    - description: Source file
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	if err := os.WriteFile(cardDst, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--context-floor", "--json"}, &stdout, &stderr)
+
+	if code == ExitOK {
+		t.Fatalf("expected non-ok exit, got %d. stdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.OK {
+		t.Fatal("expected not ok")
+	}
+	if result.AdmissionOutcome != "failed" {
+		t.Fatalf("expected admission_outcome=failed, got %s", result.AdmissionOutcome)
+	}
+	if result.AcceptanceStatus != "withheld" {
+		t.Fatalf("expected acceptance_status=withheld, got %s", result.AcceptanceStatus)
+	}
+
+	// Check that error or taxonomy mentions context floor / missing context
+	hasContextError := false
+	for _, e := range result.AdmissionErrors {
+		if strings.Contains(e, "context_alignment") || strings.Contains(e, "context") {
+			hasContextError = true
+		}
+	}
+	if result.WithheldReason != nil {
+		if strings.Contains(result.WithheldReason.FailureClass, "context") ||
+			strings.Contains(result.WithheldReason.BlockingPredicate, "context") {
+			hasContextError = true
+		}
+	}
+	if !hasContextError {
+		t.Fatalf("expected error mentioning context_alignment, got errors=%v withheld_reason=%+v", result.AdmissionErrors, result.WithheldReason)
+	}
+}
+
+func TestVerifyContextFloorMissingFileRef(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Copy the blocked-missing-context-ref fixture
+	cardSrc := filepath.Join("..", "..", "examples", "golden", "regression", "blocked-missing-context-ref", "completion-card.yaml")
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	srcData, err := os.ReadFile(cardSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cardDst, srcData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--context-floor", "--json"}, &stdout, &stderr)
+
+	if code == ExitOK {
+		t.Fatalf("expected non-ok exit, got %d. stdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.OK {
+		t.Fatal("expected not ok")
+	}
+	if result.AdmissionOutcome != "failed" {
+		t.Fatalf("expected admission_outcome=failed, got %s", result.AdmissionOutcome)
+	}
+	if result.AcceptanceStatus != "withheld" {
+		t.Fatalf("expected acceptance_status=withheld, got %s", result.AcceptanceStatus)
+	}
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason")
+	}
+	if result.WithheldReason.BlockingPredicate != "context_floor_blocked" {
+		t.Fatalf("expected blocking_predicate=context_floor_blocked, got %s", result.WithheldReason.BlockingPredicate)
+	}
+	if result.WithheldReason.FailureClass != "context_missing" {
+		t.Fatalf("expected failure_class=context_missing, got %s", result.WithheldReason.FailureClass)
+	}
+	if result.WithheldReason.FailureStage != "context_floor" {
+		t.Fatalf("expected failure_stage=context_floor, got %s", result.WithheldReason.FailureStage)
+	}
+	// Check new schema-like fields
+	if result.WithheldReason.Class != "context_floor_blocked" {
+		t.Fatalf("expected class=context_floor_blocked, got %s", result.WithheldReason.Class)
+	}
+	if result.WithheldReason.Stage != "context" {
+		t.Fatalf("expected stage=context, got %s", result.WithheldReason.Stage)
+	}
+	if result.WithheldReason.Owner != "implementation-worker" {
+		t.Fatalf("expected owner=implementation-worker, got %s", result.WithheldReason.Owner)
+	}
+}
+
+func TestVerifyHelpDocumentsContextFloor(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--help"}, &stdout, &stderr)
+
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d for usage, got %d. stdout: %s\nstderr: %s", ExitUsage, code, stdout.String(), stderr.String())
+	}
+
+	if !strings.Contains(stderr.String(), "--context-floor") {
+		t.Fatalf("expected usage to contain --context-floor, got: %s", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--strict-withheld-reason") {
+		t.Fatalf("expected usage to contain --strict-withheld-reason, got: %s", stderr.String())
+	}
+}
+
+func TestVerifyStrictWithheldReasonContextFloor(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Copy the blocked-missing-context-ref fixture
+	cardSrc := filepath.Join("..", "..", "examples", "golden", "regression", "blocked-missing-context-ref", "completion-card.yaml")
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	srcData, err := os.ReadFile(cardSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cardDst, srcData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--context-floor", "--strict-withheld-reason", "--json"}, &stdout, &stderr)
+
+	if code == ExitOK {
+		t.Fatalf("expected non-ok exit, got %d. stdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+
+	var rawResult map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &rawResult); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	// Strict mode: withheld_reason must not contain legacy keys
+	wr, ok := rawResult["withheld_reason"].(map[string]any)
+	if !ok {
+		t.Fatal("expected withheld_reason to be a map")
+	}
+	if _, has := wr["failure_class"]; has {
+		t.Fatal("expected failure_class key to be absent in strict mode")
+	}
+	if _, has := wr["failure_stage"]; has {
+		t.Fatal("expected failure_stage key to be absent in strict mode")
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.OK {
+		t.Fatal("expected not ok")
+	}
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason")
+	}
+	// Check schema-like fields
+	if result.WithheldReason.Class != "context_floor_blocked" {
+		t.Fatalf("expected class=context_floor_blocked, got %s", result.WithheldReason.Class)
+	}
+	if result.WithheldReason.Stage != "context" {
+		t.Fatalf("expected stage=context, got %s", result.WithheldReason.Stage)
+	}
+	if result.WithheldReason.Owner != "implementation-worker" {
+		t.Fatalf("expected owner=implementation-worker, got %s", result.WithheldReason.Owner)
+	}
+	if result.WithheldReason.BlockingPredicate != "context_floor_blocked" {
+		t.Fatalf("expected blocking_predicate=context_floor_blocked, got %s", result.WithheldReason.BlockingPredicate)
+	}
+	// recoverability must be schema enum value
+	if result.WithheldReason.Recoverability == "" {
+		t.Fatal("expected recoverability (schema enum) to be set")
+	}
+	// schema_recoverability must be present
+	if result.WithheldReason.SchemaRecoverability == "" {
+		t.Fatal("expected schema_recoverability to be set")
+	}
+	// In strict mode, recoverability shows schema_recoverability value
+	if result.WithheldReason.Recoverability != result.WithheldReason.SchemaRecoverability {
+		t.Fatalf("expected recoverability == schema_recoverability in strict mode, got recoverability=%s schema_recoverability=%s",
+			result.WithheldReason.Recoverability, result.WithheldReason.SchemaRecoverability)
+	}
+}
+
+func TestVerifyStrictWithheldReasonSchemaInvalid(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Use blocked-missing-evidence fixture which triggers schema_invalid
+	cardSrc := filepath.Join("..", "..", "examples", "golden", "regression", "blocked-missing-evidence", "completion-card.yaml")
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	srcData, err := os.ReadFile(cardSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cardDst, srcData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--strict-withheld-reason", "--json"}, &stdout, &stderr)
+
+	if code == ExitOK {
+		t.Fatalf("expected non-ok exit, got %d. stdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+
+	var rawResult map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &rawResult); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	// Strict mode: withheld_reason must not contain legacy keys
+	wr, ok := rawResult["withheld_reason"].(map[string]any)
+	if !ok {
+		t.Fatal("expected withheld_reason to be a map")
+	}
+	if _, has := wr["failure_class"]; has {
+		t.Fatal("expected failure_class key to be absent in strict mode")
+	}
+	if _, has := wr["failure_stage"]; has {
+		t.Fatal("expected failure_stage key to be absent in strict mode")
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.OK {
+		t.Fatal("expected not ok")
+	}
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason")
+	}
+	// Check schema-like fields
+	if result.WithheldReason.Class != "schema_or_policy_invalid" {
+		t.Fatalf("expected class=schema_or_policy_invalid, got %s", result.WithheldReason.Class)
+	}
+	if result.WithheldReason.Stage != "verification" {
+		t.Fatalf("expected stage=verification, got %s", result.WithheldReason.Stage)
+	}
+	if result.WithheldReason.Owner != "implementation-worker" {
+		t.Fatalf("expected owner=implementation-worker, got %s", result.WithheldReason.Owner)
+	}
+	if result.WithheldReason.BlockingPredicate != "schema_invalid" {
+		t.Fatalf("expected blocking_predicate=schema_invalid, got %s", result.WithheldReason.BlockingPredicate)
+	}
+	// recoverability must be schema enum value
+	if result.WithheldReason.Recoverability == "" {
+		t.Fatal("expected recoverability (schema enum) to be set")
+	}
+	// schema_recoverability must be present
+	if result.WithheldReason.SchemaRecoverability == "" {
+		t.Fatal("expected schema_recoverability to be set")
+	}
+	// In strict mode, recoverability shows schema_recoverability value
+	if result.WithheldReason.Recoverability != result.WithheldReason.SchemaRecoverability {
+		t.Fatalf("expected recoverability == schema_recoverability in strict mode, got recoverability=%s schema_recoverability=%s",
+			result.WithheldReason.Recoverability, result.WithheldReason.SchemaRecoverability)
+	}
+	// schema_recoverability should be "manual" for retry_with_fixes
+	if result.WithheldReason.SchemaRecoverability != "manual" {
+		t.Fatalf("expected schema_recoverability=manual, got %s", result.WithheldReason.SchemaRecoverability)
+	}
+}
+
+func TestVerifyDefaultOutputIncludesLegacyFields(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Use blocked-missing-evidence fixture
+	cardSrc := filepath.Join("..", "..", "examples", "golden", "regression", "blocked-missing-evidence", "completion-card.yaml")
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	srcData, err := os.ReadFile(cardSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cardDst, srcData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	// Default mode (no --strict-withheld-reason)
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
+
+	if code == ExitOK {
+		t.Fatalf("expected non-ok exit, got %d. stdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.OK {
+		t.Fatal("expected not ok")
+	}
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason")
+	}
+	// Default mode must include legacy fields
+	if result.WithheldReason.FailureClass == "" {
+		t.Fatal("expected failure_class to be present in default mode")
+	}
+	if result.WithheldReason.FailureStage == "" {
+		t.Fatal("expected failure_stage to be present in default mode")
+	}
+	// And must include schema_recoverability
+	if result.WithheldReason.SchemaRecoverability == "" {
+		t.Fatal("expected schema_recoverability to be present")
+	}
+}
+
+func TestVerifyContractOraclesViolation(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// Create a source file that will trigger the contract oracle rule
+	srcFile := filepath.Join(tmpDir, "src", "utils", "format.ts")
+	if err := os.MkdirAll(filepath.Dir(srcFile), 0755); err != nil {
+		t.Fatal(err)
+	}
+	// Write console.log which should trigger the default policy rule (if uncommented)
+	// Since default policy is empty, we need a custom policy with an active rule
+	if err := os.WriteFile(srcFile, []byte("console.log('debug');\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a custom contract oracle policy that matches console.log in .ts files
+	policyYAML := `version: 1
+grep_rules:
+  - id: console-log-typescript
+    description: "console.log statement in TypeScript"
+    file_pattern: "*.ts"
+    pattern: 'console\.log\('
+    message: "Remove console.log statements before committing"
+`
+	policyPath := filepath.Join(tmpDir, "contract-policy.yaml")
+	if err := os.WriteFile(policyPath, []byte(policyYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a valid completion card
+	cardYAML := `schema_version: "1"
+task_id: TASK-CO-VIOLATION-001
+tier: light
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - src/utils/format.ts
+  manual_rationale: Simple utility function
+claim:
+  fix_status: fixed
+  summary: Added utility
+  evidence:
+    - description: Source file
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	if err := os.WriteFile(cardDst, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--contract-oracles", "--contract-oracles-policy", policyPath, "--json"}, &stdout, &stderr)
+
+	if code == ExitOK {
+		t.Fatalf("expected non-ok exit, got %d. stdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.OK {
+		t.Fatal("expected not ok")
+	}
+	if result.AdmissionOutcome != "blocked" {
+		t.Fatalf("expected admission_outcome=blocked, got %s", result.AdmissionOutcome)
+	}
+	if result.AcceptanceStatus != "withheld" {
+		t.Fatalf("expected acceptance_status=withheld, got %s", result.AcceptanceStatus)
+	}
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason")
+	}
+	if result.WithheldReason.BlockingPredicate != "contract_oracle_blocked" {
+		t.Fatalf("expected blocking_predicate=contract_oracle_blocked, got %s", result.WithheldReason.BlockingPredicate)
+	}
+	if result.WithheldReason.Class != "contract_mismatch" {
+		t.Fatalf("expected class=contract_mismatch, got %s", result.WithheldReason.Class)
+	}
+	if result.WithheldReason.Owner != "implementation-worker" {
+		t.Fatalf("expected owner=implementation-worker, got %s", result.WithheldReason.Owner)
+	}
+	if result.WithheldReason.Stage != "verification" {
+		t.Fatalf("expected stage=verification, got %s", result.WithheldReason.Stage)
+	}
+}
+
+func TestVerifyContractOraclesCleanPass(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create an empty contract oracle policy
+	policyYAML := `version: 1
+grep_rules: []
+`
+	policyPath := filepath.Join(tmpDir, "empty-policy.yaml")
+	if err := os.WriteFile(policyPath, []byte(policyYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Copy success-light fixture
+	cardSrc := filepath.Join("..", "..", "examples", "golden", "regression", "success-light", "completion-card.yaml")
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	srcData, err := os.ReadFile(cardSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cardDst, srcData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--contract-oracles", "--contract-oracles-policy", policyPath, "--json"}, &stdout, &stderr)
+
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if !result.OK {
+		t.Fatalf("expected ok, got outcome=%s status=%s", result.AdmissionOutcome, result.AcceptanceStatus)
+	}
+	if result.WithheldReason != nil {
+		t.Fatalf("expected no withheld_reason for clean pass, got %+v", result.WithheldReason)
+	}
+}
+
+func TestVerifyContractOraclesDefaultUnchanged(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a custom contract oracle policy that would fail if checked
+	policyYAML := `version: 1
+grep_rules:
+  - id: console-log-typescript
+    description: "console.log statement in TypeScript"
+    file_pattern: "*.ts"
+    pattern: 'console\.log\('
+    message: "Remove console.log statements before committing"
+`
+	policyPath := filepath.Join(tmpDir, "contract-policy.yaml")
+	if err := os.WriteFile(policyPath, []byte(policyYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a source file that would violate the policy
+	srcFile := filepath.Join(tmpDir, "src", "utils", "format.ts")
+	if err := os.MkdirAll(filepath.Dir(srcFile), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(srcFile, []byte("console.log('debug');\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Copy success-light fixture - should pass even though policy file exists
+	cardSrc := filepath.Join("..", "..", "examples", "golden", "regression", "success-light", "completion-card.yaml")
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	srcData, err := os.ReadFile(cardSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cardDst, srcData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	// Verify WITHOUT --contract-oracles flag - should pass even though policy file exists and would violate
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
+
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d (default behavior unchanged), got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if !result.OK {
+		t.Fatalf("expected ok without --contract-oracles flag, got outcome=%s status=%s", result.AdmissionOutcome, result.AcceptanceStatus)
+	}
+}
+
+func TestVerifyHelpDocumentsContractOracles(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--help"}, &stdout, &stderr)
+
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d for usage, got %d. stdout: %s\nstderr: %s", ExitUsage, code, stdout.String(), stderr.String())
+	}
+
+	if !strings.Contains(stderr.String(), "--contract-oracles") {
+		t.Fatalf("expected usage to contain --contract-oracles, got: %s", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--contract-oracles-policy") {
+		t.Fatalf("expected usage to contain --contract-oracles-policy, got: %s", stderr.String())
+	}
+}
+
+func TestVerifyContractOraclesStrictWithheldReason(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// Create a source file that will trigger the contract oracle rule
+	srcFile := filepath.Join(tmpDir, "src", "utils", "format.ts")
+	if err := os.MkdirAll(filepath.Dir(srcFile), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(srcFile, []byte("console.log('debug');\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a custom contract oracle policy
+	policyYAML := `version: 1
+grep_rules:
+  - id: console-log-typescript
+    description: "console.log statement in TypeScript"
+    file_pattern: "*.ts"
+    pattern: 'console\.log\('
+    message: "Remove console.log statements before committing"
+`
+	policyPath := filepath.Join(tmpDir, "contract-policy.yaml")
+	if err := os.WriteFile(policyPath, []byte(policyYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a valid completion card
+	cardYAML := `schema_version: "1"
+task_id: TASK-CO-STRICT-001
+tier: light
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - src/utils/format.ts
+  manual_rationale: Simple utility function
+claim:
+  fix_status: fixed
+  summary: Added utility
+  evidence:
+    - description: Source file
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	if err := os.WriteFile(cardDst, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--contract-oracles", "--contract-oracles-policy", policyPath, "--strict-withheld-reason", "--json"}, &stdout, &stderr)
+
+	if code == ExitOK {
+		t.Fatalf("expected non-ok exit, got %d. stdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+
+	var rawResult map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &rawResult); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	// Strict mode: withheld_reason must not contain legacy keys
+	wr, ok := rawResult["withheld_reason"].(map[string]any)
+	if !ok {
+		t.Fatal("expected withheld_reason to be a map")
+	}
+	if _, has := wr["failure_class"]; has {
+		t.Fatal("expected failure_class key to be absent in strict mode")
+	}
+	if _, has := wr["failure_stage"]; has {
+		t.Fatal("expected failure_stage key to be absent in strict mode")
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	// Violations should set result.OK to false
+	if result.OK {
+		t.Fatal("expected violations to set OK=false")
+	}
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason")
+	}
+	if result.WithheldReason.Class != "contract_mismatch" {
+		t.Fatalf("expected class=contract_mismatch, got %s", result.WithheldReason.Class)
+	}
+	if result.WithheldReason.Stage != "verification" {
+		t.Fatalf("expected stage=verification, got %s", result.WithheldReason.Stage)
+	}
+	if result.WithheldReason.Owner != "implementation-worker" {
+		t.Fatalf("expected owner=implementation-worker, got %s", result.WithheldReason.Owner)
+	}
+	if result.WithheldReason.BlockingPredicate != "contract_oracle_blocked" {
+		t.Fatalf("expected blocking_predicate=contract_oracle_blocked, got %s", result.WithheldReason.BlockingPredicate)
+	}
+	// In strict mode, recoverability shows schema_recoverability value
+	if result.WithheldReason.Recoverability != result.WithheldReason.SchemaRecoverability {
+		t.Fatalf("expected recoverability == schema_recoverability in strict mode")
+	}
+}
+
+func TestVerifyContractOraclesGoldenFixture(t *testing.T) {
+	// Test that uses the blocked-contract-oracle golden fixture
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Copy the golden fixture files
+	fixtureBase := filepath.Join("..", "..", "examples", "golden", "regression", "blocked-contract-oracle")
+
+	// Copy completion card
+	cardSrc := filepath.Join(fixtureBase, "completion-card.yaml")
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	srcData, err := os.ReadFile(cardSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cardDst, srcData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Copy contract policy
+	policySrc := filepath.Join(fixtureBase, "contract-policy.yaml")
+	policyDst := filepath.Join(tmpDir, "contract-policy.yaml")
+	policyData, err := os.ReadFile(policySrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(policyDst, policyData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Copy violation marker file
+	markerSrc := filepath.Join(fixtureBase, "contract-oracle-violation-marker.txt")
+	markerDst := filepath.Join(tmpDir, "contract-oracle-violation-marker.txt")
+	markerData, err := os.ReadFile(markerSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(markerDst, markerData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Copy schemas
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	// First verify WITHOUT --contract-oracles - should pass
+	var stdoutNoCO bytes.Buffer
+	var stderrNoCO bytes.Buffer
+	codeNoCO := Run([]string{"verify", "--card", "completion-card.yaml", "--json"}, &stdoutNoCO, &stderrNoCO)
+	if codeNoCO != ExitOK {
+		t.Fatalf("expected exit code %d without contract-oracles, got %d. stdout: %s\nstderr: %s", ExitOK, codeNoCO, stdoutNoCO.String(), stderrNoCO.String())
+	}
+	var resultNoCO VerifyResult
+	if err := json.Unmarshal(stdoutNoCO.Bytes(), &resultNoCO); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdoutNoCO.String())
+	}
+	if !resultNoCO.OK {
+		t.Fatalf("expected ok without contract-oracles flag, got outcome=%s status=%s", resultNoCO.AdmissionOutcome, resultNoCO.AcceptanceStatus)
+	}
+
+	// Now verify WITH --contract-oracles - should fail
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--contract-oracles", "--contract-oracles-policy", policyDst, "--json"}, &stdout, &stderr)
+
+	if code == ExitOK {
+		t.Fatalf("expected non-ok exit with contract-oracles, got %d. stdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.OK {
+		t.Fatal("expected not ok with contract-oracles")
+	}
+	if result.AdmissionOutcome != "blocked" {
+		t.Fatalf("expected admission_outcome=blocked, got %s", result.AdmissionOutcome)
+	}
+	if result.AcceptanceStatus != "withheld" {
+		t.Fatalf("expected acceptance_status=withheld, got %s", result.AcceptanceStatus)
+	}
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason")
+	}
+	if result.WithheldReason.BlockingPredicate != "contract_oracle_blocked" {
+		t.Fatalf("expected blocking_predicate=contract_oracle_blocked, got %s", result.WithheldReason.BlockingPredicate)
+	}
+	if result.WithheldReason.Class != "contract_mismatch" {
+		t.Fatalf("expected class=contract_mismatch, got %s", result.WithheldReason.Class)
+	}
+	if result.WithheldReason.Owner != "implementation-worker" {
+		t.Fatalf("expected owner=implementation-worker, got %s", result.WithheldReason.Owner)
+	}
+	if result.WithheldReason.Stage != "verification" {
+		t.Fatalf("expected stage=verification, got %s", result.WithheldReason.Stage)
+	}
+}
+
+func TestVerifyContractOraclesDependencyRuleViolation(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// Create a source file with a forbidden import
+	srcFile := filepath.Join(tmpDir, "src", "utils", "format.go")
+	if err := os.MkdirAll(filepath.Dir(srcFile), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(srcFile, []byte(`package utils
+import "github.com/forbidden/package"
+func Format() {}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a contract oracle policy with dependency_rule
+	policyYAML := `version: 1
+dependency_rules:
+  - id: no-forbidden-packages
+    description: "No forbidden packages"
+    file_pattern: "*.go"
+    forbidden_imports:
+      - "github.com/forbidden"
+    message: "Do not use forbidden packages"
+`
+	policyPath := filepath.Join(tmpDir, "contract-policy.yaml")
+	if err := os.WriteFile(policyPath, []byte(policyYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a valid completion card
+	cardYAML := `schema_version: "1"
+task_id: TASK-CO-DEP-001
+tier: light
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - src/utils/format.go
+  manual_rationale: Simple utility function
+claim:
+  fix_status: fixed
+  summary: Added utility
+  evidence:
+    - description: Source file
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	if err := os.WriteFile(cardDst, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--contract-oracles", "--contract-oracles-policy", policyPath, "--json"}, &stdout, &stderr)
+
+	if code == ExitOK {
+		t.Fatalf("expected non-ok exit, got %d. stdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.OK {
+		t.Fatal("expected not ok")
+	}
+	if result.AdmissionOutcome != "blocked" {
+		t.Fatalf("expected admission_outcome=blocked, got %s", result.AdmissionOutcome)
+	}
+	if result.AcceptanceStatus != "withheld" {
+		t.Fatalf("expected acceptance_status=withheld, got %s", result.AcceptanceStatus)
+	}
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason")
+	}
+	if result.WithheldReason.BlockingPredicate != "contract_oracle_blocked" {
+		t.Fatalf("expected blocking_predicate=contract_oracle_blocked, got %s", result.WithheldReason.BlockingPredicate)
+	}
+	if result.WithheldReason.Class != "contract_mismatch" {
+		t.Fatalf("expected class=contract_mismatch, got %s", result.WithheldReason.Class)
+	}
+	if result.WithheldReason.Owner != "implementation-worker" {
+		t.Fatalf("expected owner=implementation-worker, got %s", result.WithheldReason.Owner)
+	}
+	if result.WithheldReason.Stage != "verification" {
+		t.Fatalf("expected stage=verification, got %s", result.WithheldReason.Stage)
+	}
+}
+
+func TestVerifyContractOraclesDependencyRuleNoViolation(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// Create a source file with a clean import
+	srcFile := filepath.Join(tmpDir, "src", "utils", "format.go")
+	if err := os.MkdirAll(filepath.Dir(srcFile), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(srcFile, []byte(`package utils
+import "fmt"
+func Format() { fmt.Println("hello") }`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a contract oracle policy with dependency_rule that doesn't match
+	policyYAML := `version: 1
+dependency_rules:
+  - id: no-forbidden-packages
+    description: "No forbidden packages"
+    file_pattern: "*.go"
+    forbidden_imports:
+      - "github.com/forbidden"
+`
+	policyPath := filepath.Join(tmpDir, "contract-policy.yaml")
+	if err := os.WriteFile(policyPath, []byte(policyYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a valid completion card
+	cardYAML := `schema_version: "1"
+task_id: TASK-CO-DEP-002
+tier: light
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - src/utils/format.go
+  manual_rationale: Simple utility function
+claim:
+  fix_status: fixed
+  summary: Added utility
+  evidence:
+    - description: Source file
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	if err := os.WriteFile(cardDst, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--contract-oracles", "--contract-oracles-policy", policyPath, "--json"}, &stdout, &stderr)
+
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if !result.OK {
+		t.Fatalf("expected ok, got outcome=%s status=%s", result.AdmissionOutcome, result.AcceptanceStatus)
+	}
+	if result.WithheldReason != nil {
+		t.Fatalf("expected no withheld_reason for clean pass, got %+v", result.WithheldReason)
 	}
 }

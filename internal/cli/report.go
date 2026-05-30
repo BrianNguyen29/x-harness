@@ -218,7 +218,7 @@ func handleReport(args []string, stdout io.Writer, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "warning: could not compute policy hash for %s: %v\n", policyPath, err)
 	}
 
-	admResult := admission.Run(doc, false)
+	admResult := admission.Run(doc, false, false)
 	verifyRuntimeMs := int(time.Since(startTime).Milliseconds())
 
 	metrics := computeMetrics(doc, inputCardHash, policyHash, verifyRuntimeMs)
@@ -275,11 +275,15 @@ func handleReport(args []string, stdout io.Writer, stderr io.Writer) int {
 			}
 			if admResult.WithheldReason != nil {
 				summary.WithheldReason = &withheldReason{
-					FailureClass:      admResult.WithheldReason.FailureClass,
-					FailureStage:      admResult.WithheldReason.FailureStage,
-					Recoverability:    admResult.WithheldReason.Recoverability,
-					NextAction:        admResult.WithheldReason.NextAction,
-					BlockingPredicate: admResult.BlockingPredicate,
+					Class:                classFromFailureClass(admResult.WithheldReason.FailureClass),
+					Stage:                stageFromFailureStage(admResult.WithheldReason.FailureStage),
+					Owner:                ownerFromBlockingPredicate(admResult.BlockingPredicate),
+					FailureClass:         admResult.WithheldReason.FailureClass,
+					FailureStage:         admResult.WithheldReason.FailureStage,
+					Recoverability:       admResult.WithheldReason.Recoverability,
+					SchemaRecoverability: schemaRecoverabilityFromLegacy(admResult.WithheldReason.Recoverability),
+					NextAction:           admResult.WithheldReason.NextAction,
+					BlockingPredicate:    admResult.BlockingPredicate,
 				}
 			}
 			return summary

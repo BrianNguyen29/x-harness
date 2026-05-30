@@ -412,6 +412,14 @@ func RunStrict(root string) *Report {
 		} else {
 			deltas := mutationguard.Compare(before, after)
 			unexpected := mutationguard.FilterUnexpected(deltas)
+			// Filter out mutation guard probe files from unexpected deltas
+			var filtered []mutationguard.Delta
+			for _, d := range unexpected {
+				if !strings.HasPrefix(d.Path, ".x-harness-mutation-guard-probe-") {
+					filtered = append(filtered, d)
+				}
+			}
+			unexpected = filtered
 			if len(unexpected) > 0 {
 				var paths []string
 				for _, d := range unexpected {
@@ -726,7 +734,7 @@ func checkApprovalReceiptForHighRisk(root string) Check {
 			failures = append(failures, fmt.Sprintf("%s: load error: %v", filepath.Base(f.path), err))
 			continue
 		}
-		result := admission.Run(doc, false)
+		result := admission.Run(doc, false, false)
 		if result.Outcome != f.expectedOutcome {
 			failures = append(failures, fmt.Sprintf("%s: expected outcome=%s got=%s", filepath.Base(f.path), f.expectedOutcome, result.Outcome))
 		}
@@ -820,7 +828,7 @@ func checkSuite(root, suiteType, checkName string) Check {
 		if schemaErr := validator.Validate(doc); schemaErr != nil {
 			errors = append(errors, schemaErr.Error())
 		}
-		admResult := admission.Run(doc, false)
+		admResult := admission.Run(doc, false, false)
 		errors = append(errors, admResult.Errors...)
 
 		outcome := admResult.Outcome
@@ -897,6 +905,6 @@ func checkGoldenCard(root, cardPath string) (outcome, acceptance, note string) {
 		return "failed", "withheld", fmt.Sprintf("schema invalid: outcome=failed acceptance=withheld")
 	}
 
-	result := admission.Run(doc, false)
+	result := admission.Run(doc, false, false)
 	return result.Outcome, result.AcceptanceStatus, fmt.Sprintf("outcome=%s acceptance=%s errors=%v", result.Outcome, result.AcceptanceStatus, result.Errors)
 }

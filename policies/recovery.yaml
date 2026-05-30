@@ -73,6 +73,10 @@ recovery_routing:
     next_action: "Refresh stale context or rule it out before requesting admission."
     owner: implementation-worker
 
+  context_floor_blocked:
+    next_action: "Add context_alignment with stale_ground_checked, at least one ref array, and resolve context questions."
+    owner: implementation-worker
+
   admission_failed:
     next_action: "Resolve admission validation errors and rerun verification."
     owner: implementation-worker
@@ -83,4 +87,8 @@ recovery_routing:
 
   Fintervention:
     next_action: "Review intervention artifact for authority boundary violation and resolve."
+    owner: implementation-worker
+
+  contract_oracle_blocked:
+    next_action: "Fix contract oracle violations or update the policy file at policies/contract-oracle.yaml to reflect current product/architecture constraints."
     owner: implementation-worker

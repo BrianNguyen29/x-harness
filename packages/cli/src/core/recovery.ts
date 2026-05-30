@@ -18,6 +18,7 @@ export type RecoveryPredicate =
   | "prediction_invalid"
   | "done_checklist_prediction_mismatch"
   | "stale_ground"
+  | "context_floor_blocked"
   | "Fpermission"
   | "Fintervention";
 
@@ -114,6 +115,11 @@ const DEFAULT_ROUTES: Record<string, RecoveryRoute> = {
       "Refresh stale context or rule it out before requesting admission.",
     owner: "implementation-worker",
   },
+  context_floor_blocked: {
+    next_action:
+      "Add context_alignment with stale_ground_checked, at least one ref array, and resolve context questions.",
+    owner: "implementation-worker",
+  },
   Fpermission: {
     next_action:
       "Request human approval for this protected path change before admission.",
@@ -143,6 +149,14 @@ export function suggestRecovery(
 
   // Heuristic: map error text to predicate
   const errorText = errors.join("; ").toLowerCase();
+  if (
+    errorText.includes("context_floor") ||
+    errorText.includes("context_alignment")
+  )
+    return {
+      predicate: "context_floor_blocked",
+      route: getRecoveryRoute("context_floor_blocked"),
+    };
   if (errorText.includes("stale_ground"))
     return {
       predicate: "stale_ground",

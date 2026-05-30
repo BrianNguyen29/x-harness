@@ -17,7 +17,6 @@ func setupExportTestDir(t *testing.T) string {
 		"CHANGELOG.md":                           "changes\n",
 		"LICENSE":                                "MIT\n",
 		"docs/guide.md":                          "guide\n",
-		"schemas/frozen-manifest.schema.json":    "{}\n",
 		"policies/admission.yaml":                "policy\n",
 		"templates/SUBAGENT_TASK_light.md":       "light\n",
 		"adapters/opencode/README.md":            "adapter\n",
@@ -25,6 +24,8 @@ func setupExportTestDir(t *testing.T) string {
 		"examples/golden/basic.json":             "{}\n",
 		"examples/adversarial/tamper.json":       "{}\n",
 		"tools/experimental/evolve/README.md":    "evolve\n",
+		".github/workflows/x-harness-verify.yml": "name: verify\njobs:\n  test:\n    steps:\n      - run: doctor\n      - run: verify\n      - run: examples\n",
+		".x-harness/managed-blocks.yaml":         "blocks:\n  - file: AGENTS.md\n    marker: BEGIN X-HARNESS MANAGED CONTEXT\n",
 	}
 	for path, content := range files {
 		fullPath := filepath.Join(tmpDir, path)
@@ -34,6 +35,19 @@ func setupExportTestDir(t *testing.T) string {
 		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 			t.Fatal(err)
 		}
+	}
+	// Copy the real frozen-manifest schema so validation exercises the actual schema.
+	schemaSrc := filepath.Join("..", "..", "schemas", "frozen-manifest.schema.json")
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatalf("failed to read real frozen-manifest schema: %v", err)
+	}
+	schemaDst := filepath.Join(tmpDir, "schemas", "frozen-manifest.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
 	}
 	return tmpDir
 }

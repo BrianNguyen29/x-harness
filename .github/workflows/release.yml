@@ -147,6 +147,11 @@ jobs:
           for f in .x-harness/release/go-binaries/x-harness-*; do
             if [ -f "$f" ]; then
               cp "$f" packages/cli/go-binaries/
+              basename_f=$(basename "$f")
+              if [[ "$basename_f" =~ ^x-harness-.*-(linux|darwin|windows)-(amd64|arm64)(\.exe)?$ ]]; then
+                unversioned="x-harness-${BASH_REMATCH[1]}-${BASH_REMATCH[2]}${BASH_REMATCH[3]}"
+                cp "$f" "packages/cli/go-binaries/$unversioned"
+              fi
             fi
           done
           cp .x-harness/release/go-binaries/checksums.txt packages/cli/go-binaries/ || true
@@ -202,7 +207,7 @@ jobs:
           X_HARNESS_GO=1 "$TMP_REPO/node_modules/.bin/xh" --version
           X_HARNESS_GO=1 "$TMP_REPO/node_modules/.bin/xh" doctor --root "$PWD" --json >/dev/null
           X_HARNESS_GO=1 "$TMP_REPO/node_modules/.bin/xh" examples verify --json >/dev/null
-          X_HARNESS_GO=1 "$TMP_REPO/node_modules/.bin/xh" verify --card "$PWD/examples/golden/success-light/completion-card.yaml" --json >/dev/null
+          X_HARNESS_GO=1 "$TMP_REPO/node_modules/.bin/xh" verify --card "$PWD/examples/golden/regression/success-light/completion-card.yaml" --json >/dev/null
 
       - name: Frozen transfer compatibility
         shell: bash
@@ -286,7 +291,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: x-harness-release-artifacts
-          path: .x-harness/release
+          path: .
       - name: Smoke test on ${{ matrix.os }}
         shell: bash
         run: |
@@ -315,7 +320,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: x-harness-release-artifacts
-          path: .x-harness/release
+          path: .
       - name: Smoke test on ubuntu-24.04-arm
         shell: bash
         run: |

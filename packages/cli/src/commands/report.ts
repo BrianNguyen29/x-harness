@@ -740,9 +740,15 @@ export function reportCommand(): Command {
       if (total === 0) {
         console.log("No rate metrics available (no events).");
       } else {
-        console.log(`- verify_event_success_rate: ${accepted}/${total} verify_event (not_task_level)`);
-        console.log("- task_completion_coverage: not_computable (missing_aligned_task_denominator)");
-        console.log(`- withheld_rate: ${withheld}/${total} verify_event (not_task_level)`);
+        console.log(
+          `- verify_event_success_rate: ${accepted}/${total} verify_event (not_task_level)`
+        );
+        console.log(
+          "- task_completion_coverage: not_computable (missing_aligned_task_denominator)"
+        );
+        console.log(
+          `- withheld_rate: ${withheld}/${total} verify_event (not_task_level)`
+        );
       }
       console.log("");
       console.log("## Denominator warning");

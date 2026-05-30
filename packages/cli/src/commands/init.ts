@@ -48,7 +48,9 @@ export function initCommand(): Command {
       if (opts.profile) {
         if (legacyModeSet) {
           console.error("usage: init [target] [options]");
-          console.error("cannot use --profile with --minimal, --standard, or --full");
+          console.error(
+            "cannot use --profile with --minimal, --standard, or --full"
+          );
           process.exit(1);
         }
         switch (opts.profile) {

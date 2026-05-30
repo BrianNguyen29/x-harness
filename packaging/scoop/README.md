@@ -20,6 +20,7 @@ To generate the manifest locally from a release checksums file:
 - `checksums.txt` — the SHA256 checksums file produced by the release workflow for all Go binaries.
 
 The script extracts the Windows `amd64` and `arm64` hashes and emits a Scoop manifest with:
+
 - `64bit` and `arm64` architecture blocks
 - `checkver` pointing at the GitHub repository for auto-update discovery
 - `autoupdate` templates using the GitHub Release asset URLs

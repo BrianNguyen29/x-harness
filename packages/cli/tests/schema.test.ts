@@ -282,6 +282,7 @@ describe("schema validators", () => {
       "classifier.schema.json",
       "completion-card.schema.json",
       "components-registry.schema.json",
+      "contract-oracle.schema.json",
       "cost-budget.schema.json",
       "evidence-index.schema.json",
       "evolution-constitution.schema.json",
@@ -299,6 +300,7 @@ describe("schema validators", () => {
       "evidence.schema.json",
       "packet.schema.json",
       "intervention.schema.json",
+      "withheld-reason.schema.json",
     ];
 
     // Helper to compare two schema files and return whether they match
@@ -552,6 +554,446 @@ describe("schema validators", () => {
           unit: "verify_event",
           not_task_level: true,
         },
+      });
+      expect(validate.errors ?? []).toEqual([]);
+      expect(valid).toBe(true);
+    });
+  });
+
+  describe("withheld-reason schema", () => {
+    it("accepts minimal valid withheld-reason", async () => {
+      const schema = await loadSchema("withheld-reason");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        class: "unresolved_blocker",
+        blocking_predicate: "missing_required_field",
+        stage: "admission",
+        recoverability: "manual",
+        owner: "alice",
+        next_action: "add_required_field",
+      });
+      expect(validate.errors ?? []).toEqual([]);
+      expect(valid).toBe(true);
+    });
+
+    it("accepts withheld-reason with all optional fields", async () => {
+      const schema = await loadSchema("withheld-reason");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        class: "evidence_floor_missing",
+        blocking_predicate: "files_changed_empty",
+        stage: "evidence",
+        recoverability: "automatic",
+        schema_recoverability: "manual",
+        owner: "bob",
+        next_action: "add_evidence",
+        missing_field: "files_changed",
+        policy_path: "policies/admission.yaml",
+        trace_event_id: "evt_123",
+      });
+      expect(validate.errors ?? []).toEqual([]);
+      expect(valid).toBe(true);
+    });
+
+    it("rejects missing required field", async () => {
+      const schema = await loadSchema("withheld-reason");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        class: "unresolved_blocker",
+        blocking_predicate: "missing_required_field",
+        stage: "admission",
+        recoverability: "manual",
+        owner: "alice",
+        // missing next_action
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects invalid enum value for class", async () => {
+      const schema = await loadSchema("withheld-reason");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        class: "invalid_class",
+        blocking_predicate: "test",
+        stage: "admission",
+        recoverability: "manual",
+        owner: "alice",
+        next_action: "fix",
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects invalid enum value for stage", async () => {
+      const schema = await loadSchema("withheld-reason");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        class: "unresolved_blocker",
+        blocking_predicate: "test",
+        stage: "invalid_stage",
+        recoverability: "manual",
+        owner: "alice",
+        next_action: "fix",
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects invalid enum value for recoverability", async () => {
+      const schema = await loadSchema("withheld-reason");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        class: "unresolved_blocker",
+        blocking_predicate: "test",
+        stage: "admission",
+        recoverability: "invalid_recoverability",
+        owner: "alice",
+        next_action: "fix",
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects additional properties", async () => {
+      const schema = await loadSchema("withheld-reason");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        class: "unresolved_blocker",
+        blocking_predicate: "test",
+        stage: "admission",
+        recoverability: "manual",
+        owner: "alice",
+        next_action: "fix",
+        extra_field: "not_allowed",
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects empty blocking_predicate", async () => {
+      const schema = await loadSchema("withheld-reason");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        class: "unresolved_blocker",
+        blocking_predicate: "",
+        stage: "admission",
+        recoverability: "manual",
+        owner: "alice",
+        next_action: "fix",
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("accepts schema_recoverability with valid enum value", async () => {
+      const schema = await loadSchema("withheld-reason");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        class: "unresolved_blocker",
+        blocking_predicate: "test",
+        stage: "admission",
+        recoverability: "manual",
+        schema_recoverability: "automatic",
+        owner: "alice",
+        next_action: "fix",
+      });
+      expect(validate.errors ?? []).toEqual([]);
+      expect(valid).toBe(true);
+    });
+
+    it("rejects schema_recoverability with invalid enum value", async () => {
+      const schema = await loadSchema("withheld-reason");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        class: "unresolved_blocker",
+        blocking_predicate: "test",
+        stage: "admission",
+        recoverability: "manual",
+        schema_recoverability: "invalid_value",
+        owner: "alice",
+        next_action: "fix",
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("accepts strict-schema-only withheld-reason canonical target (no legacy fields)", async () => {
+      // This is the canonical strict-schema target: only schema fields, no legacy fields.
+      // Runtime superset includes legacy failure_class/failure_stage which are rejected here.
+      const schema = await loadSchema("withheld-reason");
+      const validate = compileSchema(schema);
+      const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "withheld-reason-strict.json"), "utf-8"));
+      const valid = validate(fixture);
+      expect(validate.errors ?? []).toEqual([]);
+      expect(valid).toBe(true);
+    });
+
+    it("rejects runtime compatibility superset with legacy fields", async () => {
+      // Runtime Go output includes legacy failure_class/failure_stage which are not in the strict schema.
+      const schema = await loadSchema("withheld-reason");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        class: "evidence_floor_missing",
+        blocking_predicate: "files_changed_empty",
+        stage: "evidence",
+        recoverability: "retry_with_fixes",
+        schema_recoverability: "manual",
+        owner: "bob",
+        next_action: "add_evidence",
+        failure_class: "missing_files_changed",   // legacy field, not in schema
+        failure_stage: "evidence",                // legacy field, not in schema
+      });
+      expect(valid).toBe(false);
+    });
+  });
+
+  describe("contract-oracle schema", () => {
+    it("accepts minimal valid contract-oracle result", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: true,
+        policy: "policy.yaml",
+        files_scanned: 0,
+        violations: [],
+      });
+      expect(validate.errors ?? []).toEqual([]);
+      expect(valid).toBe(true);
+    });
+
+    it("accepts result with violations", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: false,
+        policy: "policy.yaml",
+        files_scanned: 5,
+        violations: [
+          {
+            rule_id: "no-debug",
+            file: "src/main.go",
+            line: 42,
+            snippet: "fmt.Println(\"debug\")",
+            message: "Debug print statements are not allowed",
+          },
+        ],
+      });
+      expect(validate.errors ?? []).toEqual([]);
+      expect(valid).toBe(true);
+    });
+
+    it("rejects missing ok field", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        policy: "policy.yaml",
+        files_scanned: 0,
+        violations: [],
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects missing policy field", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: true,
+        files_scanned: 0,
+        violations: [],
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects missing files_scanned field", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: true,
+        policy: "policy.yaml",
+        violations: [],
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects missing violations field", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: true,
+        policy: "policy.yaml",
+        files_scanned: 0,
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects violation with missing rule_id", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: false,
+        policy: "policy.yaml",
+        files_scanned: 1,
+        violations: [
+          {
+            file: "src/main.go",
+            line: 42,
+            snippet: "debug",
+            message: "No rule_id",
+          },
+        ],
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects violation with missing file", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: false,
+        policy: "policy.yaml",
+        files_scanned: 1,
+        violations: [
+          {
+            rule_id: "no-debug",
+            line: 42,
+            snippet: "debug",
+            message: "No file",
+          },
+        ],
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects violation with missing line", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: false,
+        policy: "policy.yaml",
+        files_scanned: 1,
+        violations: [
+          {
+            rule_id: "no-debug",
+            file: "src/main.go",
+            snippet: "debug",
+            message: "No line",
+          },
+        ],
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects violation with line less than 1", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: false,
+        policy: "policy.yaml",
+        files_scanned: 1,
+        violations: [
+          {
+            rule_id: "no-debug",
+            file: "src/main.go",
+            line: 0,
+            snippet: "debug",
+            message: "Line must be >= 1",
+          },
+        ],
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects violation with missing snippet", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: false,
+        policy: "policy.yaml",
+        files_scanned: 1,
+        violations: [
+          {
+            rule_id: "no-debug",
+            file: "src/main.go",
+            line: 42,
+            message: "No snippet",
+          },
+        ],
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects violation with missing message", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: false,
+        policy: "policy.yaml",
+        files_scanned: 1,
+        violations: [
+          {
+            rule_id: "no-debug",
+            file: "src/main.go",
+            line: 42,
+            snippet: "debug",
+          },
+        ],
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects additional properties on result", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: true,
+        policy: "policy.yaml",
+        files_scanned: 0,
+        violations: [],
+        extra_field: "not allowed",
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("rejects additional properties on violation", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: false,
+        policy: "policy.yaml",
+        files_scanned: 1,
+        violations: [
+          {
+            rule_id: "no-debug",
+            file: "src/main.go",
+            line: 42,
+            snippet: "debug",
+            message: "msg",
+            extra: "not allowed",
+          },
+        ],
+      });
+      expect(valid).toBe(false);
+    });
+
+    it("accepts files_scanned as zero", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: true,
+        policy: "policy.yaml",
+        files_scanned: 0,
+        violations: [],
+      });
+      expect(validate.errors ?? []).toEqual([]);
+      expect(valid).toBe(true);
+    });
+
+    it("accepts multiple violations", async () => {
+      const schema = await loadSchema("contract-oracle");
+      const validate = compileSchema(schema);
+      const valid = validate({
+        ok: false,
+        policy: "policy.yaml",
+        files_scanned: 2,
+        violations: [
+          { rule_id: "no-debug", file: "a.go", line: 1, snippet: "debug1", message: "msg1" },
+          { rule_id: "no-debug", file: "b.go", line: 5, snippet: "debug2", message: "msg2" },
+          { rule_id: "no-print", file: "a.go", line: 10, snippet: "print", message: "msg3" },
+        ],
       });
       expect(validate.errors ?? []).toEqual([]);
       expect(valid).toBe(true);

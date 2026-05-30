@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/BrianNguyen29/x-harness/internal/admission"
 	"github.com/BrianNguyen29/x-harness/internal/components"
 	"github.com/BrianNguyen29/x-harness/internal/contextcheck"
 	"github.com/BrianNguyen29/x-harness/internal/loader"
@@ -37,6 +38,8 @@ type Report struct {
 // Options configures doctor.Run behavior.
 type Options struct {
 	Staleness bool
+	Overclaim bool
+	Context   bool
 }
 
 // Run performs health checks against the given root directory.
@@ -77,6 +80,12 @@ func RunWithOptions(root string, opts Options) *Report {
 	if opts.Staleness {
 		checkAgentsContextStaleness(report, root)
 	}
+	if opts.Overclaim {
+		checkOverclaimPhrases(report, root)
+	}
+	if opts.Context {
+		checkContextRefs(report, root)
+	}
 	checkManagedBlocksRegistry(report, root)
 	checkCIWorkflow(report, root)
 	checkTierLabels(report, root)
@@ -109,9 +118,9 @@ func checkCriticalAssets(report *Report, root string) {
 			report.Present = append(report.Present, asset.name)
 		} else {
 			report.Missing = append(report.Missing, asset.name)
-		report.Healthy = false
+			report.Healthy = false
+		}
 	}
-}
 
 	if len(report.Missing) > 0 {
 		report.Checks = append(report.Checks, Check{
@@ -324,20 +333,20 @@ func isAllowedTierReference(line string) bool {
 
 func checkTierLabels(report *Report, root string) {
 	excludedFiles := map[string]bool{
-		filepath.Join(root, "docs", "RUNTIME_CONTRACT.md"):              true,
-		filepath.Join(root, "docs", "CONFORMANCE_STRICT_PROFILE.md"):   true,
-		filepath.Join(root, "packages", "cli", "src", "commands", "doctor.ts"): true,
-		filepath.Join(root, "packages", "cli", "src", "core", "metrics.ts"):    true,
-		filepath.Join(root, "packages", "cli", "src", "core", "context.ts"):    true,
-		filepath.Join(root, "packages", "cli", "src", "core", "contract.ts"):   true,
-		filepath.Join(root, "packages", "cli", "src", "core", "recovery.ts"):   true,
+		filepath.Join(root, "docs", "RUNTIME_CONTRACT.md"):                      true,
+		filepath.Join(root, "docs", "CONFORMANCE_STRICT_PROFILE.md"):            true,
+		filepath.Join(root, "packages", "cli", "src", "commands", "doctor.ts"):  true,
+		filepath.Join(root, "packages", "cli", "src", "core", "metrics.ts"):     true,
+		filepath.Join(root, "packages", "cli", "src", "core", "context.ts"):     true,
+		filepath.Join(root, "packages", "cli", "src", "core", "contract.ts"):    true,
+		filepath.Join(root, "packages", "cli", "src", "core", "recovery.ts"):    true,
 		filepath.Join(root, "packages", "cli", "src", "core", "attribution.ts"): true,
-		filepath.Join(root, "internal", "attribution", "attribution.go"):       true,
-		filepath.Join(root, "internal", "prediction", "prediction.go"):         true,
-		filepath.Join(root, "internal", "doctor", "doctor.go"):                 true,
-		filepath.Join(root, "internal", "scanner", "scanner.go"):               true,
-		filepath.Join(root, "internal", "cli", "scan.go"):                     true,
-		filepath.Join(root, "internal", "conformance", "conformance.go"):      true,
+		filepath.Join(root, "internal", "attribution", "attribution.go"):        true,
+		filepath.Join(root, "internal", "prediction", "prediction.go"):          true,
+		filepath.Join(root, "internal", "doctor", "doctor.go"):                  true,
+		filepath.Join(root, "internal", "scanner", "scanner.go"):                true,
+		filepath.Join(root, "internal", "cli", "scan.go"):                       true,
+		filepath.Join(root, "internal", "conformance", "conformance.go"):        true,
 	}
 
 	labelRe := regexp.MustCompile(`(?i)\b(small|medium|large)\b`)
@@ -560,5 +569,309 @@ func checkManagedBlocksRegistry(report *Report, root string) {
 			Note:   strings.Join(failures, "; "),
 		})
 		report.Healthy = false
+	}
+}
+
+// Overclaim phrase patterns (case-insensitive)
+var overclaimPhrases = []string{
+	"guarantees correctness",
+	"prevents all bugs",
+	"solves hallucination",
+	"proves production reliability",
+	"replaces CI",
+	"fully autonomous",
+	"production validated",
+	"benchmark success rate",
+	"TypeScript-first",
+}
+
+// Exclusion patterns for allowed contexts
+var overclaimExclusions = []*regexp.Regexp{
+	// Negated disclaimers: "does not replace CI", "does not guarantee"
+	regexp.MustCompile(`(?i)\bdoes not\b.*\b(replace|guarantee|correctness|production|benchmark|autonomous)\b`),
+	// Historical/compatibility context for TypeScript-first
+	regexp.MustCompile(`(?i)\b(historical|compatibility|compatibility note)\b.*\bTypeScript-first\b`),
+	regexp.MustCompile(`(?i)\bTypeScript-first\b.*\b(historical|compatibility|compatibility note)\b`),
+	// References to the overclaim as something to avoid/detect
+	regexp.MustCompile(`(?i)\boverclaim\b`),
+	regexp.MustCompile(`(?i)\bdetect.*overclaim\b`),
+	regexp.MustCompile(`(?i)\bavoid.*overclaim\b`),
+}
+
+var overclaimScanDirs = []string{"."}
+var overclaimScanExts = map[string]bool{".md": true, ".mdc": true}
+var overclaimExcludedDirs = map[string]bool{
+	"node_modules": true,
+	".git":         true,
+	"dist":         true,
+	"coverage":     true,
+	".x-harness":   true,
+	"vendor":       true,
+}
+
+// overclaimExcludedFilenames matches files that are reference/changelog documents
+// listing overclaim phrases to detect, rather than docs using those phrases.
+var overclaimExcludedFilenames = []*regexp.Regexp{
+	regexp.MustCompile(`(?i)ROADMAP`),
+	regexp.MustCompile(`(?i)IMPROVEMENT_PLAN`),
+	regexp.MustCompile(`(?i)CHANGELOG`),
+}
+
+func isOverclaimExcludedFile(path string) bool {
+	basename := filepath.Base(path)
+	for _, re := range overclaimExcludedFilenames {
+		if re.MatchString(basename) {
+			return true
+		}
+	}
+	return false
+}
+
+func isAllowedOverclaimContext(line string) bool {
+	for _, re := range overclaimExclusions {
+		if re.MatchString(line) {
+			return true
+		}
+	}
+	return false
+}
+
+func checkOverclaimPhrases(report *Report, root string) {
+	overclaimRe := regexp.MustCompile("(?i)" + strings.Join(overclaimPhrases, "|"))
+	ok := true
+	notes := []string{}
+
+	_ = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+
+		// Skip excluded directories
+		if info.IsDir() {
+			basename := filepath.Base(path)
+			if overclaimExcludedDirs[basename] {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		// Only scan relevant file types
+		if !overclaimScanExts[filepath.Ext(path)] {
+			return nil
+		}
+
+		// Skip roadmap/changelog reference docs that list phrases to detect
+		if isOverclaimExcludedFile(path) {
+			return nil
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return nil
+		}
+		defer f.Close()
+
+		scanner := bufio.NewScanner(f)
+		lineNum := 0
+		for scanner.Scan() {
+			lineNum++
+			line := scanner.Text()
+
+			// Skip allowed context lines (disclaimers, historical references)
+			if isAllowedOverclaimContext(line) {
+				continue
+			}
+
+			matches := overclaimRe.FindAllStringSubmatchIndex(line, -1)
+			for _, m := range matches {
+				if len(m) >= 2 {
+					phrase := line
+					rel, _ := filepath.Rel(root, path)
+					notes = append(notes, fmt.Sprintf("%s:%d: %s", rel, lineNum, phrase))
+					ok = false
+				}
+			}
+		}
+		return nil
+	})
+
+	if ok {
+		report.Checks = append(report.Checks, Check{
+			Name:   "overclaim_phrases",
+			Status: "passed",
+			Note:   "no overclaim phrases found",
+		})
+	} else {
+		report.Checks = append(report.Checks, Check{
+			Name:   "overclaim_phrases",
+			Status: "failed",
+			Note:   strings.Join(notes, "; "),
+		})
+		report.Healthy = false
+	}
+}
+
+func checkContextRefs(report *Report, root string) {
+	cardsScanned := 0
+	cardsWithAlignment := 0
+	missingFiles := []string{}
+	cardsSkipped := 0
+	cardsUnreadable := 0
+
+	// Define scan roots: examples and skills (if they exist)
+	scanRoots := []string{}
+	examplesDir := filepath.Join(root, "examples")
+	if _, err := os.Stat(examplesDir); err == nil {
+		scanRoots = append(scanRoots, examplesDir)
+	}
+	skillsDir := filepath.Join(root, "skills")
+	if _, err := os.Stat(skillsDir); err == nil {
+		scanRoots = append(scanRoots, skillsDir)
+	}
+
+	matches := []string{}
+
+	for _, scanRoot := range scanRoots {
+		err := filepath.WalkDir(scanRoot, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return nil // skip errors
+			}
+			if d.IsDir() {
+				basename := d.Name()
+				if overclaimExcludedDirs[basename] {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if d.Name() == "completion-card.yaml" {
+				matches = append(matches, path)
+			}
+			return nil
+		})
+		if err != nil {
+			report.Checks = append(report.Checks, Check{
+				Name:   "context_refs",
+				Status: "failed",
+				Note:   "failed to scan completion cards: " + err.Error(),
+			})
+			report.Healthy = false
+			return
+		}
+	}
+
+	for _, cardPath := range matches {
+		cardsScanned++
+		data, err := os.ReadFile(cardPath)
+		if err != nil {
+			cardsUnreadable++
+			continue
+		}
+
+		var doc map[string]any
+		if err := yaml.Unmarshal(data, &doc); err != nil {
+			cardsUnreadable++
+			continue
+		}
+
+		ctxAlign, ok := doc["context_alignment"].(map[string]any)
+		if !ok {
+			cardsSkipped++
+			continue
+		}
+
+		cardsWithAlignment++
+		cardDir := filepath.Dir(cardPath)
+
+		// Check ref arrays
+		refArrays := []string{"product_contract_refs", "architecture_refs", "decision_refs", "test_matrix_refs"}
+		for _, refKey := range refArrays {
+			refs, ok := ctxAlign[refKey].([]any)
+			if !ok {
+				continue
+			}
+			for _, r := range refs {
+				refStr, ok := r.(string)
+				if !ok {
+					continue
+				}
+				refPath := admission.StripAnchor(refStr)
+				if !admission.FileExists(refPath, cardDir) {
+					relCard, _ := filepath.Rel(root, cardPath)
+					missingFiles = append(missingFiles, fmt.Sprintf("%s: %s (%s)", relCard, refPath, refKey))
+				} else {
+					// File exists; check anchor if present
+					anchor := admission.ExtractAnchor(refStr)
+					if anchor != "" {
+						resolvedPath := refPath
+						if !filepath.IsAbs(refPath) {
+							resolvedPath = filepath.Join(cardDir, refPath)
+						}
+						if !admission.AnchorExists(resolvedPath, anchor) {
+							relCard, _ := filepath.Rel(root, cardPath)
+							report.Notes = append(report.Notes, fmt.Sprintf("anchor warning: anchor '#%s' not found in %s (card: %s)", anchor, refPath, relCard))
+						}
+					}
+				}
+			}
+		}
+
+		// Check context_evidence refs
+		evidence, ok := ctxAlign["context_evidence"].([]any)
+		if !ok {
+			continue
+		}
+		for _, ev := range evidence {
+			evMap, ok := ev.(map[string]any)
+			if !ok {
+				continue
+			}
+			refStr, ok := evMap["ref"].(string)
+			if !ok || refStr == "" {
+				continue
+			}
+			refPath := admission.StripAnchor(refStr)
+			if !admission.FileExists(refPath, cardDir) {
+				relCard, _ := filepath.Rel(root, cardPath)
+				missingFiles = append(missingFiles, fmt.Sprintf("%s: %s (context_evidence)", relCard, refPath))
+			} else {
+				// File exists; check anchor if present
+				anchor := admission.ExtractAnchor(refStr)
+				if anchor != "" {
+					resolvedPath := refPath
+					if !filepath.IsAbs(refPath) {
+						resolvedPath = filepath.Join(cardDir, refPath)
+					}
+					if !admission.AnchorExists(resolvedPath, anchor) {
+						relCard, _ := filepath.Rel(root, cardPath)
+						report.Notes = append(report.Notes, fmt.Sprintf("anchor warning: anchor '#%s' not found in %s (card: %s)", anchor, refPath, relCard))
+					}
+				}
+			}
+		}
+	}
+
+	if cardsScanned == 0 {
+		report.Checks = append(report.Checks, Check{
+			Name:   "context_refs",
+			Status: "passed",
+			Note:   "no completion cards found",
+		})
+		return
+	}
+
+	if len(missingFiles) > 0 {
+		report.Checks = append(report.Checks, Check{
+			Name:   "context_refs",
+			Status: "failed",
+			Note:   fmt.Sprintf("%d missing file(s): %s", len(missingFiles), strings.Join(missingFiles, "; ")),
+		})
+		report.Healthy = false
+	} else {
+		note := fmt.Sprintf("%d card(s) scanned, %d with context_alignment, %d without, %d unreadable/unparseable", cardsScanned, cardsWithAlignment, cardsSkipped, cardsUnreadable)
+		report.Checks = append(report.Checks, Check{
+			Name:   "context_refs",
+			Status: "passed",
+			Note:   note,
+		})
 	}
 }

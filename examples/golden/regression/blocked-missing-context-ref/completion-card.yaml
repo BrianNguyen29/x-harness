@@ -1,0 +1,60 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-CONTEXT-REF-001
+tier: standard
+owner: alice
+accountable: bob
+state:
+  read_set:
+    - src/api/handler.ts
+  write_set:
+    - src/api/handler.ts
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Updated API handler with new validation logic
+  expected_effect: API handler validates request body correctly
+  measurable_signal: npm test -- api-handler
+  falsification_method: Run without fix; validation should not enforce new rules
+  horizon: same_verify
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - src/docs/missing-product-contract.md
+  architecture_refs:
+    - src/docs/architecture.md
+  decision_refs: []
+  test_matrix_refs: []
+  unresolved_context_questions: []
+  context_evidence:
+    - ref: src/docs/missing-product-contract.md
+      kind: contract_oracle
+      note: Product contract file referenced but does not exist
+evidence:
+  files_changed:
+    - src/api/handler.ts
+  command_evidence:
+    - command: npm test -- api-handler
+      exit_code: 0
+claim:
+  fix_status: fixed
+  summary: Updated API handler with validation logic
+  evidence:
+    - description: Source file src/api/handler.ts
+      url: ./src/api/handler.ts
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice

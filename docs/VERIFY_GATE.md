@@ -17,17 +17,21 @@ error: withheld
 
 Blocked verification must identify blocking predicate, blocked reason class, next owner, and next action.
 
-## Failure taxonomy (minimal)
+## Failure taxonomy
 
-The verify gate assigns a minimal failure taxonomy to withheld/failed/blocked outcomes:
+The verify gate assigns typed withheld reasons per `schemas/withheld-reason.schema.json`:
 
-- `failure_class`: broad category (`stale_context`, `governance_missing`, `evidence_provenance_invalid`, `schema_or_policy_invalid`, `mutation_detected`, `schema_invalid`).
-- `failure_stage`: where the failure was caught (`admission_gate` or `verify_pipeline`).
-- `recoverability`: how the task can recover (`retry_after_refresh`, `human_intervention`, `retry_with_fixes`, `manual_review`).
-- `next_action`: recommended handoff action (`review_and_resubmit`, `escalate`).
-- `blocking_predicate`: the existing predicate that blocked admission.
+- `class`: category from the schema enum (e.g., `evidence_floor_missing`, `context_floor_blocked`, `approval_receipt_missing`).
+- `blocking_predicate`: the predicate key that blocked admission.
+- `stage`: where the failure was caught (`schema`, `policy`, `verification`, `admission`, `evidence`, `handoff`, `approval`, `state`, `context`, `recovery`).
+- `recoverability`: legacy recovery hint (`retry_after_refresh`, `retry_with_fixes`, `human_intervention`, `manual_review`). Kept for backward compatibility.
+- `schema_recoverability`: schema enum value derived from `recoverability` (`automatic`, `manual`, `blocked`, `unknown`). Present during compatibility phase.
+- `owner`: who handles recovery.
+- `next_action`: recommended recovery step.
 
 In JSON output, taxonomy fields are nested under `withheld_reason`. Success cases omit the object.
+
+> Source of truth: [`schemas/withheld-reason.schema.json`](../schemas/withheld-reason.schema.json).
 
 ## Evidence scope verification
 
@@ -78,3 +82,38 @@ By default this measures git and non-git fallback snapshots with `100`, `1000`, 
 ## Governance verification
 
 For `deep` tasks with `governance.requires_human_approval: true`, verify checks that `approval_status` is `approved`. Pending or missing approval blocks admission.
+
+## Contract oracle verification
+
+The verify command supports an opt-in `--contract-oracles` flag that performs rule-based oracle assertions against the repository. This is an opt-in feature that is disabled by default.
+
+Behavior:
+
+- When `--contract-oracles` is passed, verify reads the policy file `policies/contract-oracle.yaml`. A custom policy file can be specified with `--contract-oracles-policy <path>`.
+- Assertions are evaluated using grep patterns (`grep_rules`) and line-level import scanning (`dependency_rules`) against workspace files; no AST parsing, package graph resolution, or runtime subprocesses are used.
+- `grep_rules` match regex patterns against file content.
+- `dependency_rules` scan for import-like lines (Go `import`, TypeScript/JavaScript `import ... from`, `require()`) and check import paths against `forbidden_imports` substrings. `allowed_imports` can suppress a match. `exclude` patterns apply to file paths.
+- The checked-in default policy is empty-safe (`grep_rules: []`, `dependency_rules: []`), meaning no assertions run unless a custom policy is provided.
+- If the policy file is missing or unreadable, the check exits with a non-zero code (hard error) before producing a verify result; it does not silently pass.
+- Failures produce a `blocked` outcome with `blocking_predicate: contract_oracle_blocked`.
+
+## Compatibility boundary
+
+The Go runtime emits `withheld_reason` as a **compatibility superset** that includes both strict-schema fields and legacy fields:
+
+- **Strict-schema fields**: `class`, `stage`, `owner`, `schema_recoverability`, `blocking_predicate`, `next_action`
+- **Legacy fields**: `failure_class`, `failure_stage`, legacy `recoverability` values
+
+The strict schema target (`schemas/withheld-reason.schema.json`) uses `additionalProperties: false` and `recoverability` enum values `automatic|manual|blocked|unknown`. Legacy fields are not permitted.
+
+**Migration path**: When the compatibility phase ends, runtime output will drop legacy fields and emit only strict-schema fields. Until then, the verify gate accepts the superset; strict-schema validators (used in tests) enforce the canonical form.
+
+### Migration modes
+
+The `withheld_reason` output supports three planned migration modes:
+
+| Mode | Flag | Status | Description |
+|------|------|--------|-------------|
+| Compatibility superset | None (default) | **Current** | Runtime emits both strict-schema fields and legacy fields. Verify gate accepts the superset. |
+| Transitional strict | `verify --strict-withheld-reason` | **Implemented / Opt-in** | Transitional flag to emit only strict-schema fields while the ecosystem migrates. Omits `failure_class` and `failure_stage`; shows schema enum `recoverability`. |
+| Strict-only | None (future default) | **Planned** | After migration completes, runtime emits only strict-schema fields. Legacy fields are dropped. |

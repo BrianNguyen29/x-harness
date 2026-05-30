@@ -61,10 +61,7 @@ describe("profile recommend command", () => {
   });
 
   it("errors without --goal", async () => {
-    const { stderr, exitCode } = await execaNode([
-      "profile",
-      "recommend",
-    ]);
+    const { stderr, exitCode } = await execaNode(["profile", "recommend"]);
     expect(exitCode).toBe(1);
     expect(stderr).toContain("required option");
   });

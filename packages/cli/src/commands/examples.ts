@@ -26,7 +26,10 @@ async function discoverGoldenExamples(): Promise<GoldenExample[]> {
       if (!entry.isDirectory()) continue;
       const subDir = path.join(dir, entry.name);
       const cardPath = path.join(subDir, "completion-card.yaml");
-      const expectedOutputPath = path.join(subDir, "expected-verify-output.txt");
+      const expectedOutputPath = path.join(
+        subDir,
+        "expected-verify-output.txt"
+      );
       if (await fs.pathExists(cardPath)) {
         const name = prefix ? `${prefix}/${entry.name}` : entry.name;
         examples.push({ name, dir: subDir, cardPath, expectedOutputPath });

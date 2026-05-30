@@ -113,6 +113,13 @@ describe("recovery", () => {
       expect(route!.next_action).toContain("Refresh stale context");
     });
 
+    it("returns route for context_floor_blocked", () => {
+      const route = getRecoveryRoute("context_floor_blocked");
+      expect(route).not.toBeNull();
+      expect(route!.owner).toBe("implementation-worker");
+      expect(route!.next_action).toContain("context_alignment");
+    });
+
     it("returns route for Fpermission", () => {
       const route = getRecoveryRoute("Fpermission");
       expect(route).not.toBeNull();
@@ -274,6 +281,26 @@ describe("recovery", () => {
       expect(result.route!.owner).toBe("implementation-worker");
     });
 
+    it("maps context_floor errors to context_floor_blocked", () => {
+      const result = suggestRecovery(
+        ["context_floor: missing stale_ground_checked"],
+        "blocked"
+      );
+      expect(result.predicate).toBe("context_floor_blocked");
+      expect(result.route).not.toBeNull();
+      expect(result.route!.owner).toBe("implementation-worker");
+    });
+
+    it("maps context_alignment errors to context_floor_blocked", () => {
+      const result = suggestRecovery(
+        ["context_alignment missing required refs"],
+        "blocked"
+      );
+      expect(result.predicate).toBe("context_floor_blocked");
+      expect(result.route).not.toBeNull();
+      expect(result.route!.owner).toBe("implementation-worker");
+    });
+
     it("returns null predicate/route for success outcome", () => {
       const result = suggestRecovery(["some error"], "success");
       expect(result.predicate).toBeNull();
@@ -328,6 +355,7 @@ describe("recovery", () => {
         "prediction_invalid",
         "done_checklist_prediction_mismatch",
         "stale_ground",
+        "context_floor_blocked",
         "Fpermission",
         "Fintervention",
       ];

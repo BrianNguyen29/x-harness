@@ -55,7 +55,7 @@ Root workspace scripts (`package.json`):
 CLI commands (`packages/cli/src/index.ts`):
 
 - Beginner actions: `check` (alias for verify), `prepare` (alias for handoff readiness), `recover` (alias for recovery suggest), `doctor`, `actions`, `status`, `reset`
-- Advanced commands: `init`, `add`, `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `benchmark`, `recovery`, `packet`, `intake`, `governance`, `intervention`, `prediction`, `components`, `evidence`, `episode`, `attribution`, `permissions`, `evolve`, `export`, `import`, `frozen`, `federation`, `approval-risk`, `agent-profile`, `cost`
+- Advanced commands: `init`, `add`, `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `benchmark`, `recovery`, `packet`, `intake`, `governance`, `intervention`, `prediction`, `components`, `evidence`, `episode`, `attribution`, `permissions`, `evolve`, `export`, `import`, `frozen`, `federation`, `approval-risk`, `agent-profile`, `cost`, `contract` (Go CLI only)
 
 CI order (`.github/workflows/x-harness-verify.yml`):
 `npm ci` → `typecheck` → `build` → `lint` → `format:check` → `test` → strict verify fixture → `doctor --root .` → `examples verify` → adversarial benchmark on Node 22.
