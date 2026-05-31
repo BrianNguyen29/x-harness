@@ -1,10 +1,6 @@
-# Packets Design Specification
+# Packets
 
-> Status: claim-only implementation available. `packet create` and `packet verify-chain` support claim packets with guarded constraints.
-
-## Overview
-
-Packets are immutable, self-describing evidence containers that x-harness agents can generate, exchange, and verify. This document specifies the packet architecture, lifecycle, and verification rules.
+Packets are immutable, self-describing evidence containers that x-harness agents can generate, exchange, and verify.
 
 ## Design principles
 
@@ -15,37 +11,35 @@ Packets are immutable, self-describing evidence containers that x-harness agents
 
 ## Packet types
 
-| Type | Purpose | Status |
-|------|---------|--------|
-| `claim` | Agent's completion claim | defined in schema |
-| `evidence` | Verification artifacts and scope | defined in schema |
-| `cg_packet` | Context-grounding snapshot | **design only** |
-| `procedure_pack` | Reusable task procedure | **design only** |
-| `recovery_packet` | Recovery route candidate | **design only** |
+| Type | Purpose |
+|------|---------|
+| `claim` | Agent's completion claim |
 
-## Packet structure (proposed)
+The `claim` type is the only packet type supported by the current CLI. Other types (`evidence`, `cg_packet`, `procedure_pack`, `recovery_packet`) are defined in the schema but not supported by current commands.
+
+## Packet structure
 
 ```yaml
 packet:
   id: "pkt-<uuid>"
-  type: "claim" | "evidence" | "cg_packet" | "procedure_pack" | "recovery_packet"
+  type: "claim"
   schema_version: 1
   created_at: "2026-01-01T00:00:00Z"
   creator: "agent-name"
   payload: {}
   payload_hash: "sha256:..."
   previous_packet_id: "pkt-<uuid>" | null
-  signature: null  # reserved for future use
+  signature: null
 ```
 
-## Verification rules (proposed)
+## Verification rules
 
 1. `payload_hash` must match `sha256(JSON.stringify(payload))`.
 2. `previous_packet_id` must reference an existing packet if non-null.
 3. `schema_version` must be supported by the verifier.
 4. `type` must be in the known packet type registry.
 
-## Packet chain (proposed)
+## Packet chain
 
 Packets can form a chain for audit trails:
 
@@ -53,12 +47,12 @@ Packets can form a chain for audit trails:
 packet-1 (null previous) -> packet-2 (previous=packet-1) -> packet-3
 ```
 
-A verify-chain command would validate:
+`packet verify-chain` validates:
 - Hash integrity of each packet
 - Previous linkage consistency
 - No gaps or forks
 
-## Implementation guardrails (P4.6)
+## Implementation guardrails
 
 The following guardrails are enforced in the current implementation:
 
@@ -72,23 +66,9 @@ The following guardrails are enforced in the current implementation:
 ### Supported CLI commands
 
 ```bash
-node packages/cli/dist/index.js packet create --card completion-card.yaml
-node packages/cli/dist/index.js packet verify-chain --task-id <task-id>
+xh packet create --card completion-card.yaml
+xh packet verify-chain --task-id <task-id>
 ```
-
-### Explicitly NOT implemented (non-goals)
-
-- `cg_packet`, `procedure_pack`, `recovery_packet` types
-- Packet signatures
-- Evidence packet creation
-- Git auto-commit / auto-add flags
-- Admission/verify/trace module integration
-
-## Relation to existing features
-
-- **Trace hash chain (P4.7)** — implements a lightweight chain in `events.jsonl` using `previous_hash` and `event_hash`. This validates the chain concept without full packet infrastructure.
-- **Recovery playbook (P4.5)** — generates review-required recovery candidates in Markdown. Does not emit `recovery_packet` YAML yet.
-- **Completion card** — the existing completion card is conceptually a `claim` + `evidence` packet bundle.
 
 ## Constraints maintained
 

@@ -1,16 +1,16 @@
-# Release Candidate Cycle
+# Release Candidate Requirements
 
-This document describes the x-harness release-candidate (RC) process, including dual-run CI, Go parity verification, packaging, and cross-platform smoke evidence.
+This document defines the release-candidate (RC) requirements, including dual-run CI, Go parity verification, packaging, and cross-platform smoke evidence.
 
 ## Overview
 
-A release candidate is a tagged pre-release that must pass the full verification gate before promotion to a stable release. The RC cycle ensures:
+A release candidate is a tagged pre-release that must pass the full verification gate before promotion to a stable release. The RC requirements ensure:
 
 - TypeScript and Go implementations produce identical outcomes on golden fixtures.
 - Release artifacts (npm tarball and Go binaries) are healthy.
 - Cross-platform smoke tests pass on Linux, macOS, and Windows.
 
-## RC Checklist
+## Release Requirements
 
 1. **Dual-run CI passes**
    - Node.js quality gates: typecheck, build, lint, format, test.
@@ -37,12 +37,11 @@ A release candidate is a tagged pre-release that must pass the full verification
 
 4. **Injection into npm package**
    - Signed Go binaries, signatures, certificates, and `checksums.txt` copied into `packages/cli/go-binaries/` before `npm pack`.
-   - The packed tarball therefore contains the platform-native Go binaries and the wrapper shim, but **not** the Node.js fallback `dist/`.
+   - The packed tarball contains the platform-native Go binaries and the wrapper shim, but **not** the Node.js fallback `dist/`.
 
 5. **Packed tarball smoke tests**
    - **Default Go path**: install the tarball into a temp project and run `xh doctor`, `xh verify`, and frozen transfer commands (wrapper defaults to Go when the binary is present).
    - **Forced Go path**: install the tarball into a temp project and run `X_HARNESS_GO=1 xh --version`, `X_HARNESS_GO=1 xh doctor`, and `X_HARNESS_GO=1 xh examples verify`.
-   - ~~Forced Node fallback~~: removed because the published tarball no longer ships `dist/index.js`.
 
 6. **Cross-platform smoke**
    - Download release artifacts on `ubuntu-latest`, `macos-latest`, and `windows-latest`.
@@ -63,11 +62,11 @@ A release candidate is a tagged pre-release that must pass the full verification
      - Adversarial benchmark report (`benchmark-report.json`).
    - Consumers can verify downloads with `sha256sum -c checksums.txt` and `cosign verify-blob`.
 
-## Wrapper Default-to-Go Criteria
+## Wrapper Default-to-Go
 
 The npm wrapper (`bin/x-harness.js`) defaults to the Go binary when a platform-matching binary is present. Node fallback is available **only** in source checkouts where `dist/index.js` exists; the published package is Go-only.
 
-The criteria that were required before flipping the default:
+The criteria required before flipping the default:
 
 1. All primary Go commands exist and pass golden/adversarial parity tests.
 2. At least one full RC cycle has passed with dual-run CI green.
@@ -83,7 +82,7 @@ An RC completion card should include:
 
 - `files_changed`: release workflow, smoke scripts, wrapper shim, tests.
 - `command_evidence`: CI links, benchmark reports, parity check output.
-- `done_checklist`: all items in the RC checklist above.
+- `done_checklist`: all items in the release requirements above.
 - `prediction`: risk assessment for the release (e.g., platform coverage, rollback plan).
 
 For a deep-tier RC, additionally declare:

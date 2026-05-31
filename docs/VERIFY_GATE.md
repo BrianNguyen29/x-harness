@@ -55,7 +55,7 @@ Allowed artifact statuses:
 passed, failed, blocked, skipped, timeout, error
 ```
 
-## Read-only mutation guard (Phase 3.1)
+## Read-only mutation guard
 
 The verify command supports an opt-in `--mutation-guard` flag. `--strict` enables the same guard automatically. When enabled, verify snapshots the repository state before and after its work and compares the delta. This does not require a clean worktree.
 
@@ -106,14 +106,4 @@ The Go runtime emits `withheld_reason` as a **compatibility superset** that incl
 
 The strict schema target (`schemas/withheld-reason.schema.json`) uses `additionalProperties: false` and `recoverability` enum values `automatic|manual|blocked|unknown`. Legacy fields are not permitted.
 
-**Migration path**: When the compatibility phase ends, runtime output will drop legacy fields and emit only strict-schema fields. Until then, the verify gate accepts the superset; strict-schema validators (used in tests) enforce the canonical form.
-
-### Migration modes
-
-The `withheld_reason` output supports three planned migration modes:
-
-| Mode | Flag | Status | Description |
-|------|------|--------|-------------|
-| Compatibility superset | None (default) | **Current** | Runtime emits both strict-schema fields and legacy fields. Verify gate accepts the superset. |
-| Transitional strict | `verify --strict-withheld-reason` | **Implemented / Opt-in** | Transitional flag to emit only strict-schema fields while the ecosystem migrates. Omits `failure_class` and `failure_stage`; shows schema enum `recoverability`. |
-| Strict-only | None (future default) | **Planned** | After migration completes, runtime emits only strict-schema fields. Legacy fields are dropped. |
+**Compatibility boundary**: The verify gate accepts the superset; strict-schema validators (used in tests) enforce the canonical form.

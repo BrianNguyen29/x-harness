@@ -102,7 +102,7 @@ func handleUninstall(args []string, stdout io.Writer, stderr io.Writer) int {
 			}
 		}
 		WriteLine(stdout, "")
-		WriteLine(stdout, "To apply, run: x-harness uninstall --apply --force")
+		WriteLine(stdout, "To apply, run: xh uninstall --apply --force")
 		return ExitOK
 	}
 

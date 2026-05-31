@@ -136,7 +136,7 @@ func handleClean(args []string, stdout, stderr io.Writer) int {
 	}
 
 	if dryRun {
-		fmt.Fprintln(stdout, "# x-harness clean (dry-run)")
+		fmt.Fprintln(stdout, "# xh clean (dry-run)")
 		for _, a := range safeActions {
 			fmt.Fprintf(stdout, "would %s: %s (%s)\n", a.Type, a.Path, a.Note)
 		}
@@ -146,7 +146,7 @@ func handleClean(args []string, stdout, stderr io.Writer) int {
 	}
 
 	// Execute mutations
-	fmt.Fprintln(stdout, "# x-harness clean (applying)")
+	fmt.Fprintln(stdout, "# xh clean (applying)")
 	for _, a := range safeActions {
 		switch a.Type {
 		case "delete":

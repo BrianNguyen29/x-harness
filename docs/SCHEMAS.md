@@ -1,6 +1,6 @@
 # Schemas
 
-x-harness validates runtime artifacts using JSON schemas. The schema set is split into **core**, **compatibility**, **feature**, and **future** categories.
+x-harness validates runtime artifacts using JSON schemas. The schema set is split into **core**, **compatibility**, and **feature** categories.
 
 ## Core schemas (v0.1)
 
@@ -59,18 +59,6 @@ These schemas are included in the package and used by command-specific features 
 | `packet.schema.json`                  | Immutable packet records.                    |
 | `permissions.schema.json`             | Permissions policy validation.               |
 | `withheld-reason.schema.json`        | Typed withheld reason taxonomy for blocked/failed outcomes. See [compatibility boundary](VERIFY_GATE.md) for runtime superset vs strict schema. |
-
-## Future schemas (not shipped in v0.1)
-
-The following schemas remain reserved for upcoming releases. They are **not present** in the v0.1 runtime schema directory and should not be referenced by v0.1 tooling.
-
-- `story.schema.json` (planned for v0.2)
-- `test-matrix.schema.json` (planned for v0.2)
-- `task.schema.json` (planned for v0.2)
-- `feature-intake.schema.json` (planned for v0.2)
-- `product-contract.schema.json` (planned for v0.2)
-- `recovery.schema.json` (planned for v0.3)
-- `decision-record.schema.json` (planned for v0.2)
 
 ## Validation engine
 

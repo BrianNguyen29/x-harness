@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestHelpListsPrimaryCommands(t *testing.T) {
+func TestHelpListsBeginnerCommands(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	code := Run([]string{"--help"}, &stdout, &stderr)
@@ -15,10 +15,61 @@ func TestHelpListsPrimaryCommands(t *testing.T) {
 		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
 	}
 	output := stdout.String()
-	for _, name := range PrimaryCommandNames() {
+	beginner := []string{"check", "prepare", "recover", "doctor", "actions", "status", "reset", "init", "add"}
+	for _, name := range beginner {
 		if !strings.Contains(output, name) {
-			t.Fatalf("help output does not include primary command %q:\n%s", name, output)
+			t.Fatalf("help output does not include beginner command %q:\n%s", name, output)
 		}
+	}
+	advanced := []string{"benchmark", "packet", "intake", "governance", "prediction", "components", "federation", "contract"}
+	for _, name := range advanced {
+		if strings.Contains(output, name) {
+			t.Fatalf("help output should not include advanced command %q:\n%s", name, output)
+		}
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected empty stderr, got %q", stderr.String())
+	}
+}
+
+func TestHelpAllListsAllCommands(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"--help-all"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
+	}
+	output := stdout.String()
+	if !strings.Contains(output, "check") {
+		t.Fatalf("--help-all missing beginner command check:\n%s", output)
+	}
+	if !strings.Contains(output, "verify") {
+		t.Fatalf("--help-all missing advanced command verify:\n%s", output)
+	}
+	if !strings.Contains(output, "packet") {
+		t.Fatalf("--help-all missing advanced command packet:\n%s", output)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected empty stderr, got %q", stderr.String())
+	}
+}
+
+func TestNoArgsShowsStartHere(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
+	}
+	output := stdout.String()
+	if !strings.Contains(output, "Start here") {
+		t.Fatalf("no-args output missing 'Start here':\n%s", output)
+	}
+	if !strings.Contains(output, "check") {
+		t.Fatalf("no-args output missing 'check':\n%s", output)
+	}
+	if !strings.Contains(output, "--help-all") {
+		t.Fatalf("no-args output missing '--help-all':\n%s", output)
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected empty stderr, got %q", stderr.String())
@@ -284,6 +335,28 @@ func TestActionsListsBeginnerActions(t *testing.T) {
 		if !strings.Contains(out, name) {
 			t.Fatalf("actions output missing %q:\n%s", name, out)
 		}
+	}
+}
+
+func TestHelpMaturityOutput(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"--help-maturity"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "Maturity labels:") {
+		t.Fatalf("--help-maturity missing maturity labels header:\n%s", out)
+	}
+	if !strings.Contains(out, "stable:") {
+		t.Fatalf("--help-maturity missing stable group:\n%s", out)
+	}
+	if !strings.Contains(out, "check") {
+		t.Fatalf("--help-maturity missing command check:\n%s", out)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected empty stderr, got %q", stderr.String())
 	}
 }
 

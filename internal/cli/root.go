@@ -79,9 +79,17 @@ var commands = []CommandInfo{
 	{Name: "contract", Description: "Run contract oracle checks", Maturity: MaturityExperimental},
 }
 
+func isBeginnerCommand(name string) bool {
+	switch name {
+	case "check", "prepare", "recover", "doctor", "actions", "status", "reset", "init", "add":
+		return true
+	}
+	return false
+}
+
 func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 0 {
-		printHelp(stdout)
+		printStartHere(stdout)
 		return ExitOK
 	}
 
@@ -89,11 +97,14 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 	case "-h", "--help", "help":
 		printHelp(stdout)
 		return ExitOK
+	case "--help-all":
+		printHelpAll(stdout)
+		return ExitOK
 	case "--help-maturity":
 		printHelpMaturity(stdout)
 		return ExitOK
 	case "-v", "--version", "version":
-		WriteLine(stdout, "x-harness %s", Version)
+		WriteLine(stdout, "xh %s", Version)
 		return ExitOK
 	case "actions":
 		printActions(stdout)
@@ -193,7 +204,7 @@ func handleStub(args []string, _ io.Writer, stderr io.Writer) int {
 	name := args[0]
 	if !knownCommand(name) {
 		WriteLine(stderr, "unknown command: %s", name)
-		WriteLine(stderr, "run `x-harness --help` for usage")
+		WriteLine(stderr, "run `xh --help` for usage")
 		return ExitUsage
 	}
 
@@ -214,29 +225,74 @@ func knownCommand(name string) bool {
 	return false
 }
 
+func printStartHere(w io.Writer) {
+	WriteLine(w, "xh %s", Version)
+	WriteLine(w, "")
+	WriteLine(w, "Start here — a few commands to get you going:")
+	WriteLine(w, "")
+	WriteLine(w, "  xh check          Run read-only verification against a completion card")
+	WriteLine(w, "  xh prepare        Check if workspace is ready for agent task handoff")
+	WriteLine(w, "  xh recover        Get recovery playbook suggestions from errors or trace")
+	WriteLine(w, "  xh doctor         Validate workspace health and configuration")
+	WriteLine(w, "  xh actions        Show this list of actions")
+	WriteLine(w, "  xh status         Show trace summary")
+	WriteLine(w, "  xh reset          Clean generated harness state")
+	WriteLine(w, "")
+	WriteLine(w, "For the full command list:")
+	WriteLine(w, "  xh --help-all")
+	WriteLine(w, "")
+	WriteLine(w, "For commands grouped by maturity:")
+	WriteLine(w, "  xh --help-maturity")
+}
+
 func printHelp(w io.Writer) {
-	WriteLine(w, "x-harness %s", Version)
+	WriteLine(w, "xh %s", Version)
 	WriteLine(w, "")
 	WriteLine(w, "A lightweight verify-gated harness for AI-agent workflows.")
 	WriteLine(w, "")
 	WriteLine(w, "Usage:")
-	WriteLine(w, "  x-harness <command> [options]")
+	WriteLine(w, "  xh <command> [options]")
 	WriteLine(w, "")
-	WriteLine(w, "Primary commands:")
+	WriteLine(w, "Commands:")
 	for _, command := range commands {
-		if command.Primary {
-			WriteLine(w, "  %-12s [%s] %s", command.Name, command.Maturity, command.Description)
+		if isBeginnerCommand(command.Name) {
+			WriteLine(w, "  %-12s %s", command.Name, command.Description)
 		}
+	}
+	WriteLine(w, "")
+	WriteLine(w, "Advanced:")
+	WriteLine(w, "  xh --help-all          Show all commands")
+	WriteLine(w, "  xh --help-maturity     Show commands grouped by maturity")
+	WriteLine(w, "")
+	WriteLine(w, "Global options:")
+	WriteLine(w, "  -h, --help          Show help")
+	WriteLine(w, "  --help-all          Show all commands")
+	WriteLine(w, "  --help-maturity     Show help with maturity labels for all commands")
+	WriteLine(w, "  -v, --version       Show version")
+}
+
+func printHelpAll(w io.Writer) {
+	WriteLine(w, "xh %s", Version)
+	WriteLine(w, "")
+	WriteLine(w, "A lightweight verify-gated harness for AI-agent workflows.")
+	WriteLine(w, "")
+	WriteLine(w, "Usage:")
+	WriteLine(w, "  xh <command> [options]")
+	WriteLine(w, "")
+	WriteLine(w, "All commands:")
+	for _, command := range commands {
+		WriteLine(w, "  %-12s [%s] %s", command.Name, command.Maturity, command.Description)
 	}
 	WriteLine(w, "")
 	WriteLine(w, "Global options:")
 	WriteLine(w, "  -h, --help          Show help")
+	WriteLine(w, "  --help-all          Show all commands")
 	WriteLine(w, "  --help-maturity     Show help with maturity labels for all commands")
 	WriteLine(w, "  -v, --version       Show version")
 }
 
 func printHelpMaturity(w io.Writer) {
-	WriteLine(w, "x-harness %s", Version)
+	WriteLine(w, "xh %s", Version)
 	WriteLine(w, "")
 	WriteLine(w, "A lightweight verify-gated harness for AI-agent workflows.")
 	WriteLine(w, "")
@@ -247,30 +303,40 @@ func printHelpMaturity(w io.Writer) {
 	WriteLine(w, "  skeletal     Declared but not yet implemented")
 	WriteLine(w, "")
 	WriteLine(w, "Usage:")
-	WriteLine(w, "  x-harness <command> [options]")
+	WriteLine(w, "  xh <command> [options]")
 	WriteLine(w, "")
-	WriteLine(w, "Primary commands:")
+
+	maturityGroups := map[Maturity][]CommandInfo{
+		MaturityStable:       {},
+		MaturityBeta:         {},
+		MaturityExperimental: {},
+		MaturitySkeletal:     {},
+	}
+
 	for _, command := range commands {
-		if command.Primary {
-			WriteLine(w, "  %-12s [%s] %s", command.Name, command.Maturity, command.Description)
+		maturityGroups[command.Maturity] = append(maturityGroups[command.Maturity], command)
+	}
+
+	for _, mat := range []Maturity{MaturityStable, MaturityBeta, MaturityExperimental, MaturitySkeletal} {
+		group := maturityGroups[mat]
+		if len(group) > 0 {
+			WriteLine(w, "%s:", mat)
+			for _, command := range group {
+				WriteLine(w, "  %-12s %s", command.Name, command.Description)
+			}
+			WriteLine(w, "")
 		}
 	}
-	WriteLine(w, "")
-	WriteLine(w, "Other commands:")
-	for _, command := range commands {
-		if !command.Primary {
-			WriteLine(w, "  %-12s [%s] %s", command.Name, command.Maturity, command.Description)
-		}
-	}
-	WriteLine(w, "")
+
 	WriteLine(w, "Global options:")
 	WriteLine(w, "  -h, --help          Show help")
+	WriteLine(w, "  --help-all          Show all commands")
 	WriteLine(w, "  --help-maturity     Show help with maturity labels for all commands")
 	WriteLine(w, "  -v, --version       Show version")
 }
 
 func printActions(w io.Writer) {
-	WriteLine(w, "# x-harness Beginner Actions")
+	WriteLine(w, "# xh Beginner Actions")
 	WriteLine(w, "")
 	WriteLine(w, "| Action | Maturity | Description |")
 	WriteLine(w, "| :-- | :-- | :-- |")
@@ -298,5 +364,5 @@ func HelpText() string {
 }
 
 func VersionText() string {
-	return fmt.Sprintf("x-harness %s\n", Version)
+	return fmt.Sprintf("xh %s\n", Version)
 }
