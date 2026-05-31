@@ -12,6 +12,7 @@ import {
   getUntestedRegions,
   getVerificationArtifacts,
 } from "./admission-accessors.js";
+import { classifyCommand } from "./classify.js";
 
 export interface AdmissionFinding {
   message: string;
@@ -241,6 +242,91 @@ function collectStrictProvenanceErrors(
   }
 
   return errors;
+}
+
+function isHighRiskFilePath(path: string): boolean {
+  const lower = path.toLowerCase();
+  return (
+    lower.includes("schema") ||
+    lower.includes("policy") ||
+    lower.includes("admission") ||
+    lower.includes("permission") ||
+    lower.includes("authority") ||
+    lower.includes(".github/workflows") ||
+    lower.includes("ci/") ||
+    lower.includes("/ci/")
+  );
+}
+
+export function evaluateTierGuard(
+  input: AdmissionInput
+): AdmissionEvidenceEvaluation {
+  const errors: AdmissionFinding[] = [];
+  const notes: string[] = [];
+  const tier = input.tier;
+  if (!tier) {
+    return { errors, notes };
+  }
+
+  const filesChanged = getFilesChanged(input) ?? [];
+  const highRiskFiles: string[] = [];
+  for (const item of filesChanged) {
+    if (typeof item === "string" && isHighRiskFilePath(item)) {
+      highRiskFiles.push(item);
+    }
+  }
+
+  const highRiskCommands: string[] = [];
+  const commandEvidence = getCommandEvidence(input) ?? [];
+  for (const item of commandEvidence) {
+    if (!item || typeof item !== "object") continue;
+    const record = item as Record<string, unknown>;
+    const cmd = typeof record.command === "string" ? record.command.trim() : "";
+    if (cmd) {
+      const classification = classifyCommand(cmd);
+      if (classification.risk === "high" || classification.unknown) {
+        highRiskCommands.push(cmd);
+      }
+    }
+  }
+  const verificationArtifacts = getVerificationArtifacts(input) ?? [];
+  for (const item of verificationArtifacts) {
+    if (!item || typeof item !== "object") continue;
+    const record = item as Record<string, unknown>;
+    const cmd = typeof record.command === "string" ? record.command.trim() : "";
+    if (cmd) {
+      const classification = classifyCommand(cmd);
+      if (classification.risk === "high" || classification.unknown) {
+        highRiskCommands.push(cmd);
+      }
+    }
+  }
+
+  if (tier === "light") {
+    if (highRiskFiles.length > 0) {
+      errors.push({
+        message: `tier guard: light tier declared but high-risk files detected (${highRiskFiles.join(", ")}); consider standard or deep`,
+        predicate: "admission_failed",
+      });
+    }
+    if (highRiskCommands.length > 0) {
+      notes.push(
+        `tier guard warning: light tier with high-risk command(s) (${highRiskCommands.join(", ")}); consider raising tier`
+      );
+    }
+  }
+
+  if (
+    tier === "standard" &&
+    highRiskFiles.length > 0 &&
+    highRiskCommands.length > 0
+  ) {
+    notes.push(
+      `tier guard warning: standard tier with both high-risk files (${highRiskFiles.join(", ")}) and high-risk commands (${highRiskCommands.join(", ")}); consider deep`
+    );
+  }
+
+  return { errors, notes };
 }
 
 export function evaluateEvidenceRules(

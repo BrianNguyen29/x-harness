@@ -2225,3 +2225,112 @@ func TestContextFloorTaxonomy(t *testing.T) {
 		t.Fatalf("expected blocking_predicate context_floor_blocked, got %s", result.BlockingPredicate)
 	}
 }
+
+func TestTierGuardBlocksLightWithAuthorityPath(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "light",
+		"owner":          "a",
+		"accountable":    "b",
+		"evidence": map[string]any{
+			"files_changed": []any{"internal/authority/roles.yaml"},
+			"command_evidence": []any{
+				map[string]any{"command": "go test", "exit_code": 0},
+			},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false, false)
+	if result.Outcome != "failed" && result.Outcome != "blocked" {
+		t.Fatalf("expected failed/blocked, got %s", result.Outcome)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if strings.Contains(e, "tier guard: light tier declared but high-risk files detected") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected tier guard error, got %v", result.Errors)
+	}
+}
+
+func TestTierGuardWarnsStandardWithAuthorityPathAndHighRiskCommand(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"evidence": map[string]any{
+			"files_changed": []any{"internal/authority/roles.yaml"},
+			"command_evidence": []any{
+				map[string]any{"command": "rm -rf dist", "exit_code": 0},
+			},
+		},
+		"approval_receipt": map[string]any{
+			"decision": "approved",
+			"approver": "user",
+			"classified_commands": []any{
+				map[string]any{
+					"command": "rm -rf dist",
+					"risk":    "high",
+				},
+			},
+			"aggregate_risk": "high",
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success for standard-tier warning, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	found := false
+	for _, n := range result.Notes {
+		if strings.Contains(n, "tier guard warning: standard tier with both high-risk files") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected tier guard warning in notes, got %v", result.Notes)
+	}
+}

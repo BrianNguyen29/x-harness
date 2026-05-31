@@ -10,7 +10,10 @@ import {
   getPgvAdvice,
   isCompletionCardShape,
 } from "./admission-accessors.js";
-import { evaluateEvidenceRules } from "./admission-evidence.js";
+import {
+  evaluateEvidenceRules,
+  evaluateTierGuard,
+} from "./admission-evidence.js";
 import { evaluateDoneChecklistAndPrediction } from "./admission-prediction.js";
 import { evaluateApprovalReceipt } from "./admission-approval.js";
 import {
@@ -183,6 +186,12 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
       );
       if (!blockingPredicate) blockingPredicate = "admission_failed";
     }
+  }
+
+  const tierGuardResult = evaluateTierGuard(input);
+  notes.push(...tierGuardResult.notes);
+  for (const item of tierGuardResult.errors) {
+    applyFinding(item);
   }
 
   const evidenceResult = evaluateEvidenceRules(input);

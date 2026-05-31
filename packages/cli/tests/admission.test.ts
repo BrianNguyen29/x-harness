@@ -2220,4 +2220,153 @@ describe("admission", () => {
       )
     ).toBe(true);
   });
+
+  // Tier guard tests
+  it("blocks light tier with high-risk file path", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["schemas/completion-card.schema.json"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(
+      result.errors.some((e) =>
+        e.includes(
+          "tier guard: light tier declared but high-risk files detected"
+        )
+      )
+    ).toBe(true);
+  });
+
+  it("warns light tier with high-risk command but does not block", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "rm -rf dist", exit_code: 0 }],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(
+      result.notes.some((n) =>
+        n.includes("tier guard warning: light tier with high-risk command(s)")
+      )
+    ).toBe(true);
+  });
+
+  it("warns standard tier with both high-risk files and high-risk commands", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["policies/admission.yaml"],
+        command_evidence: [{ command: "rm -rf dist", exit_code: 0 }],
+      },
+      approval_receipt: {
+        decision: "approved",
+        approver: "user",
+        classified_commands: [{ command: "rm -rf dist", risk: "high" }],
+        aggregate_risk: "high",
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(
+      result.notes.some((n) =>
+        n.includes(
+          "tier guard warning: standard tier with both high-risk files"
+        )
+      )
+    ).toBe(true);
+  });
+
+  it("allows deep tier with high-risk file path", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        files_changed: ["internal/authority/roles.yaml"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+  });
 });
