@@ -2242,7 +2242,9 @@ describe("admission", () => {
     expect(result.outcome).toBe("failed");
     expect(
       result.errors.some((e) =>
-        e.includes("tier guard: light tier declared but high-risk files detected")
+        e.includes(
+          "tier guard: light tier declared but high-risk files detected"
+        )
       )
     ).toBe(true);
   });
@@ -2291,9 +2293,7 @@ describe("admission", () => {
       approval_receipt: {
         decision: "approved",
         approver: "user",
-        classified_commands: [
-          { command: "rm -rf dist", risk: "high" },
-        ],
+        classified_commands: [{ command: "rm -rf dist", risk: "high" }],
         aggregate_risk: "high",
       },
       done_checklist: {

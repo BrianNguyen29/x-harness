@@ -10,7 +10,10 @@ import {
   getPgvAdvice,
   isCompletionCardShape,
 } from "./admission-accessors.js";
-import { evaluateEvidenceRules, evaluateTierGuard } from "./admission-evidence.js";
+import {
+  evaluateEvidenceRules,
+  evaluateTierGuard,
+} from "./admission-evidence.js";
 import { evaluateDoneChecklistAndPrediction } from "./admission-prediction.js";
 import { evaluateApprovalReceipt } from "./admission-approval.js";
 import {

@@ -281,8 +281,7 @@ export function evaluateTierGuard(
   for (const item of commandEvidence) {
     if (!item || typeof item !== "object") continue;
     const record = item as Record<string, unknown>;
-    const cmd =
-      typeof record.command === "string" ? record.command.trim() : "";
+    const cmd = typeof record.command === "string" ? record.command.trim() : "";
     if (cmd) {
       const classification = classifyCommand(cmd);
       if (classification.risk === "high" || classification.unknown) {
@@ -294,8 +293,7 @@ export function evaluateTierGuard(
   for (const item of verificationArtifacts) {
     if (!item || typeof item !== "object") continue;
     const record = item as Record<string, unknown>;
-    const cmd =
-      typeof record.command === "string" ? record.command.trim() : "";
+    const cmd = typeof record.command === "string" ? record.command.trim() : "";
     if (cmd) {
       const classification = classifyCommand(cmd);
       if (classification.risk === "high" || classification.unknown) {
