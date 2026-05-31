@@ -123,6 +123,7 @@ func evaluateTierGuard(doc map[string]any, tier string) evidenceResult {
 			strings.Contains(lower, "policy") ||
 			strings.Contains(lower, "admission") ||
 			strings.Contains(lower, "permission") ||
+			strings.Contains(lower, "authority") ||
 			strings.Contains(lower, ".github/workflows") ||
 			strings.Contains(lower, "ci/") ||
 			strings.Contains(lower, "/ci/") {
