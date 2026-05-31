@@ -12,15 +12,26 @@ Please do **not** open a public issue for suspected vulnerabilities.
 
 Use one of these private channels instead:
 
-- GitHub private vulnerability reporting, if enabled for the repository.
-- Email/DM the maintainer listed on the GitHub repository profile if private reporting is unavailable.
+- [GitHub private vulnerability reporting](https://github.com/BrianNguyen29/x-harness/security/advisories/new) (preferred)
+- Email the maintainer if private reporting is unavailable
 
-Include:
+When reporting, include:
 
-- A short description of the issue.
-- Reproduction steps or a minimal proof of concept.
-- Impact and affected files/commands, if known.
-- Whether the issue involves secrets or sensitive logs.
+- A short description of the issue
+- Reproduction steps or a minimal proof of concept
+- Impact and affected files/commands, if known
+- Whether the issue involves secrets or sensitive logs
+
+## Disclosure timeline
+
+| Phase | Action |
+|-------|--------|
+| Day 0 | Report received and acknowledged |
+| Day 1-3 | Initial assessment and severity rating |
+| Day 4-14 | Fix development and testing |
+| Day 15-30 | Release and public disclosure |
+
+Critical vulnerabilities may follow an accelerated timeline.
 
 ## Handling sensitive data
 

@@ -35,14 +35,14 @@ export interface AuthorityPolicy {
 }
 
 function globMatch(pattern: string, filePath: string): boolean {
-  // Convert glob pattern to regex
-  const normalizedPattern = pattern
-    .replace(/\./g, "\\.")
+  // Escape regex metacharacters first, then apply glob wildcards
+  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  const globPattern = escaped
     .replace(/\*\*/g, "{{DOUBLE_STAR}}")
     .replace(/\*/g, "[^/]*")
     .replace(/\{\{DOUBLE_STAR\}\}/g, ".*");
 
-  const regex = new RegExp(`^${normalizedPattern}$`);
+  const regex = new RegExp(`^${globPattern}$`);
   return regex.test(filePath);
 }
 
