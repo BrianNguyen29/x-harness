@@ -158,8 +158,7 @@ describe("examples command", () => {
     expect(weakPrediction.acceptance_status).toBe("withheld");
 
     const contextAlignment = output.results.find(
-      (r: { name: string }) =>
-        r.name === "regression/success-context-alignment"
+      (r: { name: string }) => r.name === "regression/success-context-alignment"
     );
     expect(contextAlignment.outcome).toBe("success");
     expect(contextAlignment.acceptance_status).toBe("accepted");
@@ -172,8 +171,7 @@ describe("examples command", () => {
     expect(missingContextRef.acceptance_status).toBe("accepted");
 
     const blockedContractOracle = output.results.find(
-      (r: { name: string }) =>
-        r.name === "regression/blocked-contract-oracle"
+      (r: { name: string }) => r.name === "regression/blocked-contract-oracle"
     );
     expect(blockedContractOracle.outcome).toBe("success");
     expect(blockedContractOracle.acceptance_status).toBe("accepted");

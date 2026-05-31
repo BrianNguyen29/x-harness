@@ -716,7 +716,12 @@ describe("schema validators", () => {
       // Runtime superset includes legacy failure_class/failure_stage which are rejected here.
       const schema = await loadSchema("withheld-reason");
       const validate = compileSchema(schema);
-      const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "withheld-reason-strict.json"), "utf-8"));
+      const fixture = JSON.parse(
+        fs.readFileSync(
+          path.join(__dirname, "fixtures", "withheld-reason-strict.json"),
+          "utf-8"
+        )
+      );
       const valid = validate(fixture);
       expect(validate.errors ?? []).toEqual([]);
       expect(valid).toBe(true);
@@ -734,8 +739,8 @@ describe("schema validators", () => {
         schema_recoverability: "manual",
         owner: "bob",
         next_action: "add_evidence",
-        failure_class: "missing_files_changed",   // legacy field, not in schema
-        failure_stage: "evidence",                // legacy field, not in schema
+        failure_class: "missing_files_changed", // legacy field, not in schema
+        failure_stage: "evidence", // legacy field, not in schema
       });
       expect(valid).toBe(false);
     });
@@ -767,7 +772,7 @@ describe("schema validators", () => {
             rule_id: "no-debug",
             file: "src/main.go",
             line: 42,
-            snippet: "fmt.Println(\"debug\")",
+            snippet: 'fmt.Println("debug")',
             message: "Debug print statements are not allowed",
           },
         ],
@@ -990,9 +995,27 @@ describe("schema validators", () => {
         policy: "policy.yaml",
         files_scanned: 2,
         violations: [
-          { rule_id: "no-debug", file: "a.go", line: 1, snippet: "debug1", message: "msg1" },
-          { rule_id: "no-debug", file: "b.go", line: 5, snippet: "debug2", message: "msg2" },
-          { rule_id: "no-print", file: "a.go", line: 10, snippet: "print", message: "msg3" },
+          {
+            rule_id: "no-debug",
+            file: "a.go",
+            line: 1,
+            snippet: "debug1",
+            message: "msg1",
+          },
+          {
+            rule_id: "no-debug",
+            file: "b.go",
+            line: 5,
+            snippet: "debug2",
+            message: "msg2",
+          },
+          {
+            rule_id: "no-print",
+            file: "a.go",
+            line: 10,
+            snippet: "print",
+            message: "msg3",
+          },
         ],
       });
       expect(validate.errors ?? []).toEqual([]);
