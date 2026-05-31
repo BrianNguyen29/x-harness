@@ -131,6 +131,21 @@ describe("authority", () => {
       );
       expect(result.authority).toBe("human_only");
     });
+
+    it("handles paths with regex metacharacters correctly", () => {
+      // The old globMatch only escaped '.' so characters like '+' were treated
+      // as regex quantifiers. This test ensures metacharacters in paths are
+      // treated as literals after the fix.
+      const result = classifyPath("packages/cli/src/core/test+foo.ts", policy);
+      // Should match agent_editable pattern packages/cli/src/**/*.ts
+      expect(result.authority).toBe("agent_editable");
+    });
+
+    it("handles paths with dots as literal characters", () => {
+      // Dots in path segments should be literal after escaping
+      const result = classifyPath("packages/cli/src/core/test.file.ts", policy);
+      expect(result.authority).toBe("agent_editable");
+    });
   });
 
   describe("getProtectedPaths", () => {

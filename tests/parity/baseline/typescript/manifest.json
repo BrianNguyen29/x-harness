@@ -18,6 +18,34 @@
   },
   "cases": [
     {
+      "id": "verify:golden:blocked-contract-oracle",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/regression/blocked-contract-oracle/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/golden/blocked-contract-oracle.json"
+    },
+    {
+      "id": "verify:golden:blocked-missing-context-ref",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/regression/blocked-missing-context-ref/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/golden/blocked-missing-context-ref.json"
+    },
+    {
       "id": "verify:golden:blocked-missing-done-checklist",
       "command": [
         "node",
@@ -170,6 +198,20 @@
       "exit_code": 0,
       "signal": null,
       "output": "verify/golden/standard-approval-present.json"
+    },
+    {
+      "id": "verify:golden:success-context-alignment",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/regression/success-context-alignment/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/golden/success-context-alignment.json"
     },
     {
       "id": "verify:golden:success-light",
