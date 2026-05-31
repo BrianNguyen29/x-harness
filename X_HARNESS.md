@@ -84,26 +84,26 @@ error:
 
 ```bash
 # Beginner-friendly actions (primary interface)
-./x-harness check --card completion-card.yaml
-./x-harness prepare --json
-./x-harness recover --errors "tests failed"
-./x-harness doctor
-./x-harness actions
-./x-harness status
-./x-harness reset --confirm
+xh check --card completion-card.yaml
+xh prepare --json
+xh recover --errors "tests failed"
+xh doctor
+xh actions
+xh status
+xh reset --confirm
+xh init --minimal
 
 # Advanced commands
-./x-harness init --minimal
-./x-harness handoff standard --title "Fix bug"
-./x-harness report --metrics --card completion-card.yaml
-./x-harness packet create --card completion-card.yaml
+xh handoff standard --title "Fix bug"
+xh report --metrics --card completion-card.yaml
+xh packet create --card completion-card.yaml
 ```
 
 Core command set includes:
-- Beginner actions: `check` (alias for verify), `prepare` (alias for handoff readiness), `recover` (alias for recovery suggest), `doctor`, `actions`, `status`, `reset`
-- Advanced commands: `init`, `add`, `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `recovery`, `packet`, `conformance`, `scan`, `adapters`, `card`, `profile`, `readiness`, `release`, `benchmark`, `contract`
+- Beginner actions: `check` (alias for verify), `prepare` (alias for handoff readiness), `recover` (alias for recovery suggest), `doctor`, `actions`, `status`, `reset`, `init`, `add`
+- Advanced commands: `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `recovery`, `packet`, `conformance`, `scan`, `adapters`, `card`, `profile`, `readiness`, `release`, `benchmark`, `contract`
 
-Run `./x-harness --help` for the full command registry.
+Run `xh --help` for beginner-friendly commands. Use `xh --help-all` for the full command registry.
 
 ## Repository Structure
 

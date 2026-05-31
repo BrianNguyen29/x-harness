@@ -35,7 +35,7 @@ This copies the `CLAUDE.md` instructions, the `agents/` role definitions, and th
 | **`status`**  | `report` (no --metrics) | Show trace summary or card metrics                     |
 | **`reset`**   | `clean --tmp --force`   | Clean generated harness state (requires --confirm)     |
 
-**Slash commands for agent adapters:** `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset`
+**Slash commands for agent adapters:** Use `/xh <action>` in agent chat (for example, `/xh check`, `/xh packet create --card <path>`). The legacy `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset` style remains supported for compatibility.
 
 ## Workflow
 

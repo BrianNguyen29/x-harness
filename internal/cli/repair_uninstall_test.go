@@ -171,7 +171,7 @@ func TestUninstallPreviewListsEntries(t *testing.T) {
 	if !strings.Contains(out, "would remove: AGENTS.md") {
 		t.Fatalf("expected would remove AGENTS.md, got: %s", out)
 	}
-	if !strings.Contains(out, "To apply, run: x-harness uninstall --apply --force") {
+	if !strings.Contains(out, "To apply, run: xh uninstall --apply --force") {
 		t.Fatalf("expected apply hint, got: %s", out)
 	}
 }

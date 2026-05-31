@@ -12,7 +12,7 @@ interface CleanOptions {
 
 export async function cleanTmpAction(): Promise<void> {
   const cwd = process.cwd();
-  console.log("# x-harness clean --tmp --force");
+  console.log("# xh clean --tmp --force");
   for (const dir of [".x-harness/tmp", ".x-harness/cache"]) {
     const fullPath = path.join(cwd, dir);
     if (await fs.pathExists(fullPath)) {
@@ -134,7 +134,7 @@ export function cleanCommand(): Command {
       }
 
       if (dryRun) {
-        console.log("# x-harness clean (dry-run)");
+        console.log("# xh clean (dry-run)");
         for (const a of safeActions) {
           console.log(`would ${a.type}: ${a.path} (${a.note})`);
         }
@@ -143,7 +143,7 @@ export function cleanCommand(): Command {
       }
 
       // Execute mutations
-      console.log("# x-harness clean (applying)");
+      console.log("# xh clean (applying)");
       for (const a of safeActions) {
         try {
           if (a.type === "delete") {

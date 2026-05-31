@@ -153,9 +153,9 @@ describe("alias registration", () => {
       expect(stdout).toContain("requires --confirm");
     });
 
-    it("reset without --confirm goes through top-level error boundary with x-harness error prefix", async () => {
+    it("reset without --confirm goes through top-level error boundary with xh error prefix", async () => {
       // Test that reset error is caught by top-level parseAsync.catch handler
-      // and printed with "x-harness error:" prefix to stderr
+      // and printed with "xh error:" prefix to stderr
       const { spawn } = await import("node:child_process");
       const script = path.join(repoRoot, "packages", "cli", "dist", "index.js");
       const child = spawn("node", [script, "reset"], {
@@ -175,7 +175,7 @@ describe("alias registration", () => {
       });
 
       expect(exitCode).toBe(1);
-      expect(stderr).toContain("x-harness error:");
+      expect(stderr).toContain("xh error:");
       expect(stderr).toContain("reset aborted");
       expect(stderr).toContain("--confirm");
     });
@@ -191,7 +191,7 @@ describe("alias registration", () => {
       const resetResult = await execaNode(["reset", "--confirm"]);
       expect(resetResult.exitCode).toBe(0);
       // Should show the clean header indicating it delegated to clean --tmp --force
-      expect(resetResult.stdout).toContain("x-harness clean --tmp --force");
+      expect(resetResult.stdout).toContain("xh clean --tmp --force");
       expect(resetResult.stdout).toContain("reset complete");
     });
   });

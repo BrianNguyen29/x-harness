@@ -207,8 +207,19 @@ describe("adapter contract", () => {
         });
 
         it("includes slash command notation for agent adapters", () => {
-          // Slash commands are /xh-check, /xh-prepare, /xh-recover, /xh-doctor, /xh-actions, /xh-status, /xh-reset
-          const slashCommands = [
+          // Preferred pattern: /xh <action>; legacy: /xh-check, /xh-prepare, etc.
+          const hasSlashCommands =
+            content.includes("/xh <action>") ||
+            content.includes("/xh check") ||
+            content.includes("/xh packet");
+          expect(
+            hasSlashCommands,
+            `${filePath} should include slash command notation (e.g., /xh check or /xh packet)`
+          ).toBe(true);
+        });
+
+        it("retains legacy /xh-check style as compatibility", () => {
+          const legacySlashCommands = [
             "/xh-check",
             "/xh-prepare",
             "/xh-recover",
@@ -217,12 +228,12 @@ describe("adapter contract", () => {
             "/xh-status",
             "/xh-reset",
           ];
-          const hasSlashCommands = slashCommands.some((cmd) =>
+          const hasLegacy = legacySlashCommands.some((cmd) =>
             content.includes(cmd)
           );
           expect(
-            hasSlashCommands,
-            `${filePath} should include slash command notation (e.g., /xh-check)`
+            hasLegacy,
+            `${filePath} should retain legacy slash command notation for compatibility`
           ).toBe(true);
         });
       });

@@ -60,7 +60,7 @@ describe("clean command", () => {
   });
 
   it("is registered in help", async () => {
-    const { stdout, exitCode } = await execaNode(["--help"]);
+    const { stdout, exitCode } = await execaNode(["--help-all"]);
     expect(exitCode).toBe(0);
     expect(stdout).toContain("clean");
   });

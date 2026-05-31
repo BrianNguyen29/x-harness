@@ -24,10 +24,10 @@ func handleReset(args []string, stdout io.Writer, stderr io.Writer) int {
 	}
 
 	if !confirmed {
-		WriteLine(stdout, "x-harness reset requires --confirm for safety.")
+		WriteLine(stdout, "xh reset requires --confirm for safety.")
 		WriteLine(stdout, "")
 		WriteLine(stdout, "To reset harness state:")
-		WriteLine(stdout, "  x-harness reset --confirm")
+		WriteLine(stdout, "  xh reset --confirm")
 		WriteLine(stdout, "")
 		WriteLine(stdout, "This will delete:")
 		WriteLine(stdout, "  - .x-harness/tmp/")
@@ -41,7 +41,7 @@ func handleReset(args []string, stdout io.Writer, stderr io.Writer) int {
 		return ExitError
 	}
 
-	WriteLine(stdout, "# x-harness clean --tmp --force")
+	WriteLine(stdout, "# xh clean --tmp --force")
 	for _, dir := range []string{".x-harness/tmp", ".x-harness/cache"} {
 		fullPath := filepath.Join(cwd, dir)
 		if _, err := os.Stat(fullPath); err == nil {

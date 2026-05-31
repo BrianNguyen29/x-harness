@@ -4,6 +4,10 @@ Welcome to `x-harness`! Follow this guide to set up the CLI, run local verificat
 
 > [!NOTE]
 > **Local Development**: build the native Go CLI with `go build ./cmd/x-harness` and run `./x-harness <command>`. The TypeScript compatibility CLI remains available after `npm install && npm run build` via `node packages/cli/dist/index.js <command>`.
+>
+> **Command syntax**:
+> - **Terminal / shell:** `xh <command>` (e.g., `xh check`)
+> - **Agent chat:** `/xh <command>` (e.g., `/xh check`)
 
 ---
 
@@ -28,7 +32,7 @@ npm install && npm run build
 Use the `doctor` command to verify that all schemas compile, YAML policies are valid, and required templates are present:
 
 ```bash
-./x-harness doctor --root . --json
+xh doctor --root . --json
 ```
 
 You should see a JSON report detailing passing validations with `"healthy": true`.
@@ -52,7 +56,7 @@ You should see a JSON report detailing passing validations with `"healthy": true
 Contract oracles are opt-in rule-based assertions. The default policy is empty-safe (no-op if no policy is present):
 
 ```bash
-./x-harness contract check --policy policies/contract-oracle.yaml --json .
+xh contract check --policy policies/contract-oracle.yaml --json .
 ```
 
 ### 5. Verify a Golden Example
@@ -60,7 +64,7 @@ Contract oracles are opt-in rule-based assertions. The default policy is empty-s
 The repository comes built-in with reference examples demonstrating different completion scenarios. Run verification against the "Success (Light Tier)" golden example using the `check` action:
 
 ```bash
-./x-harness check --card examples/golden/regression/success-light/completion-card.yaml
+xh check --card examples/golden/regression/success-light/completion-card.yaml
 ```
 
 **Expected Success Output:**
@@ -76,13 +80,13 @@ _(The command returns an exit code of `0` because verification was successful an
 To run the same verification with contract oracle assertions enabled:
 
 ```bash
-./x-harness verify --card examples/golden/regression/success-light/completion-card.yaml --contract-oracles
+xh verify --card examples/golden/regression/success-light/completion-card.yaml --contract-oracles
 ```
 
 Now, try verifying an example where standard tier verification is blocked due to missing evidence:
 
 ```bash
-./x-harness check --card examples/golden/regression/blocked-missing-evidence/completion-card.yaml
+xh check --card examples/golden/regression/blocked-missing-evidence/completion-card.yaml
 ```
 
 **Expected Withheld Output:**
@@ -101,13 +105,13 @@ To integrate `x-harness` into a separate development project, run the `init` com
 
 ```bash
 # Minimal mode (default; installs core agent rules, verify gate config, and handoff templates)
-./x-harness init --minimal
+xh init --minimal
 
 # Standard mode (Minimal + schemas, policies, and solo agent examples)
-./x-harness init --standard
+xh init --standard
 
 # Full mode (Standard + multi-agent examples, platform adapters, and GitHub Actions)
-./x-harness init --full
+xh init --full
 ```
 
 If `init` finds conflicting harness files in the target workspace, it stops with a blocked summary and exits with a non-zero code instead of silently half-installing. Use `--force` only when you intend to overwrite those files.
@@ -118,10 +122,10 @@ When working on a task, write your completion card to `completion-card.yaml` and
 
 ```bash
 # Default verify path looks for 'completion-card.yaml' in current directory
-./x-harness check
+xh check
 
 # Advanced check with full check notes and handoff routing
-./x-harness check --card completion-card.yaml --verbose
+xh check --card completion-card.yaml --verbose
 ```
 
 ---

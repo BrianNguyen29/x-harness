@@ -2,14 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "withheld-reason",
   "type": "object",
-  "required": [
-    "class",
-    "blocking_predicate",
-    "stage",
-    "recoverability",
-    "owner",
-    "next_action"
-  ],
+  "required": ["class", "blocking_predicate", "stage", "recoverability", "owner", "next_action"],
   "properties": {
     "class": {
       "enum": [
@@ -43,19 +36,7 @@
       "minLength": 1
     },
     "stage": {
-      "enum": [
-        "schema",
-        "policy",
-        "verification",
-        "admission",
-        "evidence",
-        "handoff",
-        "approval",
-        "state",
-        "context",
-        "recovery",
-        "unknown"
-      ]
+      "enum": ["schema", "policy", "verification", "admission", "evidence", "handoff", "approval", "state", "context", "recovery", "unknown"]
     },
     "recoverability": {
       "enum": ["automatic", "manual", "blocked", "unknown"]
