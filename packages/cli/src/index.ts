@@ -176,7 +176,9 @@ function printHelpMaturity() {
   console.log("Global options:");
   console.log("  -h, --help          Show help");
   console.log("  --help-all          Show all commands");
-  console.log("  --help-maturity     Show help with maturity labels for all commands");
+  console.log(
+    "  --help-maturity     Show help with maturity labels for all commands"
+  );
   console.log("  -v, --version       Show version");
 }
 
