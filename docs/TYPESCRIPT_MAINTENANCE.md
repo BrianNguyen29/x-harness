@@ -1,58 +1,21 @@
-# TypeScript Maintenance and Freeze Policy
+# TypeScript Maintenance Policy
 
-This document defines the maintenance policy for the TypeScript CLI after the Go rewrite becomes primary.
+This document defines the maintenance policy for the TypeScript CLI after the Go rewrite became primary.
 
 ## Status
 
-- **Freeze active**: TypeScript is no longer included in the published npm package runtime. The published package is a Go-only wrapper.
-- **Source-checkout development**: TypeScript source (`packages/cli/src`) and compiled output (`packages/cli/dist`) remain in the repository for local development and CI compatibility gates.
-- **Target**: After the compatibility window ends, TypeScript source may be removed from the repository entirely.
-- **Active**: The wrapper defaults to Go and falls back to Node only when `dist/index.js` exists (source checkout or custom build).
-
-## Freeze Criteria
-
-TypeScript is frozen as a compatibility source when:
-
-1. The Go CLI implements all primary commands with parity tests passing.
-2. At least one release-candidate cycle has completed successfully with Go as the default.
-3. Cross-platform smoke tests pass on Linux, macOS, and Windows.
-4. The npm wrapper (`bin/x-harness.js`) defaults to Go and falls back to Node automatically.
-5. No P0 or P1 bugs remain open against the Go CLI.
-
-## Sunset Timeline
-
-| Milestone | Target | Status |
-|---|---|---|
-| Freeze declaration | Go CLI primary, TS in maintenance mode | **Done** |
-| Parity gate stabilization | All golden fixtures pass in Go and TS | **Done** |
-| Cross-platform smoke (amd64 + arm64) | Release workflow validates Linux, macOS, Windows | **Done** |
-| TS deprecation notice | Add `packages/cli/README.md` deprecation banner | **Pending** |
-| TS source removal readiness | No critical fallback usage reported for 90 days | **Pending** |
-| TS source removal | Remove `packages/cli/src/`, `packages/cli/dist/`, and related build scripts | **Pending** |
-
-**Current compatibility window:** The TypeScript source remains in the repository for a minimum of two minor releases or 90 days after the freeze declaration, whichever is longer. The freeze was declared when the Go CLI became primary (v0.x). Removal will be considered only after the compatibility window ends, parity tests are retired, and no critical fallback usage is reported.
+- TypeScript is no longer included in the published npm package runtime. The published package is a Go-only wrapper.
+- TypeScript source (`packages/cli/src`) and compiled output (`packages/cli/dist`) remain in the repository for local development and CI compatibility gates.
+- The wrapper defaults to Go and falls back to Node only when `dist/index.js` exists (source checkout or custom build).
 
 ## Maintenance Mode Rules
 
-Once frozen, the TypeScript source in `packages/cli/src` is governed by these rules:
+The TypeScript source in `packages/cli/src` is governed by these rules:
 
 1. **No new features**: New commands, flags, or behaviors are added only to the Go CLI.
 2. **Bug fixes only**: Critical bug fixes that affect the source-checkout fallback path may be backported.
 3. **Security patches**: Security issues in dependencies or the wrapper shim are patched promptly.
 4. **Contract compatibility**: The TypeScript fallback must continue to produce the same admission decisions as the Go CLI for all golden fixtures.
-5. **Deprecation timeline**: The TypeScript source remains in the repository for a minimum compatibility window (recommended: two minor releases or 90 days, whichever is longer).
-6. **Removal**: TypeScript source removal is considered only after the compatibility window ends and no critical fallback usage is reported.
-
-### Sunset Checklist
-
-Before removing TypeScript source:
-
-- [ ] Parity tests (`npm run parity:check-go`) have been stable for 30+ days.
-- [ ] No P0/P1 bugs filed against the TypeScript fallback in the last 90 days.
-- [ ] CI no longer requires TypeScript build steps for release validation.
-- [ ] `docs/CI.md` is updated to reflect Go-only verification.
-- [ ] `CHANGELOG.md` documents the removal with migration notes.
-- [ ] A deprecation notice is printed by the wrapper shim for one minor release before removal.
 
 ## What Is Frozen
 

@@ -10,11 +10,11 @@ These fixtures assert that `packages/cli/src/core/recovery.ts` DEFAULT_ROUTES st
 
 ## Unsupported predicates
 
-The following predicates are requested by the roadmap but do **not** yet have dedicated recovery routes:
+The following predicates do not have dedicated recovery routes in the current implementation:
 
 - `schema_invalid` — schema validation failures surface as `admission_failed`.
 - `stale_ground` — handled as a fail-closed admission check in the admission engines, not recovery routing.
-- `policy_drift` — planned for future policy-code drift guard; not implemented.
+- `policy_drift` — falls back to existing admission checks; no dedicated recovery route.
 - `unknown_failure` — falls back to `admission_failed` via `suggestRecovery`.
 
 ## Mapping notes

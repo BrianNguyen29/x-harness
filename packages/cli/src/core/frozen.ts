@@ -61,7 +61,6 @@ const INCLUDE_PATHS = [
   "X_HARNESS.md",
   "CHANGELOG.md",
   "LICENSE",
-  "X_HARNESS_ADMISSION_READINESS_UPDATED_ROADMAP.md",
   "docs",
   "schemas",
   "policies",

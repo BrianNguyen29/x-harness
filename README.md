@@ -10,7 +10,7 @@
 
 `x-harness` is a Go-native, file-first admission and readiness harness for AI coding workflows. It does not run your agents, it does not replace CI, and it does not guarantee that code is correct. It does one bounded job: turn an AI agent's completion claim into an auditable admission decision — `accepted` or `withheld` — under repository policy.
 
-> Expansion is incremental. The current stable core is a verify-gated completion admission system with tiered handoff templates, read-only validation, and deterministic local metrics. See the [roadmap](X_HARNESS_ADMISSION_READINESS_UPDATED_ROADMAP.md) for planned enhancements.
+> Expansion is incremental. The current stable core is a verify-gated completion admission system with tiered handoff templates, read-only validation, and deterministic local metrics.
 
 > [!NOTE]
 > **Published Runtime**: the npm package is now a Go-only wrapper. It ships platform-native Go binaries and no longer includes the TypeScript `dist/` runtime.
@@ -437,8 +437,7 @@ Running `./x-harness verify --trace` logs a JSONL event detailing the verificati
 | [`docs/CLEANUP.md`](docs/CLEANUP.md)                   | Cleanup and maintenance operations                                           |
 | [`docs/RELEASE_SECURITY.md`](docs/RELEASE_SECURITY.md) | Release, SBOM, and provenance checks                                         |
 | [`docs/RELEASE_CANDIDATE.md`](docs/RELEASE_CANDIDATE.md) | RC cycle, checklist, and wrapper default criteria                          |
-| [`docs/TYPESCRIPT_MAINTENANCE.md`](docs/TYPESCRIPT_MAINTENANCE.md) | Freeze policy and maintenance mode for the TypeScript CLI          |
-| [`docs/NPM_WRAPPER_PLAN.md`](docs/NPM_WRAPPER_PLAN.md) | Plan for npm package transition to native Go binaries                        |
+| [`docs/TYPESCRIPT_MAINTENANCE.md`](docs/TYPESCRIPT_MAINTENANCE.md) | Maintenance mode for the TypeScript CLI          |
 
 ---
 

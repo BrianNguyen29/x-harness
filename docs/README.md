@@ -20,7 +20,6 @@ enforces.
 - [Schemas](SCHEMAS.md)
 - [Recovery](RECOVERY.md)
 - [Packets](PACKETS.md)
-- [Governance Approval Workflow Design](GOVERNANCE_DESIGN.md) — Design-gated specification for request/approve/status flow, HITL boundaries, and approval artifacts
 
 ## Operations
 
@@ -28,11 +27,9 @@ enforces.
 - [Report Formats](REPORT_FORMATS.md)
 - [Cleanup](CLEANUP.md)
 - [Release Security](RELEASE_SECURITY.md)
-- [Release Candidate](RELEASE_CANDIDATE.md) — RC cycle, checklist, and wrapper default criteria
-- [TypeScript Maintenance](TYPESCRIPT_MAINTENANCE.md) — Freeze policy and maintenance mode for the TypeScript CLI
-- [NPM Wrapper Plan](NPM_WRAPPER_PLAN.md)
+- [Release Candidate](RELEASE_CANDIDATE.md) — Release requirements and evidence floor
+- [TypeScript Maintenance](TYPESCRIPT_MAINTENANCE.md) — Maintenance mode for the TypeScript CLI
 
-## Roadmap
+## Reference
 
-- [Admission Readiness Roadmap](../X_HARNESS_ADMISSION_READINESS_UPDATED_ROADMAP.md) — Implementation status, phased plan, and design targets
-- [Conformance Strict Profile Spec](CONFORMANCE_STRICT_PROFILE.md) — Review-only specification for `conformance run --profile strict`
+- [Conformance Strict Profile Spec](CONFORMANCE_STRICT_PROFILE.md) — Rules and verification criteria for `conformance run --profile strict`
