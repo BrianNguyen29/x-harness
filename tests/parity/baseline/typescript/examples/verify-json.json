@@ -1,7 +1,7 @@
 {
   "failed": 0,
   "ok": true,
-  "passed": 14,
+  "passed": 17,
   "results": [
     {
       "acceptance_status": "withheld",
@@ -69,6 +69,22 @@
       "passed": true
     },
     {
+      "acceptance_status": "accepted",
+      "errors": [],
+      "name": "regression/blocked-contract-oracle",
+      "outcome": "success",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
+      "acceptance_status": "accepted",
+      "errors": [],
+      "name": "regression/blocked-missing-context-ref",
+      "outcome": "success",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
       "acceptance_status": "withheld",
       "errors": [
         "completion card validation failed: /claim/evidence must NOT have fewer than 1 items",
@@ -132,6 +148,14 @@
     {
       "acceptance_status": "accepted",
       "errors": [],
+      "name": "regression/success-context-alignment",
+      "outcome": "success",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
+      "acceptance_status": "accepted",
+      "errors": [],
       "name": "regression/success-light",
       "outcome": "success",
       "output_mismatch": null,
@@ -146,5 +170,5 @@
       "passed": true
     }
   ],
-  "total": 14
+  "total": 17
 }
