@@ -109,15 +109,17 @@ func stageFromFailureStage(failureStage string) string {
 
 // VerifyResult is the minimal output of the verify command.
 type VerifyResult struct {
-	OK               bool                  `json:"ok"`
-	TaskID           string                `json:"task_id"`
-	Tier             string                `json:"tier"`
-	AdmissionOutcome string                `json:"admission_outcome"`
-	AcceptanceStatus string                `json:"acceptance_status"`
-	SchemaError      string                `json:"schema_error,omitempty"`
-	AdmissionErrors  []string              `json:"admission_errors,omitempty"`
-	MutationGuard    *mutationguard.Result `json:"mutation_guard,omitempty"`
-	WithheldReason   *withheldReason       `json:"withheld_reason,omitempty"`
+	OK                bool                  `json:"ok"`
+	TaskID            string                `json:"task_id"`
+	Tier              string                `json:"tier"`
+	AdmissionOutcome  string                `json:"admission_outcome"`
+	AcceptanceStatus  string                `json:"acceptance_status"`
+	SchemaError       string                `json:"schema_error,omitempty"`
+	AdmissionErrors   []string              `json:"admission_errors,omitempty"`
+	AdmissionNotes    []string              `json:"admission_notes,omitempty"`
+	ProductIntentStatus string              `json:"product_intent_status,omitempty"`
+	MutationGuard     *mutationguard.Result `json:"mutation_guard,omitempty"`
+	WithheldReason    *withheldReason       `json:"withheld_reason,omitempty"`
 }
 
 func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
@@ -512,6 +514,8 @@ func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationgu
 	result.AdmissionOutcome = admResult.Outcome
 	result.AcceptanceStatus = admResult.AcceptanceStatus
 	result.AdmissionErrors = admResult.Errors
+	result.AdmissionNotes = admResult.Notes
+	result.ProductIntentStatus = productIntentStatusFromDoc(doc)
 	result.OK = admResult.Outcome == "success" && admResult.AcceptanceStatus == "accepted" && len(admResult.Errors) == 0
 	result.MutationGuard = mgResult
 
@@ -575,6 +579,9 @@ func renderVerifyResult(result VerifyResult, jsonMode, verbose, strictWithheldRe
 	WriteLine(stdout, "tier: %s", result.Tier)
 	WriteLine(stdout, "outcome: %s", result.AdmissionOutcome)
 	WriteLine(stdout, "acceptance_status: %s", result.AcceptanceStatus)
+	if result.ProductIntentStatus != "" {
+		WriteLine(stdout, "product_intent: %s", result.ProductIntentStatus)
+	}
 	if result.SchemaError != "" {
 		WriteLine(stdout, "schema_error: %s", result.SchemaError)
 	}
@@ -634,4 +641,15 @@ func mapValue(doc map[string]any, key string) map[string]any {
 		}
 	}
 	return nil
+}
+
+// productIntentStatusFromDoc extracts the optional product_intent.status from
+// a card document. Returns the empty string when absent so the JSON field
+// stays omitted and the rendered output stays parity-safe with TS.
+func productIntentStatusFromDoc(doc map[string]any) string {
+	productIntent := mapValue(doc, "product_intent")
+	if productIntent == nil {
+		return ""
+	}
+	return strings.TrimSpace(stringValue(productIntent, "status"))
 }

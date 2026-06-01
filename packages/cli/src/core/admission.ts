@@ -98,6 +98,11 @@ export interface AdmissionInput {
   contextFloor?: boolean;
   // Backward compatibility: subagent-return shape
   subagentReturn?: Record<string, unknown>;
+  // Optional product intent status. Advisory-only; admission acceptance is
+  // not product correctness. When present, the engine emits advisory notes
+  // for missing or "unknown" status on standard/deep tiers. The light tier
+  // remains quiet. aligned/unreviewed/disputed/not_applicable do not block.
+  product_intent?: Record<string, unknown>;
 }
 
 export interface AdmissionResult {
@@ -182,6 +187,42 @@ function evaluateContextFloor(input: AdmissionInput): ContextFloorResult {
   }
 
   return result;
+}
+
+const PRODUCT_INTENT_MISSING_NOTE =
+  "product_intent.status not declared (advisory-only; admission acceptance is not product correctness)";
+const PRODUCT_INTENT_UNKNOWN_NOTE =
+  "product_intent.status is unknown (advisory-only; admission acceptance is not product correctness)";
+
+// evaluateProductIntent emits advisory notes (never errors) for standard and
+// deep tier cards when product_intent.status is missing or set to "unknown".
+// The light tier remains quiet. aligned/unreviewed/disputed/not_applicable do
+// not produce any advisory note. This is the first vertical slice; it never
+// blocks admission. Wording is parity-safe with the Go implementation in
+// internal/admission/product_intent.go and the policy documentation in
+// policies/admission.yaml.
+function evaluateProductIntent(input: AdmissionInput): string[] {
+  const notes: string[] = [];
+  if (input.tier !== "standard" && input.tier !== "deep") {
+    return notes;
+  }
+
+  const productIntent = input.product_intent;
+  if (productIntent == null) {
+    notes.push(PRODUCT_INTENT_MISSING_NOTE);
+    return notes;
+  }
+
+  const statusRaw = productIntent.status;
+  const status = typeof statusRaw === "string" ? statusRaw.trim() : "";
+  if (status === "") {
+    notes.push(PRODUCT_INTENT_MISSING_NOTE);
+    return notes;
+  }
+  if (status === "unknown") {
+    notes.push(PRODUCT_INTENT_UNKNOWN_NOTE);
+  }
+  return notes;
 }
 
 export function runAdmission(input: AdmissionInput): AdmissionResult {
@@ -297,6 +338,9 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
       applyFinding({ message: errMsg, predicate: "context_floor_blocked" });
     }
   }
+
+  // Product intent advisory (optional; never blocks admission)
+  notes.push(...evaluateProductIntent(input));
 
   // Governance / human approval check for deep
   if (input.tier === "deep" && governance) {

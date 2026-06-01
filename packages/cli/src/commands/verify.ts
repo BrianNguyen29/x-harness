@@ -32,6 +32,7 @@ function renderJson(result: VerifyPipelineResult): void {
           ? `sha256:${result.inputCardHash}`
           : null,
         policy_hash: result.policyHash ? `sha256:${result.policyHash}` : null,
+        product_intent_status: productIntentStatusFromCard(result.card),
         strict: result.strict,
         changed_files: result.changedFiles
           ? {
@@ -81,6 +82,10 @@ function renderVerbose(result: VerifyPipelineResult): void {
   console.log(`Verification: ${cardVerification}`);
   console.log(`Admission: ${cardAdmission}`);
   console.log(`Acceptance: ${result.finalAcceptance}`);
+  const intentStatus = productIntentStatusFromCard(result.card);
+  if (intentStatus) {
+    console.log(`Product intent: ${intentStatus}`);
+  }
   console.log(
     `Result: ${
       result.errors.length === 0 && result.finalOutcome === "success"
@@ -115,12 +120,30 @@ function renderQuiet(result: VerifyPipelineResult): void {
       n.includes("valid") || n.includes("passed") || n.includes("checks passed")
   ).length;
   const failedChecks = result.errors.length;
+  const intentStatus = productIntentStatusFromCard(result.card);
   console.log(`outcome: ${result.finalOutcome}`);
   console.log(`acceptance_status: ${result.finalAcceptance}`);
+  if (intentStatus) {
+    console.log(`product_intent: ${intentStatus}`);
+  }
   console.log(`checks: ${passedChecks} passed, ${failedChecks} failed`);
   if (result.episode) {
     console.log(`episode: ${result.episode.episode_dir}`);
   }
+}
+
+function productIntentStatusFromCard(
+  card?: Record<string, unknown>
+): string | null {
+  if (card == null) return null;
+  const productIntent = card.product_intent as
+    | Record<string, unknown>
+    | undefined;
+  if (productIntent == null) return null;
+  const status = productIntent.status;
+  if (typeof status !== "string") return null;
+  const trimmed = status.trim();
+  return trimmed === "" ? null : trimmed;
 }
 
 function renderResult(result: VerifyPipelineResult, opts: VerifyOptions): void {

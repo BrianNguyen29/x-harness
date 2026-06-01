@@ -104,3 +104,27 @@ withheld_requires:
   handoff:
     next_action: present
     owner: present
+
+# Advisory-only product intent status. Never blocks admission in the first slice.
+# Emission rules:
+#   - standard/deep missing product_intent.status -> advisory note
+#   - standard/deep product_intent.status == "unknown" -> advisory note
+#   - light tier -> no note (advisory remains quiet)
+#   - aligned / unreviewed / disputed / not_applicable -> no special note
+# The note wording makes it explicit that admission acceptance is not product
+# correctness; follow-up slices may add blocking intent gates.
+advisory_intent:
+  product_intent_status:
+    - aligned
+    - unreviewed
+    - disputed
+    - unknown
+    - not_applicable
+  missing_note: "product_intent.status not declared (advisory-only; admission acceptance is not product correctness)"
+  unknown_note: "product_intent.status is unknown (advisory-only; admission acceptance is not product correctness)"
+  emit_for_tiers:
+    - standard
+    - deep
+  quiet_for_tiers:
+    - light
+  blocks_admission: false
