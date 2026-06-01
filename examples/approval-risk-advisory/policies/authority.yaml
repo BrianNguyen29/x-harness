@@ -1,0 +1,38 @@
+version: 1
+
+# Local authority policy for the standalone approval-risk-advisory example.
+# The completion card claims a change to `examples/approval-risk-advisory/sample-protected.yaml`
+# which is classified as `human_only` here so the approval-risk engine emits
+# the `human_only_path` signal (and, because no governance approval is
+# declared, the `missing_governance_approval` signal) without touching the
+# repository's real protected-path set.
+authority_classes:
+  agent_editable:
+    description: "Files agents can freely modify"
+    examples: []
+  agent_proposable_human_approved:
+    description: "Files agents may propose changes to, but require human approval"
+    examples: []
+  human_only:
+    description: "Files only humans may directly modify"
+    examples: []
+
+protected_paths:
+  - path: "examples/approval-risk-advisory/sample-protected.yaml"
+    authority: human_only
+    rationale: "Example-only path demonstrating the human_only classification"
+
+  - path: "examples/approval-risk-advisory/policies/authority.yaml"
+    authority: human_only
+    rationale: "Example-only authority policy is treated as human-only for demonstration"
+
+  - path: "examples/approval-risk-advisory/policies/approval-risk.yaml"
+    authority: human_only
+    rationale: "Example-only approval-risk policy is treated as human-only for demonstration"
+
+report_only: true
+
+governance_check:
+  behavior: warn
+  exit_on_warnings: false
+  block_on_violations: false

@@ -1,0 +1,6 @@
+# Sample protected file (example-only)
+
+This file exists only to give the example a concrete artifact matching the
+local `human_only` protected-path pattern. It is not consumed by x-harness
+and is purely a documentation marker for the `files_changed` path declared
+in `completion-card.yaml`.

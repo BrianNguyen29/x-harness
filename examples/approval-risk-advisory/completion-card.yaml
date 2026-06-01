@@ -1,0 +1,81 @@
+schema_version: "1"
+task_id: TASK-APPROVAL-RISK-ADVISORY-EXAMPLE-001
+tier: standard
+owner: alice
+accountable: bob
+context_acknowledged: true
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - README.md
+  architecture_refs: []
+  decision_refs: []
+  test_matrix_refs: []
+  unresolved_context_questions: []
+  context_evidence: []
+state:
+  read_set:
+    - README.md
+  write_set:
+    - sample-protected.yaml
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Approval-risk advisory note appears with a non-zero risk class
+  expected_effect: >-
+    Verify emits the canonical approval-risk advisory note alongside an
+    accepted outcome
+  measurable_signal: >-
+    output.checks contains a note starting with
+    'approval-risk advisory: score=' and risk_class is one of
+    moderate, elevated, or critical
+  falsification_method: >-
+    Disable the local approval-risk policy (set enabled false) and confirm
+    the note is absent
+  horizon: same_verify
+evidence:
+  files_changed:
+    - examples/approval-risk-advisory/sample-protected.yaml
+  command_evidence:
+    - command: "cat README.md"
+      exit_code: 0
+      runner: alice
+  manual_rationale: >-
+    Example-only fixture. The approval-risk engine evaluates the card
+    against the local enabled policy and the local authority policy that
+    classifies sample-protected.yaml as human_only.
+  verification_artifacts:
+    - kind: unit_test
+      command: "cat README.md"
+      status: passed
+      verifies:
+        - "example README is readable"
+      does_not_verify:
+        - "production policy is enabled (it is not)"
+      confidence: high
+claim:
+  fix_status: fixed
+  summary: "Standalone example demonstrating the approval-risk advisory note with a locally enabled policy"
+  evidence:
+    - description: Local policies enabled
+      result: passed
+    - description: "Expected note pattern: approval-risk advisory: score=<n> risk_class=<class> signals=[...] required_approvals=<n>"
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
