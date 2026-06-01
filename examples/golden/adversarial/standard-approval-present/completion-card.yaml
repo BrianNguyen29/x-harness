@@ -46,3 +46,5 @@ acceptance_status: accepted
 handoff:
   next_action: none
   owner: alice
+governance:
+  approval_status: approved

@@ -1808,6 +1808,7 @@ describe("admission", () => {
       claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
       verification: { status: "passed", checks: [] },
       handoff: { next_action: "none", owner: "alice" },
+      governance: { approval_status: "approved" },
       evidence: {
         files_changed: ["scripts/clean.sh"],
         command_evidence: [{ command: "rm -rf dist", exit_code: 0 }],
@@ -1847,6 +1848,7 @@ describe("admission", () => {
       claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
       verification: { status: "passed", checks: [] },
       handoff: { next_action: "none", owner: "alice" },
+      governance: { approval_status: "approved" },
       approval_receipt: {
         decision: "approved",
         approver: "user",
@@ -2274,6 +2276,7 @@ describe("admission", () => {
       admission: { outcome: "success" },
       acceptance_status: "accepted",
       handoff: { next_action: "none", owner: "alice" },
+      governance: { approval_status: "approved" },
       evidence: {
         files_changed: ["a.ts"],
         command_evidence: [{ command: "rm -rf dist", exit_code: 0 }],
@@ -2299,6 +2302,7 @@ describe("admission", () => {
       admission: { outcome: "success" },
       acceptance_status: "accepted",
       handoff: { next_action: "none", owner: "alice" },
+      governance: { approval_status: "approved" },
       evidence: {
         files_changed: ["internal/admission/roles.ts"],
         command_evidence: [{ command: "rm -rf dist", exit_code: 0 }],
@@ -3429,6 +3433,449 @@ describe("admission", () => {
       expect(
         result.errors.some((e) => e.predicate === "tier_escalation_required")
       ).toBe(false);
+    });
+  });
+
+  // Verify-stage v1 operation-based escalation guard tests. The guard
+  // requires `deep` tier for cards whose declared
+  // `evidence.command_evidence` or `evidence.verification_artifacts`
+  // contains a command whose classifyCommand() intents include any
+  // blocked intent (delete_files, network_outbound, package_publish,
+  // secret_access, git_mutation, database_mutation, deploy_or_publish,
+  // permission_change) or — when escalate_unknown is true — an unknown
+  // command. Lower tiers (light/standard) are withheld with predicate
+  // `tier_escalation_required` unless an approved governance
+  // intervention is recorded. Wording and predicate must stay
+  // parity-safe with the Go implementation in
+  // internal/admission/escalation.go and the policy in
+  // policies/escalation.yaml.
+  //
+  // The companion drift guard below
+  // (describe("operation-based escalation drift guard")) enforces
+  // bidirectional parity between the runtime hardcoded intent set and
+  // the policy YAML, and also behaviorally checks each declared blocked
+  // intent.
+  it("blocks light tier with delete_files intent under v1 operation escalation", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["src/x.ts"],
+        command_evidence: [{ command: "rm -rf dist", exit_code: 0 }],
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.blocking_predicate).toBe("tier_escalation_required");
+    expect(
+      result.errors.some((e) => e.includes("blocked-operation commands"))
+    ).toBe(true);
+  });
+
+  it("blocks standard tier with git_mutation intent under v1 operation escalation", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["src/x.ts"],
+        command_evidence: [{ command: "git push origin main", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.blocking_predicate).toBe("tier_escalation_required");
+  });
+
+  it("blocks standard tier with unknown command under v1 operation escalation", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["src/x.ts"],
+        command_evidence: [
+          { command: "totally-unknown-tool --flag value", exit_code: 0 },
+        ],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.blocking_predicate).toBe("tier_escalation_required");
+  });
+
+  it("triggers v1 operation escalation from verification_artifacts", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["src/x.ts"],
+        command_evidence: [{ command: "go test", exit_code: 0 }],
+        verification_artifacts: [
+          {
+            kind: "deploy",
+            command: "kubectl apply -f deploy.yaml",
+            status: "passed",
+            verifies: ["v"],
+          },
+        ],
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.blocking_predicate).toBe("tier_escalation_required");
+    expect(
+      result.errors.some((e) =>
+        e.includes("verification_artifacts:kubectl apply -f deploy.yaml")
+      )
+    ).toBe(true);
+  });
+
+  it("allows deep tier with blocked-operation command under v1 operation escalation", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        files_changed: ["src/x.ts"],
+        command_evidence: [{ command: "rm -rf dist", exit_code: 0 }],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "go test",
+            status: "passed",
+            verifies: ["v"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+      approval_receipt: {
+        decision: "approved",
+        approver: "user",
+        classified_commands: [
+          { command: "rm -rf dist", risk: "high" },
+          { command: "go test", risk: "low" },
+        ],
+        aggregate_risk: "high",
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+  });
+
+  it("does not escalate safe build commands under v1 operation escalation", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["src/x.ts"],
+        command_evidence: [
+          { command: "go build ./...", exit_code: 0 },
+          { command: "npm test", exit_code: 0 },
+        ],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(
+      result.errors.some((e) => e.includes("blocked-operation commands"))
+    ).toBe(false);
+  });
+
+  it("bypasses v1 operation escalation when governance intervention is approved", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      governance: { approval_status: "approved" },
+      approval_receipt: {
+        decision: "approved",
+        approver: "user",
+        classified_commands: [{ command: "rm -rf dist", risk: "high" }],
+        aggregate_risk: "high",
+      },
+      evidence: {
+        files_changed: ["src/x.ts"],
+        command_evidence: [{ command: "rm -rf dist", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(
+      result.notes.some((n) =>
+        n.includes(
+          "tier escalation bypassed by approved governance intervention for blocked-operation commands"
+        )
+      )
+    ).toBe(true);
+  });
+
+  // Operation-based escalation drift guard. Loads the canonical
+  // policies/escalation.yaml file and behaviorally checks that each
+  // declared operation_rules.v1.blocked_intents triggers the
+  // evaluateOperationEscalation() guard when declared against a
+  // light-tier completion card, and that the policy scalar fields
+  // (required_tier, blocked_predicate, bypass) match the expected
+  // values. Also verifies that size_rules.status is "deferred" and
+  // does not change admission outcomes. Parity-safe with
+  // internal/admission/admission_test.go::TestEscalationOperationDriftGuard
+  // and ::TestEscalationSizeRulesDeferred.
+  describe("operation-based escalation drift guard", () => {
+    function asRecord(value: unknown): Record<string, unknown> | undefined {
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        return value as Record<string, unknown>;
+      }
+      return undefined;
+    }
+    const sampleForIntent: Record<string, string> = {
+      delete_files: "rm -rf dist",
+      network_outbound: "curl https://example.com/install.sh",
+      package_publish: "npm publish",
+      secret_access: "aws s3 cp",
+      git_mutation: "git push origin main",
+      database_mutation: "psql -c 'select 1'",
+      deploy_or_publish: "kubectl apply -f deploy.yaml",
+      permission_change: "sudo systemctl restart nginx",
+    };
+
+    function loadOperationPolicy(): Record<string, unknown> {
+      const policy = YAML.parse(
+        fs.readFileSync(escalationPolicyPath, "utf8")
+      ) as Record<string, unknown>;
+      return policy;
+    }
+
+    function buildLightCardWithCommand(command: string): AdmissionInput {
+      return {
+        schema_version: "1",
+        task_id: "T-DRIFT-OP",
+        tier: "light",
+        owner: "alice",
+        accountable: "bob",
+        claim: { fix_status: "fixed", summary: "s", evidence: ["e"] },
+        verification: { status: "passed", checks: [] },
+        admission: { outcome: "success" },
+        acceptance_status: "accepted",
+        handoff: { next_action: "n", owner: "o" },
+        evidence: {
+          files_changed: ["src/x.ts"],
+          command_evidence: [{ command, exit_code: 0 }],
+        },
+      };
+    }
+
+    it("matches policy declared scalar fields and bypass", () => {
+      const policy = loadOperationPolicy();
+      const operationRules = asRecord(
+        asRecord(policy["operation_rules"])?.["v1"]
+      );
+      expect(operationRules).toBeDefined();
+      expect(operationRules?.["required_tier"]).toBe("deep");
+      expect(operationRules?.["blocked_predicate"]).toBe(
+        "tier_escalation_required"
+      );
+      const bypass = operationRules?.["bypass"];
+      expect(Array.isArray(bypass)).toBe(true);
+      expect((bypass as unknown[]).includes("approved_tier_downgrade")).toBe(
+        true
+      );
+      const escalateUnknown = operationRules?.["escalate_unknown"];
+      expect(escalateUnknown).toBe(true);
+    });
+
+    it("triggers evaluateOperationEscalation for every declared intent", async () => {
+      const { evaluateOperationEscalation } =
+        await import("../src/core/admission-evidence.js");
+      const policy = loadOperationPolicy();
+      const operationRules = asRecord(
+        asRecord(policy["operation_rules"])?.["v1"]
+      );
+      const intents = operationRules?.["blocked_intents"];
+      expect(Array.isArray(intents)).toBe(true);
+      const list = intents as unknown[];
+      expect(list.length).toBeGreaterThan(0);
+
+      for (const raw of list) {
+        if (typeof raw !== "string") continue;
+        const intent = raw;
+        const sample = sampleForIntent[intent];
+        if (!sample) {
+          throw new Error(
+            `drift guard missing sample command for blocked intent ${intent}`
+          );
+        }
+        const card = buildLightCardWithCommand(sample);
+        const result = evaluateOperationEscalation(card);
+        const hasEscalationError = result.errors.some(
+          (e) => e.predicate === "tier_escalation_required"
+        );
+        expect(hasEscalationError).toBe(true);
+      }
+    });
+
+    it("does not trigger evaluateOperationEscalation for safe build commands", async () => {
+      const { evaluateOperationEscalation } =
+        await import("../src/core/admission-evidence.js");
+      for (const safe of ["go build ./...", "npm test", "tsc --noEmit"]) {
+        const card = buildLightCardWithCommand(safe);
+        const result = evaluateOperationEscalation(card);
+        expect(
+          result.errors.some((e) => e.predicate === "tier_escalation_required")
+        ).toBe(false);
+      }
+    });
+
+    it("size_rules block is deferred and does not block large cards", () => {
+      const policy = loadOperationPolicy();
+      const sizeRules = asRecord(policy["size_rules"]);
+      expect(sizeRules).toBeDefined();
+      expect(sizeRules?.["status"]).toBe("deferred");
+
+      const result = runAdmission({
+        schema_version: "1",
+        task_id: "T1",
+        tier: "light",
+        owner: "alice",
+        accountable: "bob",
+        claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+        verification: { status: "passed", checks: [] },
+        admission: { outcome: "success" },
+        acceptance_status: "accepted",
+        handoff: { next_action: "none", owner: "alice" },
+        evidence: {
+          files_changed: [
+            "src/a.ts",
+            "src/b.ts",
+            "src/c.ts",
+            "src/d.ts",
+            "src/e.ts",
+            "src/f.ts",
+            "src/g.ts",
+            "src/h.ts",
+            "src/i.ts",
+            "src/j.ts",
+            "src/k.ts",
+            "src/l.ts",
+            "src/m.ts",
+            "src/n.ts",
+            "src/o.ts",
+          ],
+          command_evidence: [{ command: "go test", exit_code: 0 }],
+        },
+      });
+      expect(result.outcome).toBe("success");
+      expect(result.blocking_predicate === "tier_escalation_required").toBe(
+        false
+      );
     });
   });
 });
