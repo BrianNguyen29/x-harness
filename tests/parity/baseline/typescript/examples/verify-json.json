@@ -112,7 +112,8 @@
     {
       "acceptance_status": "withheld",
       "errors": [
-        "intake tier downgrade requires governance intervention approval: declared light, mapped deep"
+        "intake tier downgrade requires governance intervention approval: declared light, mapped deep",
+        "tier escalation required: light tier declared with high-risk files [\"src/auth/session.ts\"]; required tier is deep (or an approved governance intervention must be recorded)"
       ],
       "name": "regression/blocked-tier-downgrade",
       "outcome": "failed",

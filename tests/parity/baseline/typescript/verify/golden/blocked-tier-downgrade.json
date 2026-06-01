@@ -36,6 +36,12 @@
       "note": "intake tier downgrade requires governance intervention approval: declared light, mapped deep",
       "severity": "error",
       "status": "failed"
+    },
+    {
+      "name": "tier escalation required",
+      "note": "tier escalation required: light tier declared with high-risk files [\"src/auth/session.ts\"]; required tier is deep (or an approved governance intervention must be recorded)",
+      "severity": "error",
+      "status": "failed"
     }
   ],
   "decision": {
@@ -56,5 +62,5 @@
   "schema_version": 1,
   "strict": false,
   "task_id": "TASK-GOLDEN-TIER-DOWNGRADE-001",
-  "withheld_reason": "intake tier downgrade requires governance intervention approval: declared light, mapped deep"
+  "withheld_reason": "intake tier downgrade requires governance intervention approval: declared light, mapped deep; tier escalation required: light tier declared with high-risk files [\"src/auth/session.ts\"]; required tier is deep (or an approved governance intervention must be recorded)"
 }

@@ -37,6 +37,13 @@ func buildTaxonomy(predicate string) *FailureTaxonomy {
 			Recoverability: "retry_with_fixes",
 			NextAction:     "review_and_resubmit",
 		}
+	case "tier_escalation_required":
+		return &FailureTaxonomy{
+			FailureClass:   "tier_under_escalated",
+			FailureStage:   "verify_pipeline",
+			Recoverability: "raise_tier",
+			NextAction:     "raise_tier_to_deep",
+		}
 	case "contract_oracle_blocked":
 		return &FailureTaxonomy{
 			FailureClass:   "contract_mismatch",

@@ -2287,7 +2287,7 @@ describe("admission", () => {
       acceptance_status: "accepted",
       handoff: { next_action: "none", owner: "alice" },
       evidence: {
-        files_changed: ["policies/admission.yaml"],
+        files_changed: ["internal/admission/roles.ts"],
         command_evidence: [{ command: "rm -rf dist", exit_code: 0 }],
       },
       approval_receipt: {
@@ -2368,6 +2368,245 @@ describe("admission", () => {
     });
     expect(result.outcome).toBe("success");
     expect(result.acceptance_status).toBe("accepted");
+  });
+
+  // Verify-stage v1 auto-escalation guard tests. Wording and predicate
+  // must stay parity-safe with the Go implementation in
+  // internal/admission/escalation.go and the policy in
+  // policies/escalation.yaml.
+  it("blocks light tier with policy path under v1 escalation", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["policies/admission.yaml"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.blocking_predicate).toBe("tier_escalation_required");
+    expect(
+      result.errors.some((e) => e.includes("tier escalation required"))
+    ).toBe(true);
+  });
+
+  it("blocks standard tier with auth path under v1 escalation", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["src/auth/session.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.blocking_predicate).toBe("tier_escalation_required");
+  });
+
+  it("allows deep tier with schema path under v1 escalation", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        files_changed: ["schemas/completion-card.schema.json"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+  });
+
+  it("does not escalate safe docs-only light cards", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["docs/readme.md"],
+        manual_rationale: "doc tweak",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(
+      result.errors.some((e) => e.includes("tier escalation required"))
+    ).toBe(false);
+  });
+
+  it("bypasses v1 escalation when governance intervention is approved", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["policies/admission.yaml"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      governance: {
+        requires_human_approval: true,
+        approval_status: "approved",
+        approver: "maintainer",
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(
+      result.notes.some((n) =>
+        n.includes(
+          "tier escalation bypassed by approved governance intervention"
+        )
+      )
+    ).toBe(true);
+  });
+
+  it("blocks standard tier with .github/workflows path under v1 escalation", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: [".github/workflows/x-harness-verify.yml"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.blocking_predicate).toBe("tier_escalation_required");
+  });
+
+  it("blocks light tier with migrations path under v1 escalation", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["migrations/0001_init.sql"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.blocking_predicate).toBe("tier_escalation_required");
   });
 
   // Context floor tests

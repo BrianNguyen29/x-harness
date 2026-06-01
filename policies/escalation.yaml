@@ -1,4 +1,33 @@
 version: 1
+
+# Deep escalation diagnostic-first routing (advisory-only).
 deep_escalation:
   required_path: diagnostic_first
   allowed_targets: [oracle, council, user]
+
+# v1 verify-stage auto-escalation guard.
+# When a completion card declares evidence.files_changed that touches
+# high-risk governance surfaces, the card must be declared as `deep`.
+# Lower tiers (light/standard) are withheld with predicate
+# `tier_escalation_required` unless an approved governance intervention
+# has been recorded (same bypass used by the intake tier-downgrade check).
+#
+# Scope (v1): declared files_changed only. No actual git diff / worktree
+# analysis is performed; later slices may tighten this.
+#
+# Wording is parity-safe with:
+#   - internal/admission/escalation.go
+#   - packages/cli/src/core/admission-evidence.ts
+verify_stage_escalation:
+  v1:
+    required_tier: deep
+    high_risk_path_patterns:
+      - "schemas/"
+      - "policies/"
+      - ".github/workflows/"
+      - "authority"
+      - "auth"
+      - "migrations/"
+    bypass:
+      - approved_tier_downgrade
+    blocked_predicate: tier_escalation_required
