@@ -2872,3 +2872,367 @@ handoff:
 		t.Fatalf("expected ok for light tier advisory context floor, got outcome=%s status=%s", result.AdmissionOutcome, result.AcceptanceStatus)
 	}
 }
+
+// setupVerifyApprovalRiskTestDir creates a temp root with an enabled
+// approval-risk policy/authority/schema so verify can evaluate the engine
+// against an arbitrary card. Mirrors helpers used in
+// internal/approvalrisk/risk_test.go.
+func setupVerifyApprovalRiskTestDir(t *testing.T, enabled bool) string {
+	t.Helper()
+	tmpDir := t.TempDir()
+	policiesDir := filepath.Join(tmpDir, "policies")
+	schemasDir := filepath.Join(tmpDir, "schemas")
+	if err := os.MkdirAll(policiesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(schemasDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	enabledStr := "false"
+	if enabled {
+		enabledStr = "true"
+	}
+	approvalRiskContent := `version: 1
+approval_risk:
+  enabled: ` + enabledStr + `
+  personal_scoring: false
+  thresholds:
+    moderate: 20
+    elevated: 40
+    critical: 70
+  required_approvals:
+    low: 0
+    moderate: 1
+    elevated: 1
+    critical: 2
+  signals:
+    deep_tier: 25
+    human_only_path: 35
+    human_approved_path: 20
+    security_sensitive_path: 20
+    missing_governance_approval: 15
+`
+	if err := os.WriteFile(filepath.Join(policiesDir, "approval-risk.yaml"), []byte(approvalRiskContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	authorityContent := `version: 1
+authority_classes:
+  agent_editable:
+    description: "Files agents can freely modify"
+    examples: []
+  agent_proposable_human_approved:
+    description: "Files agents may propose changes to, but require human approval"
+    examples: []
+  human_only:
+    description: "Files only humans may directly modify"
+    examples: []
+protected_paths:
+  - path: "schemas/**"
+    authority: human_only
+    rationale: "Schema definitions are authoritative contracts"
+  - path: "policies/admission.yaml"
+    authority: human_only
+    rationale: "Admission policy defines success criteria"
+  - path: "policies/recovery.yaml"
+    authority: agent_proposable_human_approved
+    rationale: "Recovery routing may be updated by agents with human approval"
+report_only: true
+governance_check:
+  behavior: warn
+  exit_on_warnings: false
+  block_on_violations: false
+`
+	if err := os.WriteFile(filepath.Join(policiesDir, "authority.yaml"), []byte(authorityContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaContent := `{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "approval-risk",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "task_id",
+    "risk_class",
+    "score",
+    "signals",
+    "required_approvals",
+    "personal_scoring",
+    "policy_enabled",
+    "admission_authority"
+  ],
+  "properties": {
+    "schema_version": { "const": "1" },
+    "task_id": { "type": "string", "minLength": 1 },
+    "tier": { "enum": ["light", "standard", "deep"] },
+    "risk_class": { "enum": ["low", "moderate", "elevated", "critical"] },
+    "score": { "type": "integer", "minimum": 0 },
+    "signals": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "required_approvals": { "type": "integer", "minimum": 0 },
+    "personal_scoring": { "const": false },
+    "policy_enabled": { "type": "boolean" },
+    "admission_authority": { "const": false }
+  },
+  "additionalProperties": false
+}
+`
+	if err := os.WriteFile(filepath.Join(schemasDir, "approval-risk.schema.json"), []byte(schemaContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	return tmpDir
+}
+
+func TestVerifyEmitsApprovalRiskAdvisoryWhenEnabled(t *testing.T) {
+	tmpDir := setupVerifyApprovalRiskTestDir(t, true)
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Deep-tier card referencing a human_only path. The file path does not
+	// match the v1 verify-stage high-risk patterns, so the card is not
+	// escalated, and the deep tier satisfies all deep-tier admission
+	// requirements. Approval-risk engine evaluates the human_only file and
+	// returns a non-zero risk score when the policy is enabled.
+	cardYAML := `schema_version: "1"
+task_id: TASK-APPROVAL-RISK-ADVISORY-001
+tier: deep
+owner: alice
+accountable: bob
+context_acknowledged: true
+state:
+  read_set:
+    - src/main.go
+  write_set:
+    - packages/cli/src/core/admission.ts
+evidence:
+  files_changed:
+    - packages/cli/src/core/admission.ts
+  command_evidence:
+    - command: go test ./...
+      exit_code: 0
+  verification_artifacts:
+    - kind: unit_test
+      command: go test ./...
+      status: passed
+      verifies:
+        - "basic functionality"
+      does_not_verify:
+        - "edge cases"
+      confidence: medium
+  untested_regions:
+    - "No integration tests."
+  remaining_risks:
+    - "May fail in production."
+  rollback_policy:
+    - "Revert commit."
+  execution_controls:
+    - "Deploy behind feature flag."
+context_alignment:
+  stale_ground_checked: true
+  context_pack_id: "ctx-approval-risk-advisory-001"
+  product_contract_refs:
+    - "README.md"
+  architecture_refs: []
+  decision_refs: []
+  test_matrix_refs: []
+  unresolved_context_questions: []
+  context_evidence: []
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Approval-risk advisory integration
+  expected_effect: Verify emits an approval-risk advisory note when policy is enabled
+  measurable_signal: admission_notes contains approval-risk advisory
+  falsification_method: Disable policy and confirm note is absent
+  horizon: same_verify
+claim:
+  fix_status: fixed
+  summary: Wired approval-risk engine into verify pipeline
+  evidence:
+    - description: Source change
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+	cardPath := filepath.Join(tmpDir, "completion-card.yaml")
+	if err := os.WriteFile(cardPath, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("# Product\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Copy completion card schema so schema validation passes
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if !result.OK {
+		t.Fatalf("expected ok, got outcome=%s status=%s", result.AdmissionOutcome, result.AcceptanceStatus)
+	}
+	if result.AdmissionOutcome != "success" {
+		t.Fatalf("expected admission_outcome=success, got %s", result.AdmissionOutcome)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected acceptance_status=accepted, got %s", result.AcceptanceStatus)
+	}
+	if result.WithheldReason != nil {
+		t.Fatalf("expected no withheld_reason, got %+v", result.WithheldReason)
+	}
+
+	foundNote := false
+	for _, n := range result.AdmissionNotes {
+		if strings.Contains(n, "approval-risk advisory:") &&
+			strings.Contains(n, "risk_class=") &&
+			strings.Contains(n, "signals=[") &&
+			strings.Contains(n, "required_approvals=") {
+			foundNote = true
+			break
+		}
+	}
+	if !foundNote {
+		t.Fatalf("expected approval-risk advisory note in AdmissionNotes, got %v", result.AdmissionNotes)
+	}
+}
+
+func TestVerifyNoApprovalRiskAdvisoryWhenDisabled(t *testing.T) {
+	tmpDir := setupVerifyApprovalRiskTestDir(t, false)
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cardYAML := `schema_version: "1"
+task_id: TASK-APPROVAL-RISK-DISABLED-001
+tier: light
+owner: alice
+accountable: bob
+context_acknowledged: true
+evidence:
+  files_changed:
+    - src/formatDate.ts
+  manual_rationale: Default-disabled policy should not emit approval-risk note
+claim:
+  fix_status: fixed
+  summary: No advisory note when policy disabled
+  evidence:
+    - description: Source change
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+	cardPath := filepath.Join(tmpDir, "completion-card.yaml")
+	if err := os.WriteFile(cardPath, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if !result.OK {
+		t.Fatalf("expected ok, got outcome=%s status=%s", result.AdmissionOutcome, result.AcceptanceStatus)
+	}
+	for _, n := range result.AdmissionNotes {
+		if strings.Contains(n, "approval-risk advisory:") {
+			t.Fatalf("did not expect approval-risk advisory note, got %v", result.AdmissionNotes)
+		}
+	}
+}
