@@ -1,5 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { runAdmission, acceptanceStatus } from "../src/core/admission.js";
+import * as path from "node:path";
+import * as fs from "node:fs";
+import { fileURLToPath } from "node:url";
+import * as YAML from "yaml";
+import {
+  runAdmission,
+  acceptanceStatus,
+  type AdmissionInput,
+} from "../src/core/admission.js";
+import { evaluateEscalation } from "../src/core/admission-evidence.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(path.join(__dirname, "..", "..", ".."));
+const escalationPolicyPath = path.join(repoRoot, "policies", "escalation.yaml");
 
 describe("admission", () => {
   it("accepts success outcome", () => {
@@ -3326,5 +3339,96 @@ describe("admission", () => {
     expect(
       result.notes.some((n) => n.includes("product_intent.status not declared"))
     ).toBe(true);
+  });
+
+  // Verify-stage v1 auto-escalation drift guard. Loads the canonical
+  // policies/escalation.yaml file and behaviorally checks that each
+  // declared high_risk_path_pattern triggers the TypeScript
+  // evaluateEscalation() guard when declared against a light-tier
+  // completion card, and that the policy scalar fields (required_tier,
+  // blocked_predicate, bypass) match the expected values. Parity-safe
+  // with internal/admission/admission_test.go::TestEscalationDriftGuard.
+  describe("verify-stage escalation drift guard", () => {
+    function loadEscalationPolicy(): Record<string, unknown> {
+      const raw = fs.readFileSync(escalationPolicyPath, "utf8");
+      return YAML.parse(raw) as Record<string, unknown>;
+    }
+
+    function asRecord(value: unknown): Record<string, unknown> | undefined {
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        return value as Record<string, unknown>;
+      }
+      return undefined;
+    }
+
+    function buildLightCardWithFile(filePath: string): AdmissionInput {
+      return {
+        schema_version: "1",
+        task_id: "T-DRIFT",
+        tier: "light",
+        owner: "alice",
+        accountable: "bob",
+        claim: { fix_status: "fixed", summary: "s", evidence: ["e"] },
+        verification: { status: "passed", checks: [] },
+        admission: { outcome: "success" },
+        acceptance_status: "accepted",
+        handoff: { next_action: "n", owner: "o" },
+        evidence: {
+          files_changed: [filePath],
+          command_evidence: [{ command: "npm test", exit_code: 0 }],
+        },
+      };
+    }
+
+    it("matches policy declared scalar fields and bypass", () => {
+      const policy = loadEscalationPolicy();
+      const verifyStage = asRecord(
+        asRecord(policy["verify_stage_escalation"])?.["v1"]
+      );
+      expect(verifyStage).toBeDefined();
+      expect(verifyStage?.["required_tier"]).toBe("deep");
+      expect(verifyStage?.["blocked_predicate"]).toBe(
+        "tier_escalation_required"
+      );
+      const bypass = verifyStage?.["bypass"];
+      expect(Array.isArray(bypass)).toBe(true);
+      expect((bypass as unknown[]).includes("approved_tier_downgrade")).toBe(
+        true
+      );
+    });
+
+    it("triggers evaluateEscalation for every declared pattern", () => {
+      const policy = loadEscalationPolicy();
+      const verifyStage = asRecord(
+        asRecord(policy["verify_stage_escalation"])?.["v1"]
+      );
+      const patterns = verifyStage?.["high_risk_path_patterns"];
+      expect(Array.isArray(patterns)).toBe(true);
+      const list = patterns as unknown[];
+      expect(list.length).toBeGreaterThan(0);
+
+      for (const raw of list) {
+        if (typeof raw !== "string") continue;
+        const pattern = raw;
+        const lower = pattern.toLowerCase();
+        const sample = lower.endsWith("/")
+          ? `${pattern}drift-guard.ts`
+          : `${pattern}/drift-guard.ts`;
+        const card = buildLightCardWithFile(sample);
+        const result = evaluateEscalation(card);
+        const hasEscalationError = result.errors.some(
+          (e) => e.predicate === "tier_escalation_required"
+        );
+        expect(hasEscalationError).toBe(true);
+      }
+    });
+
+    it("does not trigger evaluateEscalation for safe docs path", () => {
+      const card = buildLightCardWithFile("docs/readme.md");
+      const result = evaluateEscalation(card);
+      expect(
+        result.errors.some((e) => e.predicate === "tier_escalation_required")
+      ).toBe(false);
+    });
   });
 });
