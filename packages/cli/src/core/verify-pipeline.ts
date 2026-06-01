@@ -16,8 +16,33 @@ import type { EpisodeCreateResult } from "./episode.js";
 import { loadVerifySources } from "./verify-source-loader.js";
 import { buildAdmissionInput } from "./verify-admission-input.js";
 import { runVerifyGovernance } from "./verify-governance.js";
+import { evaluateApprovalRisk } from "./approval-risk.js";
 
 export { VerifyInputError } from "./verify-source-loader.js";
+
+// buildApprovalRiskAdvisoryNote evaluates the approval-risk engine against a
+// completion card and produces the canonical advisory note string. Strictly
+// read-only; never alters ok, admission.outcome, acceptance_status, errors,
+// blocking_predicate, or admission_authority. Returns null when the policy is
+// disabled, the card cannot be evaluated, or the engine is unavailable. Note
+// wording is parity-safe with the Go implementation in
+// internal/cli/verify.go.
+async function buildApprovalRiskAdvisoryNote(
+  root: string,
+  cardPath: string
+): Promise<string | null> {
+  if (cardPath === "") return null;
+  let report;
+  try {
+    report = await evaluateApprovalRisk({ root, cardPath });
+  } catch {
+    // Advisory-only: skip silently on evaluation errors so the verify
+    // pipeline never fails because approval-risk is unavailable.
+    return null;
+  }
+  if (!report.policy_enabled) return null;
+  return `approval-risk advisory: score=${report.score} risk_class=${report.risk_class} signals=[${report.signals.join(",")}] required_approvals=${report.required_approvals}`;
+}
 
 export interface VerifyPipelineOptions {
   card?: string;
@@ -207,6 +232,17 @@ export async function runVerifyPipeline(
     governance.changedFiles;
   errors.push(...governance.errors);
   notes.push(...governance.notes);
+
+  // Advisory approval-risk note. Emitted only when the policy is enabled
+  // and the engine evaluates successfully. Never alters ok,
+  // admission.outcome, acceptance_status, errors, blocking_predicate, or
+  // admission_authority. Skipped silently on evaluation errors.
+  if (loaded.cardPath) {
+    const arNote = await buildApprovalRiskAdvisoryNote(cwd, loaded.cardPath);
+    if (arNote) {
+      notes.push(arNote);
+    }
+  }
 
   const outcome =
     admission.outcome !== "success"

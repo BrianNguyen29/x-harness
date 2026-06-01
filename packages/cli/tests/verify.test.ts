@@ -1561,4 +1561,285 @@ handoff:
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
   });
+
+  it("emits approval-risk advisory note when policy is enabled", async () => {
+    const tmpDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "verify-ts-approval-risk-enabled-")
+    );
+    try {
+      // Set up an enabled approval-risk policy and a minimal authority
+      // policy in the temp dir so the engine evaluates successfully.
+      fs.mkdirSync(path.join(tmpDir, "policies"), { recursive: true });
+      fs.writeFileSync(
+        path.join(tmpDir, "policies", "approval-risk.yaml"),
+        `version: 1
+approval_risk:
+  enabled: true
+  personal_scoring: false
+  thresholds:
+    moderate: 20
+    elevated: 40
+    critical: 70
+  required_approvals:
+    low: 0
+    moderate: 1
+    elevated: 1
+    critical: 2
+  signals:
+    deep_tier: 25
+    human_only_path: 35
+    human_approved_path: 20
+    security_sensitive_path: 20
+    missing_governance_approval: 15
+`,
+        "utf-8"
+      );
+      fs.writeFileSync(
+        path.join(tmpDir, "policies", "authority.yaml"),
+        `version: 1
+authority_classes:
+  agent_editable:
+    description: "Files agents can freely modify"
+    examples: []
+  agent_proposable_human_approved:
+    description: "Files agents may propose changes to, but require human approval"
+    examples: []
+  human_only:
+    description: "Files only humans may directly modify"
+    examples: []
+protected_paths:
+  - path: "schemas/**"
+    authority: human_only
+    rationale: "Schema definitions are authoritative contracts"
+  - path: "policies/admission.yaml"
+    authority: human_only
+    rationale: "Admission policy defines success criteria"
+  - path: "policies/recovery.yaml"
+    authority: agent_proposable_human_approved
+    rationale: "Recovery routing may be updated by agents with human approval"
+report_only: true
+governance_check:
+  behavior: warn
+  exit_on_warnings: false
+  block_on_violations: false
+`,
+        "utf-8"
+      );
+
+      // Deep-tier card referencing a human_only path so approval risk
+      // evaluates non-zero when the policy is enabled. The path does not
+      // match the v1 verify-stage high-risk patterns, so the card is not
+      // escalated by the tier guard.
+      const cardYAML = `schema_version: "1"
+task_id: TASK-TS-APPROVAL-RISK-ADVISORY-001
+tier: deep
+owner: alice
+accountable: bob
+context_acknowledged: true
+state:
+  read_set:
+    - src/main.ts
+  write_set:
+    - packages/cli/src/core/admission.ts
+evidence:
+  files_changed:
+    - packages/cli/src/core/admission.ts
+  command_evidence:
+    - command: npm test
+      exit_code: 0
+  verification_artifacts:
+    - kind: unit_test
+      command: npm test
+      status: passed
+      verifies:
+        - "basic functionality"
+      does_not_verify:
+        - "edge cases"
+      confidence: medium
+  untested_regions:
+    - "No integration tests."
+  remaining_risks:
+    - "May fail in production."
+  rollback_policy:
+    - "Revert commit."
+  execution_controls:
+    - "Deploy behind feature flag."
+context_alignment:
+  stale_ground_checked: true
+  context_pack_id: "ctx-approval-risk-advisory-001"
+  product_contract_refs:
+    - "README.md"
+  architecture_refs: []
+  decision_refs: []
+  test_matrix_refs: []
+  unresolved_context_questions: []
+  context_evidence: []
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Approval-risk advisory integration
+  expected_effect: Verify emits an approval-risk advisory note when policy is enabled
+  measurable_signal: checks include approval-risk advisory note
+  falsification_method: Disable policy and confirm note is absent
+  horizon: same_verify
+claim:
+  fix_status: fixed
+  summary: Wired approval-risk engine into verify pipeline
+  evidence:
+    - description: Source change
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`;
+      fs.writeFileSync(
+        path.join(tmpDir, "completion-card.yaml"),
+        cardYAML,
+        "utf-8"
+      );
+      fs.writeFileSync(path.join(tmpDir, "README.md"), "# Product\n", "utf-8");
+
+      const { stdout, exitCode } = await execaNodeCwd(
+        ["verify", "--card", "completion-card.yaml", "--json"],
+        tmpDir
+      );
+      expect(exitCode).toBe(0);
+      const output = JSON.parse(stdout);
+      expect(output.ok).toBe(true);
+      expect(output.admission_outcome).toBe("success");
+      expect(output.acceptance_status).toBe("accepted");
+      expect(output.recovery).toBeNull();
+      const notes = (output.checks ?? []).map(
+        (c: { note?: string }) => c.note ?? ""
+      );
+      const arNote = notes.find(
+        (n: string) =>
+          n.includes("approval-risk advisory:") &&
+          n.includes("risk_class=") &&
+          n.includes("signals=[") &&
+          n.includes("required_approvals=")
+      );
+      expect(arNote).toBeDefined();
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not emit approval-risk advisory note when policy is disabled", async () => {
+    const tmpDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "verify-ts-approval-risk-disabled-")
+    );
+    try {
+      // Set up an explicitly disabled approval-risk policy.
+      fs.mkdirSync(path.join(tmpDir, "policies"), { recursive: true });
+      fs.writeFileSync(
+        path.join(tmpDir, "policies", "approval-risk.yaml"),
+        `version: 1
+approval_risk:
+  enabled: false
+  personal_scoring: false
+  thresholds:
+    moderate: 20
+    elevated: 40
+    critical: 70
+  required_approvals:
+    low: 0
+    moderate: 1
+    elevated: 1
+    critical: 2
+  signals:
+    deep_tier: 25
+    human_only_path: 35
+    human_approved_path: 20
+    security_sensitive_path: 20
+    missing_governance_approval: 15
+`,
+        "utf-8"
+      );
+      fs.writeFileSync(
+        path.join(tmpDir, "policies", "authority.yaml"),
+        `version: 1
+authority_classes:
+  agent_editable:
+    description: "Files agents can freely modify"
+    examples: []
+  agent_proposable_human_approved:
+    description: "Files agents may propose changes to, but require human approval"
+    examples: []
+  human_only:
+    description: "Files only humans may directly modify"
+    examples: []
+protected_paths: []
+report_only: true
+governance_check:
+  behavior: warn
+  exit_on_warnings: false
+  block_on_violations: false
+`,
+        "utf-8"
+      );
+
+      const cardYAML = `schema_version: "1"
+task_id: TASK-TS-APPROVAL-RISK-DISABLED-001
+tier: light
+owner: alice
+accountable: bob
+context_acknowledged: true
+evidence:
+  files_changed:
+    - src/formatDate.ts
+  manual_rationale: Default-disabled policy should not emit approval-risk note
+claim:
+  fix_status: fixed
+  summary: No advisory note when policy disabled
+  evidence:
+    - description: Source change
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`;
+      fs.writeFileSync(
+        path.join(tmpDir, "completion-card.yaml"),
+        cardYAML,
+        "utf-8"
+      );
+
+      const { stdout, exitCode } = await execaNodeCwd(
+        ["verify", "--card", "completion-card.yaml", "--json"],
+        tmpDir
+      );
+      expect(exitCode).toBe(0);
+      const output = JSON.parse(stdout);
+      expect(output.ok).toBe(true);
+      const notes = (output.checks ?? []).map(
+        (c: { note?: string }) => c.note ?? ""
+      );
+      for (const n of notes) {
+        expect(n).not.toContain("approval-risk advisory:");
+      }
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
 });

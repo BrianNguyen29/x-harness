@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/BrianNguyen29/x-harness/internal/admission"
+	"github.com/BrianNguyen29/x-harness/internal/approvalrisk"
 	"github.com/BrianNguyen29/x-harness/internal/assets"
 	"github.com/BrianNguyen29/x-harness/internal/contract"
 	"github.com/BrianNguyen29/x-harness/internal/loader"
@@ -17,6 +18,34 @@ import (
 	"github.com/BrianNguyen29/x-harness/internal/schema"
 	"github.com/BrianNguyen29/x-harness/internal/worktree"
 )
+
+// evaluateApprovalRiskAdvisory runs the advisory approval-risk engine for a
+// completion card. It is strictly read-only and never affects ok,
+// admission.outcome, acceptance_status, errors, blocking_predicate, or
+// admission_authority. Returns "" when the policy is disabled, the card cannot
+// be evaluated, or the engine is not available. Mirrors the TypeScript
+// implementation in packages/cli/src/core/verify-pipeline.ts.
+func evaluateApprovalRiskAdvisory(cardPath, root string) string {
+	if cardPath == "" {
+		return ""
+	}
+	report, err := approvalrisk.EvaluateApprovalRisk(cardPath, root)
+	if err != nil {
+		// Advisory-only: skip silently on evaluation errors so the verify
+		// pipeline never fails because approval-risk is unavailable.
+		return ""
+	}
+	if !report.PolicyEnabled {
+		return ""
+	}
+	return fmt.Sprintf(
+		"approval-risk advisory: score=%d risk_class=%s signals=[%s] required_approvals=%d",
+		report.Score,
+		report.RiskClass,
+		strings.Join(report.Signals, ","),
+		report.RequiredApprovals,
+	)
+}
 
 // withheldReason is a compatibility superset that includes both schema-like fields
 // (class, stage, owner, schema_recoverability) and legacy fields (failure_class, failure_stage, recoverability)
@@ -225,7 +254,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 		schemaErr = v.Validate(subagentDoc)
 		if schemaErr != nil {
-			result := buildVerifyResult(nil, schemaErr, nil, strict, false, "")
+			result := buildVerifyResult(nil, schemaErr, nil, strict, false, "", root)
 			renderVerifyResult(result, jsonMode, verbose, strictWithheldReason, stdout, sourcePath, schemaPath)
 			return ExitError
 		}
@@ -283,7 +312,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			}
 			schemaErr = v.Validate(doc)
 		}
-		result = buildVerifyResult(doc, schemaErr, nil, strict, contextFloor, cardPath)
+		result = buildVerifyResult(doc, schemaErr, nil, strict, contextFloor, cardPath, root)
 	}
 
 	// Contract Oracle check (opt-in via --contract-oracles flag)
@@ -458,7 +487,7 @@ func runWithMutationGuard(root string, strict bool, doc map[string]any, validate
 
 	if guardErr != nil {
 		mg := &mutationguard.Result{Enabled: true, SkippedReason: guardErr.Error(), Violated: strict}
-		result := buildVerifyResult(doc, schemaErr, mg, strict, contextFloor, cardPath)
+		result := buildVerifyResult(doc, schemaErr, mg, strict, contextFloor, cardPath, root)
 		if strict {
 			fmt.Fprintf(stderr, "mutation_guard_error: guard failed in strict mode: %v\n", guardErr)
 			result.OK = false
@@ -468,7 +497,7 @@ func runWithMutationGuard(root string, strict bool, doc map[string]any, validate
 		return result
 	}
 
-	result := buildVerifyResult(doc, schemaErr, mgResult, strict, contextFloor, cardPath)
+	result := buildVerifyResult(doc, schemaErr, mgResult, strict, contextFloor, cardPath, root)
 	if mgResult != nil && mgResult.Violated {
 		result.OK = false
 		result.AdmissionOutcome = "blocked"
@@ -477,7 +506,7 @@ func runWithMutationGuard(root string, strict bool, doc map[string]any, validate
 	return result
 }
 
-func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationguard.Result, strict bool, contextFloor bool, cardPath string) VerifyResult {
+func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationguard.Result, strict bool, contextFloor bool, cardPath string, root string) VerifyResult {
 	result := VerifyResult{
 		TaskID: stringValue(doc, "task_id"),
 		Tier:   stringValue(doc, "tier"),
@@ -518,6 +547,16 @@ func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationgu
 	result.ProductIntentStatus = productIntentStatusFromDoc(doc)
 	result.OK = admResult.Outcome == "success" && admResult.AcceptanceStatus == "accepted" && len(admResult.Errors) == 0
 	result.MutationGuard = mgResult
+
+	// Advisory approval-risk note. Emitted only when the policy is enabled
+	// and the engine evaluates successfully. Never alters ok,
+	// admission.outcome, acceptance_status, errors, blocking_predicate, or
+	// admission_authority. Skipped silently on evaluation errors.
+	if cardPath != "" {
+		if note := evaluateApprovalRiskAdvisory(cardPath, root); note != "" {
+			result.AdmissionNotes = append(result.AdmissionNotes, note)
+		}
+	}
 
 	if admResult.WithheldReason != nil {
 		result.WithheldReason = &withheldReason{
