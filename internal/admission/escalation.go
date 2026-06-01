@@ -5,8 +5,11 @@ import (
 	"strings"
 )
 
-// escalationHighRiskPathPatterns defines the v1 high-risk path patterns
-// sourced from policies/escalation.yaml (verify_stage_escalation.v1).
+// escalationHighRiskPathPatterns is the hardcoded v1 list of high-risk
+// path patterns. The values mirror the canonical
+// verify_stage_escalation.v1.high_risk_path_patterns list declared in
+// policies/escalation.yaml; they are inlined here rather than loaded at
+// runtime, so this slice must be kept in lockstep with that policy file.
 // A declared `claim.evidence.files_changed` entry matching any of these
 // patterns requires a `deep` tier unless an approved governance
 // intervention has been recorded.

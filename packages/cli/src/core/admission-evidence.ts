@@ -258,9 +258,13 @@ function isHighRiskFilePath(path: string): boolean {
   );
 }
 
-// v1 verify-stage auto-escalation high-risk path patterns. Sourced from
-// policies/escalation.yaml (verify_stage_escalation.v1). Parity-safe with
-// the Go evaluator in internal/admission/escalation.go.
+// v1 verify-stage auto-escalation high-risk path patterns. This is a
+// hardcoded copy that mirrors the canonical
+// verify_stage_escalation.v1.high_risk_path_patterns list declared in
+// policies/escalation.yaml; the values are inlined here rather than
+// loaded at runtime, so this slice must be kept in lockstep with that
+// policy file. Parity-safe with the Go evaluator in
+// internal/admission/escalation.go.
 const ESCALATION_HIGH_RISK_PATH_PATTERNS: string[] = [
   "schemas/",
   "policies/",
