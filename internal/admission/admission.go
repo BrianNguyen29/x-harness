@@ -103,6 +103,19 @@ func Run(doc map[string]any, strict bool, contextFloor bool) Result {
 		applyFinding(e.message, e.predicate, false)
 	}
 
+	// Verify-stage v1 operation-based escalation: light/standard with
+	// blocked-operation commands (delete_files, git_mutation, etc., or
+	// unknown commands when escalate_unknown is true) must be `deep`
+	// (or carry an approved governance intervention). Mirrors
+	// policies/escalation.yaml operation_rules.v1. Runs after the
+	// path-based escalation guard and reuses the same
+	// `tier_escalation_required` predicate for parity.
+	opResult := evaluateOperationEscalation(doc, tier)
+	notes = append(notes, opResult.notes...)
+	for _, e := range opResult.errors {
+		applyFinding(e.message, e.predicate, false)
+	}
+
 	// Tier guard: warn/block suspicious low-tier declarations for high-risk content
 	tgResult := evaluateTierGuard(doc, tier)
 	notes = append(notes, tgResult.notes...)

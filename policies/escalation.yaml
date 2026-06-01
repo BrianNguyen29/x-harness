@@ -31,3 +31,72 @@ verify_stage_escalation:
     bypass:
       - approved_tier_downgrade
     blocked_predicate: tier_escalation_required
+
+# v1 verify-stage operation-based escalation.
+# When a completion card declares commands in
+# `evidence.command_evidence` or `evidence.verification_artifacts` whose
+# internal/classify.ClassifyCommand intents include any entry in
+# `blocked_intents`, or whose classification is unknown (when
+# `escalate_unknown: true`), the card must be declared as `deep`.
+# Lower tiers (light/standard) are withheld with predicate
+# `tier_escalation_required` unless an approved governance intervention
+# has been recorded.
+#
+# Blocked intent names mirror those returned by
+# internal/classify.ClassifyCommand (and its TS parity classifier in
+# packages/cli/src/core/classify.ts). They are inlined into the Go
+# runtime and TS evaluator as a hardcoded mirror; the drift guard in
+# TestEscalationOperationDriftGuard / describe("operation-based
+# escalation drift guard") enforces bidirectional parity.
+#
+# Wording is parity-safe with:
+#   - internal/admission/escalation.go
+#   - packages/cli/src/core/admission-evidence.ts
+operation_rules:
+  v1:
+    required_tier: deep
+    blocked_intents:
+      - delete_files
+      - network_outbound
+      - package_publish
+      - secret_access
+      - git_mutation
+      - database_mutation
+      - deploy_or_publish
+      - permission_change
+    escalate_unknown: true
+    bypass:
+      - approved_tier_downgrade
+    blocked_predicate: tier_escalation_required
+
+# v1 verify-stage size-based escalation.
+# Deferred for v1: this slice is intentionally NOT enforced. Line counts
+# are not trustworthy evidence (escape sequences, generated files, vendored
+# code, formatter-only changes all distort counts). The block is recorded
+# in the policy for visibility only so the policy compiler and downstream
+# readers can see the planned rule and know it is intentionally inactive.
+#
+# Enforcement will be revisited only after a trustworthy line-count
+# evidence source exists (e.g. a diff-based counter that excludes
+# generated/vendored/lockfile content). Until then, the size_rules block
+# must not block, warn, or alter any admission outcome.
+#
+# Wording is parity-safe with:
+#   - internal/admission/escalation.go (no runtime read; sanity-checked
+#     by TestEscalationSizeRulesDeferred)
+#   - packages/cli/src/core/admission-evidence.ts (same)
+size_rules:
+  status: deferred
+  note: >-
+    Size-based escalation (lines_changed_over, files_changed_over) is
+    deferred until a trustworthy line-count evidence source exists.
+    Current counts cannot distinguish generated/vendored/lockfile
+    changes from real source changes, which would produce unreliable
+    escalations. This block is policy-visible only and is NOT enforced.
+  planned:
+    lines_changed_over:
+      100: standard
+      500: deep
+    files_changed_over:
+      10: standard
+      30: deep

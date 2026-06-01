@@ -15,6 +15,7 @@ import {
 import {
   evaluateEvidenceRules,
   evaluateEscalation,
+  evaluateOperationEscalation,
   evaluateTierGuard,
 } from "./admission-evidence.js";
 import { evaluateDoneChecklistAndPrediction } from "./admission-prediction.js";
@@ -392,6 +393,12 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
   const escalationResult = evaluateEscalation(input);
   notes.push(...escalationResult.notes);
   for (const item of escalationResult.errors) {
+    applyFinding(item);
+  }
+
+  const operationEscalationResult = evaluateOperationEscalation(input);
+  notes.push(...operationEscalationResult.notes);
+  for (const item of operationEscalationResult.errors) {
     applyFinding(item);
   }
 

@@ -274,6 +274,30 @@ const ESCALATION_HIGH_RISK_PATH_PATTERNS: string[] = [
   "migrations/",
 ];
 
+// v1 verify-stage operation-based escalation blocked intents. This is
+// a hardcoded copy that mirrors the canonical
+// operation_rules.v1.blocked_intents list declared in
+// policies/escalation.yaml. Names are exactly the values returned by
+// classifyCommand() in this same package. Parity-safe with the Go
+// evaluator in internal/admission/escalation.go.
+const ESCALATION_OPERATION_BLOCKED_INTENTS: ReadonlySet<string> = new Set([
+  "delete_files",
+  "network_outbound",
+  "package_publish",
+  "secret_access",
+  "git_mutation",
+  "database_mutation",
+  "deploy_or_publish",
+  "permission_change",
+]);
+
+// v1 verify-stage operation-based escalation: when true, a card whose
+// command_evidence or verification_artifacts contains a command that
+// classifyCommand() marks as unknown is treated as requiring a `deep`
+// tier under the same v1 operation-based rule. Mirrors
+// `operation_rules.v1.escalate_unknown` in policies/escalation.yaml.
+const ESCALATION_OPERATION_ESCALATE_UNKNOWN = true;
+
 function isEscalationHighRiskPath(path: string): boolean {
   const lower = path.toLowerCase();
   return ESCALATION_HIGH_RISK_PATH_PATTERNS.some((pattern) =>
@@ -289,6 +313,60 @@ function collectEscalationHighRiskFiles(files: unknown[]): string[] {
     }
   }
   return matched;
+}
+
+function collectOperationEscalationTriggers(
+  items: unknown[] | undefined,
+  source: string
+): string[] {
+  if (!items || items.length === 0) return [];
+  const matched: string[] = [];
+  for (const raw of items) {
+    if (!raw || typeof raw !== "object") continue;
+    const entry = raw as Record<string, unknown>;
+    const command =
+      typeof entry.command === "string" ? entry.command.trim() : "";
+    if (!command) continue;
+    const classification = classifyCommand(command);
+    let triggered = false;
+    for (const intent of classification.intents) {
+      if (ESCALATION_OPERATION_BLOCKED_INTENTS.has(intent)) {
+        triggered = true;
+        break;
+      }
+    }
+    if (
+      !triggered &&
+      ESCALATION_OPERATION_ESCALATE_UNKNOWN &&
+      classification.unknown
+    ) {
+      triggered = true;
+    }
+    if (triggered) {
+      matched.push(`${source}:${command}`);
+    }
+  }
+  return matched;
+}
+
+function collectAllOperationEscalationTriggers(
+  evidence: Record<string, unknown> | undefined
+): string[] {
+  if (!evidence) return [];
+  const triggered: string[] = [];
+  triggered.push(
+    ...collectOperationEscalationTriggers(
+      evidence.command_evidence as unknown[] | undefined,
+      "command_evidence"
+    )
+  );
+  triggered.push(
+    ...collectOperationEscalationTriggers(
+      evidence.verification_artifacts as unknown[] | undefined,
+      "verification_artifacts"
+    )
+  );
+  return triggered;
 }
 
 function hasApprovedTierDowngradeInterventionForEscalation(
@@ -337,6 +415,49 @@ export function evaluateEscalation(
 
   errors.push({
     message: `tier escalation required: ${tier} tier declared with high-risk files ${JSON.stringify(highRiskFiles)}; required tier is deep (or an approved governance intervention must be recorded)`,
+    predicate: "tier_escalation_required",
+  });
+  return { errors, notes };
+}
+
+// evaluateOperationEscalation enforces the v1 operation-based
+// auto-escalation guard. A card declared `light` or `standard` whose
+// declared commands (in `evidence.command_evidence` or
+// `evidence.verification_artifacts`) carry a blocked intent — or, when
+// `escalate_unknown: true` is in effect, an unknown command — is
+// withheld with predicate `tier_escalation_required` unless an approved
+// governance intervention has been recorded.
+//
+// `deep` cards are never blocked by this guard, regardless of which
+// commands are declared. Safe build commands (e.g. `go build`, `tsc`)
+// that classify as low or moderate risk and have no blocked intent
+// never trigger the guard. Wording is parity-safe with
+// internal/admission/escalation.go and policies/escalation.yaml.
+export function evaluateOperationEscalation(
+  input: AdmissionInput
+): AdmissionEvidenceEvaluation {
+  const errors: AdmissionFinding[] = [];
+  const notes: string[] = [];
+  const tier = input.tier;
+  if (tier !== "light" && tier !== "standard") {
+    return { errors, notes };
+  }
+
+  const evidence = input.evidence as Record<string, unknown> | undefined;
+  const triggered = collectAllOperationEscalationTriggers(evidence);
+  if (triggered.length === 0) {
+    return { errors, notes };
+  }
+
+  if (hasApprovedTierDowngradeInterventionForEscalation(input.governance)) {
+    notes.push(
+      `tier escalation bypassed by approved governance intervention for blocked-operation commands (${triggered.join(", ")})`
+    );
+    return { errors, notes };
+  }
+
+  errors.push({
+    message: `tier escalation required: ${tier} tier declared with blocked-operation commands ${JSON.stringify(triggered)}; required tier is deep (or an approved governance intervention must be recorded)`,
     predicate: "tier_escalation_required",
   });
   return { errors, notes };

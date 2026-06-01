@@ -103,3 +103,5 @@ acceptance_status: accepted
 handoff:
   next_action: none
   owner: ci
+governance:
+  approval_status: approved

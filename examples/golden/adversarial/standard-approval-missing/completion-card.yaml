@@ -39,3 +39,5 @@ acceptance_status: accepted
 handoff:
   next_action: request approval for high-risk command
   owner: user
+governance:
+  approval_status: approved

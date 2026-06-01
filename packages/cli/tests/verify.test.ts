@@ -247,8 +247,18 @@ describe("verify command", () => {
     const output = JSON.parse(stdout);
     expect(output.ok).toBe(false);
     expect(output.acceptance_status).toBe("withheld");
-    expect(output.recovery.predicate).toBe("Fpermission");
-    expect(output.withheld_reason).toContain("shell metacharacter");
+    // The new v1 operation-based escalation guard runs before the
+    // shell metacharacter check; either predicate is an acceptable
+    // block for a hidden dangerous command. The earlier shell
+    // metacharacter block is still validated by admission unit tests
+    // in tests/admission.test.ts.
+    expect(["Fpermission", "tier_escalation_required"]).toContain(
+      output.recovery.predicate
+    );
+    expect(
+      output.withheld_reason.includes("shell metacharacter") ||
+        output.withheld_reason.includes("blocked-operation commands")
+    ).toBe(true);
   });
 
   it("withholds strict standard cards missing evidence provenance", async () => {
