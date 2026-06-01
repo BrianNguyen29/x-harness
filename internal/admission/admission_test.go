@@ -2818,3 +2818,164 @@ func TestProductIntentEmptyStatusTreatedAsMissing(t *testing.T) {
 		t.Fatalf("expected missing advisory for empty status, got %v", result.Notes)
 	}
 }
+
+// TestEscalationDriftGuard compares policies/escalation.yaml
+// verify_stage_escalation.v1 declarations against the Go runtime
+// hardcoded copy in escalationHighRiskPathPatterns. It also verifies the
+// v1 high-risk pattern list bidirectionally matches the runtime slice and
+// the policy scalar fields (required_tier, blocked_predicate, bypass)
+// align with the guard's expected behavior. The test fails if either the
+// YAML or the runtime hardcoded copy changes without a matching change
+// on the other side.
+func TestEscalationDriftGuard(t *testing.T) {
+	var policyDoc map[string]any
+	if err := loader.LoadDocument("../../policies/escalation.yaml", &policyDoc); err != nil {
+		t.Fatalf("failed to load policies/escalation.yaml: %v", err)
+	}
+
+	stringSlice := func(m map[string]any, key string) []string {
+		raw := sliceInMap(m, key)
+		out := make([]string, 0, len(raw))
+		for _, v := range raw {
+			if s, ok := v.(string); ok {
+				out = append(out, s)
+			}
+		}
+		return out
+	}
+
+	verifyStage := mapValue(mapValue(policyDoc, "verify_stage_escalation"), "v1")
+	if verifyStage == nil {
+		t.Fatalf("policies/escalation.yaml missing verify_stage_escalation.v1 block")
+	}
+
+	requiredTier := stringInMap(verifyStage, "required_tier")
+	if requiredTier != "deep" {
+		t.Fatalf("policy required_tier drift: expected \"deep\", got %q", requiredTier)
+	}
+
+	blockedPredicate := stringInMap(verifyStage, "blocked_predicate")
+	if blockedPredicate != "tier_escalation_required" {
+		t.Fatalf("policy blocked_predicate drift: expected \"tier_escalation_required\", got %q", blockedPredicate)
+	}
+
+	bypass := stringSlice(verifyStage, "bypass")
+	bypassHasApprovedDowngrade := false
+	for _, b := range bypass {
+		if b == "approved_tier_downgrade" {
+			bypassHasApprovedDowngrade = true
+			break
+		}
+	}
+	if !bypassHasApprovedDowngrade {
+		t.Fatalf("policy bypass drift: expected bypass to include \"approved_tier_downgrade\", got %v", bypass)
+	}
+
+	yamlPatterns := stringSlice(verifyStage, "high_risk_path_patterns")
+	if len(yamlPatterns) == 0 {
+		t.Fatalf("policy high_risk_path_patterns is empty")
+	}
+
+	if len(yamlPatterns) != len(escalationHighRiskPathPatterns) {
+		t.Fatalf(
+			"pattern count drift: policy declares %d patterns (%v), runtime has %d (%v)",
+			len(yamlPatterns), yamlPatterns,
+			len(escalationHighRiskPathPatterns), escalationHighRiskPathPatterns,
+		)
+	}
+
+	yamlSet := make(map[string]struct{}, len(yamlPatterns))
+	for _, p := range yamlPatterns {
+		yamlSet[p] = struct{}{}
+	}
+	runtimeSet := make(map[string]struct{}, len(escalationHighRiskPathPatterns))
+	for _, p := range escalationHighRiskPathPatterns {
+		runtimeSet[p] = struct{}{}
+	}
+	for _, p := range yamlPatterns {
+		if _, ok := runtimeSet[p]; !ok {
+			t.Fatalf("policy pattern %q is missing from runtime hardcoded list %v", p, escalationHighRiskPathPatterns)
+		}
+	}
+	for _, p := range escalationHighRiskPathPatterns {
+		if _, ok := yamlSet[p]; !ok {
+			t.Fatalf("runtime hardcoded pattern %q is missing from policy list %v", p, yamlPatterns)
+		}
+	}
+
+	// Behavioral check: each YAML pattern must trigger the guard for a
+	// light-tier card whose files_changed contains the pattern, and a
+	// safe path must not trigger it.
+	for _, pattern := range yamlPatterns {
+		t.Run("pattern_triggers_"+pattern, func(t *testing.T) {
+			lower := strings.ToLower(pattern)
+			var sample string
+			if strings.HasSuffix(lower, "/") {
+				sample = pattern + "drift-guard.txt"
+			} else {
+				// Substring patterns like "auth" or "authority" need a
+				// separator after the substring to be a meaningful
+				// sample file path.
+				sample = pattern + "/drift-guard.txt"
+			}
+			doc := map[string]any{
+				"schema_version": "1",
+				"task_id":        "T",
+				"tier":           "light",
+				"owner":          "a",
+				"accountable":    "b",
+				"evidence": map[string]any{
+					"files_changed":    []any{sample},
+					"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+				},
+				"claim": map[string]any{
+					"fix_status": "fixed",
+					"summary":    "s",
+					"evidence":   []any{"e"},
+				},
+				"verification": map[string]any{
+					"status": "passed",
+					"checks": []any{},
+				},
+				"admission":         map[string]any{"outcome": "success"},
+				"acceptance_status": "accepted",
+				"handoff":           map[string]any{"next_action": "n", "owner": "o"},
+			}
+			result := Run(doc, false, false)
+			if result.BlockingPredicate != "tier_escalation_required" {
+				t.Fatalf("expected blocking_predicate tier_escalation_required for pattern %q, got %q (errors=%v)",
+					pattern, result.BlockingPredicate, result.Errors)
+			}
+		})
+	}
+
+	t.Run("safe_docs_path_does_not_trigger", func(t *testing.T) {
+		doc := map[string]any{
+			"schema_version": "1",
+			"task_id":        "T",
+			"tier":           "light",
+			"owner":          "a",
+			"accountable":    "b",
+			"evidence": map[string]any{
+				"files_changed":    []any{"docs/readme.md"},
+				"manual_rationale": "doc tweak",
+			},
+			"claim": map[string]any{
+				"fix_status": "fixed",
+				"summary":    "s",
+				"evidence":   []any{"e"},
+			},
+			"verification": map[string]any{
+				"status": "passed",
+				"checks": []any{},
+			},
+			"admission":         map[string]any{"outcome": "success"},
+			"acceptance_status": "accepted",
+			"handoff":           map[string]any{"next_action": "n", "owner": "o"},
+		}
+		result := Run(doc, false, false)
+		if result.BlockingPredicate == "tier_escalation_required" {
+			t.Fatalf("safe docs path should not trigger escalation, got errors=%v", result.Errors)
+		}
+	})
+}
