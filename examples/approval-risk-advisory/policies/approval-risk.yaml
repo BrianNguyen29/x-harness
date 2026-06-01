@@ -1,0 +1,28 @@
+version: 1
+
+# Local approval-risk policy for the standalone approval-risk-advisory example.
+# Mirrors the repository default thresholds and signals so the advisory note
+# shape is identical to production, but flips `enabled` to true locally so
+# the example can demonstrate the advisory surface end-to-end.
+#
+# IMPORTANT: the repository default at `policies/approval-risk.yaml` must
+# remain `enabled: false`. This local copy is opt-in only and is consumed
+# when verify is run with the example directory as the working root.
+approval_risk:
+  enabled: true
+  personal_scoring: false
+  thresholds:
+    moderate: 20
+    elevated: 40
+    critical: 70
+  required_approvals:
+    low: 0
+    moderate: 1
+    elevated: 1
+    critical: 2
+  signals:
+    deep_tier: 25
+    human_only_path: 35
+    human_approved_path: 20
+    security_sensitive_path: 20
+    missing_governance_approval: 15
