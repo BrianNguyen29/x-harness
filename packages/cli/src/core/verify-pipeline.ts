@@ -162,12 +162,18 @@ export async function runVerifyPipeline(
   cwd = process.cwd()
 ): Promise<VerifyPipelineResult> {
   const strict = opts.strict === true;
-  const guardEnabled = strict || (opts.mutationGuard ?? false);
+
+  const loaded = await loadVerifySources(cwd, opts);
+  const tier =
+    String(loaded.card?.tier ?? opts.tier ?? "standard") || "standard";
+  const guardEnabled =
+    strict ||
+    (opts.mutationGuard ?? false) ||
+    tier === "standard" ||
+    tier === "deep";
   const guard = await runMutationGuard(guardEnabled, cwd);
   await guard.takeSnapshot();
   await injectTestMutation(cwd);
-
-  const loaded = await loadVerifySources(cwd, opts);
   const errors = [...loaded.errors];
   const notes = [...loaded.notes];
   const traceDirGuardViolation =
@@ -253,8 +259,6 @@ export async function runVerifyPipeline(
     opts.taskId ??
     (loaded.card?.task_id as string | undefined) ??
     "TASK-UNKNOWN";
-  const tier =
-    String(loaded.card?.tier ?? opts.tier ?? "standard") || "standard";
   const event: VerifyEvent = {
     event_id: `VE-${Date.now()}`,
     event_type: "verify_completed",

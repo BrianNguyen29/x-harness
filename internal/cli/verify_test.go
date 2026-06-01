@@ -2080,3 +2080,474 @@ handoff:
 		t.Fatalf("expected no withheld_reason for clean pass, got %+v", result.WithheldReason)
 	}
 }
+
+func TestVerifyStandardTierAutoEnablesMutationGuard(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+
+	tmpDir := t.TempDir()
+	if err := exec.Command("git", "-C", tmpDir, "init").Run(); err != nil {
+		t.Fatalf("git init failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "config", "user.email", "test@test.com").Run(); err != nil {
+		t.Fatalf("git config failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "config", "user.name", "Test").Run(); err != nil {
+		t.Fatalf("git config failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cardYAML := `schema_version: "1"
+task_id: TASK-STD-MG-001
+tier: standard
+owner: alice
+accountable: bob
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Standard tier test
+  expected_effect: Works
+  measurable_signal: go test ./...
+  falsification_method: Skip fix
+  horizon: same_verify
+evidence:
+  files_changed:
+    - src/main.go
+  command_evidence:
+    - command: go test ./...
+      exit_code: 0
+claim:
+  fix_status: fixed
+  summary: Standard tier test
+  evidence:
+    - description: Test pass
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	if err := os.WriteFile(cardDst, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := exec.Command("git", "-C", tmpDir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "commit", "-m", "init").Run(); err != nil {
+		t.Fatalf("git commit failed: %v", err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	// No --mutation-guard or --strict flag
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.MutationGuard == nil {
+		t.Fatal("expected mutation guard to be enabled for standard tier")
+	}
+	if !result.MutationGuard.Enabled {
+		t.Fatal("expected mutation guard enabled")
+	}
+	if result.MutationGuard.Violated {
+		t.Fatal("expected mutation guard not violated")
+	}
+}
+
+func TestVerifyDeepTierAutoEnablesMutationGuard(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+
+	tmpDir := t.TempDir()
+	if err := exec.Command("git", "-C", tmpDir, "init").Run(); err != nil {
+		t.Fatalf("git init failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "config", "user.email", "test@test.com").Run(); err != nil {
+		t.Fatalf("git config failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "config", "user.name", "Test").Run(); err != nil {
+		t.Fatalf("git config failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cardYAML := `schema_version: "1"
+task_id: TASK-DEEP-MG-001
+tier: deep
+owner: alice
+accountable: bob
+state:
+  read_set:
+    - src/main.go
+  write_set:
+    - src/main.go
+evidence:
+  files_changed:
+    - src/main.go
+  command_evidence:
+    - command: go test ./...
+      exit_code: 0
+  verification_artifacts:
+    - kind: unit_test
+      command: go test ./...
+      status: passed
+      verifies:
+        - "basic functionality"
+      does_not_verify:
+        - "edge cases"
+      confidence: medium
+  untested_regions:
+    - "No integration tests."
+  remaining_risks:
+    - "May fail in production."
+  rollback_policy:
+    - "Revert commit."
+  execution_controls:
+    - "Deploy behind feature flag."
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Deep tier test
+  expected_effect: Works
+  measurable_signal: go test
+  falsification_method: Skip fix
+  horizon: same_verify
+claim:
+  fix_status: fixed
+  summary: Deep tier test
+  evidence:
+    - description: Test pass
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	if err := os.WriteFile(cardDst, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := exec.Command("git", "-C", tmpDir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "commit", "-m", "init").Run(); err != nil {
+		t.Fatalf("git commit failed: %v", err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	// No --mutation-guard or --strict flag
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.MutationGuard == nil {
+		t.Fatal("expected mutation guard to be enabled for deep tier")
+	}
+	if !result.MutationGuard.Enabled {
+		t.Fatal("expected mutation guard enabled")
+	}
+	if result.MutationGuard.Violated {
+		t.Fatal("expected mutation guard not violated")
+	}
+}
+
+func TestVerifyLightTierDoesNotAutoEnableMutationGuard(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cardYAML := `schema_version: "1"
+task_id: TASK-LIGHT-MG-001
+tier: light
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - src/main.go
+  manual_rationale: Simple change
+claim:
+  fix_status: fixed
+  summary: Light tier test
+  evidence:
+    - description: Test pass
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	if err := os.WriteFile(cardDst, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	// No --mutation-guard or --strict flag
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.MutationGuard != nil {
+		t.Fatalf("expected mutation guard to be disabled for light tier, got %+v", result.MutationGuard)
+	}
+}
+
+func TestVerifyExplicitMutationGuardEnablesForLight(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+
+	tmpDir := t.TempDir()
+	if err := exec.Command("git", "-C", tmpDir, "init").Run(); err != nil {
+		t.Fatalf("git init failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "config", "user.email", "test@test.com").Run(); err != nil {
+		t.Fatalf("git config failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "config", "user.name", "Test").Run(); err != nil {
+		t.Fatalf("git config failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cardYAML := `schema_version: "1"
+task_id: TASK-LIGHT-EXPLICIT-001
+tier: light
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - src/main.go
+  manual_rationale: Simple change
+claim:
+  fix_status: fixed
+  summary: Light tier test
+  evidence:
+    - description: Test pass
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	if err := os.WriteFile(cardDst, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := exec.Command("git", "-C", tmpDir, "add", ".").Run(); err != nil {
+		t.Fatalf("git add failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "commit", "-m", "init").Run(); err != nil {
+		t.Fatalf("git commit failed: %v", err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--mutation-guard", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.MutationGuard == nil {
+		t.Fatal("expected mutation guard to be enabled with explicit flag")
+	}
+	if !result.MutationGuard.Enabled {
+		t.Fatal("expected mutation guard enabled")
+	}
+	if result.MutationGuard.Violated {
+		t.Fatal("expected mutation guard not violated")
+	}
+}

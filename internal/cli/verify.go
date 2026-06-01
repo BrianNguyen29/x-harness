@@ -242,6 +242,18 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		doc = mappedDoc
 	}
 
+	// Auto-enable mutation guard for standard and deep tiers
+	effectiveTier := stringValue(doc, "tier")
+	if effectiveTier == "" {
+		effectiveTier = tier
+	}
+	if effectiveTier == "" {
+		effectiveTier = "standard"
+	}
+	if !useMutationGuard && (effectiveTier == "standard" || effectiveTier == "deep") {
+		useMutationGuard = true
+	}
+
 	var result VerifyResult
 
 	if useMutationGuard {
