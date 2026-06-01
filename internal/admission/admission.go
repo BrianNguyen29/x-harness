@@ -142,6 +142,11 @@ func Run(doc map[string]any, strict bool, contextFloor bool) Result {
 	// Product intent advisory (optional; never blocks admission)
 	notes = append(notes, evaluateProductIntent(doc, tier)...)
 
+	// Test adequacy advisory (optional; never blocks admission).
+	// Mirrors product_intent: emits notes for missing or incomplete
+	// test_adequacy on standard/deep tiers; light tier stays quiet.
+	notes = append(notes, evaluateTestAdequacy(doc, tier)...)
+
 	// Command safety
 	cmdResult := evaluateCommandSafety(doc)
 	for _, e := range cmdResult.errors {
