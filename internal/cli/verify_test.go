@@ -208,11 +208,7 @@ func TestVerifySubagentReturnPass(t *testing.T) {
 	}
 
 	// Create referenced context file so context floor passes
-	docsDir := filepath.Join(tmpDir, "docs")
-	if err := os.MkdirAll(docsDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(docsDir, "product.md"), []byte("# Product\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("# Product\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 

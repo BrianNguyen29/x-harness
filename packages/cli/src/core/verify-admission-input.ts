@@ -61,6 +61,7 @@ export function buildAdmissionInput(
       staleGround: effectiveStaleGround,
       strict: opts.strict === true,
       contextFloor: opts.contextFloor === true,
+      cardPath: loaded.cardPath,
     };
   }
 

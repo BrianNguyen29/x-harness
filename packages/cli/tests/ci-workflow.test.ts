@@ -81,6 +81,10 @@ describe("CI workflow", () => {
         )
       );
       fs.copyFileSync(
+        path.join(repoRoot, "examples", "ci", "strict-verify", "README.md"),
+        path.join(tmpRoot, "examples", "ci", "strict-verify", "README.md")
+      );
+      fs.copyFileSync(
         path.join(repoRoot, "policies", "admission.yaml"),
         path.join(tmpRoot, "policies", "admission.yaml")
       );

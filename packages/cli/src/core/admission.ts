@@ -1,3 +1,5 @@
+import * as path from "node:path";
+import fs from "node:fs";
 import {
   hasApprovedTierDowngradeIntervention,
   isRuntimeTier,
@@ -76,6 +78,9 @@ export interface AdmissionInput {
   handoff?: Handoff | Record<string, unknown>;
   staleGround?: boolean;
   pgv_risk?: "LOW" | "MED" | "HIGH";
+  // Path to the completion card on disk. Used by context-floor file
+  // existence checks to resolve relative paths authored next to the card.
+  cardPath?: string;
   // New optional fields
   evidence?: Record<string, unknown>;
   state?: Record<string, unknown>;
@@ -186,7 +191,82 @@ function evaluateContextFloor(input: AdmissionInput): ContextFloorResult {
     }
   }
 
+  // All referenced files must exist. Resolution mirrors Go: cwd first, then
+  // path.dirname(cardPath); absolute paths are used literally.
+  const cardDir = input.cardPath ? path.dirname(input.cardPath) : "";
+  for (const fileErr of validateContextFiles(ctxAlign, cardDir)) {
+    result.errors.push(fileErr);
+  }
+
   return result;
+}
+
+// stripAnchor removes any #anchor suffix from a path reference.
+function stripAnchor(ref: string): string {
+  const idx = ref.indexOf("#");
+  return idx >= 0 ? ref.slice(0, idx) : ref;
+}
+
+// fileExists resolves a relative path against (1) the current working
+// directory and (2) cardDir, in that order. Absolute paths skip both lookups
+// and use the literal path. Mirrors `admission.FileExists` in Go.
+function fileExists(refPath: string, cardDir: string): boolean {
+  if (path.isAbsolute(refPath)) {
+    return fs.existsSync(refPath);
+  }
+  const cwd = process.cwd();
+  for (const base of [cwd, cardDir]) {
+    if (!base) continue;
+    const candidate =
+      base === cwd ? path.resolve(cwd, refPath) : path.join(base, refPath);
+    if (fs.existsSync(candidate)) return true;
+  }
+  return false;
+}
+
+// validateContextFiles checks that all file references in context_alignment
+// exist. Emits "referenced file does not exist: <path>" for ref array entries
+// and "context_evidence ref file does not exist: <path>" for context_evidence
+// entries, mirroring Go.
+function validateContextFiles(
+  ctxAlign: Record<string, unknown>,
+  cardDir: string
+): string[] {
+  const errors: string[] = [];
+
+  const refArrays = [
+    "product_contract_refs",
+    "architecture_refs",
+    "decision_refs",
+    "test_matrix_refs",
+  ];
+  for (const refKey of refArrays) {
+    const refs = ctxAlign[refKey] as unknown[] | undefined;
+    if (!Array.isArray(refs)) continue;
+    for (const ref of refs) {
+      if (typeof ref !== "string") continue;
+      const refPath = stripAnchor(ref);
+      if (!fileExists(refPath, cardDir)) {
+        errors.push(`referenced file does not exist: ${refPath}`);
+      }
+    }
+  }
+
+  const contextEvidence = ctxAlign.context_evidence as unknown[] | undefined;
+  if (Array.isArray(contextEvidence)) {
+    for (const evidence of contextEvidence) {
+      if (evidence == null || typeof evidence !== "object") continue;
+      const evMap = evidence as Record<string, unknown>;
+      const ref = evMap.ref;
+      if (typeof ref !== "string" || ref === "") continue;
+      const refPath = stripAnchor(ref);
+      if (!fileExists(refPath, cardDir)) {
+        errors.push(`context_evidence ref file does not exist: ${refPath}`);
+      }
+    }
+  }
+
+  return errors;
 }
 
 const PRODUCT_INTENT_MISSING_NOTE =
