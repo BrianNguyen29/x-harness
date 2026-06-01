@@ -32,6 +32,12 @@
       "status": "passed"
     },
     {
+      "name": "mutation guard passed",
+      "note": "mutation guard passed",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "tier \"deep\" requires evidence scope declared (verifies/does_not_verify)",
       "note": "tier \"deep\" requires evidence scope declared (verifies/does_not_verify)",
       "severity": "error",

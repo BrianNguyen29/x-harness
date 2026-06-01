@@ -44,6 +44,12 @@
       "status": "passed"
     },
     {
+      "name": "mutation guard passed",
+      "note": "mutation guard passed",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "tier standard requires approval receipt for 1 high-risk command(s)",
       "note": "tier standard requires approval receipt for 1 high-risk command(s)",
       "severity": "error",

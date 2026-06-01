@@ -32,6 +32,12 @@
       "status": "passed"
     },
     {
+      "name": "mutation guard passed",
+      "note": "mutation guard passed",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "tier \"deep\" requires remaining_risks",
       "note": "tier \"deep\" requires remaining_risks",
       "severity": "error",

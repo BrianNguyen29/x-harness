@@ -42,6 +42,12 @@
       "note": "governance warning: human_only path schemas/completion-card.schema.json: report-only mode",
       "severity": "warning",
       "status": "warning"
+    },
+    {
+      "name": "mutation guard passed",
+      "note": "mutation guard passed",
+      "severity": "info",
+      "status": "passed"
     }
   ],
   "decision": {

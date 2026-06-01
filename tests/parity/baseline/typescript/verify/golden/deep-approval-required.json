@@ -34,6 +34,12 @@
       "status": "passed"
     },
     {
+      "name": "mutation guard passed",
+      "note": "mutation guard passed",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "deep task requires human approval before admission",
       "note": "deep task requires human approval before admission",
       "severity": "error",
