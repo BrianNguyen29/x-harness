@@ -2334,3 +2334,197 @@ func TestTierGuardWarnsStandardWithAuthorityPathAndHighRiskCommand(t *testing.T)
 		t.Fatalf("expected tier guard warning in notes, got %v", result.Notes)
 	}
 }
+
+// Product intent status advisory tests (advisory-only; never blocks admission).
+func standardProductIntentFixture(intent map[string]any) map[string]any {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "TASK-PRODUCT-INTENT",
+		"tier":           "standard",
+		"owner":          "alice",
+		"accountable":    "bob",
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "ok",
+			"evidence":   []any{"e1"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission":         map[string]any{"outcome": "success"},
+		"acceptance_status": "accepted",
+		"handoff":           map[string]any{"next_action": "none", "owner": "alice"},
+		"done_checklist":    map[string]any{"source_of_truth_read": true},
+		"prediction": map[string]any{
+			"claim":               "p",
+			"expected_effect":     "e",
+			"falsification_method": "f",
+			"horizon":             "same_verify",
+		},
+		"evidence": map[string]any{
+			"files_changed":    []any{"src/x.ts"},
+			"command_evidence": []any{map[string]any{"command": "npm test", "exit_code": 0}},
+		},
+	}
+	if intent != nil {
+		doc["product_intent"] = intent
+	}
+	return doc
+}
+
+func deepProductIntentFixture(intent map[string]any) map[string]any {
+	doc := standardProductIntentFixture(intent)
+	doc["tier"] = "deep"
+	doc["state"] = map[string]any{
+		"read_set":  []any{"src/x.ts"},
+		"write_set": []any{"src/x.ts"},
+	}
+	evidence := map[string]any{
+		"files_changed":    []any{"src/x.ts"},
+		"command_evidence": []any{map[string]any{"command": "npm test", "exit_code": 0}},
+		"verification_artifacts": []any{
+			map[string]any{
+				"kind":              "unit_test",
+				"command":           "npm test",
+				"status":            "passed",
+				"verifies":          []any{"x"},
+				"does_not_verify":   []any{"y"},
+			},
+		},
+		"untested_regions":   []any{"no e2e"},
+		"remaining_risks":    []any{"prod untested"},
+		"rollback_policy":    []any{"revert commit"},
+		"execution_controls": []any{"feature flag"},
+	}
+	doc["evidence"] = evidence
+	return doc
+}
+
+func lightProductIntentFixture() map[string]any {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "TASK-PRODUCT-INTENT-LIGHT",
+		"tier":           "light",
+		"owner":          "alice",
+		"accountable":    "bob",
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "ok",
+			"evidence":   []any{"e1"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission":         map[string]any{"outcome": "success"},
+		"acceptance_status": "accepted",
+		"handoff":           map[string]any{"next_action": "none", "owner": "alice"},
+		"evidence": map[string]any{
+			"files_changed":    []any{"src/x.ts"},
+			"manual_rationale": "doc tweak",
+		},
+	}
+	return doc
+}
+
+func containsNote(notes []string, fragment string) bool {
+	for _, n := range notes {
+		if strings.Contains(n, fragment) {
+			return true
+		}
+	}
+	return false
+}
+
+func TestProductIntentStandardMissingEmitsAdvisory(t *testing.T) {
+	result := Run(standardProductIntentFixture(nil), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted (advisory-only), got %s", result.AcceptanceStatus)
+	}
+	if !containsNote(result.Notes, "product_intent.status not declared") {
+		t.Fatalf("expected product_intent missing advisory note, got %v", result.Notes)
+	}
+}
+
+func TestProductIntentStandardUnknownEmitsAdvisory(t *testing.T) {
+	intent := map[string]any{"status": "unknown"}
+	result := Run(standardProductIntentFixture(intent), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "product_intent.status is unknown") {
+		t.Fatalf("expected unknown advisory note, got %v", result.Notes)
+	}
+}
+
+func TestProductIntentStandardAlignedNoAdvisory(t *testing.T) {
+	intent := map[string]any{"status": "aligned"}
+	result := Run(standardProductIntentFixture(intent), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if containsNote(result.Notes, "product_intent.status") {
+		t.Fatalf("did not expect product_intent advisory for aligned, got %v", result.Notes)
+	}
+}
+
+func TestProductIntentStandardOtherStatusesNoAdvisory(t *testing.T) {
+	for _, status := range []string{"unreviewed", "disputed", "not_applicable"} {
+		t.Run(status, func(t *testing.T) {
+			intent := map[string]any{"status": status}
+			result := Run(standardProductIntentFixture(intent), false, false)
+			if result.Outcome != "success" {
+				t.Fatalf("expected success for status %s, got %s errors=%v", status, result.Outcome, result.Errors)
+			}
+			if containsNote(result.Notes, "product_intent.status") {
+				t.Fatalf("did not expect product_intent advisory for status %s, got %v", status, result.Notes)
+			}
+		})
+	}
+}
+
+func TestProductIntentDeepMissingEmitsAdvisory(t *testing.T) {
+	result := Run(deepProductIntentFixture(nil), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "product_intent.status not declared") {
+		t.Fatalf("expected product_intent missing advisory note on deep, got %v", result.Notes)
+	}
+}
+
+func TestProductIntentDeepUnknownEmitsAdvisory(t *testing.T) {
+	intent := map[string]any{"status": "unknown"}
+	result := Run(deepProductIntentFixture(intent), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "product_intent.status is unknown") {
+		t.Fatalf("expected unknown advisory note on deep, got %v", result.Notes)
+	}
+}
+
+func TestProductIntentLightNoAdvisory(t *testing.T) {
+	result := Run(lightProductIntentFixture(), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success for light, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if containsNote(result.Notes, "product_intent.status") {
+		t.Fatalf("did not expect product_intent advisory for light, got %v", result.Notes)
+	}
+}
+
+func TestProductIntentEmptyStatusTreatedAsMissing(t *testing.T) {
+	intent := map[string]any{"status": "   "}
+	result := Run(standardProductIntentFixture(intent), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "product_intent.status not declared") {
+		t.Fatalf("expected missing advisory for empty status, got %v", result.Notes)
+	}
+}

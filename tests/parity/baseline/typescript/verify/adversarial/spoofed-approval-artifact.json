@@ -26,6 +26,12 @@
       "status": "warning"
     },
     {
+      "name": "product_intent.status not declared (advisory-only; admission acceptance is not product correctness)",
+      "note": "product_intent.status not declared (advisory-only; admission acceptance is not product correctness)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "severity": "info",
@@ -100,7 +106,8 @@
   "episode": null,
   "input_card_hash": "sha256:603370d47cd27b228219a2b9a1c97f2fef0b38e73dff1a62c2f2b1198d9340d6",
   "ok": false,
-  "policy_hash": "sha256:5c08082dadbc591d27f6e9b8640fe4c430d17afba75e179abab1633110b231cc",
+  "policy_hash": "sha256:f309566cc6dd26cc476836ce05059da405c9bf748dbb62bf488366046a7b8094",
+  "product_intent_status": null,
   "recovery": {
     "next_action": "Declare what each validation artifact verifies and does not verify.",
     "owner": "implementation-worker",

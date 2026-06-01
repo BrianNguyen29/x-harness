@@ -54,6 +54,9 @@ export function buildAdmissionInput(
       context_alignment: card.context_alignment as
         | Record<string, unknown>
         | undefined,
+      product_intent: card.product_intent as
+        | Record<string, unknown>
+        | undefined,
       isCardMode: true,
       staleGround: effectiveStaleGround,
       strict: opts.strict === true,
@@ -76,6 +79,9 @@ export function buildAdmissionInput(
       | Record<string, unknown>
       | undefined,
     context_alignment: loaded.subagentReturn?.context_alignment as
+      | Record<string, unknown>
+      | undefined,
+    product_intent: loaded.subagentReturn?.product_intent as
       | Record<string, unknown>
       | undefined,
     staleGround: effectiveStaleGround,

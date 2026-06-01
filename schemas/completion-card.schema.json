@@ -341,6 +341,25 @@
       "description": "Optional context alignment evidence. References context-alignment.schema.json. Required for standard/deep per context-floor policy but optional at schema level for forward compatibility.",
       "$ref": "context-alignment.schema.json"
     },
+    "product_intent": {
+      "type": "object",
+      "description": "Optional product intent status. Advisory-only; admission acceptance is not product correctness. When present, the engine emits advisory notes for missing or 'unknown' status on standard/deep tiers. Aligned/unreviewed/disputed/not_applicable do not block admission.",
+      "properties": {
+        "status": {
+          "enum": [
+            "aligned",
+            "unreviewed",
+            "disputed",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "approval_receipt": {
       "type": "object",
       "description": "Optional approval receipt for high-risk command evidence. Required for standard/deep when evidence contains high-risk or unknown commands (standard: high/unknown; deep: medium/high/unknown).",

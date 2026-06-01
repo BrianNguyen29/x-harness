@@ -115,6 +115,9 @@ func Run(doc map[string]any, strict bool, contextFloor bool) Result {
 		}
 	}
 
+	// Product intent advisory (optional; never blocks admission)
+	notes = append(notes, evaluateProductIntent(doc, tier)...)
+
 	// Command safety
 	cmdResult := evaluateCommandSafety(doc)
 	for _, e := range cmdResult.errors {

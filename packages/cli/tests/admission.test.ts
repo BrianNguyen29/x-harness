@@ -2564,4 +2564,345 @@ describe("admission", () => {
     expect(result.acceptance_status).toBe("accepted");
     expect(result.notes.some((n) => n.includes("context floor"))).toBe(false);
   });
+
+  // product_intent.status advisory tests (advisory-only; never blocks admission)
+  it("advises standard tier when product_intent.status is missing", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(
+      result.notes.some(
+        (n) =>
+          n.includes("product_intent.status not declared") &&
+          n.includes("advisory-only")
+      )
+    ).toBe(true);
+  });
+
+  it("advises standard tier when product_intent.status is unknown", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      product_intent: { status: "unknown" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(
+      result.notes.some(
+        (n) =>
+          n.includes("product_intent.status is unknown") &&
+          n.includes("advisory-only")
+      )
+    ).toBe(true);
+  });
+
+  it("does not advise standard tier when product_intent.status is aligned", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      product_intent: { status: "aligned" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.notes.some((n) => n.includes("product_intent.status"))).toBe(
+      false
+    );
+  });
+
+  it("does not advise standard tier for unreviewed/disputed/not_applicable", () => {
+    for (const status of ["unreviewed", "disputed", "not_applicable"]) {
+      const result = runAdmission({
+        schema_version: "1",
+        task_id: "T1",
+        tier: "standard",
+        owner: "alice",
+        accountable: "bob",
+        claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+        verification: { status: "passed", checks: [] },
+        admission: { outcome: "success" },
+        acceptance_status: "accepted",
+        handoff: { next_action: "none", owner: "alice" },
+        product_intent: { status },
+        evidence: {
+          files_changed: ["a.ts"],
+          command_evidence: [{ command: "npm test", exit_code: 0 }],
+        },
+        done_checklist: {
+          source_of_truth_read: true,
+          scope_explained: true,
+          read_write_sets_declared: true,
+          evidence_attached: true,
+          coverage_gap_declared: true,
+          risk_and_rollback_declared: true,
+          prediction_declared: true,
+        },
+        prediction: {
+          claim: "Task completes successfully",
+          expected_effect: "Tests pass",
+          falsification_method: "Run tests",
+          horizon: "same_verify",
+        },
+      });
+      expect(result.outcome).toBe("success");
+      expect(
+        result.notes.some((n) => n.includes("product_intent.status"))
+      ).toBe(false);
+    }
+  });
+
+  it("advises deep tier when product_intent.status is missing", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(
+      result.notes.some(
+        (n) =>
+          n.includes("product_intent.status not declared") &&
+          n.includes("advisory-only")
+      )
+    ).toBe(true);
+  });
+
+  it("advises deep tier when product_intent.status is unknown", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      product_intent: { status: "unknown" },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(
+      result.notes.some(
+        (n) =>
+          n.includes("product_intent.status is unknown") &&
+          n.includes("advisory-only")
+      )
+    ).toBe(true);
+  });
+
+  it("does not advise light tier for missing product_intent.status", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        manual_rationale: "simple doc fix",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.notes.some((n) => n.includes("product_intent.status"))).toBe(
+      false
+    );
+  });
+
+  it("treats empty/whitespace product_intent.status as missing on standard", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      product_intent: { status: "   " },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(
+      result.notes.some((n) => n.includes("product_intent.status not declared"))
+    ).toBe(true);
+  });
 });
