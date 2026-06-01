@@ -207,6 +207,15 @@ func TestVerifySubagentReturnPass(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Create referenced context file so context floor passes
+	docsDir := filepath.Join(tmpDir, "docs")
+	if err := os.MkdirAll(docsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(docsDir, "product.md"), []byte("# Product\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
 	origWd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
@@ -2113,6 +2122,15 @@ done_checklist:
   coverage_gap_declared: true
   risk_and_rollback_declared: true
   prediction_declared: true
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - "docs/product.md"
+  architecture_refs: []
+  decision_refs: []
+  test_matrix_refs: []
+  unresolved_context_questions: []
+  context_evidence: []
 prediction:
   claim: Standard tier test
   expected_effect: Works
@@ -2144,6 +2162,15 @@ handoff:
 `
 	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
 	if err := os.WriteFile(cardDst, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create referenced context file so context floor passes
+	docsDir := filepath.Join(tmpDir, "docs")
+	if err := os.MkdirAll(docsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(docsDir, "product.md"), []byte("# Product\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2260,6 +2287,16 @@ evidence:
     - "Revert commit."
   execution_controls:
     - "Deploy behind feature flag."
+context_alignment:
+  stale_ground_checked: true
+  context_pack_id: "ctx-deep-001"
+  product_contract_refs:
+    - "docs/product.md"
+  architecture_refs: []
+  decision_refs: []
+  test_matrix_refs: []
+  unresolved_context_questions: []
+  context_evidence: []
 done_checklist:
   source_of_truth_read: true
   scope_explained: true
@@ -2293,6 +2330,15 @@ handoff:
 `
 	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
 	if err := os.WriteFile(cardDst, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create referenced context file so context floor passes
+	docsDir := filepath.Join(tmpDir, "docs")
+	if err := os.MkdirAll(docsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(docsDir, "product.md"), []byte("# Product\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2549,5 +2595,284 @@ handoff:
 	}
 	if result.MutationGuard.Violated {
 		t.Fatal("expected mutation guard not violated")
+	}
+}
+
+func TestVerifyStandardTierAutoEnablesContextFloor(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cardYAML := `schema_version: "1"
+task_id: TASK-CF-AUTO-001
+tier: standard
+owner: alice
+accountable: bob
+done_checklist:
+  source_of_truth_read: true
+prediction:
+  claim: Auto context floor test
+  expected_effect: Tests pass
+  measurable_signal: npm test
+  falsification_method: Skip fix
+  horizon: same_verify
+evidence:
+  files_changed:
+    - src/main.ts
+  command_evidence:
+    - command: npm test
+      exit_code: 0
+claim:
+  fix_status: fixed
+  summary: Auto context floor test
+  evidence:
+    - description: Test pass
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	if err := os.WriteFile(cardDst, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
+
+	if code == ExitOK {
+		t.Fatalf("expected non-ok exit, got %d. stdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.OK {
+		t.Fatal("expected not ok")
+	}
+	if result.AdmissionOutcome != "failed" {
+		t.Fatalf("expected admission_outcome=failed, got %s", result.AdmissionOutcome)
+	}
+	hasContextError := false
+	for _, e := range result.AdmissionErrors {
+		if strings.Contains(e, "context_alignment") {
+			hasContextError = true
+			break
+		}
+	}
+	if !hasContextError {
+		t.Fatalf("expected error mentioning context_alignment, got errors=%v", result.AdmissionErrors)
+	}
+}
+
+func TestVerifyLightTierDoesNotAutoEnableContextFloor(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cardYAML := `schema_version: "1"
+task_id: TASK-CF-LIGHT-001
+tier: light
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - src/main.ts
+  manual_rationale: Simple change
+claim:
+  fix_status: fixed
+  summary: Light tier context floor test
+  evidence:
+    - description: Test pass
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	if err := os.WriteFile(cardDst, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
+
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if !result.OK {
+		t.Fatalf("expected ok, got outcome=%s status=%s", result.AdmissionOutcome, result.AcceptanceStatus)
+	}
+}
+
+func TestVerifyExplicitContextFloorEnablesForLight(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cardYAML := `schema_version: "1"
+task_id: TASK-CF-EXPLICIT-001
+tier: light
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - src/main.ts
+  manual_rationale: Simple change
+claim:
+  fix_status: fixed
+  summary: Light tier explicit context floor test
+  evidence:
+    - description: Test pass
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+	cardDst := filepath.Join(tmpDir, "completion-card.yaml")
+	if err := os.WriteFile(cardDst, []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	schemaSrc := filepath.Join("..", "..", "schemas", "completion-card.schema.json")
+	schemaDst := filepath.Join(tmpDir, "schemas", "completion-card.schema.json")
+	if err := os.MkdirAll(filepath.Dir(schemaDst), 0755); err != nil {
+		t.Fatal(err)
+	}
+	schemaData, err := os.ReadFile(schemaSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schemaDst, schemaData, 0644); err != nil {
+		t.Fatal(err)
+	}
+	contextSrc := filepath.Join("..", "..", "schemas", "context-alignment.schema.json")
+	contextDst := filepath.Join(tmpDir, "schemas", "context-alignment.schema.json")
+	contextData, err := os.ReadFile(contextSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contextDst, contextData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--context-floor", "--json"}, &stdout, &stderr)
+
+	// Light tier with --context-floor is advisory-only; should still pass
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if !result.OK {
+		t.Fatalf("expected ok for light tier advisory context floor, got outcome=%s status=%s", result.AdmissionOutcome, result.AcceptanceStatus)
 	}
 }

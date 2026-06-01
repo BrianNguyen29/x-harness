@@ -20,6 +20,10 @@ done_checklist:
   coverage_gap_declared: true
   risk_and_rollback_declared: true
   prediction_declared: true
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - "docs/product.md"
 prediction:
   claim: "Subagent compatibility result is admission-ready."
   expected_effect: "Verify accepts the standard compatibility return."

@@ -85,6 +85,7 @@ export interface AdmissionInput {
   done_checklist?: Record<string, unknown>;
   prediction?: Record<string, unknown>;
   pgv_advice?: Record<string, unknown>;
+  context_alignment?: Record<string, unknown>;
   // Flag to indicate card mode (full completion card) vs legacy mode
   // When true, done_checklist and prediction are required for standard/deep tiers
   // When false/undefined, legacy mode is assumed and new requirements are not enforced
@@ -93,6 +94,8 @@ export interface AdmissionInput {
   strict?: boolean;
   // Approval receipt for high-risk commands
   approval_receipt?: Record<string, unknown>;
+  // Context floor enforcement flag
+  contextFloor?: boolean;
   // Backward compatibility: subagent-return shape
   subagentReturn?: Record<string, unknown>;
 }
@@ -103,6 +106,63 @@ export interface AdmissionResult {
   errors: string[];
   notes: string[];
   blocking_predicate?: string | null;
+}
+
+interface ContextFloorResult {
+  errors: string[];
+  notes: string[];
+}
+
+function evaluateContextFloor(input: AdmissionInput): ContextFloorResult {
+  const result: ContextFloorResult = { errors: [], notes: [] };
+  const tier = input.tier;
+
+  // Context floor is only enforced for standard and deep tiers
+  if (tier !== "standard" && tier !== "deep") {
+    result.notes.push("context floor advisory only for light tier");
+    return result;
+  }
+
+  const ctxAlign = input.context_alignment as Record<string, unknown> | undefined;
+  if (ctxAlign == null) {
+    result.errors.push("context_alignment is required for standard/deep tier when context floor is enabled");
+    return result;
+  }
+
+  if (ctxAlign.stale_ground_checked !== true) {
+    result.errors.push("context_alignment.stale_ground_checked must be true for standard/deep tier");
+    return result;
+  }
+
+  const refArrays = ["product_contract_refs", "architecture_refs", "decision_refs", "test_matrix_refs"];
+  let hasOneRef = false;
+  for (const refKey of refArrays) {
+    const refs = ctxAlign[refKey] as unknown[] | undefined;
+    if (refs != null && refs.length > 0) {
+      hasOneRef = true;
+      break;
+    }
+  }
+  if (!hasOneRef) {
+    result.errors.push("context_alignment must have at least one non-empty ref array (product_contract_refs, architecture_refs, decision_refs, or test_matrix_refs)");
+    return result;
+  }
+
+  if (tier === "deep") {
+    const contextPackID = ctxAlign.context_pack_id as string | undefined;
+    if (contextPackID == null || String(contextPackID).trim() === "") {
+      result.errors.push("context_alignment.context_pack_id is required for deep tier");
+      return result;
+    }
+
+    const unresolvedQuestions = ctxAlign.unresolved_context_questions as unknown[] | undefined;
+    if (unresolvedQuestions != null && unresolvedQuestions.length > 0) {
+      result.errors.push("context_alignment.unresolved_context_questions must be empty for deep tier");
+      return result;
+    }
+  }
+
+  return result;
 }
 
 export function runAdmission(input: AdmissionInput): AdmissionResult {
@@ -208,6 +268,15 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
 
   for (const item of evaluateDoneChecklistAndPrediction(input).errors) {
     applyFinding(item);
+  }
+
+  // Context floor (default for standard/deep; opt-in for light)
+  if (input.contextFloor) {
+    const cfResult = evaluateContextFloor(input);
+    notes.push(...cfResult.notes);
+    for (const errMsg of cfResult.errors) {
+      applyFinding({ message: errMsg, predicate: "context_floor_blocked" });
+    }
   }
 
   // Governance / human approval check for deep

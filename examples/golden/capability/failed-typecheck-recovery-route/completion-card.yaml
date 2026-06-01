@@ -3,6 +3,15 @@ task_id: TASK-GOLDEN-TYPECHECK-001
 tier: standard
 owner: alice
 accountable: bob
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - examples/golden/capability/failed-typecheck-recovery-route/README.md
+  architecture_refs: []
+  decision_refs: []
+  test_matrix_refs: []
+  unresolved_context_questions: []
+  context_evidence: []
 done_checklist:
   source_of_truth_read: true
   scope_explained: true

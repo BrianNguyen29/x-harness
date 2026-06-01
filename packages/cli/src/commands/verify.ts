@@ -183,6 +183,11 @@ export function verifyCommand(): Command {
       false
     )
     .option(
+      "--context-floor",
+      "Enable context floor checks (default for standard/deep; opt-in for light)",
+      false
+    )
+    .option(
       "--stale-ground",
       "Mark the task as having stale ground (blocks admission)",
       false
@@ -213,6 +218,11 @@ export function verifyCommand(): Command {
     )
     .action(async (opts: VerifyOptions) => {
       try {
+        // Auto-enable context floor for standard and deep tiers
+        const effectiveTier = opts.tier ?? "standard";
+        if (!opts.contextFloor && (effectiveTier === "standard" || effectiveTier === "deep")) {
+          opts.contextFloor = true;
+        }
         const result = await runVerifyPipeline(opts);
         if (opts.episode || opts.bundle) {
           result.episode = await createEpisodeFromVerifyResult(result, {

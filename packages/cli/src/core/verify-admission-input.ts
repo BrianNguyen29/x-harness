@@ -6,6 +6,7 @@ export interface VerifyAdmissionOptions {
   taskId?: string;
   staleGround?: boolean;
   strict?: boolean;
+  contextFloor?: boolean;
 }
 
 export function buildAdmissionInput(
@@ -50,9 +51,13 @@ export function buildAdmissionInput(
         | Record<string, unknown>
         | undefined,
       pgv_advice: card.pgv_advice as Record<string, unknown> | undefined,
+      context_alignment: card.context_alignment as
+        | Record<string, unknown>
+        | undefined,
       isCardMode: true,
       staleGround: effectiveStaleGround,
       strict: opts.strict === true,
+      contextFloor: opts.contextFloor === true,
     };
   }
 
@@ -70,7 +75,11 @@ export function buildAdmissionInput(
     pgv_advice: loaded.subagentReturn?.pgv_advice as
       | Record<string, unknown>
       | undefined,
+    context_alignment: loaded.subagentReturn?.context_alignment as
+      | Record<string, unknown>
+      | undefined,
     staleGround: effectiveStaleGround,
     strict: opts.strict === true,
+    contextFloor: opts.contextFloor === true,
   };
 }

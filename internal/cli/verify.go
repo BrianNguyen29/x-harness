@@ -234,7 +234,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			tier = "standard"
 		}
 		mappedDoc["tier"] = tier
-		for _, key := range []string{"verification", "evidence", "handoff", "done_checklist", "prediction", "pgv_advice", "state"} {
+		for _, key := range []string{"verification", "evidence", "handoff", "done_checklist", "prediction", "pgv_advice", "state", "context_alignment"} {
 			if v, ok := subagentDoc[key]; ok {
 				mappedDoc[key] = v
 			}
@@ -252,6 +252,11 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	}
 	if !useMutationGuard && (effectiveTier == "standard" || effectiveTier == "deep") {
 		useMutationGuard = true
+	}
+
+	// Auto-enable context floor for standard and deep tiers
+	if !contextFloor && (effectiveTier == "standard" || effectiveTier == "deep") {
+		contextFloor = true
 	}
 
 	var result VerifyResult

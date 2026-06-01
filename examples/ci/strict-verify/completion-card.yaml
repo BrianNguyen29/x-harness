@@ -4,6 +4,15 @@ tier: standard
 owner: ci
 accountable: maintainer
 context_acknowledged: true
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - examples/ci/strict-verify/README.md
+  architecture_refs: []
+  decision_refs: []
+  test_matrix_refs: []
+  unresolved_context_questions: []
+  context_evidence: []
 intake:
   classification: normal
   mapped_tier: standard
