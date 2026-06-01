@@ -1689,7 +1689,7 @@ func TestTierGuardWarnsStandardWithBoth(t *testing.T) {
 			"horizon":              "same_verify",
 		},
 		"evidence": map[string]any{
-			"files_changed": []any{"policies/admission.yaml"},
+			"files_changed": []any{"internal/admission/roles.go"},
 			"command_evidence": []any{
 				map[string]any{"command": "rm -rf dist", "exit_code": 0},
 			},
@@ -1737,6 +1737,296 @@ func TestTierGuardWarnsStandardWithBoth(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("expected tier guard warning in notes, got %v", result.Notes)
+	}
+}
+
+// Verify-stage v1 auto-escalation guard tests. The guard requires
+// `deep` tier for cards whose `claim.evidence.files_changed` matches
+// any high-risk path pattern (schemas/, policies/, .github/workflows/,
+// authority, auth, migrations/). Lower tiers are withheld with
+// predicate `tier_escalation_required` unless an approved governance
+// intervention is recorded. Wording and predicate must stay parity-safe
+// with the TS implementation in packages/cli/src/core/admission-evidence.ts
+// and the policy in policies/escalation.yaml.
+
+func TestEscalationBlocksLightWithPolicyPath(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "light",
+		"owner":          "a",
+		"accountable":    "b",
+		"evidence": map[string]any{
+			"files_changed":    []any{"policies/admission.yaml"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission":         map[string]any{"outcome": "success"},
+		"acceptance_status": "accepted",
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
+	}
+	result := Run(doc, false, false)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.BlockingPredicate != "tier_escalation_required" {
+		t.Fatalf("expected blocking_predicate tier_escalation_required, got %q", result.BlockingPredicate)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if strings.Contains(e, "tier escalation required") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected tier escalation error, got %v", result.Errors)
+	}
+}
+
+func TestEscalationBlocksStandardWithAuthPath(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist":  map[string]any{"source_of_truth_read": true},
+		"prediction":      map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
+		"evidence": map[string]any{
+			"files_changed":    []any{"src/auth/session.ts"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission":         map[string]any{"outcome": "success"},
+		"acceptance_status": "accepted",
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
+	}
+	result := Run(doc, false, false)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.BlockingPredicate != "tier_escalation_required" {
+		t.Fatalf("expected blocking_predicate tier_escalation_required, got %q", result.BlockingPredicate)
+	}
+}
+
+func TestEscalationAllowsDeepWithSchemaPath(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "deep",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist":  map[string]any{"source_of_truth_read": true},
+		"prediction":      map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
+		"state":           map[string]any{"read_set": []any{"schemas/x.json"}, "write_set": []any{"schemas/x.json"}},
+		"evidence": map[string]any{
+			"files_changed":    []any{"schemas/completion-card.schema.json"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+			"verification_artifacts": []any{
+				map[string]any{
+					"kind": "unit_test", "command": "go test", "status": "passed",
+					"verifies": []any{"x"}, "does_not_verify": []any{"y"},
+				},
+			},
+			"untested_regions":   []any{"no e2e"},
+			"remaining_risks":    []any{"prod untested"},
+			"rollback_policy":    []any{"revert commit"},
+			"execution_controls": []any{"feature flag"},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission":         map[string]any{"outcome": "success"},
+		"acceptance_status": "accepted",
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
+	}
+	result := Run(doc, false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success for deep + schema path, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.BlockingPredicate != "" {
+		t.Fatalf("expected no blocking predicate, got %q", result.BlockingPredicate)
+	}
+}
+
+func TestEscalationAllowsSafeDocsPath(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "light",
+		"owner":          "a",
+		"accountable":    "b",
+		"evidence": map[string]any{
+			"files_changed":    []any{"docs/readme.md"},
+			"manual_rationale": "doc tweak",
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission":         map[string]any{"outcome": "success"},
+		"acceptance_status": "accepted",
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
+	}
+	result := Run(doc, false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success for light + safe docs path, got %s errors=%v", result.Outcome, result.Errors)
+	}
+}
+
+func TestEscalationBypassedByApprovedGovernance(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist":  map[string]any{"source_of_truth_read": true},
+		"prediction":      map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
+		"evidence": map[string]any{
+			"files_changed":    []any{"policies/admission.yaml"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"governance": map[string]any{
+			"requires_human_approval": true,
+			"approval_status":         "approved",
+			"approver":                "maintainer",
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission":         map[string]any{"outcome": "success"},
+		"acceptance_status": "accepted",
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
+	}
+	result := Run(doc, false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success for standard + escalation files with approved governance, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	found := false
+	for _, n := range result.Notes {
+		if strings.Contains(n, "tier escalation bypassed by approved governance intervention") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected escalation bypass note, got %v", result.Notes)
+	}
+}
+
+func TestEscalationBlocksStandardWithWorkflowPath(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist":  map[string]any{"source_of_truth_read": true},
+		"prediction":      map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
+		"evidence": map[string]any{
+			"files_changed":    []any{".github/workflows/x-harness-verify.yml"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission":         map[string]any{"outcome": "success"},
+		"acceptance_status": "accepted",
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
+	}
+	result := Run(doc, false, false)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.BlockingPredicate != "tier_escalation_required" {
+		t.Fatalf("expected blocking_predicate tier_escalation_required, got %q", result.BlockingPredicate)
+	}
+}
+
+func TestEscalationTaxonomy(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "light",
+		"owner":          "a",
+		"accountable":    "b",
+		"evidence": map[string]any{
+			"files_changed":    []any{"migrations/0001_init.sql"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission":         map[string]any{"outcome": "success"},
+		"acceptance_status": "accepted",
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
+	}
+	result := Run(doc, false, false)
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed, got %s", result.Outcome)
+	}
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason for tier escalation failure")
+	}
+	if result.WithheldReason.FailureClass != "tier_under_escalated" {
+		t.Fatalf("expected failure_class tier_under_escalated, got %s", result.WithheldReason.FailureClass)
+	}
+	if result.WithheldReason.FailureStage != "verify_pipeline" {
+		t.Fatalf("expected failure_stage verify_pipeline, got %s", result.WithheldReason.FailureStage)
+	}
+	if result.WithheldReason.Recoverability != "raise_tier" {
+		t.Fatalf("expected recoverability raise_tier, got %s", result.WithheldReason.Recoverability)
+	}
+	if result.WithheldReason.NextAction != "raise_tier_to_deep" {
+		t.Fatalf("expected next_action raise_tier_to_deep, got %s", result.WithheldReason.NextAction)
 	}
 }
 
@@ -2285,7 +2575,7 @@ func TestTierGuardWarnsStandardWithAuthorityPathAndHighRiskCommand(t *testing.T)
 			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
 		},
 		"evidence": map[string]any{
-			"files_changed": []any{"internal/authority/roles.yaml"},
+			"files_changed": []any{"internal/permission/roles.go"},
 			"command_evidence": []any{
 				map[string]any{"command": "rm -rf dist", "exit_code": 0},
 			},

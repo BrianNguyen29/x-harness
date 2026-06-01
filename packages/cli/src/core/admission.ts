@@ -14,6 +14,7 @@ import {
 } from "./admission-accessors.js";
 import {
   evaluateEvidenceRules,
+  evaluateEscalation,
   evaluateTierGuard,
 } from "./admission-evidence.js";
 import { evaluateDoneChecklistAndPrediction } from "./admission-prediction.js";
@@ -386,6 +387,12 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
       );
       if (!blockingPredicate) blockingPredicate = "admission_failed";
     }
+  }
+
+  const escalationResult = evaluateEscalation(input);
+  notes.push(...escalationResult.notes);
+  for (const item of escalationResult.errors) {
+    applyFinding(item);
   }
 
   const tierGuardResult = evaluateTierGuard(input);

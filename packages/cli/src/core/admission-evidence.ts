@@ -258,6 +258,90 @@ function isHighRiskFilePath(path: string): boolean {
   );
 }
 
+// v1 verify-stage auto-escalation high-risk path patterns. This is a
+// hardcoded copy that mirrors the canonical
+// verify_stage_escalation.v1.high_risk_path_patterns list declared in
+// policies/escalation.yaml; the values are inlined here rather than
+// loaded at runtime, so this slice must be kept in lockstep with that
+// policy file. Parity-safe with the Go evaluator in
+// internal/admission/escalation.go.
+const ESCALATION_HIGH_RISK_PATH_PATTERNS: string[] = [
+  "schemas/",
+  "policies/",
+  ".github/workflows/",
+  "authority",
+  "auth",
+  "migrations/",
+];
+
+function isEscalationHighRiskPath(path: string): boolean {
+  const lower = path.toLowerCase();
+  return ESCALATION_HIGH_RISK_PATH_PATTERNS.some((pattern) =>
+    lower.includes(pattern)
+  );
+}
+
+function collectEscalationHighRiskFiles(files: unknown[]): string[] {
+  const matched: string[] = [];
+  for (const item of files) {
+    if (typeof item === "string" && isEscalationHighRiskPath(item)) {
+      matched.push(item);
+    }
+  }
+  return matched;
+}
+
+function hasApprovedTierDowngradeInterventionForEscalation(
+  governance: Record<string, unknown> | undefined
+): boolean {
+  if (!governance) return false;
+  const approvalStatus = governance.approval_status;
+  return approvalStatus === "approved";
+}
+
+// evaluateEscalation enforces the v1 verify-stage auto-escalation guard.
+// A card declared `light` or `standard` whose evidence.files_changed
+// matches any high-risk path pattern is withheld with predicate
+// `tier_escalation_required` unless an approved governance intervention
+// has been recorded (same bypass as the intake tier-downgrade check).
+//
+// `deep` cards are never blocked by this guard, regardless of which paths
+// are declared. Wording is parity-safe with internal/admission/escalation.go
+// and policies/escalation.yaml.
+export function evaluateEscalation(
+  input: AdmissionInput
+): AdmissionEvidenceEvaluation {
+  const errors: AdmissionFinding[] = [];
+  const notes: string[] = [];
+  const tier = input.tier;
+  if (tier !== "light" && tier !== "standard") {
+    return { errors, notes };
+  }
+
+  const files = getFilesChanged(input);
+  if (!files || files.length === 0) {
+    return { errors, notes };
+  }
+
+  const highRiskFiles = collectEscalationHighRiskFiles(files);
+  if (highRiskFiles.length === 0) {
+    return { errors, notes };
+  }
+
+  if (hasApprovedTierDowngradeInterventionForEscalation(input.governance)) {
+    notes.push(
+      `tier escalation bypassed by approved governance intervention for high-risk files (${highRiskFiles.join(", ")})`
+    );
+    return { errors, notes };
+  }
+
+  errors.push({
+    message: `tier escalation required: ${tier} tier declared with high-risk files ${JSON.stringify(highRiskFiles)}; required tier is deep (or an approved governance intervention must be recorded)`,
+    predicate: "tier_escalation_required",
+  });
+  return { errors, notes };
+}
+
 export function evaluateTierGuard(
   input: AdmissionInput
 ): AdmissionEvidenceEvaluation {

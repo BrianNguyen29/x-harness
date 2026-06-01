@@ -92,6 +92,17 @@ func Run(doc map[string]any, strict bool, contextFloor bool) Result {
 		}
 	}
 
+	// Verify-stage v1 auto-escalation: light/standard with high-risk
+	// files_changed must be `deep` (or carry an approved governance
+	// intervention). Mirrors policies/escalation.yaml. Runs before the
+	// tier guard so the dedicated `tier_escalation_required` predicate
+	// takes priority as the blocking predicate for the failure taxonomy.
+	escResult := evaluateEscalation(doc, tier)
+	notes = append(notes, escResult.notes...)
+	for _, e := range escResult.errors {
+		applyFinding(e.message, e.predicate, false)
+	}
+
 	// Tier guard: warn/block suspicious low-tier declarations for high-risk content
 	tgResult := evaluateTierGuard(doc, tier)
 	notes = append(notes, tgResult.notes...)
