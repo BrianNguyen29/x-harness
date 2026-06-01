@@ -20,6 +20,12 @@
       "status": "passed"
     },
     {
+      "name": "context floor advisory only for light tier",
+      "note": "context floor advisory only for light tier",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "severity": "info",

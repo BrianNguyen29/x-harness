@@ -123,18 +123,29 @@ function evaluateContextFloor(input: AdmissionInput): ContextFloorResult {
     return result;
   }
 
-  const ctxAlign = input.context_alignment as Record<string, unknown> | undefined;
+  const ctxAlign = input.context_alignment as
+    | Record<string, unknown>
+    | undefined;
   if (ctxAlign == null) {
-    result.errors.push("context_alignment is required for standard/deep tier when context floor is enabled");
+    result.errors.push(
+      "context_alignment is required for standard/deep tier when context floor is enabled"
+    );
     return result;
   }
 
   if (ctxAlign.stale_ground_checked !== true) {
-    result.errors.push("context_alignment.stale_ground_checked must be true for standard/deep tier");
+    result.errors.push(
+      "context_alignment.stale_ground_checked must be true for standard/deep tier"
+    );
     return result;
   }
 
-  const refArrays = ["product_contract_refs", "architecture_refs", "decision_refs", "test_matrix_refs"];
+  const refArrays = [
+    "product_contract_refs",
+    "architecture_refs",
+    "decision_refs",
+    "test_matrix_refs",
+  ];
   let hasOneRef = false;
   for (const refKey of refArrays) {
     const refs = ctxAlign[refKey] as unknown[] | undefined;
@@ -144,20 +155,28 @@ function evaluateContextFloor(input: AdmissionInput): ContextFloorResult {
     }
   }
   if (!hasOneRef) {
-    result.errors.push("context_alignment must have at least one non-empty ref array (product_contract_refs, architecture_refs, decision_refs, or test_matrix_refs)");
+    result.errors.push(
+      "context_alignment must have at least one non-empty ref array (product_contract_refs, architecture_refs, decision_refs, or test_matrix_refs)"
+    );
     return result;
   }
 
   if (tier === "deep") {
     const contextPackID = ctxAlign.context_pack_id as string | undefined;
     if (contextPackID == null || String(contextPackID).trim() === "") {
-      result.errors.push("context_alignment.context_pack_id is required for deep tier");
+      result.errors.push(
+        "context_alignment.context_pack_id is required for deep tier"
+      );
       return result;
     }
 
-    const unresolvedQuestions = ctxAlign.unresolved_context_questions as unknown[] | undefined;
+    const unresolvedQuestions = ctxAlign.unresolved_context_questions as
+      | unknown[]
+      | undefined;
     if (unresolvedQuestions != null && unresolvedQuestions.length > 0) {
-      result.errors.push("context_alignment.unresolved_context_questions must be empty for deep tier");
+      result.errors.push(
+        "context_alignment.unresolved_context_questions must be empty for deep tier"
+      );
       return result;
     }
   }

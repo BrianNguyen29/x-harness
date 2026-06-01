@@ -2403,7 +2403,9 @@ describe("admission", () => {
       contextFloor: true,
     });
     expect(result.outcome).toBe("failed");
-    expect(result.errors.some((e) => e.includes("context_alignment"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("context_alignment"))).toBe(
+      true
+    );
     expect(result.blocking_predicate).toBe("context_floor_blocked");
   });
 
@@ -2521,7 +2523,9 @@ describe("admission", () => {
     expect(result.outcome).toBe("success");
     expect(result.acceptance_status).toBe("accepted");
     expect(
-      result.notes.some((n) => n.includes("context floor advisory only for light tier"))
+      result.notes.some((n) =>
+        n.includes("context floor advisory only for light tier")
+      )
     ).toBe(true);
   });
 

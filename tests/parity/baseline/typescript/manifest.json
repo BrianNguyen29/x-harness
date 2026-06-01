@@ -167,7 +167,7 @@
         "examples/golden/capability/multi-agent-success/completion-card.yaml",
         "--json"
       ],
-      "exit_code": 0,
+      "exit_code": 1,
       "signal": null,
       "output": "verify/golden/multi-agent-success.json"
     },
@@ -195,7 +195,7 @@
         "examples/golden/adversarial/standard-approval-present/completion-card.yaml",
         "--json"
       ],
-      "exit_code": 0,
+      "exit_code": 1,
       "signal": null,
       "output": "verify/golden/standard-approval-present.json"
     },
@@ -335,7 +335,7 @@
         "examples/adversarial/spoofed-protected-approval/completion-card.yaml",
         "--json"
       ],
-      "exit_code": 0,
+      "exit_code": 1,
       "signal": null,
       "output": "verify/adversarial/spoofed-protected-approval.json"
     },

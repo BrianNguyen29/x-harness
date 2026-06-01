@@ -220,7 +220,10 @@ export function verifyCommand(): Command {
       try {
         // Auto-enable context floor for standard and deep tiers
         const effectiveTier = opts.tier ?? "standard";
-        if (!opts.contextFloor && (effectiveTier === "standard" || effectiveTier === "deep")) {
+        if (
+          !opts.contextFloor &&
+          (effectiveTier === "standard" || effectiveTier === "deep")
+        ) {
           opts.contextFloor = true;
         }
         const result = await runVerifyPipeline(opts);

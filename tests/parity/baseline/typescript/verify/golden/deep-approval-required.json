@@ -40,6 +40,12 @@
       "status": "passed"
     },
     {
+      "name": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "note": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
       "name": "deep task requires human approval before admission",
       "note": "deep task requires human approval before admission",
       "severity": "error",
@@ -56,12 +62,12 @@
   "ok": false,
   "policy_hash": "sha256:5c08082dadbc591d27f6e9b8640fe4c430d17afba75e179abab1633110b231cc",
   "recovery": {
-    "next_action": "Request human approval before admission.",
-    "owner": "user",
-    "predicate": "approval_missing"
+    "next_action": "Add context_alignment with stale_ground_checked, at least one ref array, and resolve context questions.",
+    "owner": "implementation-worker",
+    "predicate": "context_floor_blocked"
   },
   "schema_version": 1,
   "strict": false,
   "task_id": "TASK-GOLDEN-APPROVAL-001",
-  "withheld_reason": "deep task requires human approval before admission"
+  "withheld_reason": "context_alignment is required for standard/deep tier when context floor is enabled; deep task requires human approval before admission"
 }

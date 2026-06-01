@@ -188,23 +188,31 @@ func toSlug(text string) string {
 	return result.String()
 }
 
-// FileExists checks if a file exists. If cardDir is provided and path is relative,
-// it resolves relative to cardDir.
+// FileExists checks if a file exists. For relative paths it tries, in order:
+//  1. relative to the current working directory (project-root paths like
+//     "examples/..." resolve correctly when the CLI is invoked from the repo root),
+//  2. relative to cardDir (covers references authored next to the card itself).
+//
+// Absolute paths skip both lookups and use the literal path.
 func FileExists(path, cardDir string) bool {
-	resolvedPath := path
-	if !filepath.IsAbs(path) && cardDir != "" {
-		resolvedPath = filepath.Join(cardDir, path)
-	} else if !filepath.IsAbs(path) {
-		// Fall back to current working directory
-		absPath, err := filepath.Abs(path)
-		if err != nil {
-			return false
+	if filepath.IsAbs(path) {
+		_, err := os.Stat(path)
+		return err == nil
+	}
+	for _, base := range []string{"", cardDir} {
+		candidate := path
+		if base != "" {
+			candidate = filepath.Join(base, path)
+		} else {
+			absPath, err := filepath.Abs(path)
+			if err != nil {
+				continue
+			}
+			candidate = absPath
 		}
-		resolvedPath = absPath
+		if _, err := os.Stat(candidate); err == nil {
+			return true
+		}
 	}
-
-	if _, err := os.Stat(resolvedPath); os.IsNotExist(err) {
-		return false
-	}
-	return true
+	return false
 }

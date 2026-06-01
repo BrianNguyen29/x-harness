@@ -65,6 +65,12 @@
       "status": "failed"
     },
     {
+      "name": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "note": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "severity": "error",
+      "status": "failed"
+    },
+    {
       "name": "claim.fix_status or result.fix_status is required",
       "note": "claim.fix_status or result.fix_status is required",
       "severity": "error",
@@ -94,5 +100,5 @@
   "schema_version": 1,
   "strict": false,
   "task_id": "TASK-UNKNOWN",
-  "withheld_reason": "completion card validation failed: /admission/outcome must be equal to constant; tier \"standard\" requires evidence packet; evidence.files_changed is required and must be non-empty; tier \"standard\" requires evidence.command_evidence; tier \"standard\" requires done_checklist; tier \"standard\" requires prediction; claim.fix_status or result.fix_status is required; verification.status is required"
+  "withheld_reason": "completion card validation failed: /admission/outcome must be equal to constant; tier \"standard\" requires evidence packet; evidence.files_changed is required and must be non-empty; tier \"standard\" requires evidence.command_evidence; tier \"standard\" requires done_checklist; tier \"standard\" requires prediction; context_alignment is required for standard/deep tier when context floor is enabled; claim.fix_status or result.fix_status is required; verification.status is required"
 }

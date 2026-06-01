@@ -1189,7 +1189,11 @@ handoff:
         path.join(tmpDir, "policies", "admission.yaml")
       );
       fs.mkdirSync(path.join(tmpDir, "docs"), { recursive: true });
-      fs.writeFileSync(path.join(tmpDir, "docs", "product.md"), "# Product\n", "utf-8");
+      fs.writeFileSync(
+        path.join(tmpDir, "docs", "product.md"),
+        "# Product\n",
+        "utf-8"
+      );
       execFileSync("git", ["add", "."], { cwd: tmpDir });
       execFileSync("git", ["commit", "-m", "init"], { cwd: tmpDir });
 
@@ -1302,7 +1306,11 @@ handoff:
         path.join(tmpDir, "policies", "admission.yaml")
       );
       fs.mkdirSync(path.join(tmpDir, "docs"), { recursive: true });
-      fs.writeFileSync(path.join(tmpDir, "docs", "product.md"), "# Product\n", "utf-8");
+      fs.writeFileSync(
+        path.join(tmpDir, "docs", "product.md"),
+        "# Product\n",
+        "utf-8"
+      );
       execFileSync("git", ["add", "."], { cwd: tmpDir });
       execFileSync("git", ["commit", "-m", "init"], { cwd: tmpDir });
 
@@ -1498,7 +1506,9 @@ handoff:
   });
 
   it("does not auto-enable context floor for light tier without flag", async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "verify-ts-cf-light-"));
+    const tmpDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "verify-ts-cf-light-")
+    );
     try {
       const cardYAML = `schema_version: "1"
 task_id: TASK-TS-CF-LIGHT-001
