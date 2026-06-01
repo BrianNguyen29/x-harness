@@ -41,7 +41,7 @@
         "examples/golden/regression/blocked-missing-context-ref/completion-card.yaml",
         "--json"
       ],
-      "exit_code": 0,
+      "exit_code": 1,
       "signal": null,
       "output": "verify/golden/blocked-missing-context-ref.json"
     },

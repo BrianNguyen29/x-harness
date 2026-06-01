@@ -23,7 +23,7 @@ done_checklist:
 context_alignment:
   stale_ground_checked: true
   product_contract_refs:
-    - "docs/product.md"
+    - "README.md"
 prediction:
   claim: "Subagent compatibility result is admission-ready."
   expected_effect: "Verify accepts the standard compatibility return."
