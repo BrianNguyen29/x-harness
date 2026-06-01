@@ -23,6 +23,12 @@
       "status": "warning"
     },
     {
+      "name": "mutation guard passed",
+      "note": "mutation guard passed",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "completion card validation failed",
       "note": "completion card validation failed: /admission/outcome must be equal to constant",
       "severity": "error",

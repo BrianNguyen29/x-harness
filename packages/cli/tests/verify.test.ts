@@ -1119,4 +1119,297 @@ handoff:
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
   });
+
+  it("auto-enables mutation guard for standard tier without flag", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "verify-std-mg-"));
+    try {
+      const { execFileSync } = await import("node:child_process");
+      execFileSync("git", ["init"], { cwd: tmpDir });
+      execFileSync("git", ["config", "user.email", "test@test.com"], {
+        cwd: tmpDir,
+      });
+      execFileSync("git", ["config", "user.name", "Test"], { cwd: tmpDir });
+
+      const cardYAML = `schema_version: "1"
+task_id: TASK-TS-STD-001
+tier: standard
+owner: alice
+accountable: bob
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Standard tier TS test
+  expected_effect: Works
+  measurable_signal: npm test
+  falsification_method: Skip fix
+  horizon: same_verify
+evidence:
+  files_changed:
+    - src/main.ts
+  command_evidence:
+    - command: npm test
+      exit_code: 0
+claim:
+  fix_status: fixed
+  summary: Standard tier TS test
+  evidence:
+    - description: Test pass
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`;
+      const cardDst = path.join(tmpDir, "completion-card.yaml");
+      fs.writeFileSync(cardDst, cardYAML, "utf-8");
+      fs.mkdirSync(path.join(tmpDir, "policies"), { recursive: true });
+      fs.copyFileSync(
+        path.join(repoRoot, "policies", "admission.yaml"),
+        path.join(tmpDir, "policies", "admission.yaml")
+      );
+      execFileSync("git", ["add", "."], { cwd: tmpDir });
+      execFileSync("git", ["commit", "-m", "init"], { cwd: tmpDir });
+
+      const { stdout, exitCode } = await execaNodeCwd(
+        ["verify", "--card", cardDst, "--json"],
+        tmpDir
+      );
+      expect(exitCode).toBe(0);
+      const output = JSON.parse(stdout);
+      expect(output.ok).toBe(true);
+      expect(
+        output.checks.some((c: { note: string }) =>
+          c.note.includes("mutation guard passed")
+        )
+      ).toBe(true);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("auto-enables mutation guard for deep tier without flag", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "verify-deep-mg-"));
+    try {
+      const { execFileSync } = await import("node:child_process");
+      execFileSync("git", ["init"], { cwd: tmpDir });
+      execFileSync("git", ["config", "user.email", "test@test.com"], {
+        cwd: tmpDir,
+      });
+      execFileSync("git", ["config", "user.name", "Test"], { cwd: tmpDir });
+
+      const cardYAML = `schema_version: "1"
+task_id: TASK-TS-DEEP-001
+tier: deep
+owner: alice
+accountable: bob
+state:
+  read_set:
+    - src/main.ts
+  write_set:
+    - src/main.ts
+evidence:
+  files_changed:
+    - src/main.ts
+  command_evidence:
+    - command: npm test
+      exit_code: 0
+  verification_artifacts:
+    - kind: unit_test
+      command: npm test
+      status: passed
+      verifies:
+        - "basic functionality"
+      does_not_verify:
+        - "edge cases"
+      confidence: medium
+  untested_regions:
+    - "No integration tests."
+  remaining_risks:
+    - "May fail in production."
+  rollback_policy:
+    - "Revert commit."
+  execution_controls:
+    - "Deploy behind feature flag."
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Deep tier TS test
+  expected_effect: Works
+  measurable_signal: npm test
+  falsification_method: Skip fix
+  horizon: same_verify
+claim:
+  fix_status: fixed
+  summary: Deep tier TS test
+  evidence:
+    - description: Test pass
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`;
+      const cardDst = path.join(tmpDir, "completion-card.yaml");
+      fs.writeFileSync(cardDst, cardYAML, "utf-8");
+      fs.mkdirSync(path.join(tmpDir, "policies"), { recursive: true });
+      fs.copyFileSync(
+        path.join(repoRoot, "policies", "admission.yaml"),
+        path.join(tmpDir, "policies", "admission.yaml")
+      );
+      execFileSync("git", ["add", "."], { cwd: tmpDir });
+      execFileSync("git", ["commit", "-m", "init"], { cwd: tmpDir });
+
+      const { stdout, exitCode } = await execaNodeCwd(
+        ["verify", "--card", cardDst, "--json"],
+        tmpDir
+      );
+      expect(exitCode).toBe(0);
+      const output = JSON.parse(stdout);
+      expect(output.ok).toBe(true);
+      expect(
+        output.checks.some((c: { note: string }) =>
+          c.note.includes("mutation guard passed")
+        )
+      ).toBe(true);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not auto-enable mutation guard for light tier without flag", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "verify-light-mg-"));
+    try {
+      const cardYAML = `schema_version: "1"
+task_id: TASK-TS-LIGHT-001
+tier: light
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - src/main.ts
+  manual_rationale: Simple change
+claim:
+  fix_status: fixed
+  summary: Light tier TS test
+  evidence:
+    - description: Test pass
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`;
+      const cardDst = path.join(tmpDir, "completion-card.yaml");
+      fs.writeFileSync(cardDst, cardYAML, "utf-8");
+      fs.mkdirSync(path.join(tmpDir, "policies"), { recursive: true });
+      fs.copyFileSync(
+        path.join(repoRoot, "policies", "admission.yaml"),
+        path.join(tmpDir, "policies", "admission.yaml")
+      );
+
+      const { stdout, exitCode } = await execaNodeCwd(
+        ["verify", "--card", cardDst, "--json"],
+        tmpDir
+      );
+      expect(exitCode).toBe(0);
+      const output = JSON.parse(stdout);
+      expect(output.ok).toBe(true);
+      expect(stdout).not.toContain("mutation guard");
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("explicit --mutation-guard still enables for light tier", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "verify-light-ex-"));
+    try {
+      const { execFileSync } = await import("node:child_process");
+      execFileSync("git", ["init"], { cwd: tmpDir });
+      execFileSync("git", ["config", "user.email", "test@test.com"], {
+        cwd: tmpDir,
+      });
+      execFileSync("git", ["config", "user.name", "Test"], { cwd: tmpDir });
+
+      const cardYAML = `schema_version: "1"
+task_id: TASK-TS-LIGHT-EX-001
+tier: light
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - src/main.ts
+  manual_rationale: Simple change
+claim:
+  fix_status: fixed
+  summary: Light tier TS test
+  evidence:
+    - description: Test pass
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`;
+      const cardDst = path.join(tmpDir, "completion-card.yaml");
+      fs.writeFileSync(cardDst, cardYAML, "utf-8");
+      fs.mkdirSync(path.join(tmpDir, "policies"), { recursive: true });
+      fs.copyFileSync(
+        path.join(repoRoot, "policies", "admission.yaml"),
+        path.join(tmpDir, "policies", "admission.yaml")
+      );
+      execFileSync("git", ["add", "."], { cwd: tmpDir });
+      execFileSync("git", ["commit", "-m", "init"], { cwd: tmpDir });
+
+      const { stdout, exitCode } = await execaNodeCwd(
+        ["verify", "--card", cardDst, "--mutation-guard", "--json"],
+        tmpDir
+      );
+      expect(exitCode).toBe(0);
+      const output = JSON.parse(stdout);
+      expect(output.ok).toBe(true);
+      expect(
+        output.checks.some((c: { note: string }) =>
+          c.note.includes("mutation guard passed")
+        )
+      ).toBe(true);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
 });

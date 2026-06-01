@@ -26,7 +26,8 @@
             "completion card valid: examples/adversarial/evidence-says-pass-but-artifact-missing/completion-card.yaml",
             "tier \"standard\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
-            "governance enforced mode enabled"
+            "governance enforced mode enabled",
+            "mutation guard passed"
           ],
           "outcome": "failed",
           "permission_violation_detected": false,
@@ -59,7 +60,8 @@
             "completion card valid: examples/adversarial/hidden-dangerous-command/completion-card.yaml",
             "tier \"standard\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
-            "governance enforced mode enabled"
+            "governance enforced mode enabled",
+            "mutation guard passed"
           ],
           "outcome": "blocked",
           "permission_violation_detected": true,
@@ -92,7 +94,8 @@
             "completion card valid: examples/adversarial/lying-command-exit-code/completion-card.yaml",
             "tier \"standard\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
-            "governance enforced mode enabled"
+            "governance enforced mode enabled",
+            "mutation guard passed"
           ],
           "outcome": "blocked",
           "permission_violation_detected": false,
@@ -127,7 +130,8 @@
             "tier \"standard\" recommends evidence scope (verifies/does_not_verify)",
             "tier \"standard\" recommends untested_regions",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
-            "governance enforced mode enabled"
+            "governance enforced mode enabled",
+            "mutation guard passed"
           ],
           "outcome": "blocked",
           "permission_violation_detected": false,
@@ -164,7 +168,8 @@
             "completion card valid: examples/adversarial/spoofed-approval-artifact/completion-card.yaml",
             "tier \"deep\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
-            "governance enforced mode enabled"
+            "governance enforced mode enabled",
+            "mutation guard passed"
           ],
           "outcome": "failed",
           "permission_violation_detected": false,
@@ -195,7 +200,8 @@
             "tier \"deep\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
             "admission checks passed",
-            "governance enforced mode enabled"
+            "governance enforced mode enabled",
+            "mutation guard passed"
           ],
           "outcome": "failed",
           "permission_violation_detected": false,

@@ -34,6 +34,12 @@
       "status": "passed"
     },
     {
+      "name": "mutation guard passed",
+      "note": "mutation guard passed",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "evidence.command_evidence has non-zero exit_code 1 for command \"npm test -- payment\"",
       "note": "evidence.command_evidence has non-zero exit_code 1 for command \"npm test -- payment\"",
       "severity": "error",
