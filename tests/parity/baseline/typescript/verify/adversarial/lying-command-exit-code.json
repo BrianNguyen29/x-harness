@@ -50,6 +50,12 @@
       "note": "evidence.verification_artifacts status \"failed\" is not passed for command \"npm test -- payment\"",
       "severity": "error",
       "status": "failed"
+    },
+    {
+      "name": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "note": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "severity": "error",
+      "status": "failed"
     }
   ],
   "decision": {
@@ -69,5 +75,5 @@
   "schema_version": 1,
   "strict": false,
   "task_id": "TASK-ADV-LYING-EXIT-001",
-  "withheld_reason": "evidence.command_evidence has non-zero exit_code 1 for command \"npm test -- payment\"; evidence.verification_artifacts status \"failed\" is not passed for command \"npm test -- payment\""
+  "withheld_reason": "evidence.command_evidence has non-zero exit_code 1 for command \"npm test -- payment\"; evidence.verification_artifacts status \"failed\" is not passed for command \"npm test -- payment\"; context_alignment is required for standard/deep tier when context floor is enabled"
 }

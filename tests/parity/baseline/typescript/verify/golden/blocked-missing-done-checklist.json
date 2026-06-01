@@ -50,6 +50,12 @@
       "note": "tier \"standard\" requires prediction",
       "severity": "error",
       "status": "failed"
+    },
+    {
+      "name": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "note": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "severity": "error",
+      "status": "failed"
     }
   ],
   "decision": {
@@ -69,5 +75,5 @@
   "schema_version": 1,
   "strict": false,
   "task_id": "TASK-GOLDEN-MISSING-CHECKLIST-001",
-  "withheld_reason": "tier \"standard\" requires done_checklist; tier \"standard\" requires prediction"
+  "withheld_reason": "tier \"standard\" requires done_checklist; tier \"standard\" requires prediction; context_alignment is required for standard/deep tier when context floor is enabled"
 }

@@ -30,6 +30,7 @@ export interface VerifyPipelineOptions {
   trace?: boolean;
   traceDir?: string;
   mutationGuard?: boolean;
+  contextFloor?: boolean;
   strict?: boolean;
   governanceEnforced?: boolean;
   diff?: string;

@@ -84,6 +84,12 @@
       "note": "done_checklist.risk_and_rollback_declared is true but evidence.rollback_policy is missing",
       "severity": "error",
       "status": "failed"
+    },
+    {
+      "name": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "note": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "severity": "error",
+      "status": "failed"
     }
   ],
   "decision": {
@@ -103,5 +109,5 @@
   "schema_version": 1,
   "strict": false,
   "task_id": "TASK-ADV-SPOOFED-APPROVAL-001",
-  "withheld_reason": "tier \"deep\" requires remaining_risks; tier \"deep\" requires rollback_policy; tier \"deep\" requires execution_controls; tier \"deep\" requires state.write_set; tier \"deep\" requires state.read_set; done_checklist.read_write_sets_declared is true but state is missing; done_checklist.risk_and_rollback_declared is true but evidence.remaining_risks is missing; done_checklist.risk_and_rollback_declared is true but evidence.rollback_policy is missing"
+  "withheld_reason": "tier \"deep\" requires remaining_risks; tier \"deep\" requires rollback_policy; tier \"deep\" requires execution_controls; tier \"deep\" requires state.write_set; tier \"deep\" requires state.read_set; done_checklist.read_write_sets_declared is true but state is missing; done_checklist.risk_and_rollback_declared is true but evidence.remaining_risks is missing; done_checklist.risk_and_rollback_declared is true but evidence.rollback_policy is missing; context_alignment is required for standard/deep tier when context floor is enabled"
 }

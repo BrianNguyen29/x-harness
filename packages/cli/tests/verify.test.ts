@@ -1143,6 +1143,15 @@ done_checklist:
   coverage_gap_declared: true
   risk_and_rollback_declared: true
   prediction_declared: true
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - "docs/product.md"
+  architecture_refs: []
+  decision_refs: []
+  test_matrix_refs: []
+  unresolved_context_questions: []
+  context_evidence: []
 prediction:
   claim: Standard tier TS test
   expected_effect: Works
@@ -1178,6 +1187,12 @@ handoff:
       fs.copyFileSync(
         path.join(repoRoot, "policies", "admission.yaml"),
         path.join(tmpDir, "policies", "admission.yaml")
+      );
+      fs.mkdirSync(path.join(tmpDir, "docs"), { recursive: true });
+      fs.writeFileSync(
+        path.join(tmpDir, "docs", "product.md"),
+        "# Product\n",
+        "utf-8"
       );
       execFileSync("git", ["add", "."], { cwd: tmpDir });
       execFileSync("git", ["commit", "-m", "init"], { cwd: tmpDir });
@@ -1242,6 +1257,16 @@ evidence:
     - "Revert commit."
   execution_controls:
     - "Deploy behind feature flag."
+context_alignment:
+  stale_ground_checked: true
+  context_pack_id: "ctx-deep-001"
+  product_contract_refs:
+    - "docs/product.md"
+  architecture_refs: []
+  decision_refs: []
+  test_matrix_refs: []
+  unresolved_context_questions: []
+  context_evidence: []
 done_checklist:
   source_of_truth_read: true
   scope_explained: true
@@ -1279,6 +1304,12 @@ handoff:
       fs.copyFileSync(
         path.join(repoRoot, "policies", "admission.yaml"),
         path.join(tmpDir, "policies", "admission.yaml")
+      );
+      fs.mkdirSync(path.join(tmpDir, "docs"), { recursive: true });
+      fs.writeFileSync(
+        path.join(tmpDir, "docs", "product.md"),
+        "# Product\n",
+        "utf-8"
       );
       execFileSync("git", ["add", "."], { cwd: tmpDir });
       execFileSync("git", ["commit", "-m", "init"], { cwd: tmpDir });
@@ -1408,6 +1439,114 @@ handoff:
           c.note.includes("mutation guard passed")
         )
       ).toBe(true);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("auto-enables context floor for standard tier without flag", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "verify-ts-cf-std-"));
+    try {
+      const cardYAML = `schema_version: "1"
+task_id: TASK-TS-CF-STD-001
+tier: standard
+owner: alice
+accountable: bob
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: TS standard context floor auto-enable
+  expected_effect: Works
+  measurable_signal: npm test
+  falsification_method: Skip fix
+  horizon: same_verify
+evidence:
+  files_changed:
+    - src/main.ts
+  command_evidence:
+    - command: npm test
+      exit_code: 0
+claim:
+  fix_status: fixed
+  summary: TS standard context floor auto-enable
+  evidence:
+    - description: Test pass
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`;
+      const cardDst = path.join(tmpDir, "completion-card.yaml");
+      fs.writeFileSync(cardDst, cardYAML, "utf-8");
+
+      const { stdout, exitCode } = await execaNodeCwd(
+        ["verify", "--card", cardDst, "--json"],
+        tmpDir
+      );
+      expect(exitCode).toBe(1);
+      const output = JSON.parse(stdout);
+      expect(output.ok).toBe(false);
+      expect(output.withheld_reason).toContain("context_alignment");
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not auto-enable context floor for light tier without flag", async () => {
+    const tmpDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "verify-ts-cf-light-")
+    );
+    try {
+      const cardYAML = `schema_version: "1"
+task_id: TASK-TS-CF-LIGHT-001
+tier: light
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - src/main.ts
+  manual_rationale: Simple change
+claim:
+  fix_status: fixed
+  summary: TS light context floor no auto-enable
+  evidence:
+    - description: Test pass
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`;
+      const cardDst = path.join(tmpDir, "completion-card.yaml");
+      fs.writeFileSync(cardDst, cardYAML, "utf-8");
+
+      const { stdout, exitCode } = await execaNodeCwd(
+        ["verify", "--card", cardDst, "--json"],
+        tmpDir
+      );
+      expect(exitCode).toBe(0);
+      const output = JSON.parse(stdout);
+      expect(output.ok).toBe(true);
+      expect(output.acceptance_status).toBe("accepted");
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }

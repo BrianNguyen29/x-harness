@@ -48,6 +48,12 @@
       "note": "done_checklist.scope_explained is true but verification_artifacts lacks verifies/does_not_verify scope",
       "severity": "error",
       "status": "failed"
+    },
+    {
+      "name": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "note": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "severity": "error",
+      "status": "failed"
     }
   ],
   "decision": {
@@ -67,5 +73,5 @@
   "schema_version": 1,
   "strict": false,
   "task_id": "TASK-GOLDEN-BLOCKED-SCOPE-001",
-  "withheld_reason": "tier \"deep\" requires evidence scope declared (verifies/does_not_verify); done_checklist.scope_explained is true but verification_artifacts lacks verifies/does_not_verify scope"
+  "withheld_reason": "tier \"deep\" requires evidence scope declared (verifies/does_not_verify); done_checklist.scope_explained is true but verification_artifacts lacks verifies/does_not_verify scope; context_alignment is required for standard/deep tier when context floor is enabled"
 }

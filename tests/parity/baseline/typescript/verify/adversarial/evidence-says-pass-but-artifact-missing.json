@@ -44,6 +44,12 @@
       "note": "done_checklist.evidence_attached is true but evidence.files_changed is missing",
       "severity": "error",
       "status": "failed"
+    },
+    {
+      "name": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "note": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "severity": "error",
+      "status": "failed"
     }
   ],
   "decision": {
@@ -63,5 +69,5 @@
   "schema_version": 1,
   "strict": false,
   "task_id": "TASK-ADV-MISSING-ARTIFACT-001",
-  "withheld_reason": "evidence.files_changed is required and must be non-empty; done_checklist.evidence_attached is true but evidence.files_changed is missing"
+  "withheld_reason": "evidence.files_changed is required and must be non-empty; done_checklist.evidence_attached is true but evidence.files_changed is missing; context_alignment is required for standard/deep tier when context floor is enabled"
 }

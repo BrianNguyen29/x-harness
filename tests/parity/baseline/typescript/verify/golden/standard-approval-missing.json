@@ -54,6 +54,12 @@
       "note": "tier standard requires approval receipt for 1 high-risk command(s)",
       "severity": "error",
       "status": "failed"
+    },
+    {
+      "name": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "note": "context_alignment is required for standard/deep tier when context floor is enabled",
+      "severity": "error",
+      "status": "failed"
     }
   ],
   "decision": {
@@ -66,12 +72,12 @@
   "ok": false,
   "policy_hash": "sha256:5c08082dadbc591d27f6e9b8640fe4c430d17afba75e179abab1633110b231cc",
   "recovery": {
-    "next_action": "Request human approval before admission.",
-    "owner": "user",
+    "next_action": "Add context_alignment with stale_ground_checked, at least one ref array, and resolve context questions.",
+    "owner": "implementation-worker",
     "predicate": "classifier_approval_required"
   },
   "schema_version": 1,
   "strict": false,
   "task_id": "TASK-GOLDEN-STD-APPR-MISS-001",
-  "withheld_reason": "tier standard requires approval receipt for 1 high-risk command(s)"
+  "withheld_reason": "tier standard requires approval receipt for 1 high-risk command(s); context_alignment is required for standard/deep tier when context floor is enabled"
 }

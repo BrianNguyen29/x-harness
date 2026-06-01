@@ -3,6 +3,15 @@ task_id: TASK-GOLDEN-SCOPED-001
 tier: standard
 owner: alice
 accountable: bob
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - examples/golden/regression/success-standard-scoped-evidence/README.md
+  architecture_refs: []
+  decision_refs: []
+  test_matrix_refs: []
+  unresolved_context_questions: []
+  context_evidence: []
 state:
   read_set:
     - src/product-form.tsx
