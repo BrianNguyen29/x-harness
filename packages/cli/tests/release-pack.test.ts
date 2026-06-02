@@ -141,6 +141,14 @@ function parsePackageFilesEntries(value: unknown): string[] {
 }
 
 describe("release packaging", () => {
+  // Shared step-name constant: the package.json `files` `go-binaries`
+  // exclusion and the release workflow ordering guard both link to the
+  // same `Copy Go binaries into npm package` step in
+  // .github/workflows/release.yml. Defining it once keeps the workflow
+  // ordering assertion and the exclusion guard in lock-step when the
+  // step is renamed in the release workflow.
+  const COPY_GO_BINARIES_STEP = "Copy Go binaries into npm package";
+
   it("resolves packaged assets from the runtime asset root", async () => {
     await syncPackageAssets();
     const assetRoot = await resolveAssetRoot();
@@ -543,16 +551,14 @@ describe("release packaging", () => {
     expect(releaseWorkflow).toContain("--frozen --target");
     const goBuildIndex = releaseWorkflow.indexOf("Build Go release binaries");
     const npmPackIndex = releaseWorkflow.indexOf("Build release package");
-    const copyIndex = releaseWorkflow.indexOf(
-      "Copy Go binaries into npm package"
-    );
+    const copyIndex = releaseWorkflow.indexOf(COPY_GO_BINARIES_STEP);
     expect(goBuildIndex).toBeGreaterThan(-1);
     expect(npmPackIndex).toBeGreaterThan(-1);
     expect(goBuildIndex).toBeLessThan(npmPackIndex);
     expect(copyIndex).toBeGreaterThan(-1);
     expect(goBuildIndex).toBeLessThan(copyIndex);
     expect(copyIndex).toBeLessThan(npmPackIndex);
-    expect(releaseWorkflow).toContain("Copy Go binaries into npm package");
+    expect(releaseWorkflow).toContain(COPY_GO_BINARIES_STEP);
     expect(releaseWorkflow).toContain("Generate Go binary checksums");
     expect(releaseWorkflow).toContain("Go binary smoke test");
     expect(releaseWorkflow).toContain("tests/smoke/go-binary-smoke.sh");
@@ -686,6 +692,23 @@ describe("release packaging", () => {
       [...excludedFilesEntries],
       'excludedFilesEntries must remain exactly ["go-binaries"]; add a dynamic/static pack-manifest assertion and register the new entry in coveredFilesEntries, or justify the exclusion with a matching coverage test before widening this set'
     ).toEqual(["go-binaries"]);
+    // Static guard: link the `go-binaries` exclusion justification above
+    // to the shared COPY_GO_BINARIES_STEP workflow step. The release
+    // workflow ordering guard (in the "release workflows include
+    // benchmark, pack, SBOM, and provenance gates" test above) and this
+    // exclusion both reference the same step name; if that step is
+    // renamed in .github/workflows/release.yml, the ordering guard and
+    // this linkage guard will fail in lock-step, making the rename
+    // obvious and forcing the exclusion comment to be updated alongside
+    // the const declaration.
+    const releaseWorkflowForExclusion = fs.readFileSync(
+      path.join(repoRoot, ".github", "workflows", "release.yml"),
+      "utf-8"
+    );
+    expect(
+      releaseWorkflowForExclusion,
+      `.github/workflows/release.yml must still contain the ${COPY_GO_BINARIES_STEP} step that the go-binaries exclusion relies on; keep this guard in lock-step with the workflow ordering assertion (and the COPY_GO_BINARIES_STEP const) by updating both when the step is renamed`
+    ).toContain(COPY_GO_BINARIES_STEP);
     const missing = findMissingFilesCoverage(
       filesEntries,
       coveredFilesEntries,
