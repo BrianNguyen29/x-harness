@@ -167,6 +167,24 @@ describe("release packaging", () => {
     return releaseYamlContent;
   }
 
+  // Pure helper: returns the first index of `stepName` inside the
+  // release workflow text, throwing a clear error that names the
+  // missing step when the step is absent. Extracted from the release
+  // workflow ordering guard so a missing-step failure surfaces with
+  // the offending step name in the error message (rather than failing
+  // with an opaque "expected -1 to be greater than -1" assertion
+  // message) and so the missing-step behaviour can be exercised by a
+  // focused unit test. No I/O, no expect inside the helper.
+  function findWorkflowStepIndex(workflow: string, stepName: string): number {
+    const index = workflow.indexOf(stepName);
+    if (index === -1) {
+      throw new Error(
+        `Step "${stepName}" not found in .github/workflows/release.yml`
+      );
+    }
+    return index;
+  }
+
   it("resolves packaged assets from the runtime asset root", async () => {
     await syncPackageAssets();
     const assetRoot = await resolveAssetRoot();
@@ -564,13 +582,19 @@ describe("release packaging", () => {
     expect(releaseWorkflow).toContain("Frozen transfer compatibility");
     expect(releaseWorkflow).toContain("frozen verify");
     expect(releaseWorkflow).toContain("--frozen --target");
-    const goBuildIndex = releaseWorkflow.indexOf("Build Go release binaries");
-    const npmPackIndex = releaseWorkflow.indexOf("Build release package");
-    const copyIndex = releaseWorkflow.indexOf(COPY_GO_BINARIES_STEP);
-    expect(goBuildIndex).toBeGreaterThan(-1);
-    expect(npmPackIndex).toBeGreaterThan(-1);
+    const goBuildIndex = findWorkflowStepIndex(
+      releaseWorkflow,
+      "Build Go release binaries"
+    );
+    const npmPackIndex = findWorkflowStepIndex(
+      releaseWorkflow,
+      "Build release package"
+    );
+    const copyIndex = findWorkflowStepIndex(
+      releaseWorkflow,
+      COPY_GO_BINARIES_STEP
+    );
     expect(goBuildIndex).toBeLessThan(npmPackIndex);
-    expect(copyIndex).toBeGreaterThan(-1);
     expect(goBuildIndex).toBeLessThan(copyIndex);
     expect(copyIndex).toBeLessThan(npmPackIndex);
     expect(releaseWorkflow).toContain(COPY_GO_BINARIES_STEP);
@@ -919,6 +943,44 @@ describe("release packaging", () => {
     );
     expect(() => parsePackageFilesEntries(["bin", { name: "bin" }])).toThrow(
       /package\.json "files" must be a non-empty array of strings/
+    );
+  });
+
+  it("findWorkflowStepIndex returns the index of an existing step", () => {
+    // Positive fixture: prove the helper returns the first index of
+    // the step name inside the workflow text, matching the
+    // String.prototype.indexOf contract used by the release workflow
+    // ordering guard above. This guards against silent regressions
+    // in the helper's happy-path lookup logic.
+    const workflow =
+      "header\n- name: Build Go release binaries\n- name: Build release package\n";
+    expect(findWorkflowStepIndex(workflow, "Build Go release binaries")).toBe(
+      workflow.indexOf("Build Go release binaries")
+    );
+    // A step that appears later in the workflow is found at its
+    // first-occurrence index, not at -1.
+    expect(findWorkflowStepIndex(workflow, "Build release package")).toBe(
+      workflow.indexOf("Build release package")
+    );
+  });
+
+  it("findWorkflowStepIndex throws a clear error on a missing step", () => {
+    // Negative fixture: prove the helper throws a clear
+    // "Step \"<name>\" not found in .github/workflows/release.yml"
+    // error when the workflow text does not contain the requested
+    // step. The error message must name the missing step so the
+    // release workflow ordering guard surfaces a useful diagnostic
+    // (rather than an opaque "expected -1 to be greater than -1"
+    // assertion message) when a step is renamed or removed.
+    expect(() =>
+      findWorkflowStepIndex("", "Build Go release binaries")
+    ).toThrow(
+      /Step "Build Go release binaries" not found in \.github\/workflows\/release\.yml/
+    );
+    expect(() =>
+      findWorkflowStepIndex("- name: Other step", "Renamed step")
+    ).toThrow(
+      /Step "Renamed step" not found in \.github\/workflows\/release\.yml/
     );
   });
 });
