@@ -128,3 +128,34 @@ advisory_intent:
   quiet_for_tiers:
     - light
   blocks_admission: false
+
+# Advisory-only test adequacy declaration. Never blocks admission in the first
+# slice. test_adequacy is an optional top-level object with optional
+# impacted_behaviors, tests_selected, why_sufficient, known_gaps, notes.
+# Emission rules:
+#   - standard/deep missing test_adequacy -> top-level missing note
+#   - standard/deep missing/empty impacted_behaviors -> impacted_behaviors note
+#   - standard/deep missing/empty tests_selected -> tests_selected note
+#   - standard/deep missing/blank why_sufficient -> why_sufficient note
+#   - deep missing known_gaps -> known_gaps note (explicit [] is accepted)
+#   - light tier -> no note (advisory remains quiet)
+# The note wording makes it explicit that admission acceptance is not test
+# adequacy; follow-up slices may add blocking adequacy gates.
+advisory_test_adequacy:
+  properties:
+    - impacted_behaviors
+    - tests_selected
+    - why_sufficient
+    - known_gaps
+  missing_note: "test_adequacy not declared (advisory-only; admission acceptance is not test adequacy)"
+  impacted_behaviors_missing_note: "test_adequacy.impacted_behaviors not declared (advisory-only; consider listing behavior covered by tests)"
+  tests_selected_missing_note: "test_adequacy.tests_selected not declared (advisory-only; consider listing selected tests)"
+  why_sufficient_missing_note: "test_adequacy.why_sufficient not declared (advisory-only; consider explaining why tests are sufficient)"
+  known_gaps_missing_note: "test_adequacy.known_gaps not declared (advisory-only; deep should list gaps or set [])"
+  emit_for_tiers:
+    - standard
+    - deep
+  deep_known_gaps_required: true
+  quiet_for_tiers:
+    - light
+  blocks_admission: false

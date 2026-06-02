@@ -360,6 +360,31 @@
       },
       "additionalProperties": false
     },
+    "test_adequacy": {
+      "type": "object",
+      "description": "Optional test adequacy declaration. Advisory-only; admission acceptance is not test adequacy. On standard/deep the engine emits advisory notes for a missing object or for missing/empty impacted_behaviors, tests_selected, why_sufficient. On deep, known_gaps must be present (an explicit [] is accepted and produces no note). Light tier remains quiet. Never blocks admission.",
+      "properties": {
+        "impacted_behaviors": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "tests_selected": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "why_sufficient": {
+          "type": "string"
+        },
+        "known_gaps": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "approval_receipt": {
       "type": "object",
       "description": "Optional approval receipt for high-risk command evidence. Required for standard/deep when evidence contains high-risk or unknown commands (standard: high/unknown; deep: medium/high/unknown).",

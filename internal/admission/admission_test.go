@@ -2843,6 +2843,154 @@ func TestProductIntentEmptyStatusTreatedAsMissing(t *testing.T) {
 	}
 }
 
+// Test adequacy advisory tests (advisory-only; never blocks admission).
+// Mirrors the product_intent test block above. The shape of test_adequacy
+// is: optional top-level object with optional impacted_behaviors,
+// tests_selected, why_sufficient, known_gaps, and notes. Notes are
+// emitted for standard/deep on missing or empty sub-properties; light
+// tier remains quiet.
+func standardTestAdequacyFixture(adequacy map[string]any) map[string]any {
+	doc := standardProductIntentFixture(nil)
+	if adequacy != nil {
+		doc["test_adequacy"] = adequacy
+	}
+	return doc
+}
+
+func deepTestAdequacyFixture(adequacy map[string]any) map[string]any {
+	doc := deepProductIntentFixture(nil)
+	if adequacy != nil {
+		doc["test_adequacy"] = adequacy
+	}
+	return doc
+}
+
+func lightTestAdequacyFixture() map[string]any {
+	doc := lightProductIntentFixture()
+	doc["test_adequacy"] = map[string]any{
+		"impacted_behaviors": []any{"x"},
+		"tests_selected":     []any{"y"},
+		"why_sufficient":     "z",
+		"known_gaps":         []any{},
+	}
+	return doc
+}
+
+func TestTestAdequacyStandardMissingEmitsAdvisory(t *testing.T) {
+	result := Run(standardTestAdequacyFixture(nil), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted (advisory-only), got %s", result.AcceptanceStatus)
+	}
+	if !containsNote(result.Notes, "test_adequacy not declared") {
+		t.Fatalf("expected test_adequacy missing advisory note, got %v", result.Notes)
+	}
+}
+
+func TestTestAdequacyStandardCompleteEmitsNoAdvisory(t *testing.T) {
+	adequacy := map[string]any{
+		"impacted_behaviors": []any{"x renders", "y unchanged"},
+		"tests_selected":     []any{"X.test.ts"},
+		"why_sufficient":     "covers both behaviors",
+		"known_gaps":         []any{"no Safari"},
+		"notes":              "manual review",
+	}
+	result := Run(standardTestAdequacyFixture(adequacy), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if containsNote(result.Notes, "test_adequacy") {
+		t.Fatalf("did not expect test_adequacy advisory for complete object, got %v", result.Notes)
+	}
+}
+
+func TestTestAdequacyStandardEmptyImpactedBehaviorsEmitsAdvisory(t *testing.T) {
+	adequacy := map[string]any{
+		"impacted_behaviors": []any{},
+		"tests_selected":     []any{"X.test.ts"},
+		"why_sufficient":     "covers both behaviors",
+	}
+	result := Run(standardTestAdequacyFixture(adequacy), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "test_adequacy.impacted_behaviors not declared") {
+		t.Fatalf("expected impacted_behaviors advisory, got %v", result.Notes)
+	}
+}
+
+func TestTestAdequacyStandardMissingTestsSelectedEmitsAdvisory(t *testing.T) {
+	adequacy := map[string]any{
+		"impacted_behaviors": []any{"x"},
+		"why_sufficient":     "ok",
+	}
+	result := Run(standardTestAdequacyFixture(adequacy), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "test_adequacy.tests_selected not declared") {
+		t.Fatalf("expected tests_selected advisory, got %v", result.Notes)
+	}
+}
+
+func TestTestAdequacyStandardBlankWhySufficientEmitsAdvisory(t *testing.T) {
+	adequacy := map[string]any{
+		"impacted_behaviors": []any{"x"},
+		"tests_selected":     []any{"X.test.ts"},
+		"why_sufficient":     "   ",
+	}
+	result := Run(standardTestAdequacyFixture(adequacy), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "test_adequacy.why_sufficient not declared") {
+		t.Fatalf("expected why_sufficient advisory, got %v", result.Notes)
+	}
+}
+
+func TestTestAdequacyDeepMissingKnownGapsEmitsAdvisory(t *testing.T) {
+	adequacy := map[string]any{
+		"impacted_behaviors": []any{"x"},
+		"tests_selected":     []any{"X.test.ts"},
+		"why_sufficient":     "ok",
+	}
+	result := Run(deepTestAdequacyFixture(adequacy), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "test_adequacy.known_gaps not declared") {
+		t.Fatalf("expected known_gaps missing advisory on deep, got %v", result.Notes)
+	}
+}
+
+func TestTestAdequacyDeepExplicitEmptyKnownGapsNoAdvisory(t *testing.T) {
+	adequacy := map[string]any{
+		"impacted_behaviors": []any{"x"},
+		"tests_selected":     []any{"X.test.ts"},
+		"why_sufficient":     "ok",
+		"known_gaps":         []any{},
+	}
+	result := Run(deepTestAdequacyFixture(adequacy), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if containsNote(result.Notes, "test_adequacy.known_gaps") {
+		t.Fatalf("did not expect known_gaps advisory for explicit [], got %v", result.Notes)
+	}
+}
+
+func TestTestAdequacyLightNoAdvisory(t *testing.T) {
+	result := Run(lightTestAdequacyFixture(), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success for light, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if containsNote(result.Notes, "test_adequacy") {
+		t.Fatalf("did not expect test_adequacy advisory for light, got %v", result.Notes)
+	}
+}
+
 // TestEscalationDriftGuard compares policies/escalation.yaml
 // verify_stage_escalation.v1 declarations against the Go runtime
 // hardcoded copy in escalationHighRiskPathPatterns. It also verifies the

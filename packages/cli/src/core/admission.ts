@@ -110,6 +110,15 @@ export interface AdmissionInput {
   // for missing or "unknown" status on standard/deep tiers. The light tier
   // remains quiet. aligned/unreviewed/disputed/not_applicable do not block.
   product_intent?: Record<string, unknown>;
+  // Optional test adequacy declaration. Advisory-only; admission acceptance
+  // is not test adequacy. On standard/deep the engine emits advisory notes
+  // for a missing object or for missing/empty impacted_behaviors,
+  // tests_selected, why_sufficient. On deep, known_gaps must be present
+  // (an explicit [] is accepted and produces no note). The light tier
+  // remains quiet. Mirrors the Go implementation in
+  // internal/admission/test_adequacy.go and the policy documentation in
+  // policies/admission.yaml.
+  test_adequacy?: Record<string, unknown>;
 }
 
 export interface AdmissionResult {
@@ -276,6 +285,17 @@ const PRODUCT_INTENT_MISSING_NOTE =
 const PRODUCT_INTENT_UNKNOWN_NOTE =
   "product_intent.status is unknown (advisory-only; admission acceptance is not product correctness)";
 
+const TEST_ADEQUACY_MISSING_NOTE =
+  "test_adequacy not declared (advisory-only; admission acceptance is not test adequacy)";
+const TEST_ADEQUACY_BEHAVIORS_MISSING_NOTE =
+  "test_adequacy.impacted_behaviors not declared (advisory-only; consider listing behavior covered by tests)";
+const TEST_ADEQUACY_TESTS_MISSING_NOTE =
+  "test_adequacy.tests_selected not declared (advisory-only; consider listing selected tests)";
+const TEST_ADEQUACY_WHY_MISSING_NOTE =
+  "test_adequacy.why_sufficient not declared (advisory-only; consider explaining why tests are sufficient)";
+const TEST_ADEQUACY_GAPS_MISSING_NOTE =
+  "test_adequacy.known_gaps not declared (advisory-only; deep should list gaps or set [])";
+
 // evaluateProductIntent emits advisory notes (never errors) for standard and
 // deep tier cards when product_intent.status is missing or set to "unknown".
 // The light tier remains quiet. aligned/unreviewed/disputed/not_applicable do
@@ -304,6 +324,67 @@ function evaluateProductIntent(input: AdmissionInput): string[] {
   if (status === "unknown") {
     notes.push(PRODUCT_INTENT_UNKNOWN_NOTE);
   }
+  return notes;
+}
+
+// isNonEmptyStringArray reports whether value is a non-empty array whose
+// entries are all non-blank strings. Used by evaluateTestAdequacy.
+function isNonEmptyStringArray(value: unknown): boolean {
+  if (!Array.isArray(value) || value.length === 0) return false;
+  for (const entry of value) {
+    if (typeof entry !== "string" || entry.trim() === "") return false;
+  }
+  return true;
+}
+
+// evaluateTestAdequacy emits advisory notes (never errors) for standard and
+// deep tier cards when test_adequacy or its sub-properties are missing or
+// blank. The light tier remains quiet. known_gaps == [] (explicit empty
+// array) is accepted for deep without emitting a note. This is the first
+// vertical slice; it never blocks admission. Wording is parity-safe with
+// the Go implementation in internal/admission/test_adequacy.go and the
+// policy documentation in policies/admission.yaml.
+function evaluateTestAdequacy(input: AdmissionInput): string[] {
+  const notes: string[] = [];
+  if (input.tier !== "standard" && input.tier !== "deep") {
+    return notes;
+  }
+
+  const testAdequacy = input.test_adequacy;
+  if (testAdequacy == null) {
+    notes.push(TEST_ADEQUACY_MISSING_NOTE);
+    return notes;
+  }
+
+  if (!isNonEmptyStringArray(testAdequacy.impacted_behaviors)) {
+    notes.push(TEST_ADEQUACY_BEHAVIORS_MISSING_NOTE);
+  }
+  if (!isNonEmptyStringArray(testAdequacy.tests_selected)) {
+    notes.push(TEST_ADEQUACY_TESTS_MISSING_NOTE);
+  }
+  const whyRaw = testAdequacy.why_sufficient;
+  const why = typeof whyRaw === "string" ? whyRaw.trim() : "";
+  if (why === "") {
+    notes.push(TEST_ADEQUACY_WHY_MISSING_NOTE);
+  }
+
+  if (input.tier === "deep") {
+    // known_gaps must be present; explicit [] is accepted and produces no
+    // note. Other shapes (missing key, null, non-array) emit a note.
+    if (!Object.prototype.hasOwnProperty.call(testAdequacy, "known_gaps")) {
+      notes.push(TEST_ADEQUACY_GAPS_MISSING_NOTE);
+    } else if (!isNonEmptyStringArray(testAdequacy.known_gaps)) {
+      // Field is present but not a non-empty string array. Accept
+      // [] as "explicit empty" (isNonEmptyStringArray returns false for
+      // []; detect that case and skip the note).
+      const gaps = testAdequacy.known_gaps;
+      const isExplicitEmpty = Array.isArray(gaps) && gaps.length === 0;
+      if (!isExplicitEmpty) {
+        notes.push(TEST_ADEQUACY_GAPS_MISSING_NOTE);
+      }
+    }
+  }
+
   return notes;
 }
 
@@ -435,6 +516,11 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
 
   // Product intent advisory (optional; never blocks admission)
   notes.push(...evaluateProductIntent(input));
+
+  // Test adequacy advisory (optional; never blocks admission). Mirrors
+  // product_intent: emits notes for missing or incomplete test_adequacy
+  // on standard/deep tiers; light tier stays quiet.
+  notes.push(...evaluateTestAdequacy(input));
 
   // Governance / human approval check for deep
   if (input.tier === "deep" && governance) {

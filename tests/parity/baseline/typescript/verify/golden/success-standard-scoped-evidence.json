@@ -34,6 +34,12 @@
       "status": "passed"
     },
     {
+      "name": "test_adequacy not declared (advisory-only; admission acceptance is not test adequacy)",
+      "note": "test_adequacy not declared (advisory-only; admission acceptance is not test adequacy)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "severity": "info",
@@ -60,7 +66,7 @@
   "episode": null,
   "input_card_hash": "sha256:d48365d855fc851f4d268d4c9e8e7081959d77596690ccfc47fb3b985e4a8820",
   "ok": true,
-  "policy_hash": "sha256:f309566cc6dd26cc476836ce05059da405c9bf748dbb62bf488366046a7b8094",
+  "policy_hash": "sha256:7972a55ce1cc6f83f94fbbe89883daad9a36b17f125347f6e59692c5eb0dd002",
   "product_intent_status": null,
   "recovery": null,
   "schema_version": 1,

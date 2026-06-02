@@ -26,6 +26,7 @@
             "completion card valid: examples/adversarial/evidence-says-pass-but-artifact-missing/completion-card.yaml",
             "tier \"standard\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
             "product_intent.status not declared (advisory-only; admission acceptance is not product correctness)",
+            "test_adequacy not declared (advisory-only; admission acceptance is not test adequacy)",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
             "governance enforced mode enabled",
             "mutation guard passed"
@@ -62,6 +63,7 @@
             "completion card valid: examples/adversarial/hidden-dangerous-command/completion-card.yaml",
             "tier \"standard\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
             "product_intent.status not declared (advisory-only; admission acceptance is not product correctness)",
+            "test_adequacy not declared (advisory-only; admission acceptance is not test adequacy)",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
             "governance enforced mode enabled",
             "mutation guard passed"
@@ -97,6 +99,7 @@
             "completion card valid: examples/adversarial/lying-command-exit-code/completion-card.yaml",
             "tier \"standard\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
             "product_intent.status not declared (advisory-only; admission acceptance is not product correctness)",
+            "test_adequacy not declared (advisory-only; admission acceptance is not test adequacy)",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
             "governance enforced mode enabled",
             "mutation guard passed"
@@ -134,6 +137,7 @@
             "tier \"standard\" recommends evidence scope (verifies/does_not_verify)",
             "tier \"standard\" recommends untested_regions",
             "product_intent.status not declared (advisory-only; admission acceptance is not product correctness)",
+            "test_adequacy not declared (advisory-only; admission acceptance is not test adequacy)",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
             "governance enforced mode enabled",
             "mutation guard passed"
@@ -173,6 +177,7 @@
             "completion card valid: examples/adversarial/spoofed-approval-artifact/completion-card.yaml",
             "tier \"deep\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
             "product_intent.status not declared (advisory-only; admission acceptance is not product correctness)",
+            "test_adequacy not declared (advisory-only; admission acceptance is not test adequacy)",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
             "governance enforced mode enabled",
             "mutation guard passed"
@@ -205,6 +210,7 @@
             "completion card valid: examples/adversarial/spoofed-protected-approval/completion-card.yaml",
             "tier \"deep\" recommends artifact metadata (command, timestamps, hashes, ci_run_url) for stronger traceability",
             "product_intent.status not declared (advisory-only; admission acceptance is not product correctness)",
+            "test_adequacy not declared (advisory-only; admission acceptance is not test adequacy)",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
             "admission checks passed",
             "governance enforced mode enabled",
