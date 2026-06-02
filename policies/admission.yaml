@@ -182,3 +182,37 @@ advisory_evidence_adequacy:
   quiet_for_tiers:
     - light
   blocks_admission: false
+
+# Advisory-only intent contract declaration. Never blocks admission in
+# the first slice. intent_contract is an optional top-level object with
+# optional user_visible_change (boolean), product_goal (string),
+# non_goals (string[]), acceptance_criteria (objects with optional id,
+# statement, source_ref), protected_behaviors (string[]), ambiguity
+# (object with optional status enum [none, unresolved, partial] and
+# questions string[]), and notes (string).
+# Emission rules:
+#   - standard/deep missing intent_contract -> top-level missing note
+#   - standard/deep present but missing/blank product_goal -> product_goal note
+#   - standard/deep present but user_visible_change key absent -> user_visible_change note
+#   - user_visible_change == false is valid and produces no uvchange note
+#   - light tier -> no note (advisory remains quiet)
+# The note wording makes it explicit that admission acceptance is not
+# intent correctness; follow-up slices may add blocking intent gates.
+advisory_intent_contract:
+  properties:
+    - user_visible_change
+    - product_goal
+    - non_goals
+    - acceptance_criteria
+    - protected_behaviors
+    - ambiguity
+    - notes
+  missing_note: "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)"
+  product_goal_missing_note: "intent_contract.product_goal not declared (advisory-only; consider documenting the intended change goal)"
+  user_visible_change_missing_note: "intent_contract.user_visible_change not declared (advisory-only; consider declaring whether the change is user-visible)"
+  emit_for_tiers:
+    - standard
+    - deep
+  quiet_for_tiers:
+    - light
+  blocks_admission: false

@@ -41,6 +41,12 @@
       "status": "passed"
     },
     {
+      "name": "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
+      "note": "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "mutation guard passed",
       "note": "mutation guard passed",
       "severity": "info",
@@ -109,7 +115,7 @@
   "episode": null,
   "input_card_hash": "sha256:da90d076124054ba0c84190b15a5a73b901763e06f2c66e8be17e7362878c3a6",
   "ok": false,
-  "policy_hash": "sha256:688312f7fbf1b3a6221472e870d339eaf0da7d19d0a0dc7433e5d2fb1fc6b176",
+  "policy_hash": "sha256:5fd0b11e0d777043b97ab4179b18a85af3d30f74a48353ece32dd2801990ab52",
   "product_intent_status": null,
   "recovery": {
     "next_action": "Attach validation evidence or explain why unavailable.",
