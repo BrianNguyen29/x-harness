@@ -88,6 +88,26 @@ describe("release packaging", () => {
         true
       );
     }
+    // Every synced schemas/*.schema.json file must appear in the pack
+    // manifest. The sync script recursively copies the root schemas/
+    // directory, so we discover the runtime set from packages/cli/schemas/
+    // and assert each shallow *.schema.json is present. This guards against
+    // future root schema additions (e.g. schemas/foo.schema.json) silently
+    // being dropped from the npm pack manifest.
+    const syncedSchemasDir = path.join(packageRoot, "schemas");
+    const syncedSchemaFiles = fs
+      .readdirSync(syncedSchemasDir)
+      .filter((name) => name.endsWith(".schema.json"));
+    expect(
+      syncedSchemaFiles.length,
+      "synced packages/cli/schemas/ must contain at least one .schema.json file"
+    ).toBeGreaterThan(0);
+    for (const name of syncedSchemaFiles) {
+      const packPath = `schemas/${name}`;
+      expect(files.has(packPath), `packed file missing: ${packPath}`).toBe(
+        true
+      );
+    }
     for (const required of [
       "bin/x-harness.js",
       "schemas/agent-profile.schema.json",
