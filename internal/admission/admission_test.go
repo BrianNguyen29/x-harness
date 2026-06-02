@@ -3103,6 +3103,159 @@ func TestEvidenceAdequacyLightNoAdvisory(t *testing.T) {
 	}
 }
 
+// Intent contract advisory tests (advisory-only; never blocks admission).
+// Mirrors the evidence_adequacy test block above. intent_contract is an
+// optional top-level object with optional user_visible_change (boolean),
+// product_goal (string), non_goals (string[]), acceptance_criteria (array
+// of objects), protected_behaviors (string[]), ambiguity (object), and
+// notes (string). The engine emits a top-level missing note for
+// standard/deep when intent_contract is absent, a product_goal note when
+// product_goal is missing/blank, and a user_visible_change note when the
+// key is absent. user_visible_change == false is valid and produces no
+// uvchange note. The light tier remains quiet. Wording is parity-safe
+// with the TS implementation in packages/cli/src/core/admission.ts and
+// the policy documentation in policies/admission.yaml.
+func standardIntentContractFixture(contract map[string]any) map[string]any {
+	doc := standardProductIntentFixture(nil)
+	if contract != nil {
+		doc["intent_contract"] = contract
+	}
+	return doc
+}
+
+func deepIntentContractFixture(contract map[string]any) map[string]any {
+	doc := deepProductIntentFixture(nil)
+	if contract != nil {
+		doc["intent_contract"] = contract
+	}
+	return doc
+}
+
+func lightIntentContractFixture() map[string]any {
+	doc := lightProductIntentFixture()
+	doc["intent_contract"] = map[string]any{
+		"user_visible_change": true,
+		"product_goal":        "cover the change",
+	}
+	return doc
+}
+
+func TestIntentContractStandardMissingEmitsAdvisory(t *testing.T) {
+	result := Run(standardIntentContractFixture(nil), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted (advisory-only), got %s", result.AcceptanceStatus)
+	}
+	if !containsNote(result.Notes, "intent_contract not declared") {
+		t.Fatalf("expected intent_contract missing advisory note, got %v", result.Notes)
+	}
+}
+
+func TestIntentContractStandardCompleteEmitsNoAdvisory(t *testing.T) {
+	contract := map[string]any{
+		"user_visible_change": true,
+		"product_goal":        "ship the advisory slice",
+		"non_goals":           []any{"block admission"},
+		"acceptance_criteria": []any{
+			map[string]any{"id": "ac-1", "statement": "advisory note emitted"},
+		},
+		"protected_behaviors": []any{"no schema change"},
+		"ambiguity": map[string]any{
+			"status":   "none",
+			"questions": []any{},
+		},
+		"notes": "first vertical slice",
+	}
+	result := Run(standardIntentContractFixture(contract), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted, got %s", result.AcceptanceStatus)
+	}
+	if containsNote(result.Notes, "intent_contract") {
+		t.Fatalf("did not expect intent_contract advisory for complete object, got %v", result.Notes)
+	}
+}
+
+func TestIntentContractStandardBlankProductGoalEmitsAdvisory(t *testing.T) {
+	contract := map[string]any{
+		"user_visible_change": true,
+		"product_goal":        "   ",
+	}
+	result := Run(standardIntentContractFixture(contract), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted (advisory-only), got %s", result.AcceptanceStatus)
+	}
+	if !containsNote(result.Notes, "intent_contract.product_goal not declared") {
+		t.Fatalf("expected product_goal advisory, got %v", result.Notes)
+	}
+}
+
+func TestIntentContractStandardMissingUserVisibleChangeEmitsAdvisory(t *testing.T) {
+	contract := map[string]any{
+		"product_goal": "ship the advisory slice",
+	}
+	result := Run(standardIntentContractFixture(contract), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted (advisory-only), got %s", result.AcceptanceStatus)
+	}
+	if !containsNote(result.Notes, "intent_contract.user_visible_change not declared") {
+		t.Fatalf("expected user_visible_change advisory, got %v", result.Notes)
+	}
+}
+
+func TestIntentContractStandardUserVisibleChangeFalseEmitsNoAdvisory(t *testing.T) {
+	contract := map[string]any{
+		"user_visible_change": false,
+		"product_goal":        "internal refactor with no user-visible effect",
+	}
+	result := Run(standardIntentContractFixture(contract), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted, got %s", result.AcceptanceStatus)
+	}
+	if containsNote(result.Notes, "intent_contract.user_visible_change not declared") {
+		t.Fatalf("did not expect user_visible_change advisory when explicit false, got %v", result.Notes)
+	}
+}
+
+func TestIntentContractDeepMissingEmitsAdvisory(t *testing.T) {
+	result := Run(deepIntentContractFixture(nil), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted (advisory-only), got %s", result.AcceptanceStatus)
+	}
+	if !containsNote(result.Notes, "intent_contract not declared") {
+		t.Fatalf("expected intent_contract missing advisory on deep, got %v", result.Notes)
+	}
+}
+
+func TestIntentContractLightNoAdvisory(t *testing.T) {
+	result := Run(lightIntentContractFixture(), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success for light, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted for light, got %s", result.AcceptanceStatus)
+	}
+	if containsNote(result.Notes, "intent_contract") {
+		t.Fatalf("did not expect intent_contract advisory for light, got %v", result.Notes)
+	}
+}
+
 // TestEscalationDriftGuard compares policies/escalation.yaml
 // verify_stage_escalation.v1 declarations against the Go runtime
 // hardcoded copy in escalationHighRiskPathPatterns. It also verifies the

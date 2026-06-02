@@ -56,6 +56,12 @@
       "status": "passed"
     },
     {
+      "name": "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
+      "note": "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "severity": "info",
@@ -94,7 +100,7 @@
   "episode": null,
   "input_card_hash": "sha256:9537e3b8050a87df02adfa6b361e09a0455eecbeb7bf775cb38ba436c5904935",
   "ok": false,
-  "policy_hash": "sha256:688312f7fbf1b3a6221472e870d339eaf0da7d19d0a0dc7433e5d2fb1fc6b176",
+  "policy_hash": "sha256:5fd0b11e0d777043b97ab4179b18a85af3d30f74a48353ece32dd2801990ab52",
   "product_intent_status": null,
   "recovery": {
     "next_action": "Add context_alignment with stale_ground_checked, at least one ref array, and resolve context questions.",

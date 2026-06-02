@@ -127,6 +127,16 @@ export interface AdmissionInput {
   // internal/admission/evidence_adequacy.go and the policy documentation
   // in policies/admission.yaml.
   evidence_adequacy?: Record<string, unknown>;
+  // Optional intent contract declaration. Advisory-only; admission
+  // acceptance is not intent correctness. On standard/deep the engine
+  // emits a top-level missing note when intent_contract is absent, a
+  // product_goal note when product_goal is missing/blank, and a
+  // user_visible_change note when the key is absent. An explicit
+  // user_visible_change == false is accepted and produces no uvchange
+  // note. The light tier remains quiet. Never blocks admission. Mirrors
+  // the Go implementation in internal/admission/intent_contract.go and
+  // the policy documentation in policies/admission.yaml.
+  intent_contract?: Record<string, unknown>;
 }
 
 export interface AdmissionResult {
@@ -309,6 +319,13 @@ const EVIDENCE_ADEQUACY_MISSING_NOTE =
 const EVIDENCE_ADEQUACY_SUMMARY_MISSING_NOTE =
   "evidence_adequacy.summary not declared (advisory-only; consider explaining how evidence covers the change)";
 
+const INTENT_CONTRACT_MISSING_NOTE =
+  "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)";
+const INTENT_CONTRACT_GOAL_MISSING_NOTE =
+  "intent_contract.product_goal not declared (advisory-only; consider documenting the intended change goal)";
+const INTENT_CONTRACT_UVCHANGE_MISSING_NOTE =
+  "intent_contract.user_visible_change not declared (advisory-only; consider declaring whether the change is user-visible)";
+
 // evaluateProductIntent emits advisory notes (never errors) for standard and
 // deep tier cards when product_intent.status is missing or set to "unknown".
 // The light tier remains quiet. aligned/unreviewed/disputed/not_applicable do
@@ -425,6 +442,42 @@ function evaluateEvidenceAdequacy(input: AdmissionInput): string[] {
   const summary = typeof summaryRaw === "string" ? summaryRaw.trim() : "";
   if (summary === "") {
     notes.push(EVIDENCE_ADEQUACY_SUMMARY_MISSING_NOTE);
+  }
+
+  return notes;
+}
+
+// evaluateIntentContract emits advisory notes (never errors) for standard
+// and deep tier cards when intent_contract is missing, when its
+// product_goal is missing/blank, or when its user_visible_change key is
+// absent. The light tier remains quiet. user_visible_change == false (an
+// explicit non-user-visible declaration) is accepted and produces no
+// uvchange note. This is the first vertical slice; it never blocks
+// admission. Wording is parity-safe with the Go implementation in
+// internal/admission/intent_contract.go and the policy documentation in
+// policies/admission.yaml.
+function evaluateIntentContract(input: AdmissionInput): string[] {
+  const notes: string[] = [];
+  if (input.tier !== "standard" && input.tier !== "deep") {
+    return notes;
+  }
+
+  const intentContract = input.intent_contract;
+  if (intentContract == null) {
+    notes.push(INTENT_CONTRACT_MISSING_NOTE);
+    return notes;
+  }
+
+  const goalRaw = intentContract.product_goal;
+  const goal = typeof goalRaw === "string" ? goalRaw.trim() : "";
+  if (goal === "") {
+    notes.push(INTENT_CONTRACT_GOAL_MISSING_NOTE);
+  }
+
+  if (
+    !Object.prototype.hasOwnProperty.call(intentContract, "user_visible_change")
+  ) {
+    notes.push(INTENT_CONTRACT_UVCHANGE_MISSING_NOTE);
   }
 
   return notes;
@@ -569,6 +622,14 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
   // evidence_adequacy is absent on standard/deep tiers and a summary
   // note when summary is missing/blank. Light tier stays quiet.
   notes.push(...evaluateEvidenceAdequacy(input));
+
+  // Intent contract advisory (optional; never blocks admission). Mirrors
+  // evidence_adequacy: emits a top-level missing note when intent_contract
+  // is absent on standard/deep tiers, a product_goal note when
+  // product_goal is missing/blank, and a user_visible_change note when
+  // the key is absent. An explicit user_visible_change == false is
+  // accepted and produces no uvchange note. Light tier stays quiet.
+  notes.push(...evaluateIntentContract(input));
 
   // Governance / human approval check for deep
   if (input.tier === "deep" && governance) {

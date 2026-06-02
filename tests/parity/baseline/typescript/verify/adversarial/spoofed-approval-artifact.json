@@ -44,6 +44,12 @@
       "status": "passed"
     },
     {
+      "name": "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
+      "note": "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "severity": "info",
@@ -118,7 +124,7 @@
   "episode": null,
   "input_card_hash": "sha256:603370d47cd27b228219a2b9a1c97f2fef0b38e73dff1a62c2f2b1198d9340d6",
   "ok": false,
-  "policy_hash": "sha256:688312f7fbf1b3a6221472e870d339eaf0da7d19d0a0dc7433e5d2fb1fc6b176",
+  "policy_hash": "sha256:5fd0b11e0d777043b97ab4179b18a85af3d30f74a48353ece32dd2801990ab52",
   "product_intent_status": null,
   "recovery": {
     "next_action": "Declare what each validation artifact verifies and does not verify.",

@@ -402,6 +402,53 @@
       },
       "additionalProperties": false
     },
+    "intent_contract": {
+      "type": "object",
+      "description": "Optional intent contract declaration. Advisory-only; admission acceptance is not intent correctness. On standard/deep the engine emits a top-level missing note when intent_contract is absent, a product_goal note when product_goal is missing/blank, and a user_visible_change note when the key is absent. An explicit user_visible_change == false is accepted and produces no uvchange note. The light tier remains quiet. Never blocks admission.",
+      "properties": {
+        "user_visible_change": {
+          "type": "boolean"
+        },
+        "product_goal": {
+          "type": "string"
+        },
+        "non_goals": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "statement": { "type": "string" },
+              "source_ref": { "type": "string" }
+            }
+          }
+        },
+        "protected_behaviors": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "ambiguity": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "enum": ["none", "unresolved", "partial"]
+            },
+            "questions": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "approval_receipt": {
       "type": "object",
       "description": "Optional approval receipt for high-risk command evidence. Required for standard/deep when evidence contains high-risk or unknown commands (standard: high/unknown; deep: medium/high/unknown).",

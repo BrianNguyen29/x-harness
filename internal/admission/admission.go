@@ -153,6 +153,15 @@ func Run(doc map[string]any, strict bool, contextFloor bool) Result {
 	// note when summary is missing/blank. Light tier stays quiet.
 	notes = append(notes, evaluateEvidenceAdequacy(doc, tier)...)
 
+	// Intent contract advisory (optional; never blocks admission).
+	// Mirrors evidence_adequacy: emits a top-level missing note when
+	// intent_contract is absent on standard/deep tiers, a product_goal
+	// note when product_goal is missing/blank, and a user_visible_change
+	// note when the key is absent. An explicit user_visible_change ==
+	// false is accepted and produces no uvchange note. Light tier stays
+	// quiet.
+	notes = append(notes, evaluateIntentContract(doc, tier)...)
+
 	// Command safety
 	cmdResult := evaluateCommandSafety(doc)
 	for _, e := range cmdResult.errors {
