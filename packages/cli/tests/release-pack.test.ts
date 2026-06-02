@@ -170,6 +170,36 @@ describe("release packaging", () => {
         true
       );
     }
+    // Every synced examples/** file must appear in the pack manifest. The
+    // sync script recursively copies the root examples/ directory (which is
+    // nested across topic subdirs and golden regression cases), so we
+    // recursively collect every file under packages/cli/examples/ and assert
+    // each appears in the pack manifest using POSIX separators. This guards
+    // against future example additions (e.g.
+    // examples/golden/regression/success-light/completion-card.yaml) silently
+    // being dropped from the npm pack manifest.
+    const syncedExamplesDir = path.join(packageRoot, "examples");
+    expect(
+      fs.existsSync(syncedExamplesDir),
+      "synced packages/cli/examples/ must exist after sync"
+    ).toBe(true);
+    const syncedExampleFiles = collectFilesRecursive(syncedExamplesDir);
+    expect(
+      syncedExampleFiles.length,
+      "synced packages/cli/examples/ must contain at least one file"
+    ).toBeGreaterThan(0);
+    for (const abs of syncedExampleFiles) {
+      const packPath = path.posix.join(
+        "examples",
+        path.posix.relative(
+          syncedExamplesDir.split(path.sep).join(path.posix.sep),
+          abs.split(path.sep).join(path.posix.sep)
+        )
+      );
+      expect(files.has(packPath), `packed file missing: ${packPath}`).toBe(
+        true
+      );
+    }
     for (const required of [
       "bin/x-harness.js",
       "schemas/agent-profile.schema.json",
