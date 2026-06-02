@@ -214,6 +214,23 @@ describe("release packaging", () => {
     ).toBeLessThan(afterIndex);
   }
 
+  // Pure helper: asserts that `stepName` appears in `workflow` by
+  // delegating to `findWorkflowStepIndex` (which throws a clear,
+  // step-named error when the step is absent) and discarding the
+  // returned index. Extracted from the release workflow ordering
+  // guard and the go-binaries exclusion linkage guard so the two
+  // direct `toContain(COPY_GO_BINARIES_STEP)` checks share a single,
+  // consistent failure message that names the missing step (rather
+  // than failing with an opaque "expected ... to include ..."
+  // assertion message), and so the helper can be exercised by
+  // focused unit tests.
+  function expectWorkflowContainsStep(
+    workflow: string,
+    stepName: string
+  ): void {
+    findWorkflowStepIndex(workflow, stepName);
+  }
+
   it("resolves packaged assets from the runtime asset root", async () => {
     await syncPackageAssets();
     const assetRoot = await resolveAssetRoot();
@@ -626,7 +643,7 @@ describe("release packaging", () => {
       COPY_GO_BINARIES_STEP,
       BUILD_RELEASE_PACKAGE_STEP
     );
-    expect(releaseWorkflow).toContain(COPY_GO_BINARIES_STEP);
+    expectWorkflowContainsStep(releaseWorkflow, COPY_GO_BINARIES_STEP);
     expect(releaseWorkflow).toContain("Generate Go binary checksums");
     expect(releaseWorkflow).toContain("Go binary smoke test");
     expect(releaseWorkflow).toContain("tests/smoke/go-binary-smoke.sh");
@@ -770,10 +787,10 @@ describe("release packaging", () => {
     // obvious and forcing the exclusion comment to be updated alongside
     // the const declaration.
     const releaseWorkflowForExclusion = readReleaseYaml();
-    expect(
+    expectWorkflowContainsStep(
       releaseWorkflowForExclusion,
-      `.github/workflows/release.yml must still contain the ${COPY_GO_BINARIES_STEP} step that the go-binaries exclusion relies on; keep this guard in lock-step with the workflow ordering assertion (and the COPY_GO_BINARIES_STEP const) by updating both when the step is renamed`
-    ).toContain(COPY_GO_BINARIES_STEP);
+      COPY_GO_BINARIES_STEP
+    );
     const missing = findMissingFilesCoverage(
       filesEntries,
       coveredFilesEntries,
@@ -1083,6 +1100,44 @@ describe("release packaging", () => {
       expectWorkflowStepOrder(
         `- name: ${BUILD_GO_BINARIES_STEP}\n`,
         BUILD_GO_BINARIES_STEP,
+        "Renamed step"
+      )
+    ).toThrow(
+      /Step "Renamed step" not found in \.github\/workflows\/release\.yml/
+    );
+  });
+
+  it("expectWorkflowContainsStep passes when the step is present", () => {
+    // Positive fixture: prove the helper silently accepts a workflow
+    // that contains the requested step. This guards against silent
+    // regressions in the helper's happy-path lookup logic shared
+    // with the release workflow ordering guard and the go-binaries
+    // exclusion linkage guard above.
+    const workflow = `header\n- name: ${BUILD_GO_BINARIES_STEP}\n- name: ${COPY_GO_BINARIES_STEP}\n`;
+    expect(() =>
+      expectWorkflowContainsStep(workflow, COPY_GO_BINARIES_STEP)
+    ).not.toThrow();
+    expect(() =>
+      expectWorkflowContainsStep(workflow, BUILD_GO_BINARIES_STEP)
+    ).not.toThrow();
+  });
+
+  it("expectWorkflowContainsStep fails with a clear message when the step is missing", () => {
+    // Negative fixture: prove the helper propagates the clear
+    // "Step \"<name>\" not found in .github/workflows/release.yml"
+    // error from `findWorkflowStepIndex` unchanged when the workflow
+    // text does not contain the requested step. This keeps the
+    // missing-step diagnostic consistent across the release workflow
+    // ordering guard, the go-binaries exclusion linkage guard, and
+    // the focused fixtures for the ordering helper above.
+    expect(() => expectWorkflowContainsStep("", COPY_GO_BINARIES_STEP)).toThrow(
+      new RegExp(
+        `Step "${COPY_GO_BINARIES_STEP}" not found in \\.github\\/workflows\\/release\\.yml`
+      )
+    );
+    expect(() =>
+      expectWorkflowContainsStep(
+        `- name: ${BUILD_GO_BINARIES_STEP}\n`,
         "Renamed step"
       )
     ).toThrow(
