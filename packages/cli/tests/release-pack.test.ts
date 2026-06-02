@@ -68,6 +68,19 @@ function findMissingFilesCoverage(
   );
 }
 
+// Pure helper: returns the subset of `requiredDirs` (parsed from
+// sync-package-assets.mjs) that are NOT present in `covered` (dirs with
+// a dynamic pack-manifest coverage block in this test file). Extracted
+// from the "every requiredDirs entry has a dynamic pack-manifest
+// coverage group" meta-guard so the missing-entry detection logic can
+// be exercised by a focused unit test.
+function findMissingDirsCoverage(
+  requiredDirs: string[],
+  covered: Set<string>
+): string[] {
+  return requiredDirs.filter((dir) => !covered.has(dir));
+}
+
 describe("release packaging", () => {
   it("resolves packaged assets from the runtime asset root", async () => {
     await syncPackageAssets();
@@ -546,12 +559,13 @@ describe("release packaging", () => {
       "templates",
       "tools",
     ]);
-    for (const required of requiredDirs) {
-      expect(
-        coveredDirs.has(required),
-        `requiredDir "${required}" from sync-package-assets.mjs has no pack-manifest coverage in release-pack.test.ts; add a dynamic block (see packaging/skills guards above) and register it in coveredDirs`
-      ).toBe(true);
-    }
+    const missing = findMissingDirsCoverage(requiredDirs, coveredDirs);
+    expect(
+      missing,
+      `requiredDirs entries from sync-package-assets.mjs without pack-manifest coverage in release-pack.test.ts: ${missing.join(
+        ", "
+      )}; add a dynamic block (see packaging/skills guards above) and register the entry in coveredDirs`
+    ).toEqual([]);
   });
 
   it("every package.json files entry has pack-manifest coverage", () => {
@@ -668,5 +682,33 @@ describe("release packaging", () => {
     expect(
       findMissingFilesCoverage(["x", "y"], new Set(["x", "y"]), new Set())
     ).toEqual([]);
+  });
+
+  it("findMissingDirsCoverage detects uncovered requiredDirs", () => {
+    // Negative fixture: prove the helper returns only the entries that
+    // are not present in the covered set, while ignoring entries that
+    // are present. This guards against silent regressions in the
+    // missing-entry detection logic shared with the requiredDirs
+    // meta-guard above.
+    expect(
+      findMissingDirsCoverage(
+        ["adapters", "templates", "uncovered-dir"],
+        new Set(["adapters", "templates"])
+      )
+    ).toEqual(["uncovered-dir"]);
+    // Order-preserving: uncovered entries appear in the order they are
+    // declared in requiredDirs, regardless of set insertion order.
+    expect(
+      findMissingDirsCoverage(
+        ["alpha", "beta", "gamma", "delta"],
+        new Set(["alpha"])
+      )
+    ).toEqual(["beta", "gamma", "delta"]);
+    // Empty inputs short-circuit cleanly without throwing.
+    expect(findMissingDirsCoverage([], new Set())).toEqual([]);
+    // All-covered input returns an empty array.
+    expect(findMissingDirsCoverage(["x", "y"], new Set(["x", "y"]))).toEqual(
+      []
+    );
   });
 });
