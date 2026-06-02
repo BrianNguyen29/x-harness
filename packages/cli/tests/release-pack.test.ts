@@ -69,6 +69,25 @@ describe("release packaging", () => {
       files.has("dist/index.js"),
       "packed file must not include dist/index.js"
     ).toBe(false);
+    // Every synced policies/*.yaml file must appear in the pack manifest.
+    // The sync script recursively copies the root policies/ directory, so we
+    // discover the runtime set from packages/cli/policies/ and assert each
+    // shallow *.yaml is present. This guards against future root policy
+    // additions (e.g. policies/evidence.yaml) silently being dropped.
+    const syncedPoliciesDir = path.join(packageRoot, "policies");
+    const syncedPolicyFiles = fs
+      .readdirSync(syncedPoliciesDir)
+      .filter((name) => name.endsWith(".yaml"));
+    expect(
+      syncedPolicyFiles.length,
+      "synced packages/cli/policies/ must contain at least one .yaml file"
+    ).toBeGreaterThan(0);
+    for (const name of syncedPolicyFiles) {
+      const packPath = `policies/${name}`;
+      expect(files.has(packPath), `packed file missing: ${packPath}`).toBe(
+        true
+      );
+    }
     for (const required of [
       "bin/x-harness.js",
       "schemas/agent-profile.schema.json",
