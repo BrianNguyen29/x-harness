@@ -13,6 +13,8 @@ x-harness adapters are thin conventions that make the harness usable inside spec
 | **`actions`** | (standalone)           | List all beginner-friendly actions                        |
 | **`status`** | `report` (no --metrics)| Show trace summary or card metrics                       |
 | **`reset`**  | `clean --tmp --force`   | Clean generated harness state (requires --confirm)        |
+| **`init`**   | (standalone)           | Install core harness assets, schemas, policies, and adapters (default `--minimal`) |
+| **`add`**    | (standalone)           | Add a metadata helper file for compatibility modes        |
 
 **Slash commands for agent adapters:** Use `/xh <action>` in agent chat (for example, `/xh check`, `/xh packet create --card <path>`). The legacy `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset` style remains supported for compatibility.
 

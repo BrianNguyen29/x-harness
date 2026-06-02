@@ -330,7 +330,7 @@ func TestActionsListsBeginnerActions(t *testing.T) {
 		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
 	}
 	out := stdout.String()
-	expected := []string{"prepare", "check", "recover", "doctor", "actions", "status", "reset"}
+	expected := []string{"prepare", "check", "recover", "doctor", "actions", "status", "reset", "init", "add"}
 	for _, name := range expected {
 		if !strings.Contains(out, name) {
 			t.Fatalf("actions output missing %q:\n%s", name, out)

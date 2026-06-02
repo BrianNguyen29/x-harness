@@ -39,17 +39,19 @@ You should see a JSON report detailing passing validations with `"healthy": true
 
 ### 3. Beginner Actions
 
-`x-harness` provides seven beginner-friendly actions:
+`x-harness` provides nine beginner-friendly actions:
 
-| Action       | Description                                              |
-| :----------- | :------------------------------------------------------- |
-| **`check`**  | Run read-only verification against a completion card        |
+| Action        | Description                                              |
+| :------------ | :------------------------------------------------------- |
+| **`check`**   | Run read-only verification against a completion card        |
 | **`prepare`** | Check if workspace is ready for agent task handoff        |
 | **`recover`** | Get recovery playbook suggestions from errors or trace     |
-| **`doctor`** | Validate workspace health and configuration                |
+| **`doctor`**  | Validate workspace health and configuration                |
 | **`actions`** | List all beginner-friendly actions                        |
-| **`status`** | Show trace summary (alias for report without --metrics)  |
-| **`reset`**  | Clean generated harness state (requires --confirm)        |
+| **`status`**  | Show trace summary (alias for report without --metrics)  |
+| **`reset`**   | Clean generated harness state (requires --confirm)        |
+| **`init`**    | Install core harness assets, schemas, policies, and adapters (default `--minimal`) |
+| **`add`**     | Add a metadata helper file for compatibility modes        |
 
 ### 4. Run Contract Oracle Checks (Optional)
 
@@ -72,7 +74,7 @@ xh check --card examples/golden/regression/success-light/completion-card.yaml
 ```txt
 outcome: success
 acceptance_status: accepted
-checks: 1 passed, 0 failed
+checks: 2 passed, 0 failed
 ```
 
 _(The command returns an exit code of `0` because verification was successful and completion has been officially admitted)._
@@ -92,9 +94,9 @@ xh check --card examples/golden/regression/blocked-missing-evidence/completion-c
 **Expected Withheld Output:**
 
 ```txt
-outcome: blocked
+outcome: failed
 acceptance_status: withheld
-checks: 1 passed, 1 failed
+checks: 0 passed, 5 failed
 ```
 
 _(The command returns a non-zero exit code `1` because the evidence floor policy was not met. The task remains withheld)._
@@ -118,11 +120,11 @@ If `init` finds conflicting harness files in the target workspace, it stops with
 
 ### 7. Verify Your Own Completion Cards
 
-When working on a task, write your completion card to `completion-card.yaml` and execute the verify gate using `check`:
+When working on a task, write your completion card to `completion-card.yaml` and execute the verify gate using `check`. The Go CLI requires an explicit `--card` (or `--subagent-return`) path; it does not auto-discover `completion-card.yaml` in the current directory.
 
 ```bash
-# Default verify path looks for 'completion-card.yaml' in current directory
-xh check
+# Pass the completion card explicitly
+xh check --card completion-card.yaml
 
 # Advanced check with full check notes and handoff routing
 xh check --card completion-card.yaml --verbose

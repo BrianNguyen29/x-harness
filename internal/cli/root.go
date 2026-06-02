@@ -341,7 +341,7 @@ func printActions(w io.Writer) {
 	WriteLine(w, "| Action | Maturity | Description |")
 	WriteLine(w, "| :-- | :-- | :-- |")
 	for _, command := range commands {
-		if command.Name == "prepare" || command.Name == "check" || command.Name == "recover" || command.Name == "doctor" || command.Name == "actions" || command.Name == "status" || command.Name == "reset" {
+		if isBeginnerCommand(command.Name) {
 			WriteLine(w, "| %s | %s | %s |", command.Name, command.Maturity, command.Description)
 		}
 	}

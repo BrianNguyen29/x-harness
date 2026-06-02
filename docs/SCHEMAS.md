@@ -42,10 +42,14 @@ These schemas are included in the package and used by command-specific features 
 
 | Schema                                | Purpose                                      |
 | :------------------------------------ | :------------------------------------------- |
+| `adapter-matrix.schema.json`          | Adapter capability matrix produced by `xh adapters list` and consumed by the adapter doctor. |
+| `admission-card.schema.json`          | Admission card envelope emitted by `xh card` for downstream admission/verifier handoff. |
 | `agent-profile.schema.json`           | Agent profile reporting/update artifacts.    |
+| `approval-receipt.schema.json`        | Approval receipts (`decision`, `approver`, `classified_commands`, `aggregate_risk`) attached to high-risk `command_evidence` entries on standard/deep cards. |
 | `approval-risk.schema.json`           | Approval-risk evaluation reports.            |
 | `attribution.schema.json`             | Attribution report artifacts.                |
 | `benchmark-report.schema.json`        | Benchmark JSON output.                       |
+| `classifier.schema.json`              | Permission intent classifier result shape (`command`, `intents`, `risk`, `unknown`). |
 | `components-registry.schema.json`     | Component registry validation.               |
 | `context-alignment.schema.json`       | Context alignment evidence for verify --context-floor. |
 | `contract-oracle.schema.json`         | Contract oracle rule violations (grep_rules and dependency_rules) from `x-harness contract check --json`. |
@@ -58,6 +62,9 @@ These schemas are included in the package and used by command-specific features 
 | `intervention.schema.json`            | Governance intervention artifacts.            |
 | `packet.schema.json`                  | Immutable packet records.                    |
 | `permissions.schema.json`             | Permissions policy validation.               |
+| `release-evidence.schema.json`        | Release evidence bundles (`version`, `artifacts`, `conformance`) emitted by `xh release`. |
+| `scanner.schema.json`                 | Static scanner results (`files_scanned`, `findings`, `summary`) from `xh scan` and the conformance scanner check. |
+| `subagent-task.schema.json`           | Sub-agent task handoff envelopes (`task_id`, `tier`, `goal`, `scope`, `success_criteria`) used to dispatch bounded work. |
 | `withheld-reason.schema.json`        | Typed withheld reason taxonomy for blocked/failed outcomes. See [compatibility boundary](VERIFY_GATE.md) for runtime superset vs strict schema. |
 
 ## Validation engine

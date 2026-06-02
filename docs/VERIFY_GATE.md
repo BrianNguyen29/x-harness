@@ -89,12 +89,13 @@ The verify command supports an opt-in `--contract-oracles` flag that performs ru
 
 Behavior:
 
-- When `--contract-oracles` is passed, verify reads the policy file `policies/contract-oracle.yaml`. A custom policy file can be specified with `--contract-oracles-policy <path>`.
+- Contract Oracle is **off by default** and only runs when `--contract-oracles` (or `xh contract check`) is explicitly passed. The FAQ states: "Contract Oracle is off by default and must be explicitly enabled."
+- When enabled, verify reads the policy file `policies/contract-oracle.yaml`. A custom policy file can be specified with `--contract-oracles-policy <path>`.
 - Assertions are evaluated using grep patterns (`grep_rules`) and line-level import scanning (`dependency_rules`) against workspace files; no AST parsing, package graph resolution, or runtime subprocesses are used.
 - `grep_rules` match regex patterns against file content.
 - `dependency_rules` scan for import-like lines (Go `import`, TypeScript/JavaScript `import ... from`, `require()`) and check import paths against `forbidden_imports` substrings. `allowed_imports` can suppress a match. `exclude` patterns apply to file paths.
-- The checked-in default policy is empty-safe (`grep_rules: []`, `dependency_rules: []`), meaning no assertions run unless a custom policy is provided.
-- If the policy file is missing or unreadable, the check exits with a non-zero code (hard error) before producing a verify result; it does not silently pass.
+- The checked-in default policy is empty-safe (`grep_rules: []`, `dependency_rules: []`), meaning no assertions run even when explicitly enabled unless a custom policy is provided.
+- The hard-error on a missing or unreadable policy file only applies **once Contract Oracle has been explicitly enabled** (via `--contract-oracles`, `--contract-oracles-policy <path>`, or the standalone `xh contract check`). When Contract Oracle is not enabled, the verify gate ignores the policy file entirely and never hard-errors on its absence. This is consistent with the FAQ: Contract Oracle is off by default and does not affect ordinary verify runs.
 - Failures produce a `blocked` outcome with `blocking_predicate: contract_oracle_blocked`.
 
 ## Compatibility boundary

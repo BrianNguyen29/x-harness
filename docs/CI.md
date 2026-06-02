@@ -117,8 +117,12 @@ jobs:
         run: ./x-harness doctor --root . --json
       - name: Go-native golden examples
         run: ./x-harness examples verify --json
+      - name: Go-native regression suite gate
+        run: ./x-harness examples verify --suite=regression --json
       - name: Go-native adversarial benchmark gate
-        run: ./x-harness benchmark --filter adversarial --json
+        run: ./x-harness benchmark --filter adversarial --gate --json
+      - name: Go-native conformance minimal gate
+        run: ./x-harness conformance run --profile minimal --json
       - name: "TypeScript compatibility: strict verify"
         run: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
       - name: "TypeScript compatibility: workspace doctor"
@@ -126,7 +130,7 @@ jobs:
       - name: "TypeScript compatibility: golden examples"
         run: node packages/cli/dist/index.js examples verify
       - name: "TypeScript compatibility: adversarial benchmark"
-        run: node packages/cli/dist/index.js benchmark --filter adversarial --json
+        run: node packages/cli/dist/index.js benchmark --filter adversarial --gate --json
 ```
 
 ### What the workflow does
@@ -136,7 +140,7 @@ jobs:
 3. Runs Go tests, race detector, `go vet`, and `go build ./cmd/x-harness`
 4. Runs `npm run parity:check-go` against the committed TypeScript baseline
 5. Runs a bounded Go fuzz smoke target (`FuzzValidate`)
-6. Runs Go-native primary gates: strict verify, doctor, examples verify, and adversarial benchmark
+6. Runs Go-native primary gates: strict verify, doctor, examples verify, regression suite, adversarial benchmark, and conformance minimal
 7. Runs TypeScript compatibility gates as a secondary validation layer
 
 The release workflow also builds native Go binaries for Linux, macOS, and
@@ -173,7 +177,7 @@ See `examples/actions/x-harness-verify/action.yml` for a reusable composite acti
 
 ### Option D: vendor the dist/
 
-For faster CI, you can commit `packages/cli/dist/` to your repository. The CLI has no runtime dependencies beyond Node.js 20+.
+For faster CI, you can commit `packages/cli/dist/` to your repository. The published CLI declares `engines.node: ">=20"` in `packages/cli/package.json`; the bundled verify workflow runs on Node 22 to match the latest LTS.
 
 ## CI behavior of interactive commands
 
