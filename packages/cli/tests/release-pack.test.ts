@@ -531,4 +531,90 @@ describe("release packaging", () => {
       ).toBe(true);
     }
   });
+
+  it("every package.json files entry has pack-manifest coverage", () => {
+    // Meta-guard: read packages/cli/package.json directly and assert every
+    // entry in its `files` array is either (a) covered by a dynamic or
+    // static pack-manifest assertion in this test file, or (b) explicitly
+    // listed in excludedFilesEntries with a justification. Adding a new
+    // entry to package.json `files` without (a) adding a corresponding
+    // dynamic/static coverage block AND registering it in
+    // coveredFilesEntries, or (b) documenting it in excludedFilesEntries,
+    // will fail this guard with a clear remediation message.
+    const packageJsonPath = path.join(packageRoot, "package.json");
+    const packageJson = JSON.parse(
+      fs.readFileSync(packageJsonPath, "utf-8")
+    ) as { files?: unknown };
+    expect(
+      Array.isArray(packageJson.files),
+      `${packageJsonPath} must define a "files" array`
+    ).toBe(true);
+    const filesEntries = (packageJson.files as unknown[]).filter(
+      (value): value is string => typeof value === "string"
+    );
+    expect(
+      filesEntries.length,
+      `${packageJsonPath} "files" must contain at least one entry`
+    ).toBeGreaterThan(0);
+    // The coveredFilesEntries set enumerates every package.json `files`
+    // entry that is currently exercised by a dynamic or static
+    // pack-manifest assertion in this test file:
+    //   - schemas, policies, templates, adapters, examples, skills, docs,
+    //     components, tools, packaging have dynamic iterated/recursive
+    //     coverage blocks in the "npm pack dry run" test.
+    //   - bin is covered by the static "bin/x-harness.js" required entry.
+    //   - AGENTS.md, X_HARNESS.md, README.md, CHANGELOG.md, LICENSE,
+    //     CODE_OF_CONDUCT.md, CONTRIBUTING.md, SECURITY.md, SUPPORT.md are
+    //     covered by the static required root-file array.
+    // Every entry in package.json `files` above MUST appear in this set
+    // (unless listed in excludedFilesEntries below). Keep entries
+    // alphabetised to minimise diff noise.
+    const coveredFilesEntries = new Set<string>([
+      "AGENTS.md",
+      "CHANGELOG.md",
+      "CODE_OF_CONDUCT.md",
+      "CONTRIBUTING.md",
+      "LICENSE",
+      "README.md",
+      "SECURITY.md",
+      "SUPPORT.md",
+      "X_HARNESS.md",
+      "adapters",
+      "bin",
+      "components",
+      "docs",
+      "examples",
+      "packaging",
+      "policies",
+      "schemas",
+      "skills",
+      "templates",
+      "tools",
+    ]);
+    // The excludedFilesEntries set enumerates package.json `files` entries
+    // that are intentionally NOT covered by a local pack-manifest
+    // assertion. Each entry must be justified inline so reviewers can
+    // audit intentional exclusions.
+    const excludedFilesEntries = new Set<string>([
+      // "go-binaries" is a CI-only release artifact directory populated
+      // by .github/workflows/release.yml (Build Go release binaries +
+      // Copy Go binaries into npm package steps). It does not exist in
+      // the local working tree (no root go-binaries/ directory is
+      // committed), so no local pack-manifest assertion can be written
+      // for it. The release workflow gates (smoke test, Go binary smoke
+      // test, Packed CLI Go smoke test) provide the upstream coverage
+      // contract.
+      "go-binaries",
+    ]);
+    const missing = filesEntries.filter(
+      (entry) =>
+        !coveredFilesEntries.has(entry) && !excludedFilesEntries.has(entry)
+    );
+    expect(
+      missing,
+      `package.json "files" entries without pack-manifest coverage in release-pack.test.ts: ${missing.join(
+        ", "
+      )}; add a dynamic or static assertion and register the entry in coveredFilesEntries, or document an intentional exclusion in excludedFilesEntries with a comment`
+    ).toEqual([]);
+  });
 });
