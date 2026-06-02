@@ -114,6 +114,32 @@ function parseRequiredDirsFromSyncScript(source: string): string[] {
   return parsed;
 }
 
+// Pure helper: validates the package.json `files` entry shape used by
+// the "every package.json files entry has pack-manifest coverage"
+// meta-guard. Returns the entries as a `string[]` when `value` is a
+// non-empty array of strings; throws a clear error otherwise. Extracted
+// from the meta-guard so the array-shape contract (and its failure
+// modes) can be exercised by a focused unit test. No I/O, no expect
+// inside the helper.
+function parsePackageFilesEntries(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    throw new Error(
+      'package.json "files" must be a non-empty array of strings'
+    );
+  }
+  if (value.length === 0) {
+    throw new Error(
+      'package.json "files" must be a non-empty array of strings'
+    );
+  }
+  if (!value.every((entry) => typeof entry === "string")) {
+    throw new Error(
+      'package.json "files" must be a non-empty array of strings'
+    );
+  }
+  return value as string[];
+}
+
 describe("release packaging", () => {
   it("resolves packaged assets from the runtime asset root", async () => {
     await syncPackageAssets();
@@ -597,17 +623,7 @@ describe("release packaging", () => {
     const packageJson = JSON.parse(
       fs.readFileSync(packageJsonPath, "utf-8")
     ) as { files?: unknown };
-    expect(
-      Array.isArray(packageJson.files),
-      `${packageJsonPath} must define a "files" array`
-    ).toBe(true);
-    const filesEntries = (packageJson.files as unknown[]).filter(
-      (value): value is string => typeof value === "string"
-    );
-    expect(
-      filesEntries.length,
-      `${packageJsonPath} "files" must contain at least one entry`
-    ).toBeGreaterThan(0);
+    const filesEntries = parsePackageFilesEntries(packageJson.files);
     // The coveredFilesEntries set enumerates every package.json `files`
     // entry that is currently exercised by a dynamic or static
     // pack-manifest assertion in this test file:
@@ -781,5 +797,81 @@ describe("release packaging", () => {
     expect(() =>
       parseRequiredDirsFromSyncScript('const requiredDirs = ["adapters", 2];')
     ).toThrow(/requiredDirs must be a non-empty array of strings/);
+  });
+
+  it("parsePackageFilesEntries parses valid arrays of strings", () => {
+    // Positive fixture: prove the helper accepts the canonical
+    // package.json `files` array shape used by the npm pack meta-guard
+    // above. Multi-entry arrays round-trip in declaration order, and a
+    // single-entry array (the smallest legal shape) is accepted.
+    expect(
+      parsePackageFilesEntries([
+        "bin",
+        "schemas",
+        "policies",
+        "templates",
+        "adapters",
+      ])
+    ).toEqual(["bin", "schemas", "policies", "templates", "adapters"]);
+    // Single-entry array (no trailing entries) still parses.
+    expect(parsePackageFilesEntries(["bin"])).toEqual(["bin"]);
+    // Order is preserved exactly as declared in the input array,
+    // matching the package.json `files` order in the meta-guard.
+    expect(parsePackageFilesEntries(["z", "a", "m", "b"])).toEqual([
+      "z",
+      "a",
+      "m",
+      "b",
+    ]);
+  });
+
+  it("parsePackageFilesEntries fails clearly on non-array inputs", () => {
+    // Negative fixture: prove the helper throws a clear
+    // "package.json \"files\" must be a non-empty array of strings"
+    // error when the input is not an array (undefined, null, string,
+    // object). This guards against silent regressions in the parser's
+    // shape validation shared with the package.json `files`
+    // meta-guard above.
+    expect(() => parsePackageFilesEntries(undefined)).toThrow(
+      /package\.json "files" must be a non-empty array of strings/
+    );
+    expect(() => parsePackageFilesEntries(null)).toThrow(
+      /package\.json "files" must be a non-empty array of strings/
+    );
+    expect(() => parsePackageFilesEntries("bin")).toThrow(
+      /package\.json "files" must be a non-empty array of strings/
+    );
+    expect(() => parsePackageFilesEntries({ files: ["bin"] })).toThrow(
+      /package\.json "files" must be a non-empty array of strings/
+    );
+  });
+
+  it("parsePackageFilesEntries fails clearly on an empty array", () => {
+    // Negative fixture: prove the helper throws a clear
+    // "package.json \"files\" must be a non-empty array of strings"
+    // error when the input is an empty array. This guards against
+    // silent regressions in the parser's shape validation shared with
+    // the package.json `files` meta-guard above.
+    expect(() => parsePackageFilesEntries([])).toThrow(
+      /package\.json "files" must be a non-empty array of strings/
+    );
+  });
+
+  it("parsePackageFilesEntries fails clearly on non-string elements", () => {
+    // Negative fixture: prove the helper throws a clear
+    // "package.json \"files\" must be a non-empty array of strings"
+    // error when the array contains any non-string element (number,
+    // null, or object). This guards against silent regressions in the
+    // parser's shape validation shared with the package.json `files`
+    // meta-guard above.
+    expect(() => parsePackageFilesEntries(["bin", 2])).toThrow(
+      /package\.json "files" must be a non-empty array of strings/
+    );
+    expect(() => parsePackageFilesEntries(["bin", null])).toThrow(
+      /package\.json "files" must be a non-empty array of strings/
+    );
+    expect(() => parsePackageFilesEntries(["bin", { name: "bin" }])).toThrow(
+      /package\.json "files" must be a non-empty array of strings/
+    );
   });
 });
