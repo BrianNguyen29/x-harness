@@ -190,6 +190,30 @@ describe("release packaging", () => {
     return index;
   }
 
+  // Pure helper: asserts that `beforeStep` appears earlier in `workflow`
+  // than `afterStep` by delegating to `findWorkflowStepIndex` for both
+  // step lookups and then comparing the two indices with a
+  // `toBeLessThan` guard. Extracted from the release workflow ordering
+  // guard so the three ordering relationships (build go < build release
+  // package, build go < copy go binaries, copy go binaries < build
+  // release package) share a single, consistent failure message that
+  // names both steps and the offending index pair, and so the helper
+  // can be exercised by focused unit tests. A missing `beforeStep` or
+  // `afterStep` propagates the clear `findWorkflowStepIndex` error
+  // unchanged.
+  function expectWorkflowStepOrder(
+    workflow: string,
+    beforeStep: string,
+    afterStep: string
+  ): void {
+    const beforeIndex = findWorkflowStepIndex(workflow, beforeStep);
+    const afterIndex = findWorkflowStepIndex(workflow, afterStep);
+    expect(
+      beforeIndex,
+      `release workflow step "${beforeStep}" must appear before step "${afterStep}"; found "${beforeStep}" at index ${beforeIndex} and "${afterStep}" at index ${afterIndex}`
+    ).toBeLessThan(afterIndex);
+  }
+
   it("resolves packaged assets from the runtime asset root", async () => {
     await syncPackageAssets();
     const assetRoot = await resolveAssetRoot();
@@ -587,21 +611,21 @@ describe("release packaging", () => {
     expect(releaseWorkflow).toContain("Frozen transfer compatibility");
     expect(releaseWorkflow).toContain("frozen verify");
     expect(releaseWorkflow).toContain("--frozen --target");
-    const goBuildIndex = findWorkflowStepIndex(
+    expectWorkflowStepOrder(
       releaseWorkflow,
-      BUILD_GO_BINARIES_STEP
-    );
-    const npmPackIndex = findWorkflowStepIndex(
-      releaseWorkflow,
+      BUILD_GO_BINARIES_STEP,
       BUILD_RELEASE_PACKAGE_STEP
     );
-    const copyIndex = findWorkflowStepIndex(
+    expectWorkflowStepOrder(
       releaseWorkflow,
+      BUILD_GO_BINARIES_STEP,
       COPY_GO_BINARIES_STEP
     );
-    expect(goBuildIndex).toBeLessThan(npmPackIndex);
-    expect(goBuildIndex).toBeLessThan(copyIndex);
-    expect(copyIndex).toBeLessThan(npmPackIndex);
+    expectWorkflowStepOrder(
+      releaseWorkflow,
+      COPY_GO_BINARIES_STEP,
+      BUILD_RELEASE_PACKAGE_STEP
+    );
     expect(releaseWorkflow).toContain(COPY_GO_BINARIES_STEP);
     expect(releaseWorkflow).toContain("Generate Go binary checksums");
     expect(releaseWorkflow).toContain("Go binary smoke test");
@@ -981,6 +1005,86 @@ describe("release packaging", () => {
     );
     expect(() =>
       findWorkflowStepIndex("- name: Other step", "Renamed step")
+    ).toThrow(
+      /Step "Renamed step" not found in \.github\/workflows\/release\.yml/
+    );
+  });
+
+  it("expectWorkflowStepOrder passes when beforeStep precedes afterStep", () => {
+    // Positive fixture: prove the helper silently accepts a workflow
+    // where `beforeStep` appears earlier in the text than `afterStep`.
+    // This guards against silent regressions in the helper's happy-path
+    // order check shared with the release workflow ordering guard above.
+    const workflow = `header\n- name: ${BUILD_GO_BINARIES_STEP}\n- name: ${COPY_GO_BINARIES_STEP}\n- name: ${BUILD_RELEASE_PACKAGE_STEP}\n`;
+    expect(() =>
+      expectWorkflowStepOrder(
+        workflow,
+        BUILD_GO_BINARIES_STEP,
+        COPY_GO_BINARIES_STEP
+      )
+    ).not.toThrow();
+    expect(() =>
+      expectWorkflowStepOrder(
+        workflow,
+        BUILD_GO_BINARIES_STEP,
+        BUILD_RELEASE_PACKAGE_STEP
+      )
+    ).not.toThrow();
+    expect(() =>
+      expectWorkflowStepOrder(
+        workflow,
+        COPY_GO_BINARIES_STEP,
+        BUILD_RELEASE_PACKAGE_STEP
+      )
+    ).not.toThrow();
+  });
+
+  it("expectWorkflowStepOrder fails with a clear message when beforeStep follows afterStep", () => {
+    // Negative fixture: prove the helper throws an assertion error
+    // whose message names both `beforeStep` and `afterStep` (and
+    // identifies the order violation) when `beforeStep` appears later
+    // in the workflow than `afterStep`. The message must name
+    // `beforeStep` so the release workflow ordering guard surfaces a
+    // useful diagnostic (rather than an opaque "expected X to be
+    // less than Y" assertion message) when a step is reordered.
+    const workflow = `header\n- name: ${BUILD_RELEASE_PACKAGE_STEP}\n- name: ${BUILD_GO_BINARIES_STEP}\n`;
+    expect(() =>
+      expectWorkflowStepOrder(
+        workflow,
+        BUILD_GO_BINARIES_STEP,
+        BUILD_RELEASE_PACKAGE_STEP
+      )
+    ).toThrow(
+      new RegExp(
+        `release workflow step "${BUILD_GO_BINARIES_STEP}" must appear before step "${BUILD_RELEASE_PACKAGE_STEP}"`
+      )
+    );
+  });
+
+  it("expectWorkflowStepOrder propagates the findWorkflowStepIndex missing-step error", () => {
+    // Propagation fixture: prove the helper rethrows the clear
+    // "Step \"<name>\" not found in .github/workflows/release.yml"
+    // error from `findWorkflowStepIndex` unchanged when either
+    // `beforeStep` or `afterStep` is missing from the workflow text.
+    // This keeps the missing-step diagnostic consistent across the
+    // release workflow ordering guard and the focused fixtures above.
+    expect(() =>
+      expectWorkflowStepOrder(
+        "",
+        BUILD_GO_BINARIES_STEP,
+        BUILD_RELEASE_PACKAGE_STEP
+      )
+    ).toThrow(
+      new RegExp(
+        `Step "${BUILD_GO_BINARIES_STEP}" not found in \\.github\\/workflows\\/release\\.yml`
+      )
+    );
+    expect(() =>
+      expectWorkflowStepOrder(
+        `- name: ${BUILD_GO_BINARIES_STEP}\n`,
+        BUILD_GO_BINARIES_STEP,
+        "Renamed step"
+      )
     ).toThrow(
       /Step "Renamed step" not found in \.github\/workflows\/release\.yml/
     );
