@@ -52,6 +52,22 @@ function collectFilesRecursive(dir: string): string[] {
   return out;
 }
 
+// Pure helper: returns the subset of `filesEntries` that are neither
+// present in `covered` (entries with a dynamic/static pack-manifest
+// assertion) nor in `excluded` (intentionally-ignored entries with
+// justification). Extracted from the "every package.json files entry has
+// pack-manifest coverage" meta-guard so the missing-entry detection
+// logic can be exercised by a focused unit test.
+function findMissingFilesCoverage(
+  filesEntries: string[],
+  covered: Set<string>,
+  excluded: Set<string>
+): string[] {
+  return filesEntries.filter(
+    (entry) => !covered.has(entry) && !excluded.has(entry)
+  );
+}
+
 describe("release packaging", () => {
   it("resolves packaged assets from the runtime asset root", async () => {
     await syncPackageAssets();
@@ -612,15 +628,45 @@ describe("release packaging", () => {
       // contract.
       "go-binaries",
     ]);
-    const missing = filesEntries.filter(
-      (entry) =>
-        !coveredFilesEntries.has(entry) && !excludedFilesEntries.has(entry)
+    const missing = findMissingFilesCoverage(
+      filesEntries,
+      coveredFilesEntries,
+      excludedFilesEntries
     );
     expect(
       missing,
       `package.json "files" entries without pack-manifest coverage in release-pack.test.ts: ${missing.join(
         ", "
       )}; add a dynamic or static assertion and register the entry in coveredFilesEntries, or document an intentional exclusion in excludedFilesEntries with a comment`
+    ).toEqual([]);
+  });
+
+  it("findMissingFilesCoverage detects uncovered entries", () => {
+    // Negative fixture: prove the helper returns only the entries that are
+    // neither covered nor excluded, while ignoring entries present in
+    // either set. This guards against silent regressions in the
+    // missing-entry detection logic shared with the package.json `files`
+    // meta-guard above.
+    expect(
+      findMissingFilesCoverage(
+        ["bin", "docs", "uncovered-entry"],
+        new Set(["bin"]),
+        new Set(["docs"])
+      )
+    ).toEqual(["uncovered-entry"]);
+    // Order-preserving: uncovered entries appear in the order they are
+    // declared in filesEntries, regardless of set insertion order.
+    expect(
+      findMissingFilesCoverage(
+        ["alpha", "beta", "gamma", "delta"],
+        new Set(["alpha"]),
+        new Set(["gamma"])
+      )
+    ).toEqual(["beta", "delta"]);
+    // Empty inputs short-circuit cleanly without throwing.
+    expect(findMissingFilesCoverage([], new Set(), new Set())).toEqual([]);
+    expect(
+      findMissingFilesCoverage(["x", "y"], new Set(["x", "y"]), new Set())
     ).toEqual([]);
   });
 });
