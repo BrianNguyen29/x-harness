@@ -135,37 +135,45 @@ describe("release packaging", () => {
     );
   });
 
-  it("admission policy runtime copy is byte-identical to root contract", async () => {
-    // Explicit named parity guard for policies/admission.yaml. The sync script
-    // (packages/cli/scripts/sync-package-assets.mjs) regenerates
-    // packages/cli/policies/ from the canonical root copy; the runtime copy
-    // must be byte-identical. The packages/cli/policies/ directory is
-    // gitignored, so this test cleans only the generated path so it does not
-    // depend on stale local artifact state, then re-syncs from root.
+  it("runtime policy copies are byte-identical to root contracts", async () => {
+    // Explicit named parity guard for every root policies/*.yaml. The sync
+    // script (packages/cli/scripts/sync-package-assets.mjs) recursively
+    // regenerates packages/cli/policies/ from the canonical root copy; every
+    // runtime copy must be byte-identical. The packages/cli/policies/
+    // directory is gitignored, so this test cleans the generated path so it
+    // does not depend on stale local artifact state, then re-syncs from root.
     const gitignorePath = path.join(packageRoot, ".gitignore");
-    const rootPolicy = path.join(repoRoot, "policies", "admission.yaml");
-    const syncedPolicy = path.join(packageRoot, "policies", "admission.yaml");
+    const rootPoliciesDir = path.join(repoRoot, "policies");
+    const syncedPoliciesDir = path.join(packageRoot, "policies");
     const gitignore = fs.readFileSync(gitignorePath, "utf-8");
     expect(
       gitignore.includes("/policies/"),
       "packages/cli/.gitignore must exclude /policies/ so no committed pre-sync package copy is ever published"
     ).toBe(true);
-    fs.rmSync(syncedPolicy, { force: true });
+    fs.rmSync(syncedPoliciesDir, { recursive: true, force: true });
     await syncPackageAssets();
+    const rootPolicyFiles = fs
+      .readdirSync(rootPoliciesDir)
+      .filter((name) => name.endsWith(".yaml"))
+      .sort();
     expect(
-      fs.existsSync(rootPolicy),
-      "root policies/admission.yaml must exist"
-    ).toBe(true);
-    expect(
-      fs.existsSync(syncedPolicy),
-      "synced packages/cli/policies/admission.yaml must exist after sync"
-    ).toBe(true);
-    const rootBuffer = fs.readFileSync(rootPolicy);
-    const syncedBuffer = fs.readFileSync(syncedPolicy);
-    expect(
-      syncedBuffer.equals(rootBuffer),
-      "packages/cli/policies/admission.yaml must be byte-identical to root policies/admission.yaml after sync"
-    ).toBe(true);
+      rootPolicyFiles.length,
+      "root policies/ must contain at least one .yaml file"
+    ).toBeGreaterThan(0);
+    for (const name of rootPolicyFiles) {
+      const rootPolicy = path.join(rootPoliciesDir, name);
+      const syncedPolicy = path.join(syncedPoliciesDir, name);
+      expect(
+        fs.existsSync(syncedPolicy),
+        `synced packages/cli/policies/${name} must exist after sync`
+      ).toBe(true);
+      const rootBuffer = fs.readFileSync(rootPolicy);
+      const syncedBuffer = fs.readFileSync(syncedPolicy);
+      expect(
+        syncedBuffer.equals(rootBuffer),
+        `packages/cli/policies/${name} must be byte-identical to root policies/${name} after sync`
+      ).toBe(true);
+    }
   });
 
   it("release workflows include benchmark, pack, SBOM, and provenance gates", () => {
