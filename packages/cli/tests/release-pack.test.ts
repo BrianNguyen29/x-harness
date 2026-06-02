@@ -674,6 +674,18 @@ describe("release packaging", () => {
       // contract.
       "go-binaries",
     ]);
+    // Static guard: the package.json `files` meta-guard above relies on
+    // every excludedFilesEntries entry having an inline justification
+    // and (ideally) an upstream coverage contract. Silently widening this
+    // set would let new package.json `files` entries bypass local
+    // pack-manifest coverage without review. Prefer adding a dynamic or
+    // static pack-manifest assertion in this test file (and registering
+    // the entry in coveredFilesEntries); widen this set only when adding
+    // a matching justification + coverage test.
+    expect(
+      [...excludedFilesEntries],
+      'excludedFilesEntries must remain exactly ["go-binaries"]; add a dynamic/static pack-manifest assertion and register the new entry in coveredFilesEntries, or justify the exclusion with a matching coverage test before widening this set'
+    ).toEqual(["go-binaries"]);
     const missing = findMissingFilesCoverage(
       filesEntries,
       coveredFilesEntries,
