@@ -349,6 +349,35 @@ describe("schema validators", () => {
       });
     }
 
+    it("completion-card schema runtime copy is byte-identical to root contract", () => {
+      // Explicit named parity guard for the completion-card schema. The broader
+      // cross-schema sync test above also covers this file, but a named guard
+      // makes drift on this specific contract visible in test output.
+      const rootPath = path.join(
+        repoRoot,
+        "schemas",
+        "completion-card.schema.json"
+      );
+      const runtimePath = path.join(
+        repoRoot,
+        "packages",
+        "cli",
+        "schemas",
+        "completion-card.schema.json"
+      );
+      expect(
+        fs.existsSync(rootPath),
+        "root completion-card.schema.json must exist"
+      ).toBe(true);
+      expect(
+        fs.existsSync(runtimePath),
+        "runtime packages/cli/schemas/completion-card.schema.json must exist"
+      ).toBe(true);
+      const rootContent = fs.readFileSync(rootPath, "utf-8");
+      const runtimeContent = fs.readFileSync(runtimePath, "utf-8");
+      expect(runtimeContent).toBe(rootContent);
+    });
+
     it("schema sync helper detects drift when schemas differ", () => {
       // This test proves the comparison helper can detect drift
       const testRoot = path.join(os.tmpdir(), "schema-test-root-" + Date.now());
