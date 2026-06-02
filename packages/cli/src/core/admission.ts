@@ -326,6 +326,26 @@ const INTENT_CONTRACT_GOAL_MISSING_NOTE =
 const INTENT_CONTRACT_UVCHANGE_MISSING_NOTE =
   "intent_contract.user_visible_change not declared (advisory-only; consider declaring whether the change is user-visible)";
 
+// Advisory note constants are exported so that the drift guard in
+// packages/cli/tests/admission.test.ts can assert parity between the
+// runtime values and the policy documentation in policies/admission.yaml.
+// No behavior change: the constants were already module-internal; exporting
+// them only adds a public name binding.
+export {
+  PRODUCT_INTENT_MISSING_NOTE,
+  PRODUCT_INTENT_UNKNOWN_NOTE,
+  TEST_ADEQUACY_MISSING_NOTE,
+  TEST_ADEQUACY_BEHAVIORS_MISSING_NOTE,
+  TEST_ADEQUACY_TESTS_MISSING_NOTE,
+  TEST_ADEQUACY_WHY_MISSING_NOTE,
+  TEST_ADEQUACY_GAPS_MISSING_NOTE,
+  EVIDENCE_ADEQUACY_MISSING_NOTE,
+  EVIDENCE_ADEQUACY_SUMMARY_MISSING_NOTE,
+  INTENT_CONTRACT_MISSING_NOTE,
+  INTENT_CONTRACT_GOAL_MISSING_NOTE,
+  INTENT_CONTRACT_UVCHANGE_MISSING_NOTE,
+};
+
 // evaluateProductIntent emits advisory notes (never errors) for standard and
 // deep tier cards when product_intent.status is missing or set to "unknown".
 // The light tier remains quiet. aligned/unreviewed/disputed/not_applicable do

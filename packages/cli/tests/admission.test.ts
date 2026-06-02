@@ -4806,4 +4806,142 @@ describe("admission", () => {
       );
     });
   });
+
+  // Advisory note drift guard. Loads the canonical
+  // policies/admission.yaml file and asserts that each declared advisory
+  // note string matches the TypeScript runtime constant in
+  // packages/cli/src/core/admission.ts. Each mapping is a strict string
+  // equality check. The test fails if either the YAML or the runtime
+  // constant changes without a matching change on the other side.
+  // Parity-safe with
+  // internal/admission/admission_test.go::TestAdvisoryDriftGuard.
+  describe("advisory drift guard", () => {
+    const admissionPolicyPath = path.join(
+      repoRoot,
+      "policies",
+      "admission.yaml"
+    );
+
+    function loadAdmissionPolicy(): Record<string, unknown> {
+      return YAML.parse(fs.readFileSync(admissionPolicyPath, "utf8")) as Record<
+        string,
+        unknown
+      >;
+    }
+
+    function asRecord(value: unknown): Record<string, unknown> | undefined {
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        return value as Record<string, unknown>;
+      }
+      return undefined;
+    }
+
+    it("matches policy declared advisory note strings", async () => {
+      const {
+        PRODUCT_INTENT_MISSING_NOTE,
+        PRODUCT_INTENT_UNKNOWN_NOTE,
+        TEST_ADEQUACY_MISSING_NOTE,
+        TEST_ADEQUACY_BEHAVIORS_MISSING_NOTE,
+        TEST_ADEQUACY_TESTS_MISSING_NOTE,
+        TEST_ADEQUACY_WHY_MISSING_NOTE,
+        TEST_ADEQUACY_GAPS_MISSING_NOTE,
+        EVIDENCE_ADEQUACY_MISSING_NOTE,
+        EVIDENCE_ADEQUACY_SUMMARY_MISSING_NOTE,
+        INTENT_CONTRACT_MISSING_NOTE,
+        INTENT_CONTRACT_GOAL_MISSING_NOTE,
+        INTENT_CONTRACT_UVCHANGE_MISSING_NOTE,
+      } = await import("../src/core/admission.js");
+
+      const policy = loadAdmissionPolicy();
+      const advisoryIntent = asRecord(policy["advisory_intent"]);
+      const advisoryTestAdequacy = asRecord(policy["advisory_test_adequacy"]);
+      const advisoryEvidenceAdequacy = asRecord(
+        policy["advisory_evidence_adequacy"]
+      );
+      const advisoryIntentContract = asRecord(
+        policy["advisory_intent_contract"]
+      );
+
+      expect(advisoryIntent).toBeDefined();
+      expect(advisoryTestAdequacy).toBeDefined();
+      expect(advisoryEvidenceAdequacy).toBeDefined();
+      expect(advisoryIntentContract).toBeDefined();
+
+      const checks: Array<{ label: string; yaml: unknown; runtime: string }> = [
+        {
+          label: "advisory_intent.product_intent_status.missing_note",
+          yaml: advisoryIntent?.["missing_note"],
+          runtime: PRODUCT_INTENT_MISSING_NOTE,
+        },
+        {
+          label: "advisory_intent.product_intent_status.unknown_note",
+          yaml: advisoryIntent?.["unknown_note"],
+          runtime: PRODUCT_INTENT_UNKNOWN_NOTE,
+        },
+        {
+          label: "advisory_test_adequacy.missing_note",
+          yaml: advisoryTestAdequacy?.["missing_note"],
+          runtime: TEST_ADEQUACY_MISSING_NOTE,
+        },
+        {
+          label: "advisory_test_adequacy.impacted_behaviors_missing_note",
+          yaml: advisoryTestAdequacy?.["impacted_behaviors_missing_note"],
+          runtime: TEST_ADEQUACY_BEHAVIORS_MISSING_NOTE,
+        },
+        {
+          label: "advisory_test_adequacy.tests_selected_missing_note",
+          yaml: advisoryTestAdequacy?.["tests_selected_missing_note"],
+          runtime: TEST_ADEQUACY_TESTS_MISSING_NOTE,
+        },
+        {
+          label: "advisory_test_adequacy.why_sufficient_missing_note",
+          yaml: advisoryTestAdequacy?.["why_sufficient_missing_note"],
+          runtime: TEST_ADEQUACY_WHY_MISSING_NOTE,
+        },
+        {
+          label: "advisory_test_adequacy.known_gaps_missing_note",
+          yaml: advisoryTestAdequacy?.["known_gaps_missing_note"],
+          runtime: TEST_ADEQUACY_GAPS_MISSING_NOTE,
+        },
+        {
+          label: "advisory_evidence_adequacy.missing_note",
+          yaml: advisoryEvidenceAdequacy?.["missing_note"],
+          runtime: EVIDENCE_ADEQUACY_MISSING_NOTE,
+        },
+        {
+          label: "advisory_evidence_adequacy.summary_missing_note",
+          yaml: advisoryEvidenceAdequacy?.["summary_missing_note"],
+          runtime: EVIDENCE_ADEQUACY_SUMMARY_MISSING_NOTE,
+        },
+        {
+          label: "advisory_intent_contract.missing_note",
+          yaml: advisoryIntentContract?.["missing_note"],
+          runtime: INTENT_CONTRACT_MISSING_NOTE,
+        },
+        {
+          label: "advisory_intent_contract.product_goal_missing_note",
+          yaml: advisoryIntentContract?.["product_goal_missing_note"],
+          runtime: INTENT_CONTRACT_GOAL_MISSING_NOTE,
+        },
+        {
+          label: "advisory_intent_contract.user_visible_change_missing_note",
+          yaml: advisoryIntentContract?.["user_visible_change_missing_note"],
+          runtime: INTENT_CONTRACT_UVCHANGE_MISSING_NOTE,
+        },
+      ];
+
+      for (const c of checks) {
+        if (typeof c.yaml !== "string" || c.yaml === "") {
+          throw new Error(
+            `policy ${c.label} is empty or missing in policies/admission.yaml`
+          );
+        }
+        if (c.yaml !== c.runtime) {
+          throw new Error(
+            `advisory note drift at ${c.label}:\n  policy  : ${JSON.stringify(c.yaml)}\n  runtime : ${JSON.stringify(c.runtime)}`
+          );
+        }
+      }
+    });
+  });
 });
