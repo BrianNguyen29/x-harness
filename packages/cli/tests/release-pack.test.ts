@@ -38,6 +38,20 @@ async function syncPackageAssets(): Promise<void> {
   expect(result.exitCode).toBe(0);
 }
 
+function collectFilesRecursive(dir: string): string[] {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  const out: string[] = [];
+  for (const entry of entries) {
+    const abs = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...collectFilesRecursive(abs));
+    } else if (entry.isFile()) {
+      out.push(abs);
+    }
+  }
+  return out;
+}
+
 describe("release packaging", () => {
   it("resolves packaged assets from the runtime asset root", async () => {
     await syncPackageAssets();
@@ -179,19 +193,6 @@ describe("release packaging", () => {
       fs.existsSync(syncedAdaptersDir),
       "synced packages/cli/adapters/ must exist after sync"
     ).toBe(true);
-    function collectFilesRecursive(dir: string): string[] {
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
-      const out: string[] = [];
-      for (const entry of entries) {
-        const abs = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-          out.push(...collectFilesRecursive(abs));
-        } else if (entry.isFile()) {
-          out.push(abs);
-        }
-      }
-      return out;
-    }
     const syncedAdapterFiles = collectFilesRecursive(syncedAdaptersDir);
     expect(
       syncedAdapterFiles.length,
@@ -239,6 +240,36 @@ describe("release packaging", () => {
         true
       );
     }
+    // Every synced tools/** file must appear in the pack manifest. The
+    // sync script recursively copies the root tools/ directory (which is
+    // nested across experimental subdirs and may include hidden .gitkeep
+    // files), so we recursively collect every file under packages/cli/tools/
+    // and assert each appears in the pack manifest using POSIX separators.
+    // This guards against future tool additions (e.g.
+    // tools/experimental/evolve/runs/.gitkeep) silently being dropped from
+    // the npm pack manifest.
+    const syncedToolsDir = path.join(packageRoot, "tools");
+    expect(
+      fs.existsSync(syncedToolsDir),
+      "synced packages/cli/tools/ must exist after sync"
+    ).toBe(true);
+    const syncedToolFiles = collectFilesRecursive(syncedToolsDir);
+    expect(
+      syncedToolFiles.length,
+      "synced packages/cli/tools/ must contain at least one file"
+    ).toBeGreaterThan(0);
+    for (const abs of syncedToolFiles) {
+      const packPath = path.posix.join(
+        "tools",
+        path.posix.relative(
+          syncedToolsDir.split(path.sep).join(path.posix.sep),
+          abs.split(path.sep).join(path.posix.sep)
+        )
+      );
+      expect(files.has(packPath), `packed file missing: ${packPath}`).toBe(
+        true
+      );
+    }
     for (const required of [
       "bin/x-harness.js",
       "schemas/agent-profile.schema.json",
@@ -261,7 +292,6 @@ describe("release packaging", () => {
       "examples/golden/regression/success-light/completion-card.yaml",
       "policies/federation.yaml",
       "schemas/federation-pattern.schema.json",
-      "tools/experimental/evolve/constitution.yaml",
       "AGENTS.md",
       "X_HARNESS.md",
       "README.md",
