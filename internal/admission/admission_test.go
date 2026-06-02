@@ -3894,3 +3894,116 @@ func TestEscalationOperationDriftGuard(t *testing.T) {
 		})
 	}
 }
+
+// TestAdvisoryDriftGuard compares the advisory note strings declared in
+// policies/admission.yaml against the Go runtime hardcoded constants in
+// product_intent.go, test_adequacy.go, evidence_adequacy.go, and
+// intent_contract.go. Each mapping is a strict string equality check. The
+// test fails if either the YAML or the runtime constant changes without a
+// matching change on the other side. Parity-safe with the TS
+// implementation in packages/cli/src/core/admission.ts and the
+// corresponding drift guard in packages/cli/tests/admission.test.ts.
+func TestAdvisoryDriftGuard(t *testing.T) {
+	var policyDoc map[string]any
+	if err := loader.LoadDocument("../../policies/admission.yaml", &policyDoc); err != nil {
+		t.Fatalf("failed to load policies/admission.yaml: %v", err)
+	}
+
+	advisoryIntent := mapValue(policyDoc, "advisory_intent")
+	if advisoryIntent == nil {
+		t.Fatalf("policies/admission.yaml missing advisory_intent block")
+	}
+	advisoryTestAdequacy := mapValue(policyDoc, "advisory_test_adequacy")
+	if advisoryTestAdequacy == nil {
+		t.Fatalf("policies/admission.yaml missing advisory_test_adequacy block")
+	}
+	advisoryEvidenceAdequacy := mapValue(policyDoc, "advisory_evidence_adequacy")
+	if advisoryEvidenceAdequacy == nil {
+		t.Fatalf("policies/admission.yaml missing advisory_evidence_adequacy block")
+	}
+	advisoryIntentContract := mapValue(policyDoc, "advisory_intent_contract")
+	if advisoryIntentContract == nil {
+		t.Fatalf("policies/admission.yaml missing advisory_intent_contract block")
+	}
+
+	checks := []struct {
+		label   string
+		yaml    string
+		runtime string
+	}{
+		{
+			label:   "advisory_intent.product_intent_status.missing_note",
+			yaml:    stringInMap(advisoryIntent, "missing_note"),
+			runtime: productIntentMissingNote,
+		},
+		{
+			label:   "advisory_intent.product_intent_status.unknown_note",
+			yaml:    stringInMap(advisoryIntent, "unknown_note"),
+			runtime: productIntentUnknownNote,
+		},
+		{
+			label:   "advisory_test_adequacy.missing_note",
+			yaml:    stringInMap(advisoryTestAdequacy, "missing_note"),
+			runtime: testAdequacyMissingNote,
+		},
+		{
+			label:   "advisory_test_adequacy.impacted_behaviors_missing_note",
+			yaml:    stringInMap(advisoryTestAdequacy, "impacted_behaviors_missing_note"),
+			runtime: testAdequacyBehaviorsMissingNote,
+		},
+		{
+			label:   "advisory_test_adequacy.tests_selected_missing_note",
+			yaml:    stringInMap(advisoryTestAdequacy, "tests_selected_missing_note"),
+			runtime: testAdequacyTestsMissingNote,
+		},
+		{
+			label:   "advisory_test_adequacy.why_sufficient_missing_note",
+			yaml:    stringInMap(advisoryTestAdequacy, "why_sufficient_missing_note"),
+			runtime: testAdequacyWhyMissingNote,
+		},
+		{
+			label:   "advisory_test_adequacy.known_gaps_missing_note",
+			yaml:    stringInMap(advisoryTestAdequacy, "known_gaps_missing_note"),
+			runtime: testAdequacyGapsMissingNote,
+		},
+		{
+			label:   "advisory_evidence_adequacy.missing_note",
+			yaml:    stringInMap(advisoryEvidenceAdequacy, "missing_note"),
+			runtime: evidenceAdequacyMissingNote,
+		},
+		{
+			label:   "advisory_evidence_adequacy.summary_missing_note",
+			yaml:    stringInMap(advisoryEvidenceAdequacy, "summary_missing_note"),
+			runtime: evidenceAdequacySummaryMissing,
+		},
+		{
+			label:   "advisory_intent_contract.missing_note",
+			yaml:    stringInMap(advisoryIntentContract, "missing_note"),
+			runtime: intentContractMissingNote,
+		},
+		{
+			label:   "advisory_intent_contract.product_goal_missing_note",
+			yaml:    stringInMap(advisoryIntentContract, "product_goal_missing_note"),
+			runtime: intentContractGoalMissingNote,
+		},
+		{
+			label:   "advisory_intent_contract.user_visible_change_missing_note",
+			yaml:    stringInMap(advisoryIntentContract, "user_visible_change_missing_note"),
+			runtime: intentContractUvChangeNote,
+		},
+	}
+
+	for _, c := range checks {
+		t.Run(c.label, func(t *testing.T) {
+			if c.yaml == "" {
+				t.Fatalf("policy %s is empty or missing", c.label)
+			}
+			if c.yaml != c.runtime {
+				t.Fatalf(
+					"advisory note drift at %s:\n  policy  : %q\n  runtime : %q",
+					c.label, c.yaml, c.runtime,
+				)
+			}
+		})
+	}
+}
