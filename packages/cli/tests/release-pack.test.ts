@@ -149,6 +149,24 @@ describe("release packaging", () => {
   // step is renamed in the release workflow.
   const COPY_GO_BINARIES_STEP = "Copy Go binaries into npm package";
 
+  // Memoized helper: reads .github/workflows/release.yml once per test
+  // file load and reuses the cached contents for every subsequent call.
+  // The workflow-order assertion and the go-binaries exclusion linkage
+  // guard both inspect the same workflow file; centralizing the
+  // readFileSync call (and the path.join to `.github/workflows/release.yml`)
+  // keeps the two assertions in lock-step if the workflow file is ever
+  // moved or renamed.
+  let releaseYamlContent: string | undefined;
+  function readReleaseYaml(): string {
+    if (releaseYamlContent === undefined) {
+      releaseYamlContent = fs.readFileSync(
+        path.join(repoRoot, ".github", "workflows", "release.yml"),
+        "utf-8"
+      );
+    }
+    return releaseYamlContent;
+  }
+
   it("resolves packaged assets from the runtime asset root", async () => {
     await syncPackageAssets();
     const assetRoot = await resolveAssetRoot();
@@ -529,10 +547,7 @@ describe("release packaging", () => {
   });
 
   it("release workflows include benchmark, pack, SBOM, and provenance gates", () => {
-    const releaseWorkflow = fs.readFileSync(
-      path.join(repoRoot, ".github", "workflows", "release.yml"),
-      "utf-8"
-    );
+    const releaseWorkflow = readReleaseYaml();
     const sbomWorkflow = fs.readFileSync(
       path.join(repoRoot, ".github", "workflows", "sbom.yml"),
       "utf-8"
@@ -701,10 +716,7 @@ describe("release packaging", () => {
     // this linkage guard will fail in lock-step, making the rename
     // obvious and forcing the exclusion comment to be updated alongside
     // the const declaration.
-    const releaseWorkflowForExclusion = fs.readFileSync(
-      path.join(repoRoot, ".github", "workflows", "release.yml"),
-      "utf-8"
-    );
+    const releaseWorkflowForExclusion = readReleaseYaml();
     expect(
       releaseWorkflowForExclusion,
       `.github/workflows/release.yml must still contain the ${COPY_GO_BINARIES_STEP} step that the go-binaries exclusion relies on; keep this guard in lock-step with the workflow ordering assertion (and the COPY_GO_BINARIES_STEP const) by updating both when the step is renamed`
