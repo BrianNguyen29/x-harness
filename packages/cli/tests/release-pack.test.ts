@@ -141,12 +141,17 @@ function parsePackageFilesEntries(value: unknown): string[] {
 }
 
 describe("release packaging", () => {
-  // Shared step-name constant: the package.json `files` `go-binaries`
-  // exclusion and the release workflow ordering guard both link to the
-  // same `Copy Go binaries into npm package` step in
-  // .github/workflows/release.yml. Defining it once keeps the workflow
-  // ordering assertion and the exclusion guard in lock-step when the
-  // step is renamed in the release workflow.
+  // Shared step-name constants: the package.json `files` `go-binaries`
+  // exclusion, the release workflow ordering guard, and the
+  // findWorkflowStepIndex helper fixtures all link to the
+  // `Build Go release binaries`, `Build release package`, and
+  // `Copy Go binaries into npm package` steps in
+  // .github/workflows/release.yml. Defining them once keeps the
+  // workflow ordering assertion, the exclusion guard, and the
+  // helper fixtures in lock-step when a step is renamed in the
+  // release workflow.
+  const BUILD_GO_BINARIES_STEP = "Build Go release binaries";
+  const BUILD_RELEASE_PACKAGE_STEP = "Build release package";
   const COPY_GO_BINARIES_STEP = "Copy Go binaries into npm package";
 
   // Memoized helper: reads .github/workflows/release.yml once per test
@@ -584,11 +589,11 @@ describe("release packaging", () => {
     expect(releaseWorkflow).toContain("--frozen --target");
     const goBuildIndex = findWorkflowStepIndex(
       releaseWorkflow,
-      "Build Go release binaries"
+      BUILD_GO_BINARIES_STEP
     );
     const npmPackIndex = findWorkflowStepIndex(
       releaseWorkflow,
-      "Build release package"
+      BUILD_RELEASE_PACKAGE_STEP
     );
     const copyIndex = findWorkflowStepIndex(
       releaseWorkflow,
@@ -952,15 +957,14 @@ describe("release packaging", () => {
     // String.prototype.indexOf contract used by the release workflow
     // ordering guard above. This guards against silent regressions
     // in the helper's happy-path lookup logic.
-    const workflow =
-      "header\n- name: Build Go release binaries\n- name: Build release package\n";
-    expect(findWorkflowStepIndex(workflow, "Build Go release binaries")).toBe(
-      workflow.indexOf("Build Go release binaries")
+    const workflow = `header\n- name: ${BUILD_GO_BINARIES_STEP}\n- name: ${BUILD_RELEASE_PACKAGE_STEP}\n`;
+    expect(findWorkflowStepIndex(workflow, BUILD_GO_BINARIES_STEP)).toBe(
+      workflow.indexOf(BUILD_GO_BINARIES_STEP)
     );
     // A step that appears later in the workflow is found at its
     // first-occurrence index, not at -1.
-    expect(findWorkflowStepIndex(workflow, "Build release package")).toBe(
-      workflow.indexOf("Build release package")
+    expect(findWorkflowStepIndex(workflow, BUILD_RELEASE_PACKAGE_STEP)).toBe(
+      workflow.indexOf(BUILD_RELEASE_PACKAGE_STEP)
     );
   });
 
@@ -972,9 +976,7 @@ describe("release packaging", () => {
     // release workflow ordering guard surfaces a useful diagnostic
     // (rather than an opaque "expected -1 to be greater than -1"
     // assertion message) when a step is renamed or removed.
-    expect(() =>
-      findWorkflowStepIndex("", "Build Go release binaries")
-    ).toThrow(
+    expect(() => findWorkflowStepIndex("", BUILD_GO_BINARIES_STEP)).toThrow(
       /Step "Build Go release binaries" not found in \.github\/workflows\/release\.yml/
     );
     expect(() =>
