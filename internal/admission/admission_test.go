@@ -2991,6 +2991,118 @@ func TestTestAdequacyLightNoAdvisory(t *testing.T) {
 	}
 }
 
+// Evidence adequacy advisory tests (advisory-only; never blocks admission).
+// Mirrors the test_adequacy block above. evidence_adequacy is an optional
+// top-level object with optional summary, gaps, and notes. The engine emits
+// a top-level missing note for standard/deep when evidence_adequacy is
+// absent, a summary note when summary is missing/blank, and stays quiet
+// otherwise. Light tier remains quiet. Wording is parity-safe with the TS
+// implementation in packages/cli/src/core/admission.ts and the policy
+// documentation in policies/admission.yaml.
+func standardEvidenceAdequacyFixture(adequacy map[string]any) map[string]any {
+	doc := standardProductIntentFixture(nil)
+	if adequacy != nil {
+		doc["evidence_adequacy"] = adequacy
+	}
+	return doc
+}
+
+func deepEvidenceAdequacyFixture(adequacy map[string]any) map[string]any {
+	doc := deepProductIntentFixture(nil)
+	if adequacy != nil {
+		doc["evidence_adequacy"] = adequacy
+	}
+	return doc
+}
+
+func lightEvidenceAdequacyFixture() map[string]any {
+	doc := lightProductIntentFixture()
+	doc["evidence_adequacy"] = map[string]any{
+		"summary": "covers the change",
+		"gaps":    []any{"no Safari"},
+		"notes":   "manual review",
+	}
+	return doc
+}
+
+func TestEvidenceAdequacyStandardMissingEmitsAdvisory(t *testing.T) {
+	result := Run(standardEvidenceAdequacyFixture(nil), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted (advisory-only), got %s", result.AcceptanceStatus)
+	}
+	if !containsNote(result.Notes, "evidence_adequacy not declared") {
+		t.Fatalf("expected evidence_adequacy missing advisory note, got %v", result.Notes)
+	}
+}
+
+func TestEvidenceAdequacyStandardCompleteEmitsNoAdvisory(t *testing.T) {
+	adequacy := map[string]any{
+		"summary": "evidence covers the change end-to-end",
+		"gaps":    []any{"no Safari"},
+		"notes":   "manual review",
+	}
+	result := Run(standardEvidenceAdequacyFixture(adequacy), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted, got %s", result.AcceptanceStatus)
+	}
+	if containsNote(result.Notes, "evidence_adequacy") {
+		t.Fatalf("did not expect evidence_adequacy advisory for complete object, got %v", result.Notes)
+	}
+}
+
+func TestEvidenceAdequacyStandardBlankSummaryEmitsAdvisory(t *testing.T) {
+	adequacy := map[string]any{
+		"summary": "   ",
+		"gaps":    []any{"no Safari"},
+	}
+	result := Run(standardEvidenceAdequacyFixture(adequacy), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "evidence_adequacy.summary not declared") {
+		t.Fatalf("expected evidence_adequacy.summary advisory, got %v", result.Notes)
+	}
+}
+
+func TestEvidenceAdequacyStandardMissingSummaryEmitsAdvisory(t *testing.T) {
+	adequacy := map[string]any{
+		"gaps": []any{"no Safari"},
+	}
+	result := Run(standardEvidenceAdequacyFixture(adequacy), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "evidence_adequacy.summary not declared") {
+		t.Fatalf("expected evidence_adequacy.summary advisory, got %v", result.Notes)
+	}
+}
+
+func TestEvidenceAdequacyDeepMissingEmitsAdvisory(t *testing.T) {
+	result := Run(deepEvidenceAdequacyFixture(nil), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "evidence_adequacy not declared") {
+		t.Fatalf("expected evidence_adequacy missing advisory on deep, got %v", result.Notes)
+	}
+}
+
+func TestEvidenceAdequacyLightNoAdvisory(t *testing.T) {
+	result := Run(lightEvidenceAdequacyFixture(), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success for light, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if containsNote(result.Notes, "evidence_adequacy") {
+		t.Fatalf("did not expect evidence_adequacy advisory for light, got %v", result.Notes)
+	}
+}
+
 // TestEscalationDriftGuard compares policies/escalation.yaml
 // verify_stage_escalation.v1 declarations against the Go runtime
 // hardcoded copy in escalationHighRiskPathPatterns. It also verifies the

@@ -385,6 +385,23 @@
       },
       "additionalProperties": false
     },
+    "evidence_adequacy": {
+      "type": "object",
+      "description": "Optional evidence adequacy declaration. Advisory-only; admission acceptance is not evidence adequacy. On standard/deep the engine emits a top-level missing note when evidence_adequacy is absent and a summary note when summary is missing/blank. The light tier remains quiet. Never blocks admission.",
+      "properties": {
+        "summary": {
+          "type": "string"
+        },
+        "gaps": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "approval_receipt": {
       "type": "object",
       "description": "Optional approval receipt for high-risk command evidence. Required for standard/deep when evidence contains high-risk or unknown commands (standard: high/unknown; deep: medium/high/unknown).",

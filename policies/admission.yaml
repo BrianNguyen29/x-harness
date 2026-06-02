@@ -159,3 +159,26 @@ advisory_test_adequacy:
   quiet_for_tiers:
     - light
   blocks_admission: false
+
+# Advisory-only evidence adequacy declaration. Never blocks admission in
+# the first slice. evidence_adequacy is an optional top-level object with
+# optional summary, gaps, and notes.
+# Emission rules:
+#   - standard/deep missing evidence_adequacy -> top-level missing note
+#   - standard/deep missing/blank summary -> summary note
+#   - light tier -> no note (advisory remains quiet)
+# The note wording makes it explicit that admission acceptance is not
+# evidence adequacy; follow-up slices may add blocking adequacy gates.
+advisory_evidence_adequacy:
+  properties:
+    - summary
+    - gaps
+    - notes
+  missing_note: "evidence_adequacy not declared (advisory-only; admission acceptance is not evidence adequacy)"
+  summary_missing_note: "evidence_adequacy.summary not declared (advisory-only; consider explaining how evidence covers the change)"
+  emit_for_tiers:
+    - standard
+    - deep
+  quiet_for_tiers:
+    - light
+  blocks_admission: false

@@ -119,6 +119,14 @@ export interface AdmissionInput {
   // internal/admission/test_adequacy.go and the policy documentation in
   // policies/admission.yaml.
   test_adequacy?: Record<string, unknown>;
+  // Optional evidence adequacy declaration. Advisory-only; admission
+  // acceptance is not evidence adequacy. On standard/deep the engine emits
+  // a top-level missing note when evidence_adequacy is absent and a
+  // summary note when summary is missing/blank. The light tier remains
+  // quiet. Never blocks admission. Mirrors the Go implementation in
+  // internal/admission/evidence_adequacy.go and the policy documentation
+  // in policies/admission.yaml.
+  evidence_adequacy?: Record<string, unknown>;
 }
 
 export interface AdmissionResult {
@@ -296,6 +304,11 @@ const TEST_ADEQUACY_WHY_MISSING_NOTE =
 const TEST_ADEQUACY_GAPS_MISSING_NOTE =
   "test_adequacy.known_gaps not declared (advisory-only; deep should list gaps or set [])";
 
+const EVIDENCE_ADEQUACY_MISSING_NOTE =
+  "evidence_adequacy not declared (advisory-only; admission acceptance is not evidence adequacy)";
+const EVIDENCE_ADEQUACY_SUMMARY_MISSING_NOTE =
+  "evidence_adequacy.summary not declared (advisory-only; consider explaining how evidence covers the change)";
+
 // evaluateProductIntent emits advisory notes (never errors) for standard and
 // deep tier cards when product_intent.status is missing or set to "unknown".
 // The light tier remains quiet. aligned/unreviewed/disputed/not_applicable do
@@ -383,6 +396,35 @@ function evaluateTestAdequacy(input: AdmissionInput): string[] {
         notes.push(TEST_ADEQUACY_GAPS_MISSING_NOTE);
       }
     }
+  }
+
+  return notes;
+}
+
+// evaluateEvidenceAdequacy emits advisory notes (never errors) for standard
+// and deep tier cards when evidence_adequacy is missing or when summary is
+// missing/blank. The light tier remains quiet. A non-blank summary
+// suppresses the summary note but does not gate the missing-object note.
+// This is the first vertical slice; it never blocks admission. Wording is
+// parity-safe with the Go implementation in
+// internal/admission/evidence_adequacy.go and the policy documentation in
+// policies/admission.yaml.
+function evaluateEvidenceAdequacy(input: AdmissionInput): string[] {
+  const notes: string[] = [];
+  if (input.tier !== "standard" && input.tier !== "deep") {
+    return notes;
+  }
+
+  const evidenceAdequacy = input.evidence_adequacy;
+  if (evidenceAdequacy == null) {
+    notes.push(EVIDENCE_ADEQUACY_MISSING_NOTE);
+    return notes;
+  }
+
+  const summaryRaw = evidenceAdequacy.summary;
+  const summary = typeof summaryRaw === "string" ? summaryRaw.trim() : "";
+  if (summary === "") {
+    notes.push(EVIDENCE_ADEQUACY_SUMMARY_MISSING_NOTE);
   }
 
   return notes;
@@ -521,6 +563,12 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
   // product_intent: emits notes for missing or incomplete test_adequacy
   // on standard/deep tiers; light tier stays quiet.
   notes.push(...evaluateTestAdequacy(input));
+
+  // Evidence adequacy advisory (optional; never blocks admission).
+  // Mirrors test_adequacy: emits a top-level missing note when
+  // evidence_adequacy is absent on standard/deep tiers and a summary
+  // note when summary is missing/blank. Light tier stays quiet.
+  notes.push(...evaluateEvidenceAdequacy(input));
 
   // Governance / human approval check for deep
   if (input.tier === "deep" && governance) {

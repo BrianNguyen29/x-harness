@@ -147,6 +147,12 @@ func Run(doc map[string]any, strict bool, contextFloor bool) Result {
 	// test_adequacy on standard/deep tiers; light tier stays quiet.
 	notes = append(notes, evaluateTestAdequacy(doc, tier)...)
 
+	// Evidence adequacy advisory (optional; never blocks admission).
+	// Mirrors test_adequacy: emits a top-level missing note when
+	// evidence_adequacy is absent on standard/deep tiers and a summary
+	// note when summary is missing/blank. Light tier stays quiet.
+	notes = append(notes, evaluateEvidenceAdequacy(doc, tier)...)
+
 	// Command safety
 	cmdResult := evaluateCommandSafety(doc)
 	for _, e := range cmdResult.errors {
