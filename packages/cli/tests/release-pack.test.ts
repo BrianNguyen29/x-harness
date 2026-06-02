@@ -270,6 +270,66 @@ describe("release packaging", () => {
         true
       );
     }
+    // Every synced packaging/** file must appear in the pack manifest. The
+    // sync script recursively copies the root packaging/ directory (which is
+    // nested across platform subdirs and may include hidden files), so we
+    // recursively collect every file under packages/cli/packaging/ and assert
+    // each appears in the pack manifest using POSIX separators. This guards
+    // against future packaging additions (e.g.
+    // packaging/scoop/manifest.json) silently being dropped from the npm pack
+    // manifest.
+    const syncedPackagingDir = path.join(packageRoot, "packaging");
+    expect(
+      fs.existsSync(syncedPackagingDir),
+      "synced packages/cli/packaging/ must exist after sync"
+    ).toBe(true);
+    const syncedPackagingFiles = collectFilesRecursive(syncedPackagingDir);
+    expect(
+      syncedPackagingFiles.length,
+      "synced packages/cli/packaging/ must contain at least one file"
+    ).toBeGreaterThan(0);
+    for (const abs of syncedPackagingFiles) {
+      const packPath = path.posix.join(
+        "packaging",
+        path.posix.relative(
+          syncedPackagingDir.split(path.sep).join(path.posix.sep),
+          abs.split(path.sep).join(path.posix.sep)
+        )
+      );
+      expect(files.has(packPath), `packed file missing: ${packPath}`).toBe(
+        true
+      );
+    }
+    // Every synced skills/** file must appear in the pack manifest. The
+    // sync script recursively copies the root skills/ directory (which is
+    // nested across skill subdirs and may include hidden files), so we
+    // recursively collect every file under packages/cli/skills/ and assert
+    // each appears in the pack manifest using POSIX separators. This guards
+    // against future skill additions (e.g.
+    // skills/x-harness-admission/handbook.md) silently being dropped from
+    // the npm pack manifest.
+    const syncedSkillsDir = path.join(packageRoot, "skills");
+    expect(
+      fs.existsSync(syncedSkillsDir),
+      "synced packages/cli/skills/ must exist after sync"
+    ).toBe(true);
+    const syncedSkillFiles = collectFilesRecursive(syncedSkillsDir);
+    expect(
+      syncedSkillFiles.length,
+      "synced packages/cli/skills/ must contain at least one file"
+    ).toBeGreaterThan(0);
+    for (const abs of syncedSkillFiles) {
+      const packPath = path.posix.join(
+        "skills",
+        path.posix.relative(
+          syncedSkillsDir.split(path.sep).join(path.posix.sep),
+          abs.split(path.sep).join(path.posix.sep)
+        )
+      );
+      expect(files.has(packPath), `packed file missing: ${packPath}`).toBe(
+        true
+      );
+    }
     for (const required of [
       "bin/x-harness.js",
       "schemas/agent-profile.schema.json",
@@ -413,5 +473,62 @@ describe("release packaging", () => {
     expect(releaseWorkflow).toContain("macos-latest");
     expect(releaseWorkflow).toContain("windows-latest");
     expect(sbomWorkflow).toContain("npm sbom --workspace x-harness");
+  });
+
+  it("every requiredDirs entry has a dynamic pack-manifest coverage group", () => {
+    // Meta-guard: parse the canonical requiredDirs list from
+    // packages/cli/scripts/sync-package-assets.mjs (without executing it)
+    // and assert every entry has a corresponding dynamic pack-manifest
+    // coverage block in this test file. Adding a new requiredDir in the
+    // sync script without (a) adding a dynamic block for it in the
+    // "npm pack dry run" test above and (b) registering it in coveredDirs
+    // below will fail this guard.
+    const scriptPath = path.join(
+      packageRoot,
+      "scripts",
+      "sync-package-assets.mjs"
+    );
+    const scriptSource = fs.readFileSync(scriptPath, "utf-8");
+    const requiredDirsMatch = scriptSource.match(
+      /const requiredDirs\s*=\s*(\[[\s\S]*?\]);/m
+    );
+    expect(
+      requiredDirsMatch,
+      `failed to locate requiredDirs array in ${scriptPath}`
+    ).not.toBeNull();
+    // The matched group is a plain JS array of double-quoted string
+    // literals. Strip a trailing comma inside the array literal so the
+    // text becomes valid JSON, then JSON.parse it. This keeps the guard
+    // independent of any script execution and tolerant of cosmetic
+    // formatting changes inside the array body.
+    const arrayLiteral = requiredDirsMatch![1].replace(/,(\s*])/, "$1");
+    const requiredDirs = JSON.parse(arrayLiteral) as string[];
+    expect(
+      Array.isArray(requiredDirs) && requiredDirs.length > 0,
+      "requiredDirs in sync-package-assets.mjs must be a non-empty array"
+    ).toBe(true);
+    // The coveredDirs set enumerates every requiredDir that has a dynamic
+    // pack-manifest coverage block in this test file. Every entry in
+    // requiredDirs above MUST appear in this set; the meta-guard fails
+    // otherwise with a clear remediation message. Keep entries
+    // alphabetised to minimise diff noise.
+    const coveredDirs = new Set<string>([
+      "adapters",
+      "components",
+      "docs",
+      "examples",
+      "packaging",
+      "policies",
+      "schemas",
+      "skills",
+      "templates",
+      "tools",
+    ]);
+    for (const required of requiredDirs) {
+      expect(
+        coveredDirs.has(required),
+        `requiredDir "${required}" from sync-package-assets.mjs has no pack-manifest coverage in release-pack.test.ts; add a dynamic block (see packaging/skills guards above) and register it in coveredDirs`
+      ).toBe(true);
+    }
   });
 });
