@@ -128,6 +128,45 @@ describe("release packaging", () => {
         true
       );
     }
+    // Every synced docs/*.md file must appear in the pack manifest. The
+    // sync script recursively copies the root docs/ directory, so we discover
+    // the runtime set from packages/cli/docs/ and assert each shallow *.md
+    // is present. This guards against future root doc additions (e.g.
+    // docs/NEW_GUIDE.md) silently being dropped from the npm pack manifest.
+    const syncedDocsDir = path.join(packageRoot, "docs");
+    const syncedDocFiles = fs
+      .readdirSync(syncedDocsDir)
+      .filter((name) => name.endsWith(".md"));
+    expect(
+      syncedDocFiles.length,
+      "synced packages/cli/docs/ must contain at least one .md file"
+    ).toBeGreaterThan(0);
+    for (const name of syncedDocFiles) {
+      const packPath = `docs/${name}`;
+      expect(files.has(packPath), `packed file missing: ${packPath}`).toBe(
+        true
+      );
+    }
+    // Every synced components/*.yaml file must appear in the pack manifest.
+    // The sync script recursively copies the root components/ directory, so
+    // we discover the runtime set from packages/cli/components/ and assert
+    // each shallow *.yaml is present. This guards against future root
+    // component additions (e.g. components/REGISTRY.yaml) silently being
+    // dropped from the npm pack manifest.
+    const syncedComponentsDir = path.join(packageRoot, "components");
+    const syncedComponentFiles = fs
+      .readdirSync(syncedComponentsDir)
+      .filter((name) => name.endsWith(".yaml"));
+    expect(
+      syncedComponentFiles.length,
+      "synced packages/cli/components/ must contain at least one .yaml file"
+    ).toBeGreaterThan(0);
+    for (const name of syncedComponentFiles) {
+      const packPath = `components/${name}`;
+      expect(files.has(packPath), `packed file missing: ${packPath}`).toBe(
+        true
+      );
+    }
     // Every synced adapters/** file must appear in the pack manifest. The
     // sync script recursively copies the root adapters/ directory (which is
     // nested across platform subdirs), so we recursively collect every file
@@ -220,9 +259,6 @@ describe("release packaging", () => {
       "adapters/generic/AGENTS.md",
       "examples/00-minimal/completion-card.yaml",
       "examples/golden/regression/success-light/completion-card.yaml",
-      "docs/README.md",
-      "docs/RELEASE_SECURITY.md",
-      "components/registry.yaml",
       "policies/federation.yaml",
       "schemas/federation-pattern.schema.json",
       "tools/experimental/evolve/constitution.yaml",
