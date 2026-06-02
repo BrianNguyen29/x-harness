@@ -135,6 +135,39 @@ describe("release packaging", () => {
     );
   });
 
+  it("admission policy runtime copy is byte-identical to root contract", async () => {
+    // Explicit named parity guard for policies/admission.yaml. The sync script
+    // (packages/cli/scripts/sync-package-assets.mjs) regenerates
+    // packages/cli/policies/ from the canonical root copy; the runtime copy
+    // must be byte-identical. The packages/cli/policies/ directory is
+    // gitignored, so this test cleans only the generated path so it does not
+    // depend on stale local artifact state, then re-syncs from root.
+    const gitignorePath = path.join(packageRoot, ".gitignore");
+    const rootPolicy = path.join(repoRoot, "policies", "admission.yaml");
+    const syncedPolicy = path.join(packageRoot, "policies", "admission.yaml");
+    const gitignore = fs.readFileSync(gitignorePath, "utf-8");
+    expect(
+      gitignore.includes("/policies/"),
+      "packages/cli/.gitignore must exclude /policies/ so no committed pre-sync package copy is ever published"
+    ).toBe(true);
+    fs.rmSync(syncedPolicy, { force: true });
+    await syncPackageAssets();
+    expect(
+      fs.existsSync(rootPolicy),
+      "root policies/admission.yaml must exist"
+    ).toBe(true);
+    expect(
+      fs.existsSync(syncedPolicy),
+      "synced packages/cli/policies/admission.yaml must exist after sync"
+    ).toBe(true);
+    const rootBuffer = fs.readFileSync(rootPolicy);
+    const syncedBuffer = fs.readFileSync(syncedPolicy);
+    expect(
+      syncedBuffer.equals(rootBuffer),
+      "packages/cli/policies/admission.yaml must be byte-identical to root policies/admission.yaml after sync"
+    ).toBe(true);
+  });
+
   it("release workflows include benchmark, pack, SBOM, and provenance gates", () => {
     const releaseWorkflow = fs.readFileSync(
       path.join(repoRoot, ".github", "workflows", "release.yml"),
