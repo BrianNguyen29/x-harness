@@ -128,6 +128,48 @@ describe("release packaging", () => {
         true
       );
     }
+    // Every synced adapters/** file must appear in the pack manifest. The
+    // sync script recursively copies the root adapters/ directory (which is
+    // nested across platform subdirs), so we recursively collect every file
+    // under packages/cli/adapters/ and assert each appears in the pack
+    // manifest using POSIX separators. This guards against future adapter
+    // additions (e.g. adapters/opencode/agents/fixer.md) silently being
+    // dropped from the npm pack manifest.
+    const syncedAdaptersDir = path.join(packageRoot, "adapters");
+    expect(
+      fs.existsSync(syncedAdaptersDir),
+      "synced packages/cli/adapters/ must exist after sync"
+    ).toBe(true);
+    function collectFilesRecursive(dir: string): string[] {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      const out: string[] = [];
+      for (const entry of entries) {
+        const abs = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          out.push(...collectFilesRecursive(abs));
+        } else if (entry.isFile()) {
+          out.push(abs);
+        }
+      }
+      return out;
+    }
+    const syncedAdapterFiles = collectFilesRecursive(syncedAdaptersDir);
+    expect(
+      syncedAdapterFiles.length,
+      "synced packages/cli/adapters/ must contain at least one file"
+    ).toBeGreaterThan(0);
+    for (const abs of syncedAdapterFiles) {
+      const packPath = path.posix.join(
+        "adapters",
+        path.posix.relative(
+          syncedAdaptersDir.split(path.sep).join(path.posix.sep),
+          abs.split(path.sep).join(path.posix.sep)
+        )
+      );
+      expect(files.has(packPath), `packed file missing: ${packPath}`).toBe(
+        true
+      );
+    }
     for (const required of [
       "bin/x-harness.js",
       "schemas/agent-profile.schema.json",
