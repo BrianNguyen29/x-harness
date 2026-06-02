@@ -58,6 +58,9 @@ export function buildAdmissionInput(
         | Record<string, unknown>
         | undefined,
       test_adequacy: card.test_adequacy as Record<string, unknown> | undefined,
+      evidence_adequacy: card.evidence_adequacy as
+        | Record<string, unknown>
+        | undefined,
       isCardMode: true,
       staleGround: effectiveStaleGround,
       strict: opts.strict === true,
@@ -87,6 +90,9 @@ export function buildAdmissionInput(
       | Record<string, unknown>
       | undefined,
     test_adequacy: loaded.subagentReturn?.test_adequacy as
+      | Record<string, unknown>
+      | undefined,
+    evidence_adequacy: loaded.subagentReturn?.evidence_adequacy as
       | Record<string, unknown>
       | undefined,
     staleGround: effectiveStaleGround,
