@@ -108,6 +108,26 @@ describe("release packaging", () => {
         true
       );
     }
+    // Every synced templates/*.md file must appear in the pack manifest.
+    // The sync script recursively copies the root templates/ directory, so
+    // we discover the runtime set from packages/cli/templates/ and assert
+    // each shallow *.md is present. This guards against future root template
+    // additions (e.g. templates/NEW_CONTRACT.md) silently being dropped from
+    // the npm pack manifest.
+    const syncedTemplatesDir = path.join(packageRoot, "templates");
+    const syncedTemplateFiles = fs
+      .readdirSync(syncedTemplatesDir)
+      .filter((name) => name.endsWith(".md"));
+    expect(
+      syncedTemplateFiles.length,
+      "synced packages/cli/templates/ must contain at least one .md file"
+    ).toBeGreaterThan(0);
+    for (const name of syncedTemplateFiles) {
+      const packPath = `templates/${name}`;
+      expect(files.has(packPath), `packed file missing: ${packPath}`).toBe(
+        true
+      );
+    }
     for (const required of [
       "bin/x-harness.js",
       "schemas/agent-profile.schema.json",
@@ -125,7 +145,6 @@ describe("release packaging", () => {
       "policies/cost-budget.yaml",
       "policies/intake.yaml",
       "policies/recovery.yaml",
-      "templates/COMPLETION_CARD.md",
       "adapters/generic/AGENTS.md",
       "examples/00-minimal/completion-card.yaml",
       "examples/golden/regression/success-light/completion-card.yaml",
