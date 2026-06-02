@@ -15,7 +15,9 @@
                            ▼
 ┌────────────────────────────────────────────────────────┐
 │                   TOOLING & CLI LAYER                  │
-│       (init, handoff, add, verify, doctor, report)     │
+│     (init, add, verify, handoff, doctor, conformance,  │
+│      contract, release, examples, benchmark, report,   │
+│      and other sub-commands — see `xh --help-all`)     │
 └──────┬───────────────────┬─────────────────────────────┘
        │                   │
        │ 2a. Validate      │ 2b. Evaluate
@@ -44,7 +46,7 @@ Translates platform-specific conventions into unified `x-harness` parameters. It
 
 ### 2. Tooling & CLI Layer
 
-Provides developer utilities to scaffolding templates (`init`, `handoff`), modify files (`add`), clear logs (`clean`), and execute audits (`verify`, `doctor`, `report`). The native Go CLI is the rewrite target; the TypeScript CLI remains a compatibility baseline during migration.
+Provides developer utilities to scaffold templates (`init`, `handoff`), modify files (`add`, `repair`), clear logs (`clean`, `reset`), run audits (`verify`, `doctor`, `conformance`), and emit reports (`report`, `benchmark`, `release`). The full command list is grouped by maturity and exposed via `xh --help-all` / `xh --help-maturity`. The native Go CLI is the rewrite target; the TypeScript CLI remains a compatibility baseline during migration.
 
 ### 3. Validator Layer
 

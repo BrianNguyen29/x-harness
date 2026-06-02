@@ -223,7 +223,7 @@ The following decisions have been reviewed and approved. They are encoded below 
 
 ---
 
-## 11. References
+## 8. References
 
 - `internal/conformance/conformance.go` — current minimal and strict implementation
 - `internal/cli/conformance.go` — current CLI wiring

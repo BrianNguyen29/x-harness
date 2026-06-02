@@ -111,9 +111,9 @@ brew update && brew upgrade x-harness
 
 > **Maintainers**: the Homebrew formula is generated automatically during release as `x-harness.rb`. Copy the generated formula into the tap repository (e.g., `homebrew-x-harness`) and commit. See `scripts/generate-homebrew-formula.sh` for the generator.
 
-### Step 2: Seven Canonical Actions
+### Step 2: Nine Canonical Actions
 
-`x-harness` exposes seven beginner-friendly actions. Use these to interact with the harness:
+`x-harness` exposes nine beginner-friendly actions. Use these to interact with the harness:
 
 | Action        | Alias for               | Description                                            |
 | :------------ | :---------------------- | :----------------------------------------------------- |
@@ -124,6 +124,8 @@ brew update && brew upgrade x-harness
 | **`actions`** | (standalone)            | List all beginner-friendly actions                     |
 | **`status`**  | `report` (no --metrics) | Show trace summary or card metrics                     |
 | **`reset`**   | `clean --tmp --force`   | Clean generated harness state (requires --confirm)     |
+| **`init`**    | (standalone)            | Install core harness assets, schemas, policies, and adapters (default `--minimal`) |
+| **`add`**     | (standalone)            | Add a metadata helper file for compatibility modes     |
 
 > **Command syntax:**
 > - **Terminal / shell:** `xh <command>` (e.g., `xh check`)
@@ -167,6 +169,7 @@ xh check --card examples/golden/regression/success-light/completion-card.yaml
 > ```yaml
 > outcome: success
 > acceptance_status: accepted
+> checks: 2 passed, 0 failed
 > ```
 >
 > _Note: The CLI returns exit code `0` because the card meets all the light-tier policy requirements._
@@ -182,6 +185,7 @@ xh check --card examples/golden/regression/blocked-missing-evidence/completion-c
 > ```yaml
 > outcome: failed
 > acceptance_status: withheld
+> checks: 0 passed, 5 failed
 > ```
 >
 > _Note: The CLI returns exit code `1` (fail-closed) because the card failed the required evidence floor rules._
