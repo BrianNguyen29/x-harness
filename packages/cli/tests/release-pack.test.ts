@@ -81,6 +81,39 @@ function findMissingDirsCoverage(
   return requiredDirs.filter((dir) => !covered.has(dir));
 }
 
+// Pure helper: parses the `const requiredDirs = [...]` array literal
+// from the canonical sync-package-assets.mjs source text. Extracted
+// from the "every requiredDirs entry has a dynamic pack-manifest
+// coverage group" meta-guard so the array-shape contract (and its
+// failure modes) can be exercised by a focused unit test. Throws a
+// clear error when the array literal is missing or when the parsed
+// value is not a non-empty array of strings.
+function parseRequiredDirsFromSyncScript(source: string): string[] {
+  const match = source.match(/const requiredDirs\s*=\s*(\[[\s\S]*?\]);/m);
+  if (!match) {
+    throw new Error(
+      "requiredDirs array literal not found in sync-package-assets.mjs"
+    );
+  }
+  // The matched group is a plain JS array of double-quoted string
+  // literals. Strip a trailing comma inside the array literal so the
+  // text becomes valid JSON, then JSON.parse it. This keeps the
+  // helper independent of any script execution and tolerant of
+  // cosmetic formatting changes inside the array body.
+  const arrayLiteral = match[1].replace(/,(\s*])/, "$1");
+  const parsed = JSON.parse(arrayLiteral) as unknown;
+  if (
+    !Array.isArray(parsed) ||
+    parsed.length === 0 ||
+    !parsed.every((value) => typeof value === "string")
+  ) {
+    throw new Error(
+      "requiredDirs must be a non-empty array of strings in sync-package-assets.mjs"
+    );
+  }
+  return parsed;
+}
+
 describe("release packaging", () => {
   it("resolves packaged assets from the runtime asset root", async () => {
     await syncPackageAssets();
@@ -524,24 +557,7 @@ describe("release packaging", () => {
       "sync-package-assets.mjs"
     );
     const scriptSource = fs.readFileSync(scriptPath, "utf-8");
-    const requiredDirsMatch = scriptSource.match(
-      /const requiredDirs\s*=\s*(\[[\s\S]*?\]);/m
-    );
-    expect(
-      requiredDirsMatch,
-      `failed to locate requiredDirs array in ${scriptPath}`
-    ).not.toBeNull();
-    // The matched group is a plain JS array of double-quoted string
-    // literals. Strip a trailing comma inside the array literal so the
-    // text becomes valid JSON, then JSON.parse it. This keeps the guard
-    // independent of any script execution and tolerant of cosmetic
-    // formatting changes inside the array body.
-    const arrayLiteral = requiredDirsMatch![1].replace(/,(\s*])/, "$1");
-    const requiredDirs = JSON.parse(arrayLiteral) as string[];
-    expect(
-      Array.isArray(requiredDirs) && requiredDirs.length > 0,
-      "requiredDirs in sync-package-assets.mjs must be a non-empty array"
-    ).toBe(true);
+    const requiredDirs = parseRequiredDirsFromSyncScript(scriptSource);
     // The coveredDirs set enumerates every requiredDir that has a dynamic
     // pack-manifest coverage block in this test file. Every entry in
     // requiredDirs above MUST appear in this set; the meta-guard fails
@@ -710,5 +726,60 @@ describe("release packaging", () => {
     expect(findMissingDirsCoverage(["x", "y"], new Set(["x", "y"]))).toEqual(
       []
     );
+  });
+
+  it("parseRequiredDirsFromSyncScript parses the canonical array literal", () => {
+    // Positive fixture: prove the helper accepts the current
+    // sync-package-assets.mjs array shape, including a trailing
+    // comma inside the literal. This guards against silent
+    // regressions in the parser logic shared with the requiredDirs
+    // meta-guard above.
+    const source = `const requiredDirs = ["adapters", "docs",];`;
+    expect(parseRequiredDirsFromSyncScript(source)).toEqual([
+      "adapters",
+      "docs",
+    ]);
+    // Single-entry array (no trailing comma) still parses.
+    expect(
+      parseRequiredDirsFromSyncScript(`const requiredDirs = ["schemas"];`)
+    ).toEqual(["schemas"]);
+    // Whitespace and newlines around the array literal are tolerated.
+    const multiline = `const requiredDirs = [\n  "adapters",\n  "docs",\n];`;
+    expect(parseRequiredDirsFromSyncScript(multiline)).toEqual([
+      "adapters",
+      "docs",
+    ]);
+  });
+
+  it("parseRequiredDirsFromSyncScript fails clearly when requiredDirs is absent", () => {
+    // Negative fixture: prove the helper throws a clear
+    // "requiredDirs array literal not found" error when the source
+    // does not declare a requiredDirs array. This guards against
+    // silent regressions in the parser's missing-literal detection
+    // shared with the requiredDirs meta-guard above.
+    expect(() => parseRequiredDirsFromSyncScript("")).toThrow(
+      /requiredDirs array literal not found/
+    );
+    expect(() =>
+      parseRequiredDirsFromSyncScript('const otherDirs = ["adapters"];')
+    ).toThrow(/requiredDirs array literal not found/);
+  });
+
+  it("parseRequiredDirsFromSyncScript fails clearly on empty or non-string arrays", () => {
+    // Shape fixture: prove the helper throws a clear
+    // "requiredDirs must be a non-empty array of strings" error
+    // when the parsed value is empty or contains a non-string
+    // element. This guards against silent regressions in the
+    // parser's shape validation shared with the requiredDirs
+    // meta-guard above.
+    expect(() =>
+      parseRequiredDirsFromSyncScript("const requiredDirs = [];")
+    ).toThrow(/requiredDirs must be a non-empty array of strings/);
+    expect(() =>
+      parseRequiredDirsFromSyncScript("const requiredDirs = [1, 2];")
+    ).toThrow(/requiredDirs must be a non-empty array of strings/);
+    expect(() =>
+      parseRequiredDirsFromSyncScript('const requiredDirs = ["adapters", 2];')
+    ).toThrow(/requiredDirs must be a non-empty array of strings/);
   });
 });
