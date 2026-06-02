@@ -455,9 +455,15 @@ describe("release packaging", () => {
     expect(releaseWorkflow).toContain("--frozen --target");
     const goBuildIndex = releaseWorkflow.indexOf("Build Go release binaries");
     const npmPackIndex = releaseWorkflow.indexOf("Build release package");
+    const copyIndex = releaseWorkflow.indexOf(
+      "Copy Go binaries into npm package"
+    );
     expect(goBuildIndex).toBeGreaterThan(-1);
     expect(npmPackIndex).toBeGreaterThan(-1);
     expect(goBuildIndex).toBeLessThan(npmPackIndex);
+    expect(copyIndex).toBeGreaterThan(-1);
+    expect(goBuildIndex).toBeLessThan(copyIndex);
+    expect(copyIndex).toBeLessThan(npmPackIndex);
     expect(releaseWorkflow).toContain("Copy Go binaries into npm package");
     expect(releaseWorkflow).toContain("Generate Go binary checksums");
     expect(releaseWorkflow).toContain("Go binary smoke test");
