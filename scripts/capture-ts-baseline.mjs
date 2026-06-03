@@ -245,6 +245,13 @@ function main() {
     ["context", "--contract"],
   );
 
+  captureTextCase(
+    manifest,
+    "help:maturity",
+    path.join("help", "maturity"),
+    ["--help-maturity"],
+  );
+
   captureJsonCase(
     manifest,
     "benchmark:adversarial",

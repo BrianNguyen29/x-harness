@@ -1,0 +1,56 @@
+# Initial withheld state for the recovered flow example.
+#
+# This file mirrors the completion card an agent might submit before
+# running `xh explain` and `xh recover --patch-card`. It is included
+# here for documentation/reproduction only:
+#
+# - The Go and TypeScript `xh examples verify` implementations
+#   look up the example by directory name and only read
+#   `completion-card.yaml`. Files with a different name in the
+#   same directory are NOT scanned.
+# - To reproduce the recovery flow on this card, copy it into a
+#   working directory and run the Go CLI commands listed in
+#   README.md.
+#
+# Expected verify outcome (Go CLI / TypeScript CLI parity):
+#   outcome: failed
+#   acceptance_status: withheld
+schema_version: "1"
+task_id: TASK-RECOVER-FLOW-001
+tier: light
+owner: alice
+accountable: bob
+state:
+  read_set:
+    - examples/golden/regression/success-recovered-flow/README.md
+  write_set:
+    - examples/golden/regression/success-recovered-flow/src/utils/formatSlug.go
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: false
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Added a small formatSlug utility
+  expected_effect: formatSlug("Hello, World!") returns "hello-world"
+  measurable_signal: go test ./... && ./x-harness examples verify --suite=regression
+  falsification_method: Revert formatSlug.go and rerun
+  horizon: same_verify
+claim:
+  fix_status: fixed
+  summary: Implemented formatSlug utility
+  evidence: []
+verification:
+  status: failed
+  checks:
+    - name: placeholder
+      result: failed
+admission:
+  outcome: failed
+acceptance_status: withheld
+handoff:
+  next_action: ""
+  owner: ""

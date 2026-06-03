@@ -11,9 +11,9 @@ describe("examples command", () => {
     expect(exitCode).toBe(0);
     const output = JSON.parse(stdout);
     expect(output.ok).toBe(true);
-    expect(output.total).toBe(17);
-    expect(output.passed).toBe(17);
-    expect(output.results).toHaveLength(17);
+    expect(output.total).toBe(18);
+    expect(output.passed).toBe(18);
+    expect(output.results).toHaveLength(18);
 
     const names = output.results.map((r: { name: string }) => r.name);
     expect(names).toContain("regression/success-light");
@@ -33,12 +33,13 @@ describe("examples command", () => {
     expect(names).toContain("regression/success-context-alignment");
     expect(names).toContain("regression/blocked-missing-context-ref");
     expect(names).toContain("regression/blocked-contract-oracle");
+    expect(names).toContain("regression/success-recovered-flow");
   });
 
   it("verify subcommand prints human-readable summary", async () => {
     const { stdout, exitCode } = await execaNode(["examples", "verify"]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("Golden examples: 17 total");
+    expect(stdout).toContain("Golden examples: 18 total");
     expect(stdout).toContain("regression/success-light");
     expect(stdout).toContain("regression/blocked-missing-evidence");
     expect(stdout).toContain("regression/failed-invalid-status");
@@ -175,5 +176,11 @@ describe("examples command", () => {
     );
     expect(blockedContractOracle.outcome).toBe("success");
     expect(blockedContractOracle.acceptance_status).toBe("accepted");
+
+    const recoveredFlow = output.results.find(
+      (r: { name: string }) => r.name === "regression/success-recovered-flow"
+    );
+    expect(recoveredFlow.outcome).toBe("success");
+    expect(recoveredFlow.acceptance_status).toBe("accepted");
   });
 });
