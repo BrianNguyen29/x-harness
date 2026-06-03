@@ -1,0 +1,57 @@
+schema_version: "1"
+task_id: TASK-RECOVER-FLOW-001
+tier: light
+owner: alice
+accountable: bob
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - examples/golden/regression/success-recovered-flow/README.md
+  architecture_refs: []
+  decision_refs: []
+  test_matrix_refs: []
+  unresolved_context_questions: []
+  context_evidence: []
+state:
+  read_set:
+    - examples/golden/regression/success-recovered-flow/README.md
+  write_set:
+    - examples/golden/regression/success-recovered-flow/src/utils/formatSlug.go
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Added a small formatSlug utility and reached accepted via the recover flow
+  expected_effect: formatSlug("Hello, World!") returns "hello-world" and admission admit the card
+  measurable_signal: go test ./... && ./x-harness examples verify --suite=regression
+  falsification_method: Revert formatSlug.go and rerun; the verify step should not pass
+  horizon: same_verify
+evidence:
+  files_changed:
+    - examples/golden/regression/success-recovered-flow/src/utils/formatSlug.go
+  manual_rationale: Pure Go utility; light-tier evidence floor satisfied via manual_rationale plus a referenced source file
+claim:
+  fix_status: fixed
+  summary: Implemented formatSlug utility; recovered a withheld card via explain + recover --patch-card
+  evidence:
+    - description: Source file with the formatSlug implementation
+      files_changed:
+        - examples/golden/regression/success-recovered-flow/src/utils/formatSlug.go
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice

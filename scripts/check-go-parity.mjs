@@ -60,6 +60,7 @@ function isSupported(caseId) {
     "verify:adversarial:",
     "doctor:json",
     "context:contract",
+    "help:maturity",
     "benchmark:mutation-guard",
     "benchmark:adversarial",
     "examples:verify:json",
@@ -127,6 +128,64 @@ function compareContextContract(tsOutput, goOutput, tsExit, goExit) {
   for (const fact of expectedFacts) {
     if (!goOutput.includes(fact)) {
       errors.push(`missing contract fact: ${fact}`);
+    }
+  }
+  return errors;
+}
+
+function parseMaturityGroups(text) {
+  // Parses a `--help-maturity` style output into { maturity: Set<commandName> }.
+  // The output format is:
+  //   <maturity>:
+  //     <command>          (TS CLI — name only)
+  //     <command>  <desc>  (Go CLI — name + padded description)
+  //   ...
+  // Followed by a blank line or new maturity header / global options.
+  const groups = {};
+  let current = null;
+  for (const rawLine of text.split(/\r?\n/)) {
+    const header = rawLine.match(/^([a-z]+):\s*$/);
+    if (header) {
+      current = header[1];
+      if (!groups[current]) groups[current] = new Set();
+      continue;
+    }
+    if (current == null) continue;
+    if (rawLine === "" || /^\S/.test(rawLine)) {
+      // Blank line or non-indented line ends the current group.
+      current = null;
+      continue;
+    }
+    // Take the first whitespace-separated token as the command name so
+    // that Go's `<name>  <description>` lines match TS's `<name>` lines.
+    const command = rawLine.trim().split(/\s+/, 1)[0];
+    if (command) {
+      groups[current].add(command);
+    }
+  }
+  return groups;
+}
+
+function compareHelpMaturity(tsOutput, goOutput, tsExit, goExit) {
+  const errors = [];
+  if (tsExit !== goExit) {
+    errors.push(`exit code mismatch: ts=${tsExit}, go=${goExit}`);
+  }
+  const tsGroups = parseMaturityGroups(tsOutput);
+  const goGroups = parseMaturityGroups(goOutput);
+  // Parity contract: every command listed by TS CLI under maturity M
+  // must also be listed by Go CLI under the same maturity M.
+  // (Go is canonical; TS subset is the parity floor.)
+  for (const [maturity, commands] of Object.entries(tsGroups)) {
+    const goCommands = goGroups[maturity];
+    if (!goCommands) {
+      errors.push(`Go output missing maturity group: ${maturity}`);
+      continue;
+    }
+    for (const cmd of commands) {
+      if (!goCommands.has(cmd)) {
+        errors.push(`command ${cmd} missing in Go ${maturity} group`);
+      }
     }
   }
   return errors;
@@ -401,6 +460,17 @@ function main() {
         goOutput = goResult.stdout;
         goExit = goResult.status ?? (goResult.error ? 1 : 0);
         const errors = compareContextContract(tsOutput, goOutput, tsExit, goExit);
+        if (errors.length > 0) {
+          results.failed.push({ id: caseId, errors });
+        } else {
+          results.passed.push(caseId);
+        }
+      } else if (caseId === "help:maturity") {
+        tsOutput = readText(tsOutputPath);
+        const goResult = run(goArgs);
+        goOutput = goResult.stdout;
+        goExit = goResult.status ?? (goResult.error ? 1 : 0);
+        const errors = compareHelpMaturity(tsOutput, goOutput, tsExit, goExit);
         if (errors.length > 0) {
           results.failed.push({ id: caseId, errors });
         } else {

@@ -8,6 +8,7 @@ enforces.
 ## Start Here
 
 - [Quickstart](QUICKSTART.md)
+- [First Accepted Card](tutorials/first-accepted-card.md) — end-to-end beginner walkthrough
 - [FAQ](FAQ.md)
 - [Architecture](ARCHITECTURE.md)
 - [Adapters](ADAPTERS.md)

@@ -1,0 +1,56 @@
+{
+  "acceptance_status": "accepted",
+  "admission_outcome": "success",
+  "card_id": null,
+  "changed_files": {
+    "card_files": [
+      "examples/golden/regression/success-recovered-flow/src/utils/formatSlug.go"
+    ],
+    "files": [
+      "examples/golden/regression/success-recovered-flow/src/utils/formatSlug.go"
+    ],
+    "git_files": [],
+    "source": "card"
+  },
+  "checks": [
+    {
+      "name": "completion card valid",
+      "note": "completion card valid: examples/golden/regression/success-recovered-flow/completion-card.yaml",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "context floor advisory only for light tier",
+      "note": "context floor advisory only for light tier",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "admission checks passed",
+      "note": "admission checks passed",
+      "severity": "info",
+      "status": "passed"
+    }
+  ],
+  "decision": {
+    "acceptance_status": "accepted",
+    "outcome": "success"
+  },
+  "denominator_warning": "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
+  "episode": null,
+  "input_card_hash": "sha256:bbe83f724265634c2526305476c7690470d5caa9d0c543c53ae95e05044537a8",
+  "ok": true,
+  "policy_hash": "sha256:5fd0b11e0d777043b97ab4179b18a85af3d30f74a48353ece32dd2801990ab52",
+  "product_intent_status": null,
+  "recovery": null,
+  "schema_version": 1,
+  "strict": false,
+  "task_id": "TASK-RECOVER-FLOW-001",
+  "withheld_reason": null
+}
