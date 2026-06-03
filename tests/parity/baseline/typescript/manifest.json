@@ -228,6 +228,20 @@
       "output": "verify/golden/success-light.json"
     },
     {
+      "id": "verify:golden:success-recovered-flow",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/regression/success-recovered-flow/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/golden/success-recovered-flow.json"
+    },
+    {
       "id": "verify:golden:success-standard-scoped-evidence",
       "command": [
         "node",
@@ -391,6 +405,17 @@
       "exit_code": 0,
       "signal": null,
       "output": "context/contract.txt"
+    },
+    {
+      "id": "help:maturity",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "--help-maturity"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "help/maturity.txt"
     },
     {
       "id": "benchmark:adversarial",

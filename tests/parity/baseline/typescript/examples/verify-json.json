@@ -1,7 +1,7 @@
 {
   "failed": 0,
   "ok": true,
-  "passed": 17,
+  "passed": 18,
   "results": [
     {
       "acceptance_status": "withheld",
@@ -165,11 +165,19 @@
     {
       "acceptance_status": "accepted",
       "errors": [],
+      "name": "regression/success-recovered-flow",
+      "outcome": "success",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
+      "acceptance_status": "accepted",
+      "errors": [],
       "name": "regression/success-standard-scoped-evidence",
       "outcome": "success",
       "output_mismatch": null,
       "passed": true
     }
   ],
-  "total": 17
+  "total": 18
 }

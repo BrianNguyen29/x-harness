@@ -1,0 +1,61 @@
+xh 0.1.0
+
+A lightweight verify-gated harness for AI-agent workflows.
+
+Maturity labels:
+  stable       Core command; tested and relied on in CI
+  beta         Functional but may change; feedback welcome
+  experimental New or advanced; semantics may shift
+  skeletal     Declared but not yet implemented
+
+Usage:
+  xh <command> [options]
+
+stable:
+  add
+  benchmark
+  check
+  clean
+  context
+  doctor
+  examples
+  handoff
+  init
+  prepare
+  recover
+  recovery
+  report
+  reset
+  status
+  trace
+  verify
+
+beta:
+  actions
+  packet
+  profile
+
+experimental:
+  agent-profile
+  approval-risk
+  attribution
+  components
+  cost
+  episode
+  evidence
+  evolve
+  export
+  federation
+  frozen
+  governance
+  import
+  intake
+  intervention
+  permissions
+  prediction
+
+Global options:
+  -h, --help          Show help
+  --help-all          Show all commands
+  --help-maturity     Show help with maturity labels for all commands
+  -v, --version       Show version
