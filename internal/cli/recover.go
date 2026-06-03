@@ -112,6 +112,17 @@ var defaultRoutes = map[string]recoveryRoute{
 }
 
 func handleRecover(args []string, stdout io.Writer, stderr io.Writer) int {
+	// P2-S3: `--patch-card` switches the recover command into a
+	// different mode that mutates (or previews) a completion card.
+	// We intercept it before the main flag loop so the existing
+	// "unknown flag" check does not trip on patch-only flags like
+	// `--out` or `--evidence`.
+	for _, a := range args {
+		if a == "--patch-card" || strings.HasPrefix(a, "--patch-card=") {
+			return handleRecoverPatch(args, stdout, stderr)
+		}
+	}
+
 	errorsStr := ""
 	outcome := "failed"
 	jsonMode := false

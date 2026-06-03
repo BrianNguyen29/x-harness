@@ -19,7 +19,7 @@ import (
 
 func handleRelease(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: x-harness release <evidence|verify-evidence|report> [options]")
+		fmt.Fprintln(stderr, "usage: x-harness release <evidence|verify-evidence|report|verify-docs> [options]")
 		return ExitUsage
 	}
 
@@ -30,11 +30,66 @@ func handleRelease(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleReleaseVerifyEvidence(args[1:], stdout, stderr)
 	case "report":
 		return handleReleaseReport(args[1:], stdout, stderr)
+	case "verify-docs":
+		return handleReleaseVerifyDocs(args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "unknown release subcommand: %s\n", args[0])
-		fmt.Fprintln(stderr, "usage: x-harness release <evidence|verify-evidence|report> [options]")
+		fmt.Fprintln(stderr, "usage: x-harness release <evidence|verify-evidence|report|verify-docs> [options]")
 		return ExitUsage
 	}
+}
+
+// handleReleaseVerifyDocs runs the docs-drift check and reports the
+// result. It is a thin wrapper around `xh doctor --docs-drift` so
+// release pipelines can call a single command while keeping the
+// underlying checks in the doctor package.
+func handleReleaseVerifyDocs(args []string, stdout io.Writer, stderr io.Writer) int {
+	root := "."
+	format := "json"
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--root":
+			if i+1 < len(args) {
+				root = args[i+1]
+				i++
+			}
+		case "--format":
+			if i+1 < len(args) {
+				format = args[i+1]
+				i++
+			}
+		case "-h", "--help":
+			fmt.Fprintln(stderr, "usage: x-harness release verify-docs [--root <path>] [--format json|text]")
+			return ExitUsage
+		default:
+			if strings.HasPrefix(args[i], "-") {
+				fmt.Fprintf(stderr, "unknown flag: %s\n", args[i])
+				return ExitUsage
+			}
+			fmt.Fprintf(stderr, "unexpected argument: %s\n", args[i])
+			return ExitUsage
+		}
+	}
+
+	report := doctor.CheckDocsDrift(root)
+	switch format {
+	case "json":
+		if err := WriteJSON(stdout, report); err != nil {
+			fmt.Fprintf(stderr, "error: %v\n", err)
+			return ExitError
+		}
+	case "text":
+		doctor.FormatDocsDriftText(report, stdout)
+	default:
+		fmt.Fprintf(stderr, "unknown format: %s\n", format)
+		return ExitUsage
+	}
+
+	if report.Healthy {
+		return ExitOK
+	}
+	return ExitError
 }
 
 func handleReleaseEvidence(args []string, stdout io.Writer, stderr io.Writer) int {
@@ -255,18 +310,18 @@ func handleReleaseReport(args []string, stdout io.Writer, stderr io.Writer) int 
 }
 
 type releaseReport struct {
-	SchemaVersion string            `json:"schema_version"`
-	Version       string            `json:"version"`
-	Commit        string            `json:"commit,omitempty"`
-	GoVersion     string            `json:"go_version,omitempty"`
-	GeneratedAt   string            `json:"generated_at"`
-	Artifacts     []release.Artifact `json:"artifacts"`
-	Conformance   map[string]string `json:"conformance"`
-	Doctor        string            `json:"doctor,omitempty"`
-	ContextSync   string            `json:"context_sync,omitempty"`
-	PlatformMatrix string           `json:"platform_matrix,omitempty"`
-	SBOM          string            `json:"sbom,omitempty"`
-	Provenance    string            `json:"provenance,omitempty"`
+	SchemaVersion  string             `json:"schema_version"`
+	Version        string             `json:"version"`
+	Commit         string             `json:"commit,omitempty"`
+	GoVersion      string             `json:"go_version,omitempty"`
+	GeneratedAt    string             `json:"generated_at"`
+	Artifacts      []release.Artifact `json:"artifacts"`
+	Conformance    map[string]string  `json:"conformance"`
+	Doctor         string             `json:"doctor,omitempty"`
+	ContextSync    string             `json:"context_sync,omitempty"`
+	PlatformMatrix string             `json:"platform_matrix,omitempty"`
+	SBOM           string             `json:"sbom,omitempty"`
+	Provenance     string             `json:"provenance,omitempty"`
 }
 
 func buildReleaseReport(ev *release.Evidence) releaseReport {

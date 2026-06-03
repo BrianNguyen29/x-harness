@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/BrianNguyen29/x-harness/internal/classify"
@@ -14,12 +15,14 @@ import (
 
 func handleEvidence(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "evidence requires a subcommand: validate, index, classify")
+		fmt.Fprintln(stderr, "evidence requires a subcommand: run, validate, index, classify")
 		return ExitUsage
 	}
 
 	subcommand := args[0]
 	switch subcommand {
+	case "run":
+		return handleEvidenceRun(args[1:], stdout, stderr)
 	case "validate":
 		return handleEvidenceValidate(args[1:], stdout, stderr)
 	case "index":
@@ -28,9 +31,119 @@ func handleEvidence(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleEvidenceClassify(args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "unknown evidence subcommand: %s\n", subcommand)
-		fmt.Fprintln(stderr, "usage: x-harness evidence validate --index <path> [--json]")
+		fmt.Fprintln(stderr, "usage: x-harness evidence <run|validate|index|classify> [options]")
 		return ExitUsage
 	}
+}
+
+func handleEvidenceRun(args []string, stdout io.Writer, stderr io.Writer) int {
+	jsonMode := false
+	outDir := ""
+	outPath := ""
+	maxCapture := 0
+
+	// Walk options until we hit "--" or end of args.
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--json":
+			jsonMode = true
+		case "--out":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --out requires a value")
+				return ExitUsage
+			}
+			outPath = args[i+1]
+			i++
+		case "--out-dir":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --out-dir requires a value")
+				return ExitUsage
+			}
+			outDir = args[i+1]
+			i++
+		case "--max-capture":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --max-capture requires a value")
+				return ExitUsage
+			}
+			n, err := strconv.Atoi(args[i+1])
+			if err != nil || n < 0 {
+				fmt.Fprintln(stderr, "error: --max-capture must be a non-negative integer")
+				return ExitUsage
+			}
+			maxCapture = n
+			i++
+		case "--":
+			// Marker that the rest of args is the command + arguments.
+			cmdArgs := args[i+1:]
+			return runEvidenceCommand(cmdArgs, outDir, outPath, maxCapture, jsonMode, stdout, stderr)
+		case "-h", "--help":
+			fmt.Fprintln(stderr, "usage: x-harness evidence run [--out <path>] [--out-dir <dir>] [--max-capture <bytes>] [--json] -- <command> [args...]")
+			return ExitUsage
+		default:
+			if strings.HasPrefix(args[i], "-") {
+				fmt.Fprintf(stderr, "unknown flag: %s\n", args[i])
+				return ExitUsage
+			}
+			fmt.Fprintf(stderr, "unexpected argument: %s\n", args[i])
+			return ExitUsage
+		}
+	}
+
+	fmt.Fprintln(stderr, "error: evidence run requires a command after `--`")
+	fmt.Fprintln(stderr, "usage: x-harness evidence run [--out <path>] [--out-dir <dir>] [--max-capture <bytes>] [--json] -- <command> [args...]")
+	return ExitUsage
+}
+
+// runEvidenceCommand is the inner step that takes a pre-parsed argv and
+// executes the command. Split out so handleEvidenceRun keeps the parser
+// loop flat.
+func runEvidenceCommand(cmdArgs []string, outDir, outPath string, maxCapture int, jsonMode bool, stdout io.Writer, stderr io.Writer) int {
+	if len(cmdArgs) == 0 {
+		fmt.Fprintln(stderr, "error: evidence run requires a command after `--`")
+		fmt.Fprintln(stderr, "usage: x-harness evidence run -- <command> [args...]")
+		return ExitUsage
+	}
+
+	result, err := evidence.RunCommand(evidence.CommandRunOptions{
+		Command:         cmdArgs[0],
+		Args:            cmdArgs[1:],
+		MaxCaptureBytes: maxCapture,
+	}, outDir, outPath)
+	if err != nil {
+		fmt.Fprintf(stderr, "error: %v\n", err)
+		return ExitError
+	}
+
+	if jsonMode {
+		_ = WriteJSON(stdout, result)
+	} else {
+		WriteLine(stdout, "ok: %t", result.OK)
+		WriteLine(stdout, "evidence_id: %s", result.Record.EvidenceID)
+		if len(result.Record.Args) > 0 {
+			WriteLine(stdout, "command: %s %s", result.Record.Command, strings.Join(result.Record.Args, " "))
+		} else {
+			WriteLine(stdout, "command: %s", result.Record.Command)
+		}
+		WriteLine(stdout, "exit_code: %d", result.Record.ExitCode)
+		WriteLine(stdout, "duration_millis: %d", result.Record.DurationMillis)
+		WriteLine(stdout, "stdout_bytes: %d (sha256=%s)", result.Record.StdoutBytes, result.Record.StdoutSHA256)
+		WriteLine(stdout, "stderr_bytes: %d (sha256=%s)", result.Record.StderrBytes, result.Record.StderrSHA256)
+		if result.Record.Git != nil {
+			WriteLine(stdout, "git: commit=%s branch=%s dirty=%t", result.Record.Git.Commit, result.Record.Git.Branch, result.Record.Git.Dirty)
+		}
+		if result.OutPath != "" {
+			WriteLine(stdout, "out: %s", result.OutPath)
+		}
+		for _, e := range result.Errors {
+			WriteLine(stdout, "error: %s", e)
+		}
+	}
+
+	if !result.OK {
+		return ExitError
+	}
+	return ExitOK
 }
 
 func handleEvidenceValidate(args []string, stdout io.Writer, stderr io.Writer) int {

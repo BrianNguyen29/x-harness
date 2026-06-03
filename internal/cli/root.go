@@ -17,10 +17,10 @@ func SetVersion(v string) {
 type Maturity string
 
 const (
-	MaturityStable      Maturity = "stable"
-	MaturityBeta        Maturity = "beta"
+	MaturityStable       Maturity = "stable"
+	MaturityBeta         Maturity = "beta"
 	MaturityExperimental Maturity = "experimental"
-	MaturitySkeletal    Maturity = "skeletal"
+	MaturitySkeletal     Maturity = "skeletal"
 )
 
 type CommandInfo struct {
@@ -77,6 +77,8 @@ var commands = []CommandInfo{
 	{Name: "adapters", Description: "Inspect adapter matrix", Maturity: MaturityBeta},
 	{Name: "scan", Description: "Run static security scan on adapter or skill files", Maturity: MaturityBeta},
 	{Name: "contract", Description: "Run contract oracle checks", Maturity: MaturityExperimental},
+	{Name: "policy", Description: "Show policy enforcement matrix and rule explainers", Maturity: MaturityBeta},
+	{Name: "explain", Description: "Explain a completion card's admission/withheld state", Maturity: MaturityBeta},
 }
 
 func isBeginnerCommand(name string) bool {
@@ -189,6 +191,10 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleScan(args[1:], stdout, stderr)
 	case "contract":
 		return handleContract(args[1:], stdout, stderr)
+	case "policy":
+		return handlePolicy(args[1:], stdout, stderr)
+	case "explain":
+		return handleExplain(args[1:], stdout, stderr)
 	case "profile":
 		return handleProfile(args[1:], stdout, stderr)
 	case "repair":

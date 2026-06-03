@@ -242,6 +242,17 @@ describe("release packaging", () => {
     ).toBe(true);
   });
 
+  // This is an intentional integration test that shells out to
+  // `npm pack --dry-run --json --ignore-scripts`. The pack dry-run reads
+  // every file the package would publish (schemas, policies, templates,
+  // docs, components, adapters, examples, tools, packaging, skills, plus
+  // the dist/ build output) and resolves the file list end-to-end, so it
+  // can legitimately exceed the vitest default 15s timeout on slower
+  // CI runners or in projects with large synced asset directories. We
+  // bump the per-test timeout to 60s to match the pattern used by other
+  // integration tests in this repo (see frozen.test.ts); the test still
+  // performs the real `npm pack` end-to-end check, so no asset
+  // manifest coverage is lost.
   it("npm pack dry run includes required runtime assets", async () => {
     await syncPackageAssets();
     const npmBin = process.platform === "win32" ? "npm.cmd" : "npm";
@@ -545,7 +556,7 @@ describe("release packaging", () => {
         true
       );
     }
-  });
+  }, 60000);
 
   it("npm bin points to compatibility wrapper", () => {
     const packageJson = JSON.parse(

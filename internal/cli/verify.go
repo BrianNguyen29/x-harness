@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -138,17 +139,128 @@ func stageFromFailureStage(failureStage string) string {
 
 // VerifyResult is the minimal output of the verify command.
 type VerifyResult struct {
-	OK                bool                  `json:"ok"`
-	TaskID            string                `json:"task_id"`
-	Tier              string                `json:"tier"`
-	AdmissionOutcome  string                `json:"admission_outcome"`
-	AcceptanceStatus  string                `json:"acceptance_status"`
-	SchemaError       string                `json:"schema_error,omitempty"`
-	AdmissionErrors   []string              `json:"admission_errors,omitempty"`
-	AdmissionNotes    []string              `json:"admission_notes,omitempty"`
-	ProductIntentStatus string              `json:"product_intent_status,omitempty"`
-	MutationGuard     *mutationguard.Result `json:"mutation_guard,omitempty"`
-	WithheldReason    *withheldReason       `json:"withheld_reason,omitempty"`
+	OK                  bool                  `json:"ok"`
+	TaskID              string                `json:"task_id"`
+	Tier                string                `json:"tier"`
+	Profile             string                `json:"profile,omitempty"`
+	AdmissionOutcome    string                `json:"admission_outcome"`
+	AcceptanceStatus    string                `json:"acceptance_status"`
+	SchemaError         string                `json:"schema_error,omitempty"`
+	AdmissionErrors     []string              `json:"admission_errors,omitempty"`
+	AdmissionNotes      []string              `json:"admission_notes,omitempty"`
+	ProductIntentStatus string                `json:"product_intent_status,omitempty"`
+	MutationGuard       *mutationguard.Result `json:"mutation_guard,omitempty"`
+	WithheldReason      *withheldReason       `json:"withheld_reason,omitempty"`
+}
+
+// VerifyProfile is a named bundle of verify flags. The map is intentionally
+// hardcoded in V1 (no dynamic policy file) so reviewers can trace each entry
+// to a real flag in handleVerify. The list of names must match
+// schemas/policy-matrix.schema.json profile enums.
+type VerifyProfile struct {
+	Name            string
+	Description     string
+	MutationGuard   bool
+	Strict          bool
+	ContextFloor    bool
+	ContractOracles bool
+	WorktreeAware   bool
+	StrictWithheld  bool
+}
+
+// verifyProfileNames returns the sorted list of profile names for usage
+// messages and policy matrix reference.
+func verifyProfileNames() []string {
+	names := make([]string, 0, len(verifyProfiles))
+	for name := range verifyProfiles {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+var verifyProfiles = map[string]VerifyProfile{
+	"light-local": {
+		Name:            "light-local",
+		Description:     "Local development: minimal checks, no mutation guard.",
+		MutationGuard:   false,
+		Strict:          false,
+		ContextFloor:    false,
+		ContractOracles: false,
+		WorktreeAware:   false,
+	},
+	"ci-standard": {
+		Name:            "ci-standard",
+		Description:     "CI standard: mutation guard + context floor, advisory contract oracles.",
+		MutationGuard:   true,
+		Strict:          false,
+		ContextFloor:    true,
+		ContractOracles: false,
+		WorktreeAware:   true,
+	},
+	"ci-strict": {
+		Name:            "ci-strict",
+		Description:     "CI strict: mutation guard, context floor, contract oracles, strict withheld reason schema.",
+		MutationGuard:   true,
+		Strict:          true,
+		ContextFloor:    true,
+		ContractOracles: true,
+		WorktreeAware:   true,
+		StrictWithheld:  true,
+	},
+	"governed-deep": {
+		Name:            "governed-deep",
+		Description:     "Governed deep: all ci-strict checks plus strict withheld reason schema.",
+		MutationGuard:   true,
+		Strict:          true,
+		ContextFloor:    true,
+		ContractOracles: true,
+		WorktreeAware:   true,
+		StrictWithheld:  true,
+	},
+}
+
+// resolveVerifyProfile is retained as a documentation reference for the
+// flag-override semantics; the production code path inlines the same logic
+// to keep the explicit-flag override decision obvious to reviewers.
+//
+//nolint:unused
+func resolveVerifyProfile(args []string, useMutationGuard *bool, strict *bool, contextFloor *bool, contractOracles *bool, worktreeAware *bool, strictWithheld *bool) string {
+	for i := 0; i < len(args); i++ {
+		if args[i] != "--profile" {
+			continue
+		}
+		if i+1 >= len(args) {
+			return ""
+		}
+		name := args[i+1]
+		profile, ok := verifyProfiles[name]
+		if !ok {
+			return ""
+		}
+		// Profile is only applied when the corresponding flag was not
+		// explicitly set by the caller. Explicit flags win over profile.
+		if !*useMutationGuard {
+			*useMutationGuard = profile.MutationGuard
+		}
+		if !*strict {
+			*strict = profile.Strict
+		}
+		if !*contextFloor {
+			*contextFloor = profile.ContextFloor
+		}
+		if !*contractOracles {
+			*contractOracles = profile.ContractOracles
+		}
+		if !*worktreeAware {
+			*worktreeAware = profile.WorktreeAware
+		}
+		if !*strictWithheld {
+			*strictWithheld = profile.StrictWithheld
+		}
+		return name
+	}
+	return ""
 }
 
 func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
@@ -166,6 +278,16 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	contextFloor := false
 	contractOracles := false
 	contractOraclesPolicy := ""
+	profileName := ""
+
+	// Track which flags the caller set explicitly so the profile layer
+	// does not silently override them.
+	explicitMutationGuard := false
+	explicitStrict := false
+	explicitContextFloor := false
+	explicitContractOracles := false
+	explicitWorktreeAware := false
+	explicitStrictWithheld := false
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -184,17 +306,28 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 				tier = args[i+1]
 				i++
 			}
+		case "--profile":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --profile requires a value")
+				return ExitUsage
+			}
+			profileName = args[i+1]
+			i++
 		case "--json":
 			jsonMode = true
 		case "--verbose":
 			verbose = true
 		case "--mutation-guard":
 			useMutationGuard = true
+			explicitMutationGuard = true
 		case "--strict":
 			strict = true
 			useMutationGuard = true
+			explicitStrict = true
+			explicitMutationGuard = true
 		case "--strict-withheld-reason":
 			strictWithheldReason = true
+			explicitStrictWithheld = true
 		case "--trace":
 			trace = true
 		case "--trace-dir":
@@ -204,10 +337,13 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			}
 		case "--worktree-aware":
 			worktreeAware = true
+			explicitWorktreeAware = true
 		case "--context-floor":
 			contextFloor = true
+			explicitContextFloor = true
 		case "--contract-oracles":
 			contractOracles = true
+			explicitContractOracles = true
 		case "--contract-oracles-policy":
 			if i+1 < len(args) {
 				contractOraclesPolicy = args[i+1]
@@ -216,8 +352,34 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 	}
 
+	if profileName != "" {
+		profile, ok := verifyProfiles[profileName]
+		if !ok {
+			fmt.Fprintf(stderr, "error: unknown --profile %q. Available: %s\n", profileName, strings.Join(verifyProfileNames(), ", "))
+			return ExitUsage
+		}
+		if !explicitMutationGuard {
+			useMutationGuard = profile.MutationGuard
+		}
+		if !explicitStrict {
+			strict = profile.Strict
+		}
+		if !explicitContextFloor {
+			contextFloor = profile.ContextFloor
+		}
+		if !explicitContractOracles {
+			contractOracles = profile.ContractOracles
+		}
+		if !explicitWorktreeAware {
+			worktreeAware = profile.WorktreeAware
+		}
+		if !explicitStrictWithheld {
+			strictWithheldReason = profile.StrictWithheld
+		}
+	}
+
 	if (cardPath == "" && subagentPath == "") || (cardPath != "" && subagentPath != "") {
-		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--strict-withheld-reason] [--trace] [--trace-dir <dir>] [--worktree-aware] [--context-floor] [--contract-oracles] [--contract-oracles-policy <path>]")
+		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--profile <light-local|ci-standard|ci-strict|governed-deep>] [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--strict-withheld-reason] [--trace] [--trace-dir <dir>] [--worktree-aware] [--context-floor] [--contract-oracles] [--contract-oracles-policy <path>]")
 		return ExitUsage
 	}
 
@@ -313,6 +475,12 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			schemaErr = v.Validate(doc)
 		}
 		result = buildVerifyResult(doc, schemaErr, nil, strict, contextFloor, cardPath, root)
+	}
+
+	// Stamp the active profile (if any) on the result. Field is omitted
+	// when no --profile flag was supplied.
+	if profileName != "" {
+		result.Profile = profileName
 	}
 
 	// Contract Oracle check (opt-in via --contract-oracles flag)
@@ -616,6 +784,9 @@ func renderVerifyResult(result VerifyResult, jsonMode, verbose, strictWithheldRe
 	}
 	WriteLine(stdout, "task_id: %s", result.TaskID)
 	WriteLine(stdout, "tier: %s", result.Tier)
+	if result.Profile != "" {
+		WriteLine(stdout, "profile: %s", result.Profile)
+	}
 	WriteLine(stdout, "outcome: %s", result.AdmissionOutcome)
 	WriteLine(stdout, "acceptance_status: %s", result.AcceptanceStatus)
 	if result.ProductIntentStatus != "" {

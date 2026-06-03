@@ -89,8 +89,22 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: go build -o ./x-harness ./cmd/x-harness
+      - name: Go-native policy matrix
+        run: ./x-harness policy matrix --json
       - name: Go-native strict verify gate
         run: ./x-harness verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
+      - name: Go-native verify profile gate (ci-standard)
+        run: ./x-harness verify --profile ci-standard --card examples/ci/strict-verify/completion-card.yaml --json
+      - name: Go-native policy explain gate
+        run: ./x-harness policy explain admission.evidence_floor --json
+      - name: Go-native explain card gate
+        run: ./x-harness explain --card examples/ci/strict-verify/completion-card.yaml --json
+      - name: Go-native evidence run gate
+        run: ./x-harness evidence run -- echo phase1-gate
+      - name: Go-native docs drift gate
+        run: ./x-harness doctor --docs-drift --root . --json
+      - name: Go-native release verify-docs gate
+        run: ./x-harness release verify-docs --root .
       - name: Go-native workspace doctor
         run: ./x-harness doctor --root . --json
       - name: Go-native golden examples

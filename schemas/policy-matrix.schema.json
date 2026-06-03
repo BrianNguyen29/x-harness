@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "policy-matrix",
+  "description": "Schema for xh policy matrix --json output. The matrix enumerates every rule the x-harness core tracks and labels it as runtime_blocking, advisory, off_by_default, or experimental. This is the canonical input for downstream docs and CI checks (e.g. fail when a runtime_blocking rule has no test fixture).",
+  "type": "object",
+  "required": ["version", "rules"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "enabled_by_default", "source"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$",
+            "description": "Stable dotted rule identifier (e.g. admission.evidence_floor)."
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "policy_file": {
+            "type": "string",
+            "minLength": 1
+          },
+          "runtime_module": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "runtime_blocking",
+              "advisory",
+              "off_by_default",
+              "experimental"
+            ]
+          },
+          "enabled_by_default": {
+            "type": "boolean"
+          },
+          "admission_authority": {
+            "type": "boolean"
+          },
+          "profiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "light-local",
+                "ci-standard",
+                "ci-strict",
+                "governed-deep"
+              ]
+            }
+          },
+          "enabled_by_flags": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "fixtures": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "source": {
+            "enum": ["curated", "policy"]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
