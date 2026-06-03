@@ -503,3 +503,379 @@ func TestInitMinimalEndToEndCheck(t *testing.T) {
 	}
 	_ = code // non-zero is acceptable when the scaffolded card lacks required fields.
 }
+
+// ---------------------------------------------------------------------------
+// Wizard tests (P2-S1)
+//
+// The wizard is a thin, deterministic wrapper around the existing init
+// plan/copy logic. It must:
+//   - never block on stdin (TTY-free, safe in CI),
+//   - never change behavior of plain `xh init` / `xh init --minimal` /
+//     `xh init --profile <name>` (regression tested separately),
+//   - print a 3-step plan on stdout for both preview and apply paths,
+//   - optionally scaffold a first completion card via the existing
+//     `xh add completion-card` helper when --wizard-with-card is set
+//     (and skip that step on dry-run).
+// ---------------------------------------------------------------------------
+
+// TestInitWizardDefaultApply exercises the default wizard path:
+// no --wizard-profile, no --wizard-dry-run, no --wizard-with-card.
+// It must apply the minimal profile and print the wizard summary.
+func TestInitWizardDefaultApply(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	code := Run([]string{"init", tmpDir, "--wizard"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+
+	// Wizard summary lines must appear on stdout.
+	for _, marker := range []string{
+		"# xh init --wizard complete",
+		"profile: minimal",
+		"target:",
+	} {
+		if !strings.Contains(out, marker) {
+			t.Fatalf("expected wizard summary to contain %q, got:\n%s", marker, out)
+		}
+	}
+
+	// The underlying init must still complete normally.
+	if !strings.Contains(out, "init (minimal) complete") {
+		t.Fatalf("expected init (minimal) complete in output, got:\n%s", out)
+	}
+
+	// And the minimal asset set must be present on disk.
+	if _, err := os.Stat(filepath.Join(tmpDir, "AGENTS.md")); err != nil {
+		t.Fatalf("expected AGENTS.md to exist after wizard apply: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "schemas", "completion-card.schema.json")); err != nil {
+		t.Fatalf("expected schemas/completion-card.schema.json to exist after wizard apply: %v", err)
+	}
+}
+
+// TestInitWizardDryRunNoMutation ensures --wizard-dry-run (and the
+// plain --dry-run alias) print the 3-step plan and do not touch the
+// filesystem, even when --wizard-with-card is requested (card
+// scaffold is intentionally apply-only).
+func TestInitWizardDryRunNoMutation(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	code := Run([]string{
+		"init", tmpDir,
+		"--wizard", "--wizard-dry-run", "--wizard-with-card", "T-WIZ-1",
+	}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+
+	for _, marker := range []string{
+		"# xh init --wizard",
+		"step 1/3: profile",
+		"step 2/3: planned actions",
+		"step 3/3: apply decision",
+		"-> minimal",
+		"preview only",
+		"task_id=T-WIZ-1",
+		"dry run",
+	} {
+		if !strings.Contains(out, marker) {
+			t.Fatalf("expected wizard dry-run output to contain %q, got:\n%s", marker, out)
+		}
+	}
+
+	// No files may be written.
+	if _, err := os.Stat(filepath.Join(tmpDir, "AGENTS.md")); err == nil {
+		t.Fatal("expected AGENTS.md to NOT exist after wizard dry-run")
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "completion-card.yaml")); err == nil {
+		t.Fatal("expected completion-card.yaml to NOT exist after wizard dry-run")
+	}
+
+	// And the wizard apply summary must not appear in the dry-run path.
+	if strings.Contains(out, "# xh init --wizard complete") {
+		t.Fatalf("wizard apply summary should not appear in dry-run output:\n%s", out)
+	}
+}
+
+// TestInitWizardDryRunAlias ensures the existing --dry-run flag
+// works as a wizard dry-run alias: --wizard + --dry-run must be
+// equivalent to --wizard + --wizard-dry-run.
+func TestInitWizardDryRunAlias(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	code := Run([]string{"init", tmpDir, "--wizard", "--dry-run"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "# xh init --wizard") {
+		t.Fatalf("expected wizard banner via --dry-run alias, got:\n%s", out)
+	}
+	if !strings.Contains(out, "preview only") {
+		t.Fatalf("expected preview-only marker via --dry-run alias, got:\n%s", out)
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "AGENTS.md")); err == nil {
+		t.Fatal("expected AGENTS.md to NOT exist after wizard + --dry-run")
+	}
+}
+
+// TestInitWizardProfileStandardApply ensures --wizard-profile routes
+// through the existing profile->mode conversion and that the
+// "standard" profile is honored by the underlying init logic.
+func TestInitWizardProfileStandardApply(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	code := Run([]string{
+		"init", tmpDir, "--wizard", "--wizard-profile", "standard",
+	}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "profile: standard") {
+		t.Fatalf("expected 'profile: standard' in wizard output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "init (standard) complete") {
+		t.Fatalf("expected init (standard) complete in output, got:\n%s", out)
+	}
+	for _, dir := range []string{"schemas", "policies", "01-solo-agent", "02-assisted-agent"} {
+		if _, err := os.Stat(filepath.Join(tmpDir, dir)); err != nil {
+			t.Fatalf("expected %s to exist after wizard standard apply: %v", dir, err)
+		}
+	}
+}
+
+// TestInitWizardProfileDeepApply ensures --wizard-profile deep maps
+// to the "full" mode internally while displaying as "deep" in both
+// the wizard summary and the init completion line.
+func TestInitWizardProfileDeepApply(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	code := Run([]string{
+		"init", tmpDir, "--wizard", "--wizard-profile", "deep",
+	}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "profile: deep") {
+		t.Fatalf("expected 'profile: deep' in wizard output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "init (deep) complete") {
+		t.Fatalf("expected init (deep) complete in output, got:\n%s", out)
+	}
+}
+
+// TestInitWizardInvalidProfile guards the wizard-specific profile
+// validation. An unknown --wizard-profile must produce an ExitUsage
+// (matching the existing --profile validation contract).
+func TestInitWizardInvalidProfile(t *testing.T) {
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{
+		"init", t.TempDir(), "--wizard", "--wizard-profile", "bogus",
+	}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "invalid profile") {
+		t.Fatalf("expected 'invalid profile' error, got: %q", stderr.String())
+	}
+}
+
+// TestInitWizardConflictWithProfile ensures --wizard and --profile
+// cannot be combined: they describe the same concern via two
+// different flag families and mixing them is a usage error.
+func TestInitWizardConflictWithProfile(t *testing.T) {
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{
+		"init", t.TempDir(), "--wizard", "--profile", "minimal",
+	}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "cannot use --wizard with --profile") {
+		t.Fatalf("expected wizard/profile conflict error, got: %q", stderr.String())
+	}
+}
+
+// TestInitWizardConflictWithLegacyFlags ensures --wizard and the
+// legacy --minimal/--standard/--full flags cannot be combined.
+func TestInitWizardConflictWithLegacyFlags(t *testing.T) {
+	for _, legacy := range []string{"--minimal", "--standard", "--full"} {
+		t.Run(legacy, func(t *testing.T) {
+			var stdout strings.Builder
+			var stderr strings.Builder
+			code := Run([]string{
+				"init", t.TempDir(), "--wizard", legacy,
+			}, &stdout, &stderr)
+			if code != ExitUsage {
+				t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+			}
+			if !strings.Contains(stderr.String(), "cannot use --wizard with --minimal, --standard, or --full") {
+				t.Fatalf("expected wizard/legacy conflict error, got: %q", stderr.String())
+			}
+		})
+	}
+}
+
+// TestInitWizardMissingProfileValue ensures --wizard-profile without
+// a value produces a usage error.
+func TestInitWizardMissingProfileValue(t *testing.T) {
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{
+		"init", t.TempDir(), "--wizard", "--wizard-profile",
+	}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "missing value for --wizard-profile") {
+		t.Fatalf("expected missing-value error, got: %q", stderr.String())
+	}
+}
+
+// TestInitWizardWithCardScaffoldsCard ensures --wizard-with-card
+// causes a completion card to be scaffolded at the expected path
+// inside the init target after a successful wizard apply.
+func TestInitWizardWithCardScaffoldsCard(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	code := Run([]string{
+		"init", tmpDir,
+		"--wizard", "--wizard-with-card", "T-WIZ-CARD-1",
+	}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	cardPath := filepath.Join(tmpDir, "completion-card.yaml")
+	if _, err := os.Stat(cardPath); err != nil {
+		t.Fatalf("expected completion card at %s, got: %v", cardPath, err)
+	}
+
+	// Card file must contain the task_id passed to the wizard and
+	// the auto-generated scaffold fields produced by handleAdd.
+	data, err := os.ReadFile(cardPath)
+	if err != nil {
+		t.Fatalf("failed to read card: %v", err)
+	}
+	body := string(data)
+	if !strings.Contains(body, "task_id: T-WIZ-CARD-1") {
+		t.Fatalf("expected card to contain task_id T-WIZ-CARD-1, got:\n%s", body)
+	}
+	if !strings.Contains(body, "tier: light") {
+		t.Fatalf("expected card to contain tier: light, got:\n%s", body)
+	}
+	if !strings.Contains(body, "id:") || !strings.Contains(body, "created_at:") {
+		t.Fatalf("expected card to contain id and created_at, got:\n%s", body)
+	}
+
+	// Wizard summary must mention the scaffold.
+	if !strings.Contains(stdout.String(), "scaffold: completion-card") {
+		t.Fatalf("expected wizard summary to mention scaffold, got:\n%s", stdout.String())
+	}
+}
+
+// TestInitNoWizardRegression is a defensive guard: the wizard flag
+// family must not appear in plain `xh init` output and must not
+// change the default init (no --wizard) behavior. If this test ever
+// fires, someone has coupled wizard logic into the default path.
+func TestInitNoWizardRegression(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	code := Run([]string{"init", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+
+	// No wizard markers in non-wizard init output.
+	for _, marker := range []string{
+		"# xh init --wizard",
+		"# xh init --wizard complete",
+		"step 1/3: profile",
+		"step 2/3: planned actions",
+		"step 3/3: apply decision",
+	} {
+		if strings.Contains(out, marker) {
+			t.Fatalf("plain `xh init` must not emit %q, got:\n%s", marker, out)
+		}
+	}
+
+	// The pre-existing minimal complete message must still be present.
+	if !strings.Contains(out, "init (minimal) complete") {
+		t.Fatalf("expected 'init (minimal) complete' in plain init output, got:\n%s", out)
+	}
+}
+
+// TestInitWizardUnknownWizardFlag ensures unknown --wizard-* flags
+// are rejected by the existing "unknown flag" branch (rather than
+// silently ignored), so wizard flag typos surface in tests.
+func TestInitWizardUnknownWizardFlag(t *testing.T) {
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{
+		"init", t.TempDir(), "--wizard", "--wizard-bogus",
+	}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "unknown flag") {
+		t.Fatalf("expected unknown flag error, got: %q", stderr.String())
+	}
+}
+
+// TestInitWizardIdempotent ensures re-running the wizard against
+// an already-initialized target is a no-op (delegated to the
+// existing idempotency check) and does not scaffold a second card.
+func TestInitWizardIdempotent(t *testing.T) {
+	tmpDir := t.TempDir()
+	var stdout strings.Builder
+	var stderr strings.Builder
+
+	// First run: apply with card scaffold.
+	code := Run([]string{
+		"init", tmpDir, "--wizard", "--wizard-with-card", "T-WIZ-IDEMP",
+	}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("first wizard run failed: code=%d stderr=%s", code, stderr.String())
+	}
+
+	// Second run: must report "already up-to-date" and not write a
+	// second card. The wizard summary must NOT print "complete"
+	// because the underlying init short-circuited.
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{
+		"init", tmpDir, "--wizard", "--wizard-with-card", "T-WIZ-IDEMP-2",
+	}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("second wizard run failed: code=%d stderr=%s", code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "already up-to-date") {
+		t.Fatalf("expected idempotent message on second wizard run, got:\n%s", out)
+	}
+	if strings.Contains(out, "scaffold: completion-card") {
+		t.Fatalf("wizard must not scaffold a second card on idempotent run, got:\n%s", out)
+	}
+}

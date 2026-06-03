@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/BrianNguyen29/x-harness/internal/doctor"
 	"github.com/BrianNguyen29/x-harness/internal/release"
 )
 
@@ -461,5 +462,83 @@ func TestReleaseUnknownSubcommand(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "unknown release subcommand") {
 		t.Fatalf("expected unknown subcommand error, got: %s", stderr.String())
+	}
+}
+
+func TestReleaseVerifyDocsHealthyJSON(t *testing.T) {
+	tmpDir := writeHealthyDocsFixture(t)
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"release", "verify-docs", "--root", tmpDir, "--format", "json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var report doctor.DocsDriftReport
+	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if !report.Healthy {
+		t.Fatalf("expected healthy report, got %+v", report)
+	}
+	if report.Root != tmpDir {
+		t.Fatalf("expected root=%s, got %s", tmpDir, report.Root)
+	}
+}
+
+func TestReleaseVerifyDocsUnhealthyJSON(t *testing.T) {
+	tmpDir := writeUnhealthyDocsFixture(t)
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"release", "verify-docs", "--root", tmpDir, "--format", "json"}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitError, code, stderr.String())
+	}
+
+	var report doctor.DocsDriftReport
+	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if report.Healthy {
+		t.Fatalf("expected unhealthy report, got %+v", report)
+	}
+	found := false
+	for _, tag := range report.DriftTags {
+		if tag == "workflow_missing_verify" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected drift_tag=workflow_missing_verify, got %+v", report.DriftTags)
+	}
+}
+
+func TestReleaseVerifyDocsTextFormat(t *testing.T) {
+	tmpDir := writeHealthyDocsFixture(t)
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"release", "verify-docs", "--root", tmpDir, "--format", "text"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	out := stdout.String()
+	if strings.HasPrefix(strings.TrimSpace(out), "{") {
+		t.Fatalf("expected text output, got JSON: %s", out)
+	}
+	if !strings.Contains(out, "healthy: true") {
+		t.Fatalf("expected text output to contain 'healthy: true', got: %s", out)
+	}
+}
+
+func TestReleaseVerifyDocsUnknownFlag(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"release", "verify-docs", "--bogus"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d. stdout: %s\nstderr: %s", ExitUsage, code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "unknown flag") {
+		t.Fatalf("expected unknown flag error, got: %s", stderr.String())
 	}
 }

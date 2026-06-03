@@ -23,6 +23,17 @@ func handleInit(args []string, stdout io.Writer, stderr io.Writer) int {
 	preview := false
 	apply := false
 
+	// Wizard-only flags (P2-S1). The wizard is a thin, deterministic
+	// wrapper around the existing init plan/copy logic: it prints a
+	// 3-step plan (profile, actions, apply decision), reuses
+	// buildInitPlan / copyRecursive, and optionally scaffolds a
+	// first completion card via the existing `xh add completion-card`
+	// helper. It never blocks on stdin so it is safe to run in CI.
+	wizard := false
+	wizardProfile := ""
+	wizardDryRun := false
+	wizardWithCard := ""
+
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--minimal":
@@ -68,6 +79,26 @@ func handleInit(args []string, stdout io.Writer, stderr io.Writer) int {
 			}
 			profile = args[i+1]
 			i++
+		case "--wizard":
+			wizard = true
+		case "--wizard-profile":
+			if i+1 >= len(args) {
+				WriteLine(stderr, "usage: init [target] [options]")
+				WriteLine(stderr, "missing value for --wizard-profile")
+				return ExitUsage
+			}
+			wizardProfile = args[i+1]
+			i++
+		case "--wizard-dry-run":
+			wizardDryRun = true
+		case "--wizard-with-card":
+			if i+1 >= len(args) {
+				WriteLine(stderr, "usage: init [target] [options]")
+				WriteLine(stderr, "missing value for --wizard-with-card")
+				return ExitUsage
+			}
+			wizardWithCard = args[i+1]
+			i++
 		default:
 			if strings.HasPrefix(args[i], "-") {
 				WriteLine(stderr, "unknown flag: %s", args[i])
@@ -79,6 +110,32 @@ func handleInit(args []string, stdout io.Writer, stderr io.Writer) int {
 				WriteLine(stderr, "usage: init [target] [options]")
 				return ExitUsage
 			}
+		}
+	}
+
+	// Wizard mode setup. The wizard is intentionally restricted to
+	// the `--wizard-*` flag family so that it can never accidentally
+	// toggle legacy `--minimal/--standard/--full` or the explicit
+	// `--profile` path. The existing `if profile != ""` block below
+	// validates the resolved profile name and converts it to mode.
+	if wizard {
+		if legacyModeSet {
+			WriteLine(stderr, "usage: init [target] [options]")
+			WriteLine(stderr, "cannot use --wizard with --minimal, --standard, or --full")
+			return ExitUsage
+		}
+		if profile != "" {
+			WriteLine(stderr, "usage: init [target] [options]")
+			WriteLine(stderr, "cannot use --wizard with --profile; use --wizard-profile")
+			return ExitUsage
+		}
+		if wizardProfile != "" {
+			profile = wizardProfile
+		} else {
+			profile = "minimal"
+		}
+		if wizardDryRun {
+			dryRun = true
 		}
 	}
 
@@ -124,6 +181,9 @@ func handleInit(args []string, stdout io.Writer, stderr io.Writer) int {
 	plan := buildInitPlan(mode, assetRoot, targetDir, adapters, stderr)
 
 	if dryRun {
+		if wizard {
+			printWizardPreview(stdout, displayMode, targetDir, len(plan), wizardWithCard)
+		}
 		WriteLine(stdout, "# x-harness init (%s) - dry run", displayMode)
 		for _, p := range plan {
 			WriteLine(stdout, "would copy: %s -> %s", p.src, p.dest)
@@ -205,6 +265,28 @@ func handleInit(args []string, stdout io.Writer, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "warning: failed to write manifest: %v\n", err)
 	} else {
 		WriteLine(stdout, "manifest: %s", filepath.Join(targetDir, manifestPath))
+	}
+
+	// Wizard apply path: print a clear summary, then optionally
+	// scaffold a first completion card via the existing safe helper.
+	// Card scaffold is intentionally NOT performed on dry-run so the
+	// preview remains a pure read-only inspection.
+	if wizard {
+		WriteLine(stdout, "# xh init --wizard complete")
+		WriteLine(stdout, "  profile: %s", displayMode)
+		WriteLine(stdout, "  target:  %s", targetDir)
+		if wizardWithCard != "" {
+			cardPath := filepath.Join(targetDir, "completion-card.yaml")
+			WriteLine(stdout, "  scaffold: completion-card -> %s", cardPath)
+			addCode := handleAdd([]string{
+				"completion-card",
+				"task_id=" + wizardWithCard + ",tier=light",
+				"--out", cardPath,
+			}, stdout, stderr)
+			if addCode != ExitOK {
+				return addCode
+			}
+		}
 	}
 
 	WriteLine(stdout, "x-harness init (%s) complete: %d assets copied to %s", displayMode, len(copied), targetDir)
@@ -405,4 +487,26 @@ func copyRecursive(src, dest string) error {
 	}
 
 	return os.WriteFile(dest, data, info.Mode())
+}
+
+// printWizardPreview emits the wizard 3-step plan to stdout. It is
+// only called from the dry-run path; the apply path uses inline
+// WriteLine calls so the wizard summary can be interleaved with
+// the existing init copy/manifest output.
+//
+// The format is intentionally plain and grep-friendly so it is
+// testable without depending on terminal width, ANSI codes, or TTY
+// detection.
+func printWizardPreview(stdout io.Writer, displayMode, targetDir string, planCount int, taskID string) {
+	WriteLine(stdout, "# xh init --wizard")
+	WriteLine(stdout, "step 1/3: profile")
+	WriteLine(stdout, "  -> %s", displayMode)
+	WriteLine(stdout, "step 2/3: planned actions")
+	WriteLine(stdout, "  -> %d file(s) would be copied into %s", planCount, targetDir)
+	WriteLine(stdout, "step 3/3: apply decision")
+	if taskID != "" {
+		WriteLine(stdout, "  -> preview only (would scaffold completion-card task_id=%s on apply)", taskID)
+	} else {
+		WriteLine(stdout, "  -> preview only")
+	}
 }
