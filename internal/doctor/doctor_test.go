@@ -266,6 +266,287 @@ entries:
 	}
 }
 
+func TestRunMinimalProfileHealthy(t *testing.T) {
+	tmp := t.TempDir()
+	// Build a minimal-init-equivalent workspace: AGENTS.md (with managed block),
+	// X_HARNESS.md, policies/, templates/, docs/, schemas/ (with at least
+	// completion-card.schema.json for the verify/check flow), and a valid
+	// manifest with matching hashes.
+	agentsContent := "# AGENTS\n<!-- BEGIN X-HARNESS MANAGED CONTEXT -->\n<!-- END X-HARNESS MANAGED CONTEXT -->\n"
+	xharnessContent := "# X-HARNESS\n"
+	policyContent := "{}\n"
+	docContent := "# Doc\n"
+	tplContent := "# Template\n"
+	schemaContent := `{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"test","type":"object"}` + "\n"
+
+	agentsPath := filepath.Join(tmp, "AGENTS.md")
+	xharnessPath := filepath.Join(tmp, "X_HARNESS.md")
+	policyPath := filepath.Join(tmp, "policies", "admission.yaml")
+	docPath := filepath.Join(tmp, "docs", "VERIFY_GATE.md")
+	tplPath := filepath.Join(tmp, "templates", "SUBAGENT_TASK_light.md")
+	schemaPath := filepath.Join(tmp, "schemas", "completion-card.schema.json")
+
+	os.MkdirAll(filepath.Join(tmp, "policies"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "docs"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "templates"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "schemas"), 0755)
+	os.MkdirAll(filepath.Join(tmp, ".x-harness"), 0755)
+	os.WriteFile(agentsPath, []byte(agentsContent), 0644)
+	os.WriteFile(xharnessPath, []byte(xharnessContent), 0644)
+	os.WriteFile(policyPath, []byte(policyContent), 0644)
+	os.WriteFile(docPath, []byte(docContent), 0644)
+	os.WriteFile(tplPath, []byte(tplContent), 0644)
+	os.WriteFile(schemaPath, []byte(schemaContent), 0644)
+
+	manifest := `version: "1"
+profile: minimal
+generated_at: "2026-05-28T00:00:00Z"
+entries:
+  - path: AGENTS.md
+    hash: sha256:` + hashOf(agentsContent) + `
+  - path: X_HARNESS.md
+    hash: sha256:` + hashOf(xharnessContent) + `
+  - path: docs/VERIFY_GATE.md
+    hash: sha256:` + hashOf(docContent) + `
+  - path: policies/admission.yaml
+    hash: sha256:` + hashOf(policyContent) + `
+  - path: templates/SUBAGENT_TASK_light.md
+    hash: sha256:` + hashOf(tplContent) + `
+  - path: schemas/completion-card.schema.json
+    hash: sha256:` + hashOf(schemaContent) + `
+`
+	os.WriteFile(filepath.Join(tmp, ".x-harness", "manifest.yaml"), []byte(manifest), 0644)
+
+	report := Run(tmp)
+	if !report.Healthy {
+		t.Fatalf("expected minimal workspace to be healthy, got unhealthy. Missing: %v", report.Missing)
+	}
+	if report.MissingCount != 0 {
+		t.Fatalf("expected 0 missing for minimal workspace, got %d: %v", report.MissingCount, report.Missing)
+	}
+
+	// Full-only checks should be skipped, not failed.
+	skippedChecks := map[string]bool{
+		"managed_blocks_registry": false,
+		"ci_workflow":             false,
+		"component_registry":      false,
+	}
+	for _, c := range report.Checks {
+		if _, ok := skippedChecks[c.Name]; ok {
+			if c.Status != "skipped" {
+				t.Fatalf("expected %s to be skipped in minimal profile, got %s: %s", c.Name, c.Status, c.Note)
+			}
+			skippedChecks[c.Name] = true
+		}
+	}
+	for name, seen := range skippedChecks {
+		if !seen {
+			t.Fatalf("expected %s check to be present (skipped) in minimal profile", name)
+		}
+	}
+
+	// Core minimal checks should still pass, including schemas_compile now
+	// that minimal init ships the schemas/ directory.
+	passedChecks := map[string]bool{
+		"critical_assets":        false,
+		"policies_parse":         false,
+		"agents_managed_context": false,
+		"installed_profile":      false,
+		"schemas_compile":        false,
+	}
+	for _, c := range report.Checks {
+		if _, ok := passedChecks[c.Name]; ok {
+			if c.Status != "passed" {
+				t.Fatalf("expected %s to pass in minimal profile, got %s: %s", c.Name, c.Status, c.Note)
+			}
+			passedChecks[c.Name] = true
+		}
+	}
+	for name, seen := range passedChecks {
+		if !seen {
+			t.Fatalf("expected %s check to be present (passed) in minimal profile", name)
+		}
+	}
+}
+
+func TestRunMinimalProfileMissingCoreAsset(t *testing.T) {
+	tmp := t.TempDir()
+	// Minimal workspace missing X_HARNESS.md (a core minimal asset).
+	agentsContent := "# AGENTS\n<!-- BEGIN X-HARNESS MANAGED CONTEXT -->\n<!-- END X-HARNESS MANAGED CONTEXT -->\n"
+	policyContent := "{}\n"
+	docContent := "# Doc\n"
+	tplContent := "# Template\n"
+
+	agentsPath := filepath.Join(tmp, "AGENTS.md")
+	policyPath := filepath.Join(tmp, "policies", "admission.yaml")
+	docPath := filepath.Join(tmp, "docs", "VERIFY_GATE.md")
+	tplPath := filepath.Join(tmp, "templates", "SUBAGENT_TASK_light.md")
+
+	os.MkdirAll(filepath.Join(tmp, "policies"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "docs"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "templates"), 0755)
+	os.MkdirAll(filepath.Join(tmp, ".x-harness"), 0755)
+	os.WriteFile(agentsPath, []byte(agentsContent), 0644)
+	os.WriteFile(policyPath, []byte(policyContent), 0644)
+	os.WriteFile(docPath, []byte(docContent), 0644)
+	os.WriteFile(tplPath, []byte(tplContent), 0644)
+
+	manifest := `version: "1"
+profile: minimal
+generated_at: "2026-05-28T00:00:00Z"
+entries:
+  - path: AGENTS.md
+    hash: sha256:` + hashOf(agentsContent) + `
+  - path: X_HARNESS.md
+    hash: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  - path: docs/VERIFY_GATE.md
+    hash: sha256:` + hashOf(docContent) + `
+  - path: policies/admission.yaml
+    hash: sha256:` + hashOf(policyContent) + `
+  - path: templates/SUBAGENT_TASK_light.md
+    hash: sha256:` + hashOf(tplContent) + `
+`
+	os.WriteFile(filepath.Join(tmp, ".x-harness", "manifest.yaml"), []byte(manifest), 0644)
+
+	report := Run(tmp)
+	if report.Healthy {
+		t.Fatal("expected unhealthy when core minimal asset (X_HARNESS.md) is missing")
+	}
+
+	// critical_assets should report X_HARNESS.md as missing.
+	foundCritical := false
+	for _, c := range report.Checks {
+		if c.Name == "critical_assets" {
+			foundCritical = true
+			if c.Status != "failed" {
+				t.Fatalf("expected critical_assets to fail, got %s", c.Status)
+			}
+			if !strings.Contains(c.Note, "X_HARNESS.md") {
+				t.Fatalf("expected critical_assets note to mention X_HARNESS.md, got %s", c.Note)
+			}
+		}
+	}
+	if !foundCritical {
+		t.Fatal("expected critical_assets check")
+	}
+	// installed_profile should also fail because X_HARNESS.md hash check fails.
+	foundProfile := false
+	for _, c := range report.Checks {
+		if c.Name == "installed_profile" {
+			foundProfile = true
+			if c.Status != "failed" {
+				t.Fatalf("expected installed_profile to fail, got %s", c.Status)
+			}
+		}
+	}
+	if !foundProfile {
+		t.Fatal("expected installed_profile check")
+	}
+}
+
+func TestRunNoManifestStillRequiresFullAssets(t *testing.T) {
+	// No manifest present -> profile detection returns "" -> behavior is
+	// unchanged: full-only checks are evaluated (not skipped), and full-only
+	// assets are required by critical_assets.
+	tmp := t.TempDir()
+	os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte("# AGENTS\n<!-- BEGIN X-HARNESS MANAGED CONTEXT -->\n<!-- END X-HARNESS MANAGED CONTEXT -->\n"), 0644)
+	os.WriteFile(filepath.Join(tmp, "X_HARNESS.md"), []byte("# X-HARNESS\n"), 0644)
+	os.MkdirAll(filepath.Join(tmp, "policies"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "schemas"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "templates"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "examples", "golden"), 0755)
+	os.WriteFile(filepath.Join(tmp, "policies", "mutation-guard.yaml"), []byte("{}\n"), 0644)
+	os.MkdirAll(filepath.Join(tmp, ".github", "workflows"), 0755)
+	os.WriteFile(filepath.Join(tmp, ".github", "workflows", "x-harness-verify.yml"), []byte("name: ci\njobs:\n  verify:\n    steps:\n      - run: echo ok\n"), 0644)
+
+	report := Run(tmp)
+
+	// critical_assets should require the full asset set (not the minimal one).
+	foundCritical := false
+	for _, c := range report.Checks {
+		if c.Name == "critical_assets" {
+			foundCritical = true
+			// The full-only assets (schemas, examples/golden, mutation-guard,
+			// CI workflow) are present in this fixture, so the check should
+			// pass. The note should not mention them as missing.
+			if c.Status == "failed" {
+				t.Fatalf("expected critical_assets to pass (full assets present), got failed: %s", c.Note)
+			}
+		}
+	}
+	if !foundCritical {
+		t.Fatal("expected critical_assets check")
+	}
+
+	// Full-only checks must NOT be skipped when no manifest is present.
+	for _, c := range report.Checks {
+		if c.Name == "schemas_compile" || c.Name == "ci_workflow" || c.Name == "managed_blocks_registry" || c.Name == "component_registry" {
+			if c.Status == "skipped" {
+				t.Fatalf("expected %s to be evaluated (not skipped) when no manifest is present, got skipped: %s", c.Name, c.Note)
+			}
+		}
+	}
+}
+
+func TestRunFullProfileManifestStillRequiresFullAssets(t *testing.T) {
+	// A manifest with profile: full should preserve full-repo behavior.
+	tmp := t.TempDir()
+	agentsContent := "# AGENTS\n<!-- BEGIN X-HARNESS MANAGED CONTEXT -->\n<!-- END X-HARNESS MANAGED CONTEXT -->\n"
+	os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte(agentsContent), 0644)
+	os.WriteFile(filepath.Join(tmp, "X_HARNESS.md"), []byte("# X-HARNESS\n"), 0644)
+	os.MkdirAll(filepath.Join(tmp, "policies"), 0755)
+	os.MkdirAll(filepath.Join(tmp, "templates"), 0755)
+
+	// Intentionally do NOT create schemas/, examples/golden/, mutation-guard,
+	// CI workflow, managed-blocks registry, or components registry.
+	// With profile: full, doctor should still flag them as missing.
+
+	manifest := `version: "1"
+profile: full
+generated_at: "2026-05-28T00:00:00Z"
+entries:
+  - path: AGENTS.md
+    hash: sha256:` + hashOf(agentsContent) + `
+  - path: X_HARNESS.md
+    hash: sha256:` + hashOf("# X-HARNESS\n") + `
+`
+	os.WriteFile(filepath.Join(tmp, ".x-harness", "manifest.yaml"), []byte(manifest), 0644)
+
+	report := Run(tmp)
+	if report.Healthy {
+		t.Fatal("expected unhealthy for profile: full without full-only assets")
+	}
+
+	// critical_assets should report schemas, examples/golden, mutation-guard,
+	// CI workflow as missing.
+	foundCritical := false
+	for _, c := range report.Checks {
+		if c.Name == "critical_assets" {
+			foundCritical = true
+			if c.Status != "failed" {
+				t.Fatalf("expected critical_assets to fail for profile: full, got %s", c.Status)
+			}
+			for _, want := range []string{"schemas/", "examples/golden/", "policies/mutation-guard.yaml", ".github/workflows/x-harness-verify.yml"} {
+				if !strings.Contains(c.Note, want) {
+					t.Fatalf("expected critical_assets note to mention %s, got %s", want, c.Note)
+				}
+			}
+		}
+	}
+	if !foundCritical {
+		t.Fatal("expected critical_assets check")
+	}
+
+	// Full-only checks should be evaluated, not skipped, for profile: full.
+	for _, c := range report.Checks {
+		if c.Name == "schemas_compile" || c.Name == "ci_workflow" || c.Name == "managed_blocks_registry" || c.Name == "component_registry" {
+			if c.Status == "skipped" {
+				t.Fatalf("expected %s to be evaluated (not skipped) for profile: full, got skipped: %s", c.Name, c.Note)
+			}
+		}
+	}
+}
+
 func hashOf(s string) string {
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(s)))
 }

@@ -239,6 +239,19 @@ func buildInitPlan(mode, assetRoot, targetDir, adapters string, stderr io.Writer
 				fmt.Fprintf(stderr, "warning: source not found, skipping: %s\n", src)
 			}
 		}
+
+		// Include the schemas/ directory so verify/check can compile
+		// completion-card.schema.json and other core schemas required by
+		// the user journey (init -> add completion-card -> check).
+		schemasSrc := filepath.Join(assetRoot, "schemas")
+		if pathExistsBool(schemasSrc) {
+			plan = append(plan, initPlanItem{
+				src:  schemasSrc,
+				dest: filepath.Join(targetDir, "schemas"),
+			})
+		} else {
+			fmt.Fprintf(stderr, "warning: source not found, skipping: %s\n", schemasSrc)
+		}
 	} else {
 		modeAssets := map[string][]string{
 			"standard": {
