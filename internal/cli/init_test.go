@@ -30,15 +30,12 @@ func TestInitDefaultMinimal(t *testing.T) {
 		"templates/SUBAGENT_TASK_deep.md",
 		"templates/COMPLETION_CARD.md",
 		"policies/admission.yaml",
+		"schemas/completion-card.schema.json",
 	} {
 		path := filepath.Join(tmpDir, file)
 		if _, err := os.Stat(path); err != nil {
 			t.Fatalf("expected %s to exist: %v", file, err)
 		}
-	}
-
-	if _, err := os.Stat(filepath.Join(tmpDir, "schemas")); err == nil {
-		t.Fatal("expected schemas to not exist in minimal mode")
 	}
 }
 
@@ -248,6 +245,9 @@ func TestInitProfileMinimal(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(tmpDir, "AGENTS.md")); err != nil {
 		t.Fatalf("expected AGENTS.md to exist: %v", err)
 	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "schemas", "completion-card.schema.json")); err != nil {
+		t.Fatalf("expected schemas/completion-card.schema.json to exist: %v", err)
+	}
 }
 
 func TestInitProfileStandard(t *testing.T) {
@@ -438,4 +438,68 @@ func TestInitIdempotentMissingFile(t *testing.T) {
 	if !strings.Contains(output, "blocked") && !strings.Contains(output, "conflict") {
 		t.Fatalf("expected blocked/conflict message, got: %s", output)
 	}
+}
+
+// TestInitMinimalEndToEndCheck exercises the user journey:
+//  1. xh init --minimal sets up a workspace
+//  2. xh add completion-card scaffolds a card
+//  3. xh check --card <card.yaml> validates against schemas/completion-card.schema.json
+//
+// The third step used to fail with "cannot compile schema at <workspace>/schemas/..."
+// because minimal init omitted the schemas/ directory. After the fix, the schema is
+// present and the verify command must be able to compile it (any further outcome is
+// driven by the card's content, which is out of scope here).
+func TestInitMinimalEndToEndCheck(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Step 1: init --minimal must place the schema required by verify.
+	{
+		var stdout strings.Builder
+		var stderr strings.Builder
+		code := Run([]string{"init", tmpDir, "--minimal"}, &stdout, &stderr)
+		if code != ExitOK {
+			t.Fatalf("init --minimal failed: code=%d stderr=%s", code, stderr.String())
+		}
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "schemas", "completion-card.schema.json")); err != nil {
+		t.Fatalf("expected schemas/completion-card.schema.json after minimal init: %v", err)
+	}
+
+	// Step 2: add completion-card scaffolds a card into the workspace.
+	cardPath := filepath.Join(tmpDir, "completion-card.yaml")
+	{
+		var stdout strings.Builder
+		var stderr strings.Builder
+		code := Run([]string{"add", "completion-card", "task_id=T-MIN-1,tier=light", "--out", cardPath}, &stdout, &stderr)
+		if code != ExitOK {
+			t.Fatalf("add completion-card failed: code=%d stderr=%s", code, stderr.String())
+		}
+	}
+	if _, err := os.Stat(cardPath); err != nil {
+		t.Fatalf("expected completion card to exist: %v", err)
+	}
+
+	// Step 3: run check from the workspace root. The original failure
+	// (cannot compile schema) must not occur. Card content errors are
+	// acceptable here and are out of scope for this regression test.
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{"check", "--card", cardPath}, &stdout, &stderr)
+	combined := stdout.String() + stderr.String()
+	if strings.Contains(combined, "cannot compile schema") {
+		t.Fatalf("unexpected schema-compile failure after minimal init:\nstdout=%s\nstderr=%s", stdout.String(), stderr.String())
+	}
+	if strings.Contains(combined, "no such file or directory") && strings.Contains(combined, "schemas/") {
+		t.Fatalf("unexpected missing-schemas failure after minimal init:\nstdout=%s\nstderr=%s", stdout.String(), stderr.String())
+	}
+	_ = code // non-zero is acceptable when the scaffolded card lacks required fields.
 }

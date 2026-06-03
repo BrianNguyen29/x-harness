@@ -10,6 +10,7 @@ const requiredFiles = [
   "AGENTS.md",
   "X_HARNESS.md",
   "README.md",
+  "README.vi.md",
   "CHANGELOG.md",
   "LICENSE",
   "CODE_OF_CONDUCT.md",

@@ -73,8 +73,10 @@ func RunWithOptions(root string, opts Options) *Report {
 		return report
 	}
 
-	checkCriticalAssets(report, root)
-	checkSchemas(report, root)
+	profile := detectInstalledProfile(root)
+
+	checkCriticalAssets(report, root, profile)
+	checkSchemas(report, root, profile)
 	checkPolicies(report, root)
 	checkAgentsContext(report, root)
 	if opts.Staleness {
@@ -86,10 +88,10 @@ func RunWithOptions(root string, opts Options) *Report {
 	if opts.Context {
 		checkContextRefs(report, root)
 	}
-	checkManagedBlocksRegistry(report, root)
-	checkCIWorkflow(report, root)
+	checkManagedBlocksRegistry(report, root, profile)
+	checkCIWorkflow(report, root, profile)
 	checkTierLabels(report, root)
-	checkComponentRegistry(report, root)
+	checkComponentRegistry(report, root, profile)
 	checkManifest(report, root)
 
 	report.PresentCount = len(report.Present)
@@ -98,7 +100,26 @@ func RunWithOptions(root string, opts Options) *Report {
 	return report
 }
 
-func checkCriticalAssets(report *Report, root string) {
+// detectInstalledProfile reads .x-harness/manifest.yaml and returns the
+// installed profile name (e.g. "minimal") when the manifest is present and
+// parses successfully. Returns "" when no manifest is installed, the manifest
+// is invalid, or the profile field is empty.
+func detectInstalledProfile(root string) string {
+	manifestFile := filepath.Join(root, ".x-harness", "manifest.yaml")
+	data, err := os.ReadFile(manifestFile)
+	if err != nil {
+		return ""
+	}
+	var m struct {
+		Profile string `yaml:"profile"`
+	}
+	if err := yaml.Unmarshal(data, &m); err != nil {
+		return ""
+	}
+	return m.Profile
+}
+
+func checkCriticalAssets(report *Report, root string, profile string) {
 	assets := []struct {
 		path string
 		name string
@@ -111,6 +132,21 @@ func checkCriticalAssets(report *Report, root string) {
 		{filepath.Join(root, "examples", "golden"), "examples/golden/"},
 		{filepath.Join(root, "policies", "mutation-guard.yaml"), "policies/mutation-guard.yaml"},
 		{filepath.Join(root, ".github", "workflows", "x-harness-verify.yml"), ".github/workflows/x-harness-verify.yml"},
+	}
+
+	// Minimal profile omits full-only assets (schemas, examples/golden,
+	// mutation-guard, CI workflow). Require only the minimal core set.
+	if profile == "minimal" {
+		assets = []struct {
+			path string
+			name string
+		}{
+			{filepath.Join(root, "AGENTS.md"), "AGENTS.md"},
+			{filepath.Join(root, "X_HARNESS.md"), "X_HARNESS.md"},
+			{filepath.Join(root, "policies"), "policies/"},
+			{filepath.Join(root, "templates"), "templates/"},
+			{filepath.Join(root, "docs"), "docs/"},
+		}
 	}
 
 	for _, asset := range assets {
@@ -136,7 +172,7 @@ func checkCriticalAssets(report *Report, root string) {
 	}
 }
 
-func checkSchemas(report *Report, root string) {
+func checkSchemas(report *Report, root string, profile string) {
 	schemaDir := filepath.Join(root, "schemas")
 	entries, err := os.ReadDir(schemaDir)
 	if err != nil {
@@ -263,7 +299,15 @@ func checkAgentsContext(report *Report, root string) {
 	}
 }
 
-func checkCIWorkflow(report *Report, root string) {
+func checkCIWorkflow(report *Report, root string, profile string) {
+	if profile == "minimal" {
+		report.Checks = append(report.Checks, Check{
+			Name:   "ci_workflow",
+			Status: "skipped",
+			Note:   "minimal profile: CI workflow not required",
+		})
+		return
+	}
 	path := filepath.Join(root, ".github", "workflows", "x-harness-verify.yml")
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -413,7 +457,15 @@ func checkTierLabels(report *Report, root string) {
 	}
 }
 
-func checkComponentRegistry(report *Report, root string) {
+func checkComponentRegistry(report *Report, root string, profile string) {
+	if profile == "minimal" {
+		report.Checks = append(report.Checks, Check{
+			Name:   "component_registry",
+			Status: "skipped",
+			Note:   "minimal profile: components registry not required",
+		})
+		return
+	}
 	result, err := components.ValidateRegistry(root)
 	if err != nil {
 		report.Checks = append(report.Checks, Check{
@@ -544,7 +596,15 @@ func checkAgentsContextStaleness(report *Report, root string) {
 	}
 }
 
-func checkManagedBlocksRegistry(report *Report, root string) {
+func checkManagedBlocksRegistry(report *Report, root string, profile string) {
+	if profile == "minimal" {
+		report.Checks = append(report.Checks, Check{
+			Name:   "managed_blocks_registry",
+			Status: "skipped",
+			Note:   "minimal profile: managed-blocks registry not required",
+		})
+		return
+	}
 	failures, err := contextcheck.ValidateRegistry(root)
 	if err != nil {
 		report.Checks = append(report.Checks, Check{
