@@ -347,3 +347,378 @@ func TestDecisionRecordThenListRoundtrip(t *testing.T) {
 		}
 	}
 }
+
+// TestDecisionQueryMatchSubstring covers the case-insensitive
+// substring match across multiple records. The fixture contains
+// two records that match the keyword and one that does not, and
+// the output must surface the matches in id-sorted order with the
+// keyword, directory, and count surfaced on stdout.
+func TestDecisionQueryMatchSubstring(t *testing.T) {
+	tmpDir := t.TempDir()
+	records := []struct {
+		id   string
+		body string
+	}{
+		{"zeta", "schema_version: \"1\"\nid: zeta\ntitle: AuthZ\ndecision: ship RBAC\nrationale: zr\nstatus: accepted\n"},
+		{"alpha", "schema_version: \"1\"\nid: alpha\ntitle: AuthN\ndecision: ship OIDC\nrationale: ar\nstatus: proposed\n"},
+		{"beta", "schema_version: \"1\"\nid: beta\ntitle: Logging\ndecision: structured logs\nrationale: br\nstatus: accepted\n"},
+	}
+	for _, r := range records {
+		if err := os.WriteFile(filepath.Join(tmpDir, r.id+".yaml"), []byte(r.body), 0644); err != nil {
+			t.Fatalf("write fixture: %v", err)
+		}
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "query", "--dir", tmpDir, "--keyword", "auth"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	for _, want := range []string{
+		"Directory: " + tmpDir,
+		`Keyword: "auth"`,
+		"Count: 2",
+		"id=alpha",
+		"id=zeta",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("expected query output to contain %q, got:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "id=beta") {
+		t.Fatalf("did not expect beta in query output, got:\n%s", out)
+	}
+	// id-sorted order: alpha must appear before zeta in the output.
+	if strings.Index(out, "id=alpha") > strings.Index(out, "id=zeta") {
+		t.Fatalf("expected id-sorted output (alpha before zeta), got:\n%s", out)
+	}
+}
+
+// TestDecisionQueryNoMatch covers the safe V1 rule that a search
+// that returns zero matches must exit OK with Count: 0 and no
+// Records: section, not an error.
+func TestDecisionQueryNoMatch(t *testing.T) {
+	tmpDir := t.TempDir()
+	body := "schema_version: \"1\"\nid: alpha\ntitle: Logging\ndecision: structured logs\nrationale: ar\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "alpha.yaml"), []byte(body), 0644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "query", "--dir", tmpDir, "--keyword", "nonexistent-token"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "Count: 0") {
+		t.Fatalf("expected Count: 0, got: %s", out)
+	}
+	if strings.Contains(out, "Records:") {
+		t.Fatalf("did not expect Records: section on no-match, got: %s", out)
+	}
+}
+
+// TestDecisionQueryMissingKeywordUsageError covers the safe V1 rule
+// that --keyword is required and missing it produces a usage error.
+func TestDecisionQueryMissingKeywordUsageError(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "query", "--dir", "x"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--keyword is required") {
+		t.Fatalf("expected --keyword required error, got: %s", stderr.String())
+	}
+}
+
+// TestDecisionQueryUnknownFlag covers the safe V1 rule that unknown
+// flags produce a usage error.
+func TestDecisionQueryUnknownFlag(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "query", "--keyword", "x", "--bogus", "y"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "unknown flag") {
+		t.Fatalf("expected unknown flag error, got: %s", stderr.String())
+	}
+}
+
+// TestDecisionQueryJSON covers the JSON output mode: directory,
+// keyword, count, and records must round-trip and reflect the
+// on-disk decisions in deterministic id-sorted order.
+func TestDecisionQueryJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	records := []struct {
+		id   string
+		body string
+	}{
+		{"zeta", "schema_version: \"1\"\nid: zeta\ntitle: AuthZ\ndecision: ship\nrationale: r\nstatus: accepted\n"},
+		{"alpha", "schema_version: \"1\"\nid: alpha\ntitle: Logging\ndecision: logs\nrationale: r\nstatus: proposed\n"},
+	}
+	for _, r := range records {
+		if err := os.WriteFile(filepath.Join(tmpDir, r.id+".yaml"), []byte(r.body), 0644); err != nil {
+			t.Fatalf("write fixture: %v", err)
+		}
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "query", "--dir", tmpDir, "--keyword", "auth", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	var doc struct {
+		Directory string                   `json:"directory"`
+		Keyword   string                   `json:"keyword"`
+		Count     int                      `json:"count"`
+		Records   []map[string]interface{} `json:"records"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &doc); err != nil {
+		t.Fatalf("query --json output is not valid JSON: %v\noutput:\n%s", err, stdout.String())
+	}
+	if doc.Directory != tmpDir {
+		t.Fatalf("expected directory=%s, got %q", tmpDir, doc.Directory)
+	}
+	if doc.Keyword != "auth" {
+		t.Fatalf("expected keyword=auth, got %q", doc.Keyword)
+	}
+	if doc.Count != 1 || len(doc.Records) != 1 {
+		t.Fatalf("expected count=1 with 1 record, got count=%d records=%d", doc.Count, len(doc.Records))
+	}
+	if doc.Records[0]["id"] != "zeta" {
+		t.Fatalf("expected id=zeta, got %v", doc.Records[0]["id"])
+	}
+}
+
+// TestDecisionQuerySearchesTagsAndAffectedPaths covers the safe V1
+// rule that the keyword search must inspect both tags and
+// affected_paths, not just the scalar string fields.
+func TestDecisionQuerySearchesTagsAndAffectedPaths(t *testing.T) {
+	tmpDir := t.TempDir()
+	body := "schema_version: \"1\"\nid: pathless\ntitle: Generic\ndecision: ship\nrationale: r\nstatus: accepted\ntags:\n  - auth-rotation\naffected_paths:\n  - src/auth/login.ts\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "pathless.yaml"), []byte(body), 0644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	if code := Run([]string{"decision", "query", "--dir", tmpDir, "--keyword", "auth-rotation"}, &stdout, &stderr); code != ExitOK {
+		t.Fatalf("tag match: expected exit %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Count: 1") {
+		t.Fatalf("tag match: expected Count: 1, got: %s", stdout.String())
+	}
+	stdout.Reset()
+	stderr.Reset()
+	if code := Run([]string{"decision", "query", "--dir", tmpDir, "--keyword", "login.ts"}, &stdout, &stderr); code != ExitOK {
+		t.Fatalf("affected_paths match: expected exit %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Count: 1") {
+		t.Fatalf("affected_paths match: expected Count: 1, got: %s", stdout.String())
+	}
+}
+
+// TestDecisionAffectedExactMatch covers the safe V1 rule that
+// --path matches a record whose affected_paths contains the exact
+// same path after filepath.Clean normalization.
+func TestDecisionAffectedExactMatch(t *testing.T) {
+	tmpDir := t.TempDir()
+	body := "schema_version: \"1\"\nid: auth-login\ntitle: Auth Login\ndecision: ship\nrationale: r\nstatus: accepted\naffected_paths:\n  - src/auth/login.ts\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "auth-login.yaml"), []byte(body), 0644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "affected", "--dir", tmpDir, "--path", "src/auth/login.ts"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	for _, want := range []string{
+		"Directory: " + tmpDir,
+		"Path: src/auth/login.ts",
+		"Count: 1",
+		"id=auth-login",
+		"title=\"Auth Login\"",
+		"decision: ship",
+		filepath.Join(tmpDir, "auth-login.yaml"),
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("expected affected output to contain %q, got:\n%s", want, out)
+		}
+	}
+}
+
+// TestDecisionAffectedGlobMatch covers the safe V1 rule that
+// --path matches a record whose affected_paths contains a glob
+// pattern that matches the input path. The glob "src/auth/*.ts"
+// must match "src/auth/login.ts".
+func TestDecisionAffectedGlobMatch(t *testing.T) {
+	tmpDir := t.TempDir()
+	body := "schema_version: \"1\"\nid: auth-bulk\ntitle: Auth Bulk\ndecision: ship\nrationale: r\nstatus: accepted\naffected_paths:\n  - src/auth/*.ts\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "auth-bulk.yaml"), []byte(body), 0644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "affected", "--dir", tmpDir, "--path", "src/auth/login.ts"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "Count: 1") {
+		t.Fatalf("expected Count: 1 for glob match, got: %s", out)
+	}
+	if !strings.Contains(out, "id=auth-bulk") {
+		t.Fatalf("expected id=auth-bulk, got: %s", out)
+	}
+}
+
+// TestDecisionAffectedNoMatch covers the safe V1 rule that a
+// non-matching --path returns count=0 (and exit OK) without
+// surfacing any records.
+func TestDecisionAffectedNoMatch(t *testing.T) {
+	tmpDir := t.TempDir()
+	body := "schema_version: \"1\"\nid: auth-login\ntitle: Auth Login\ndecision: ship\nrationale: r\nstatus: accepted\naffected_paths:\n  - src/auth/login.ts\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "auth-login.yaml"), []byte(body), 0644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "affected", "--dir", tmpDir, "--path", "src/other/file.ts"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "Count: 0") {
+		t.Fatalf("expected Count: 0, got: %s", out)
+	}
+	if strings.Contains(out, "Records:") {
+		t.Fatalf("did not expect Records: section on no-match, got: %s", out)
+	}
+}
+
+// TestDecisionAffectedMissingPathUsageError covers the safe V1
+// rule that --path is required and missing it produces a usage
+// error.
+func TestDecisionAffectedMissingPathUsageError(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "affected", "--dir", "x"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--path is required") {
+		t.Fatalf("expected --path required error, got: %s", stderr.String())
+	}
+}
+
+// TestDecisionAffectedUnknownFlag covers the safe V1 rule that
+// unknown flags produce a usage error.
+func TestDecisionAffectedUnknownFlag(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "affected", "--path", "x", "--bogus", "y"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "unknown flag") {
+		t.Fatalf("expected unknown flag error, got: %s", stderr.String())
+	}
+}
+
+// TestDecisionAffectedJSON covers the JSON output mode: directory,
+// path, count, and records must round-trip and reflect the
+// on-disk decisions in deterministic id-sorted order.
+func TestDecisionAffectedJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	records := []struct {
+		id   string
+		body string
+	}{
+		{"zeta", "schema_version: \"1\"\nid: zeta\ntitle: AuthZ\ndecision: ship\nrationale: r\nstatus: accepted\naffected_paths:\n  - src/auth/*.ts\n"},
+		{"alpha", "schema_version: \"1\"\nid: alpha\ntitle: Other\ndecision: ship\nrationale: r\nstatus: accepted\naffected_paths:\n  - src/other/*.ts\n"},
+	}
+	for _, r := range records {
+		if err := os.WriteFile(filepath.Join(tmpDir, r.id+".yaml"), []byte(r.body), 0644); err != nil {
+			t.Fatalf("write fixture: %v", err)
+		}
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "affected", "--dir", tmpDir, "--path", "src/auth/login.ts", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	var doc struct {
+		Directory string                   `json:"directory"`
+		Path      string                   `json:"path"`
+		Count     int                      `json:"count"`
+		Records   []map[string]interface{} `json:"records"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &doc); err != nil {
+		t.Fatalf("affected --json output is not valid JSON: %v\noutput:\n%s", err, stdout.String())
+	}
+	if doc.Directory != tmpDir {
+		t.Fatalf("expected directory=%s, got %q", tmpDir, doc.Directory)
+	}
+	if doc.Path != "src/auth/login.ts" {
+		t.Fatalf("expected path=src/auth/login.ts, got %q", doc.Path)
+	}
+	if doc.Count != 1 || len(doc.Records) != 1 {
+		t.Fatalf("expected count=1 with 1 record, got count=%d records=%d", doc.Count, len(doc.Records))
+	}
+	if doc.Records[0]["id"] != "zeta" {
+		t.Fatalf("expected id=zeta, got %v", doc.Records[0]["id"])
+	}
+}
+
+// TestDecisionAffectedDeterministicOrder covers the safe V1 rule
+// that affected results are returned in id-sorted order even when
+// the underlying files are written out of order.
+func TestDecisionAffectedDeterministicOrder(t *testing.T) {
+	tmpDir := t.TempDir()
+	// Write records out of id-sorted order. Both must match the glob.
+	records := []struct {
+		id   string
+		body string
+	}{
+		{"zeta", "schema_version: \"1\"\nid: zeta\ndecision: ship\nrationale: r\nstatus: accepted\naffected_paths:\n  - src/auth/*.ts\n"},
+		{"alpha", "schema_version: \"1\"\nid: alpha\ndecision: ship\nrationale: r\nstatus: accepted\naffected_paths:\n  - src/auth/*.ts\n"},
+		{"beta", "schema_version: \"1\"\nid: beta\ndecision: ship\nrationale: r\nstatus: accepted\naffected_paths:\n  - src/other/*.ts\n"},
+	}
+	for _, r := range records {
+		if err := os.WriteFile(filepath.Join(tmpDir, r.id+".yaml"), []byte(r.body), 0644); err != nil {
+			t.Fatalf("write fixture: %v", err)
+		}
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "affected", "--dir", tmpDir, "--path", "src/auth/login.ts"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	alphaIdx := strings.Index(out, "id=alpha")
+	zetaIdx := strings.Index(out, "id=zeta")
+	if alphaIdx < 0 || zetaIdx < 0 {
+		t.Fatalf("expected both alpha and zeta in output, got:\n%s", out)
+	}
+	if alphaIdx > zetaIdx {
+		t.Fatalf("expected id-sorted output (alpha before zeta), got:\n%s", out)
+	}
+	if strings.Contains(out, "id=beta") {
+		t.Fatalf("did not expect beta (no match) in output, got:\n%s", out)
+	}
+}
