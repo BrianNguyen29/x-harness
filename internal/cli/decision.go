@@ -54,12 +54,12 @@ type decisionRecordSpec struct {
 	Notes         string
 }
 
-// handleDecision is the entry point for `xh decision ...`. Safe V1 only
-// exposes the `record` and `list` subcommands; `query`, `link`, and
-// `affected` are intentionally deferred to follow-up slices.
+// handleDecision is the entry point for `xh decision ...`. The safe
+// V1 follow-up exposes `record`, `list`, `query`, and `affected`;
+// `link` is intentionally deferred to a later slice.
 func handleDecision(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "decision requires a subcommand: record, list")
+		fmt.Fprintln(stderr, "decision requires a subcommand: record, list, query, affected")
 		return ExitUsage
 	}
 
@@ -68,6 +68,10 @@ func handleDecision(args []string, stdout, stderr io.Writer) int {
 		return handleDecisionRecord(args[1:], stdout, stderr)
 	case "list":
 		return handleDecisionList(args[1:], stdout, stderr)
+	case "query":
+		return handleDecisionQuery(args[1:], stdout, stderr)
+	case "affected":
+		return handleDecisionAffected(args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "unknown decision subcommand: %s\n", args[0])
 		return ExitUsage
@@ -304,6 +308,196 @@ func handleDecisionList(args []string, stdout, stderr io.Writer) int {
 	return ExitOK
 }
 
+// handleDecisionQuery implements `xh decision query --keyword <text>`.
+// It performs a case-insensitive substring search across the
+// visible fields of each decision record in --dir (default:
+// "decisions") and prints the matches in deterministic id-sorted
+// order. The handler is read-only: it does not modify any record
+// or file on disk.
+func handleDecisionQuery(args []string, stdout, stderr io.Writer) int {
+	dir := decisionRecordDefaultDir
+	keyword := ""
+	jsonMode := false
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "--keyword":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --keyword requires a value")
+				return ExitUsage
+			}
+			keyword = args[i+1]
+			i++
+		case "--dir":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --dir requires a value")
+				return ExitUsage
+			}
+			dir = args[i+1]
+			i++
+		case "--json":
+			jsonMode = true
+		case "-h", "--help":
+			fmt.Fprintln(stderr, "usage: xh decision query --keyword <text> [--dir <path>] [--json]")
+			return ExitUsage
+		default:
+			if strings.HasPrefix(arg, "-") {
+				fmt.Fprintf(stderr, "unknown flag: %s\n", arg)
+				return ExitUsage
+			}
+			fmt.Fprintf(stderr, "unexpected argument: %s\n", arg)
+			return ExitUsage
+		}
+	}
+
+	if strings.TrimSpace(keyword) == "" {
+		fmt.Fprintln(stderr, "error: --keyword is required")
+		return ExitUsage
+	}
+
+	entries, err := listDecisionRecords(dir)
+	if err != nil {
+		fmt.Fprintf(stderr, "error: %v\n", err)
+		return ExitError
+	}
+
+	matches, err := matchDecisionQuery(entries, keyword)
+	if err != nil {
+		fmt.Fprintf(stderr, "error: %v\n", err)
+		return ExitError
+	}
+
+	if jsonMode {
+		data, err := json.MarshalIndent(map[string]any{
+			"directory": dir,
+			"keyword":   keyword,
+			"count":     len(matches),
+			"records":   matches,
+		}, "", "  ")
+		if err != nil {
+			fmt.Fprintf(stderr, "error: %v\n", err)
+			return ExitError
+		}
+		fmt.Fprintln(stdout, string(data))
+		return ExitOK
+	}
+
+	fmt.Fprintf(stdout, "Directory: %s\n", dir)
+	fmt.Fprintf(stdout, "Keyword: %q\n", keyword)
+	fmt.Fprintf(stdout, "Count: %d\n", len(matches))
+	if len(matches) == 0 {
+		return ExitOK
+	}
+	fmt.Fprintln(stdout, "Records:")
+	for _, rec := range matches {
+		fmt.Fprintf(stdout, "  - id=%s status=%s title=%q\n    decision: %s\n    path: %s\n",
+			rec.ID,
+			rec.Status,
+			rec.Title,
+			rec.Decision,
+			rec.Path,
+		)
+	}
+	return ExitOK
+}
+
+// handleDecisionAffected implements
+// `xh decision affected --path <path>`. It scans each decision
+// record's affected_paths and returns the records whose pattern
+// matches the input path. The match uses filepath.Match after
+// filepath.Clean normalization, so both exact paths (e.g.
+// "src/auth/login.ts") and glob patterns (e.g. "src/auth/*.ts")
+// are honored. The handler is read-only: it does not modify any
+// record or file on disk.
+func handleDecisionAffected(args []string, stdout, stderr io.Writer) int {
+	dir := decisionRecordDefaultDir
+	pathArg := ""
+	jsonMode := false
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "--path":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --path requires a value")
+				return ExitUsage
+			}
+			pathArg = args[i+1]
+			i++
+		case "--dir":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --dir requires a value")
+				return ExitUsage
+			}
+			dir = args[i+1]
+			i++
+		case "--json":
+			jsonMode = true
+		case "-h", "--help":
+			fmt.Fprintln(stderr, "usage: xh decision affected --path <path> [--dir <path>] [--json]")
+			return ExitUsage
+		default:
+			if strings.HasPrefix(arg, "-") {
+				fmt.Fprintf(stderr, "unknown flag: %s\n", arg)
+				return ExitUsage
+			}
+			fmt.Fprintf(stderr, "unexpected argument: %s\n", arg)
+			return ExitUsage
+		}
+	}
+
+	if strings.TrimSpace(pathArg) == "" {
+		fmt.Fprintln(stderr, "error: --path is required")
+		return ExitUsage
+	}
+
+	entries, err := listDecisionRecords(dir)
+	if err != nil {
+		fmt.Fprintf(stderr, "error: %v\n", err)
+		return ExitError
+	}
+
+	matches, err := matchDecisionAffected(entries, pathArg)
+	if err != nil {
+		fmt.Fprintf(stderr, "error: %v\n", err)
+		return ExitError
+	}
+
+	if jsonMode {
+		data, err := json.MarshalIndent(map[string]any{
+			"directory": dir,
+			"path":      pathArg,
+			"count":     len(matches),
+			"records":   matches,
+		}, "", "  ")
+		if err != nil {
+			fmt.Fprintf(stderr, "error: %v\n", err)
+			return ExitError
+		}
+		fmt.Fprintln(stdout, string(data))
+		return ExitOK
+	}
+
+	fmt.Fprintf(stdout, "Directory: %s\n", dir)
+	fmt.Fprintf(stdout, "Path: %s\n", pathArg)
+	fmt.Fprintf(stdout, "Count: %d\n", len(matches))
+	if len(matches) == 0 {
+		return ExitOK
+	}
+	fmt.Fprintln(stdout, "Records:")
+	for _, rec := range matches {
+		fmt.Fprintf(stdout, "  - id=%s status=%s title=%q\n    decision: %s\n    path: %s\n",
+			rec.ID,
+			rec.Status,
+			rec.Title,
+			rec.Decision,
+			rec.Path,
+		)
+	}
+	return ExitOK
+}
+
 // buildDecisionRecord converts a structured spec into a map matching
 // schemas/decision-record.schema.json (safe V1). Required fields:
 // schema_version, id, decision, rationale. All other fields are emitted
@@ -500,4 +694,114 @@ func asString(v any) string {
 		return s
 	}
 	return fmt.Sprintf("%v", v)
+}
+
+// matchDecisionQuery returns the entries whose visible fields contain
+// keyword as a case-insensitive substring. The full document is
+// re-read for each entry so the search can inspect tags and
+// affected_paths, which the compact list projection does not carry.
+// Output order matches the input order, which is already id-sorted
+// by listDecisionRecords, so the result is deterministic.
+func matchDecisionQuery(entries []decisionListEntry, keyword string) ([]decisionListEntry, error) {
+	needle := strings.ToLower(strings.TrimSpace(keyword))
+	if needle == "" {
+		return []decisionListEntry{}, nil
+	}
+	out := make([]decisionListEntry, 0, len(entries))
+	for _, e := range entries {
+		var doc map[string]any
+		if err := readDecisionFile(e.Path, &doc); err != nil {
+			return nil, fmt.Errorf("%s: %w", e.ID, err)
+		}
+		if strings.Contains(decisionRecordSearchableText(doc), needle) {
+			out = append(out, e)
+		}
+	}
+	return out, nil
+}
+
+// matchDecisionAffected returns the entries whose affected_paths
+// contain a pattern that matches target. Both target and the stored
+// patterns are normalized with filepath.Clean before being passed
+// to filepath.Match, which covers exact paths and glob patterns
+// (e.g. "src/auth/*.ts"). A missing or non-array affected_paths
+// field is treated as no match. Output order matches the input
+// order, which is already id-sorted by listDecisionRecords.
+func matchDecisionAffected(entries []decisionListEntry, target string) ([]decisionListEntry, error) {
+	cleaned := filepath.Clean(strings.TrimSpace(target))
+	if cleaned == "" || cleaned == "." {
+		return []decisionListEntry{}, nil
+	}
+	out := make([]decisionListEntry, 0, len(entries))
+	for _, e := range entries {
+		var doc map[string]any
+		if err := readDecisionFile(e.Path, &doc); err != nil {
+			return nil, fmt.Errorf("%s: %w", e.ID, err)
+		}
+		if decisionRecordMatchesPath(doc, cleaned) {
+			out = append(out, e)
+		}
+	}
+	return out, nil
+}
+
+// decisionRecordSearchableText builds a single lowercased string
+// from the searchable fields of a decision record. The field set
+// matches the contract documented for `xh decision query`:
+// id, title, decision, rationale, context, consequences, notes,
+// tags, affected_paths. Fields are joined with a single space so a
+// substring match cannot accidentally bridge a missing field.
+func decisionRecordSearchableText(doc map[string]any) string {
+	var fields []string
+	for _, key := range []string{"id", "title", "decision", "rationale", "context", "consequences", "notes"} {
+		if v, ok := doc[key].(string); ok && v != "" {
+			fields = append(fields, v)
+		}
+	}
+	if arr, ok := doc["tags"].([]any); ok {
+		for _, t := range arr {
+			if s, ok := t.(string); ok && s != "" {
+				fields = append(fields, s)
+			}
+		}
+	}
+	if arr, ok := doc["affected_paths"].([]any); ok {
+		for _, p := range arr {
+			if s, ok := p.(string); ok && s != "" {
+				fields = append(fields, s)
+			}
+		}
+	}
+	return strings.ToLower(strings.Join(fields, " "))
+}
+
+// decisionRecordMatchesPath reports whether any entry in the
+// record's affected_paths matches the already-normalized target
+// under filepath.Match semantics. A missing, nil, or non-array
+// affected_paths field is treated as no match so partial records
+// do not crash the search.
+func decisionRecordMatchesPath(doc map[string]any, target string) bool {
+	raw, ok := doc["affected_paths"]
+	if !ok || raw == nil {
+		return false
+	}
+	arr, ok := raw.([]any)
+	if !ok {
+		return false
+	}
+	for _, p := range arr {
+		s, ok := p.(string)
+		if !ok {
+			continue
+		}
+		pattern := filepath.Clean(strings.TrimSpace(s))
+		if pattern == "" || pattern == "." {
+			continue
+		}
+		matched, err := filepath.Match(pattern, target)
+		if err == nil && matched {
+			return true
+		}
+	}
+	return false
 }
