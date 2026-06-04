@@ -550,14 +550,37 @@ function evaluateIntentRef(input: AdmissionInput): string[] {
   return notes;
 }
 
+// hasAnyDecisionRef reports whether doc carries a context_alignment
+// block with a decision_refs array containing at least one non-blank
+// string entry. Mirrors the Go helper `internal/admission/decision_refs.go`
+// `HasAnyDecisionRef` and is reused by the verify-layer decision_enforce
+// block path.
+export function hasAnyDecisionRef(
+  doc: Record<string, unknown> | null | undefined
+): boolean {
+  if (doc == null) return false;
+  const ctx = doc.context_alignment;
+  if (ctx == null || typeof ctx !== "object" || Array.isArray(ctx)) {
+    return false;
+  }
+  const refs = (ctx as Record<string, unknown>).decision_refs;
+  if (!Array.isArray(refs)) return false;
+  for (const entry of refs) {
+    if (typeof entry === "string" && entry.trim() !== "") {
+      return true;
+    }
+  }
+  return false;
+}
+
 // evaluateDecisionRefs emits advisory notes (never errors) for standard
 // and deep tier cards when the optional context_alignment.decision_refs
 // array is missing or contains no non-blank string entries. A non-blank
 // entry (slug id, path, or URI fragment) suppresses the note. The light
 // tier remains quiet. This is the first safe-V1 vertical slice; it never
-// blocks admission. Wording is parity-safe with the Go implementation in
-// internal/admission/decision_refs.go and the policy documentation in
-// policies/admission.yaml.
+// blocks admission. Wording is parity-safe with the Go implementation
+// in internal/admission/decision_refs.go and the policy documentation
+// in policies/admission.yaml.
 function evaluateDecisionRefs(input: AdmissionInput): string[] {
   const notes: string[] = [];
   if (input.tier !== "standard" && input.tier !== "deep") {
