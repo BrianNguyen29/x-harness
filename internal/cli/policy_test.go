@@ -26,7 +26,7 @@ func TestPolicyMatrixTextOutput(t *testing.T) {
 	if !strings.Contains(out, "version: 1") {
 		t.Fatalf("expected version: 1, got:\n%s", out)
 	}
-	if !strings.Contains(out, "rules: 27") {
+	if !strings.Contains(out, "rules: 28") {
 		t.Fatalf("expected rules count, got:\n%s", out)
 	}
 

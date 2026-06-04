@@ -330,6 +330,17 @@ func curatedMatrix() []MatrixRule {
 			AdmissionAuthority: boolPtr(false),
 			Source:             matrixSourceCurated,
 		},
+		{
+			ID:                 "boundary.violation",
+			Description:        "Path-glob + import-regex boundary enforcement (V1). Surfaces violations in `xh boundary check`; admission integration per profile is V1-safe advisory only.",
+			PolicyFile:         "policies/boundaries.yaml",
+			RuntimeModule:      "internal/boundary",
+			Status:             matrixStatusAdvisory,
+			EnabledByDefault:   true,
+			AdmissionAuthority: boolPtr(false),
+			Profiles:           []string{"light-local", "ci-standard", "ci-strict", "governed-deep"},
+			Source:             matrixSourceCurated,
+		},
 	}
 }
 
