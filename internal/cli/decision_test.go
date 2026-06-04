@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 // TestDecisionRecordMissingIDUsageError covers the safe V1 rule that
@@ -720,5 +722,475 @@ func TestDecisionAffectedDeterministicOrder(t *testing.T) {
 	}
 	if strings.Contains(out, "id=beta") {
 		t.Fatalf("did not expect beta (no match) in output, got:\n%s", out)
+	}
+}
+
+// writeDecisionLinkFixture writes a YAML completion-card fixture
+// at path. body is the raw YAML text; the helper does not validate
+// the document, it only ensures the file exists for the link
+// command to read.
+func writeDecisionLinkFixture(t *testing.T, path, body string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(body), 0644); err != nil {
+		t.Fatalf("write fixture %s: %v", path, err)
+	}
+}
+
+// readDecisionLinkFixture loads the file at path and unmarshals
+// it into a generic map. It is used to assert that the link
+// command preserved the structure of an existing card.
+func readDecisionLinkFixture(t *testing.T, path string) map[string]any {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read fixture %s: %v", path, err)
+	}
+	var doc map[string]any
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		t.Fatalf("parse fixture %s: %v", path, err)
+	}
+	return doc
+}
+
+// TestDecisionLinkMissingCardUsageError covers the safe V1 rule
+// that --card is required for the link command.
+func TestDecisionLinkMissingCardUsageError(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "link", "--decision", "ADR-001"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--card is required") {
+		t.Fatalf("expected --card required error, got: %s", stderr.String())
+	}
+}
+
+// TestDecisionLinkMissingDecisionUsageError covers the safe V1
+// rule that --decision is required for the link command.
+func TestDecisionLinkMissingDecisionUsageError(t *testing.T) {
+	tmpDir := t.TempDir()
+	cardPath := filepath.Join(tmpDir, "card.yaml")
+	writeDecisionLinkFixture(t, cardPath, "schema_version: \"1\"\ntask_id: t\n")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "link", "--card", cardPath}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--decision is required") {
+		t.Fatalf("expected --decision required error, got: %s", stderr.String())
+	}
+}
+
+// TestDecisionLinkCardNotFound covers the safe V1 rule that a
+// missing card file is an error (not a usage error) so users can
+// tell a typo from a missing flag.
+func TestDecisionLinkCardNotFound(t *testing.T) {
+	tmpDir := t.TempDir()
+	missing := filepath.Join(tmpDir, "does-not-exist.yaml")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "link", "--card", missing, "--decision", "ADR-001"}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitError, code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "card not found") {
+		t.Fatalf("expected card-not-found error, got: %s", stderr.String())
+	}
+}
+
+// TestDecisionLinkAppendsNewRef covers the safe V1 rule that
+// linking a fresh decision to a card with no existing
+// context_alignment creates the context_alignment map and the
+// decision_refs array and writes the new ref.
+func TestDecisionLinkAppendsNewRef(t *testing.T) {
+	tmpDir := t.TempDir()
+	cardPath := filepath.Join(tmpDir, "card.yaml")
+	writeDecisionLinkFixture(t, cardPath, "schema_version: \"1\"\ntask_id: t\ntier: standard\n")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "link", "--card", cardPath, "--decision", "ADR-001"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	for _, want := range []string{
+		"Card: " + cardPath,
+		"Output: " + cardPath,
+		"Added: ADR-001",
+		"Skipped: (none)",
+		"Total decision refs: 1",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("expected link output to contain %q, got:\n%s", want, out)
+		}
+	}
+
+	doc := readDecisionLinkFixture(t, cardPath)
+	ca, ok := doc["context_alignment"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context_alignment to be a map, got %T", doc["context_alignment"])
+	}
+	raw, ok := ca["decision_refs"].([]any)
+	if !ok {
+		t.Fatalf("expected decision_refs to be an array, got %T", ca["decision_refs"])
+	}
+	if len(raw) != 1 || raw[0] != "ADR-001" {
+		t.Fatalf("expected decision_refs=[ADR-001], got %v", raw)
+	}
+	// Top-level fields must be preserved.
+	if doc["schema_version"] != "1" || doc["task_id"] != "t" || doc["tier"] != "standard" {
+		t.Fatalf("expected top-level fields to be preserved, got: %v", doc)
+	}
+}
+
+// TestDecisionLinkIdempotentDuplicate covers the safe V1 rule
+// that re-running the same link command does not duplicate the
+// decision_refs array. The handler must report the ref as
+// skipped and leave the file unchanged (semantically).
+func TestDecisionLinkIdempotentDuplicate(t *testing.T) {
+	tmpDir := t.TempDir()
+	cardPath := filepath.Join(tmpDir, "card.yaml")
+	body := "schema_version: \"1\"\ntask_id: t\ncontext_alignment:\n  decision_refs:\n    - ADR-001\n"
+	writeDecisionLinkFixture(t, cardPath, body)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "link", "--card", cardPath, "--decision", "ADR-001"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "Added: (none)") {
+		t.Fatalf("expected Added: (none), got: %s", out)
+	}
+	if !strings.Contains(out, "Skipped: ADR-001") {
+		t.Fatalf("expected Skipped: ADR-001, got: %s", out)
+	}
+	if !strings.Contains(out, "Total decision refs: 1") {
+		t.Fatalf("expected Total decision refs: 1, got: %s", out)
+	}
+
+	doc := readDecisionLinkFixture(t, cardPath)
+	ca, ok := doc["context_alignment"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context_alignment to be a map, got %T", doc["context_alignment"])
+	}
+	raw := ca["decision_refs"].([]any)
+	if len(raw) != 1 || raw[0] != "ADR-001" {
+		t.Fatalf("expected decision_refs=[ADR-001] (no duplicate), got %v", raw)
+	}
+}
+
+// TestDecisionLinkAppendsToExistingRefs covers the safe V1 rule
+// that linking a new decision to a card that already has a
+// decision_refs array appends the new ref after the existing
+// ones and keeps the order stable.
+func TestDecisionLinkAppendsToExistingRefs(t *testing.T) {
+	tmpDir := t.TempDir()
+	cardPath := filepath.Join(tmpDir, "card.yaml")
+	body := "schema_version: \"1\"\ntask_id: t\ncontext_alignment:\n  decision_refs:\n    - ADR-001\n    - ADR-002\n"
+	writeDecisionLinkFixture(t, cardPath, body)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "link", "--card", cardPath, "--decision", "ADR-003"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Added: ADR-003") {
+		t.Fatalf("expected Added: ADR-003, got: %s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "Total decision refs: 3") {
+		t.Fatalf("expected Total decision refs: 3, got: %s", stdout.String())
+	}
+
+	doc := readDecisionLinkFixture(t, cardPath)
+	raw := doc["context_alignment"].(map[string]any)["decision_refs"].([]any)
+	want := []string{"ADR-001", "ADR-002", "ADR-003"}
+	if len(raw) != len(want) {
+		t.Fatalf("expected %d refs, got %d (%v)", len(want), len(raw), raw)
+	}
+	for i, w := range want {
+		if raw[i] != w {
+			t.Fatalf("expected ref[%d]=%s, got %v", i, w, raw[i])
+		}
+	}
+}
+
+// TestDecisionLinkCommaAndRepeatable covers the safe V1 rule that
+// --decision accepts both repeated flags and comma-separated
+// values, and that duplicate candidates within a single command
+// are deduped (so `--decision ADR-001,ADR-001` adds ADR-001
+// exactly once).
+func TestDecisionLinkCommaAndRepeatable(t *testing.T) {
+	tmpDir := t.TempDir()
+	cardPath := filepath.Join(tmpDir, "card.yaml")
+	writeDecisionLinkFixture(t, cardPath, "schema_version: \"1\"\ntask_id: t\n")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{
+		"decision", "link",
+		"--card", cardPath,
+		"--decision", "ADR-001,ADR-002",
+		"--decision", "ADR-001",
+		"--decision", "ADR-003",
+	}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Total decision refs: 3") {
+		t.Fatalf("expected 3 unique refs, got: %s", stdout.String())
+	}
+	doc := readDecisionLinkFixture(t, cardPath)
+	raw := doc["context_alignment"].(map[string]any)["decision_refs"].([]any)
+	if len(raw) != 3 {
+		t.Fatalf("expected 3 refs (intra-command dedup), got %v", raw)
+	}
+}
+
+// TestDecisionLinkPreservesOtherContextAlignmentFields covers the
+// safe V1 rule that the link command only mutates
+// context_alignment.decision_refs; every other field on the card
+// (top level or nested inside context_alignment) must be
+// preserved unchanged.
+func TestDecisionLinkPreservesOtherContextAlignmentFields(t *testing.T) {
+	tmpDir := t.TempDir()
+	cardPath := filepath.Join(tmpDir, "card.yaml")
+	body := "" +
+		"schema_version: \"1\"\n" +
+		"task_id: p3-s3-decision-link\n" +
+		"tier: standard\n" +
+		"owner: fixer\n" +
+		"accountable: orchestrator\n" +
+		"context_alignment:\n" +
+		"  stale_ground_checked: true\n" +
+		"  product_contract_refs:\n" +
+		"    - contracts/decision-memory.md\n" +
+		"  architecture_refs:\n" +
+		"    - docs/architecture.md\n" +
+		"  decision_refs: []\n" +
+		"  test_matrix_refs:\n" +
+		"    - tests/smoke/decision.md\n" +
+		"  unresolved_context_questions:\n" +
+		"    - is the link slice safe V1?\n" +
+		"  context_evidence:\n" +
+		"    - ref: schemas/context-alignment.schema.json\n" +
+		"      kind: schema\n" +
+		"  context_delta: drafted the link slice\n" +
+		"  context_pack_id: pack-001\n"
+	writeDecisionLinkFixture(t, cardPath, body)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"decision", "link", "--card", cardPath, "--decision", "ADR-001"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	doc := readDecisionLinkFixture(t, cardPath)
+	// Top-level fields must be preserved.
+	for k, want := range map[string]string{
+		"schema_version": "1",
+		"task_id":        "p3-s3-decision-link",
+		"tier":           "standard",
+		"owner":          "fixer",
+		"accountable":    "orchestrator",
+	} {
+		if doc[k] != want {
+			t.Fatalf("expected %s=%q, got %v", k, want, doc[k])
+		}
+	}
+	ca, ok := doc["context_alignment"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context_alignment to be a map, got %T", doc["context_alignment"])
+	}
+	if ca["stale_ground_checked"] != true {
+		t.Fatalf("expected stale_ground_checked preserved, got %v", ca["stale_ground_checked"])
+	}
+	if ca["context_delta"] != "drafted the link slice" {
+		t.Fatalf("expected context_delta preserved, got %v", ca["context_delta"])
+	}
+	if ca["context_pack_id"] != "pack-001" {
+		t.Fatalf("expected context_pack_id preserved, got %v", ca["context_pack_id"])
+	}
+	// decision_refs must contain the new ref.
+	raw := ca["decision_refs"].([]any)
+	if len(raw) != 1 || raw[0] != "ADR-001" {
+		t.Fatalf("expected decision_refs=[ADR-001], got %v", raw)
+	}
+	// Arrays of strings must survive the round trip.
+	for k, want := range map[string][]string{
+		"product_contract_refs":        {"contracts/decision-memory.md"},
+		"architecture_refs":            {"docs/architecture.md"},
+		"test_matrix_refs":             {"tests/smoke/decision.md"},
+		"unresolved_context_questions": {"is the link slice safe V1?"},
+	} {
+		arr, ok := ca[k].([]any)
+		if !ok {
+			t.Fatalf("expected %s to be an array, got %T", k, ca[k])
+		}
+		if len(arr) != len(want) {
+			t.Fatalf("expected %s len=%d, got %d", k, len(want), len(arr))
+		}
+		for i, w := range want {
+			if arr[i] != w {
+				t.Fatalf("expected %s[%d]=%q, got %v", k, i, w, arr[i])
+			}
+		}
+	}
+	// context_evidence is an array of objects; verify it is
+	// preserved (not converted to a generic map of strings).
+	ev, ok := ca["context_evidence"].([]any)
+	if !ok || len(ev) != 1 {
+		t.Fatalf("expected context_evidence to be an array of 1, got %T (%v)", ca["context_evidence"], ca["context_evidence"])
+	}
+}
+
+// TestDecisionLinkOutDoesNotMutateOriginal covers the safe V1
+// rule that --out writes a patched copy and leaves the original
+// card file unchanged. The on-disk bytes of the original must be
+// identical before and after the command runs.
+func TestDecisionLinkOutDoesNotMutateOriginal(t *testing.T) {
+	tmpDir := t.TempDir()
+	cardPath := filepath.Join(tmpDir, "card.yaml")
+	body := "schema_version: \"1\"\ntask_id: t\ncontext_alignment:\n  decision_refs: []\n"
+	writeDecisionLinkFixture(t, cardPath, body)
+	originalBytes, err := os.ReadFile(cardPath)
+	if err != nil {
+		t.Fatalf("read original: %v", err)
+	}
+	outPath := filepath.Join(tmpDir, "patched.yaml")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{
+		"decision", "link",
+		"--card", cardPath,
+		"--decision", "ADR-001",
+		"--out", outPath,
+	}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Output: "+outPath) {
+		t.Fatalf("expected Output: %s, got: %s", outPath, stdout.String())
+	}
+
+	// Original file must be byte-identical.
+	afterBytes, err := os.ReadFile(cardPath)
+	if err != nil {
+		t.Fatalf("read original after: %v", err)
+	}
+	if !bytes.Equal(originalBytes, afterBytes) {
+		t.Fatalf("original card was mutated. before:\n%s\nafter:\n%s", string(originalBytes), string(afterBytes))
+	}
+
+	// Patched file must contain the new ref.
+	patched := readDecisionLinkFixture(t, outPath)
+	raw := patched["context_alignment"].(map[string]any)["decision_refs"].([]any)
+	if len(raw) != 1 || raw[0] != "ADR-001" {
+		t.Fatalf("expected patched decision_refs=[ADR-001], got %v", raw)
+	}
+}
+
+// TestDecisionLinkJSON covers the safe V1 --json output path:
+// the JSON must include the schema_version, the card path, the
+// output path, the added refs, the skipped refs, and the final
+// decision_refs array.
+func TestDecisionLinkJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	cardPath := filepath.Join(tmpDir, "card.yaml")
+	body := "schema_version: \"1\"\ntask_id: t\ncontext_alignment:\n  decision_refs:\n    - ADR-001\n"
+	writeDecisionLinkFixture(t, cardPath, body)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{
+		"decision", "link",
+		"--card", cardPath,
+		"--decision", "ADR-002",
+		"--json",
+	}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	var doc struct {
+		SchemaVersion string   `json:"schema_version"`
+		Card          string   `json:"card"`
+		Out           string   `json:"out"`
+		Added         []string `json:"added"`
+		Skipped       []string `json:"skipped"`
+		DecisionRefs  []string `json:"decision_refs"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &doc); err != nil {
+		t.Fatalf("link --json output is not valid JSON: %v\noutput:\n%s", err, stdout.String())
+	}
+	if doc.SchemaVersion != "x-harness.decision.link.v1" {
+		t.Fatalf("expected schema_version=x-harness.decision.link.v1, got %q", doc.SchemaVersion)
+	}
+	if doc.Card != cardPath {
+		t.Fatalf("expected card=%s, got %q", cardPath, doc.Card)
+	}
+	if doc.Out != cardPath {
+		t.Fatalf("expected out=%s (in-place), got %q", cardPath, doc.Out)
+	}
+	if len(doc.Added) != 1 || doc.Added[0] != "ADR-002" {
+		t.Fatalf("expected added=[ADR-002], got %v", doc.Added)
+	}
+	if len(doc.Skipped) != 0 {
+		t.Fatalf("expected skipped=[], got %v", doc.Skipped)
+	}
+	if len(doc.DecisionRefs) != 2 || doc.DecisionRefs[0] != "ADR-001" || doc.DecisionRefs[1] != "ADR-002" {
+		t.Fatalf("expected decision_refs=[ADR-001 ADR-002], got %v", doc.DecisionRefs)
+	}
+
+	// The card file must also be valid YAML with the new ref.
+	card := readDecisionLinkFixture(t, cardPath)
+	raw := card["context_alignment"].(map[string]any)["decision_refs"].([]any)
+	if len(raw) != 2 || raw[1] != "ADR-002" {
+		t.Fatalf("expected on-disk card to have ADR-002 appended, got %v", raw)
+	}
+}
+
+// TestDecisionLinkUnknownFlag covers the safe V1 rule that
+// unknown flags produce a usage error and do not mutate the
+// card.
+func TestDecisionLinkUnknownFlag(t *testing.T) {
+	tmpDir := t.TempDir()
+	cardPath := filepath.Join(tmpDir, "card.yaml")
+	writeDecisionLinkFixture(t, cardPath, "schema_version: \"1\"\ntask_id: t\n")
+	originalBytes, err := os.ReadFile(cardPath)
+	if err != nil {
+		t.Fatalf("read original: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{
+		"decision", "link",
+		"--card", cardPath,
+		"--decision", "ADR-001",
+		"--bogus", "value",
+	}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "unknown flag") {
+		t.Fatalf("expected unknown flag error, got: %s", stderr.String())
+	}
+
+	// Card must be unchanged.
+	afterBytes, err := os.ReadFile(cardPath)
+	if err != nil {
+		t.Fatalf("read original after: %v", err)
+	}
+	if !bytes.Equal(originalBytes, afterBytes) {
+		t.Fatalf("card was mutated by unknown flag. before:\n%s\nafter:\n%s", string(originalBytes), string(afterBytes))
 	}
 }

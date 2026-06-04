@@ -55,11 +55,11 @@ type decisionRecordSpec struct {
 }
 
 // handleDecision is the entry point for `xh decision ...`. The safe
-// V1 follow-up exposes `record`, `list`, `query`, and `affected`;
-// `link` is intentionally deferred to a later slice.
+// V1 follow-up exposes `record`, `list`, `query`, `affected`, and
+// `link`.
 func handleDecision(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "decision requires a subcommand: record, list, query, affected")
+		fmt.Fprintln(stderr, "decision requires a subcommand: record, list, query, affected, link")
 		return ExitUsage
 	}
 
@@ -72,6 +72,8 @@ func handleDecision(args []string, stdout, stderr io.Writer) int {
 		return handleDecisionQuery(args[1:], stdout, stderr)
 	case "affected":
 		return handleDecisionAffected(args[1:], stdout, stderr)
+	case "link":
+		return handleDecisionLink(args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "unknown decision subcommand: %s\n", args[0])
 		return ExitUsage
@@ -498,6 +500,142 @@ func handleDecisionAffected(args []string, stdout, stderr io.Writer) int {
 	return ExitOK
 }
 
+// handleDecisionLink implements
+// `xh decision link --card <path> --decision <id> ...`.
+// It loads the completion card (YAML or JSON) at --card, ensures
+// the document contains a `context_alignment` map with a
+// `decision_refs` array, and appends each --decision value to that
+// array using exact-string deduplication. Existing fields on the
+// card (top-level or nested inside `context_alignment`) are
+// preserved because the handler operates on `map[string]any`
+// directly. Without --out the patched card is written back in
+// place; with --out the patched copy is written to that path and
+// the original card is left untouched. The handler does not
+// perform any admission-time check on the resulting card.
+func handleDecisionLink(args []string, stdout, stderr io.Writer) int {
+	cardPath := ""
+	outPath := ""
+	var decisions []string
+	jsonMode := false
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "--card":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --card requires a value")
+				return ExitUsage
+			}
+			cardPath = args[i+1]
+			i++
+		case "--decision":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --decision requires a value")
+				return ExitUsage
+			}
+			decisions = appendList(decisions, args[i+1])
+			i++
+		case "--out":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --out requires a value")
+				return ExitUsage
+			}
+			outPath = args[i+1]
+			i++
+		case "--json":
+			jsonMode = true
+		case "-h", "--help":
+			fmt.Fprintln(stderr, "usage: xh decision link --card <path> --decision <id> [--decision <id> ...] [--out <path>] [--json]")
+			return ExitUsage
+		default:
+			if strings.HasPrefix(arg, "-") {
+				fmt.Fprintf(stderr, "unknown flag: %s\n", arg)
+				return ExitUsage
+			}
+			fmt.Fprintf(stderr, "unexpected argument: %s\n", arg)
+			return ExitUsage
+		}
+	}
+
+	if strings.TrimSpace(cardPath) == "" {
+		fmt.Fprintln(stderr, "error: --card is required")
+		return ExitUsage
+	}
+	if len(decisions) == 0 {
+		fmt.Fprintln(stderr, "error: --decision is required")
+		return ExitUsage
+	}
+
+	doc, err := loadCompletionCardForLink(cardPath)
+	if err != nil {
+		fmt.Fprintf(stderr, "error: %v\n", err)
+		return ExitError
+	}
+
+	updated, added, skipped, err := applyDecisionLinkRefs(doc, decisions)
+	if err != nil {
+		fmt.Fprintf(stderr, "error: %v\n", err)
+		return ExitError
+	}
+
+	dest := cardPath
+	if outPath != "" {
+		dest = outPath
+		if err := ensureDecisionOutputDir(outPath, false); err != nil {
+			fmt.Fprintf(stderr, "error: %v\n", err)
+			return ExitError
+		}
+	}
+
+	useJSON := jsonMode || strings.EqualFold(filepath.Ext(dest), ".json")
+	var payload []byte
+	if useJSON {
+		payload, err = json.MarshalIndent(updated, "", "  ")
+	} else {
+		payload, err = yaml.Marshal(updated)
+	}
+	if err != nil {
+		fmt.Fprintf(stderr, "error: %v\n", err)
+		return ExitError
+	}
+	payload = append(payload, '\n')
+
+	if err := os.WriteFile(dest, payload, 0644); err != nil {
+		fmt.Fprintf(stderr, "error: %v\n", err)
+		return ExitError
+	}
+
+	if jsonMode {
+		out := map[string]any{
+			"schema_version": decisionLinkResultSchemaVersion,
+			"card":           cardPath,
+			"out":            dest,
+			"added":          added,
+			"skipped":        skipped,
+			"decision_refs":  collectDecisionLinkRefs(updated),
+		}
+		data, err := json.MarshalIndent(out, "", "  ")
+		if err != nil {
+			fmt.Fprintf(stderr, "error: %v\n", err)
+			return ExitError
+		}
+		fmt.Fprintln(stdout, string(data))
+		return ExitOK
+	}
+
+	fmt.Fprintf(stdout, "Card: %s\n", cardPath)
+	fmt.Fprintf(stdout, "Output: %s\n", dest)
+	fmt.Fprintf(stdout, "Added: %s\n", formatDecisionLinkList(added))
+	fmt.Fprintf(stdout, "Skipped: %s\n", formatDecisionLinkList(skipped))
+	fmt.Fprintf(stdout, "Total decision refs: %d\n", len(collectDecisionLinkRefs(updated)))
+	return ExitOK
+}
+
+// decisionLinkResultSchemaVersion is the schema_version emitted in
+// the JSON output of `xh decision link`. The version is fixed so
+// downstream consumers can pattern-match it.
+const decisionLinkResultSchemaVersion = "x-harness.decision.link.v1"
+
 // buildDecisionRecord converts a structured spec into a map matching
 // schemas/decision-record.schema.json (safe V1). Required fields:
 // schema_version, id, decision, rationale. All other fields are emitted
@@ -804,4 +942,128 @@ func decisionRecordMatchesPath(doc map[string]any, target string) bool {
 		}
 	}
 	return false
+}
+
+// loadCompletionCardForLink reads a completion card (YAML or JSON)
+// into a generic map. The handler intentionally avoids the typed
+// `completionCard` struct so the link command can preserve every
+// field on disk, including `context_alignment` and any
+// non-schema keys the user has added to the card. An empty file
+// or a file whose root is not a map is rejected so the link step
+// always operates on a real document.
+func loadCompletionCardForLink(path string) (map[string]any, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("card not found: %s", path)
+		}
+		return nil, fmt.Errorf("read card %s: %w", path, err)
+	}
+	trimmed := strings.TrimSpace(string(data))
+	if trimmed == "" {
+		return nil, fmt.Errorf("card is empty: %s", path)
+	}
+	var doc map[string]any
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return nil, fmt.Errorf("parse card %s: %w", path, err)
+	}
+	if doc == nil {
+		return nil, fmt.Errorf("card is not a YAML/JSON mapping: %s", path)
+	}
+	return doc, nil
+}
+
+// applyDecisionLinkRefs mutates doc to ensure
+// `context_alignment.decision_refs` exists, then appends each
+// candidate in inputs to that array using exact-string
+// deduplication. The function preserves the document's existing
+// keys, both at the top level and inside `context_alignment`, by
+// only creating the structures it needs and never re-marshaling
+// through a struct type. A `context_alignment` value that is not
+// a map (e.g. a scalar) or a `decision_refs` value that is not an
+// array is reported as an error so the handler does not silently
+// corrupt the user's card.
+func applyDecisionLinkRefs(doc map[string]any, inputs []string) (map[string]any, []string, []string, error) {
+	ca, ok := doc["context_alignment"]
+	if ok && ca != nil {
+		caMap, isMap := ca.(map[string]any)
+		if !isMap {
+			return nil, nil, nil, fmt.Errorf("context_alignment must be a mapping, got %T", ca)
+		}
+		ca = caMap
+	} else {
+		caMap := map[string]any{}
+		doc["context_alignment"] = caMap
+		ca = caMap
+	}
+	caMap := ca.(map[string]any)
+
+	raw, ok := caMap["decision_refs"]
+	if !ok || raw == nil {
+		caMap["decision_refs"] = []any{}
+		raw = caMap["decision_refs"]
+	}
+	refs, ok := raw.([]any)
+	if !ok {
+		return nil, nil, nil, fmt.Errorf("context_alignment.decision_refs must be an array, got %T", raw)
+	}
+
+	existing := make(map[string]struct{}, len(refs))
+	for _, r := range refs {
+		if s, ok := r.(string); ok {
+			existing[s] = struct{}{}
+		}
+	}
+
+	added := make([]string, 0)
+	skipped := make([]string, 0)
+	seen := make(map[string]struct{}, len(inputs))
+	for _, candidate := range inputs {
+		if _, dup := seen[candidate]; dup {
+			continue
+		}
+		seen[candidate] = struct{}{}
+		if _, present := existing[candidate]; present {
+			skipped = append(skipped, candidate)
+			continue
+		}
+		refs = append(refs, candidate)
+		existing[candidate] = struct{}{}
+		added = append(added, candidate)
+	}
+	caMap["decision_refs"] = refs
+	return doc, added, skipped, nil
+}
+
+// collectDecisionLinkRefs returns the strings currently stored in
+// `context_alignment.decision_refs` in the order they appear on
+// the document. The function is defensive: a missing or
+// non-string entry is skipped (or coerced) so the JSON output
+// stays well-formed.
+func collectDecisionLinkRefs(doc map[string]any) []string {
+	ca, ok := doc["context_alignment"].(map[string]any)
+	if !ok {
+		return []string{}
+	}
+	raw, ok := ca["decision_refs"].([]any)
+	if !ok {
+		return []string{}
+	}
+	out := make([]string, 0, len(raw))
+	for _, v := range raw {
+		if s, ok := v.(string); ok {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// formatDecisionLinkList renders a string list for the text
+// output. An empty list is rendered as "(none)" so the report
+// always carries an explicit value.
+func formatDecisionLinkList(items []string) string {
+	if len(items) == 0 {
+		return "(none)"
+	}
+	return strings.Join(items, ", ")
 }
