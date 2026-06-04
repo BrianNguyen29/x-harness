@@ -127,6 +127,7 @@ func TestPolicyMatrixJSONOutput(t *testing.T) {
 		"pgv.suggestion",
 		"mutation_guard.verifier_read_only",
 		"context_floor.stale_ground",
+		"boundary.violation",
 	} {
 		if !seen[id] {
 			t.Fatalf("expected rule %q in JSON output, missing", id)
@@ -293,6 +294,66 @@ func TestPolicyExplainJSONOutput(t *testing.T) {
 	}
 	if rule.Status != "runtime_blocking" {
 		t.Fatalf("expected status=runtime_blocking, got %s", rule.Status)
+	}
+}
+
+func TestPolicyMatrixBoundaryViolationRule(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	if code := Run([]string{"policy", "explain", "boundary.violation", "--json"}, &stdout, &stderr); code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	var rule MatrixRule
+	if err := json.Unmarshal(stdout.Bytes(), &rule); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if rule.ID != "boundary.violation" {
+		t.Fatalf("expected id=boundary.violation, got %s", rule.ID)
+	}
+	if rule.Status != "advisory" {
+		t.Fatalf("expected status=advisory, got %s", rule.Status)
+	}
+	if rule.EnabledByDefault {
+		t.Fatal("expected enabled_by_default=false (opt-in via profile or --boundary-enforce)")
+	}
+	if rule.AdmissionAuthority == nil || *rule.AdmissionAuthority {
+		t.Fatal("expected admission_authority=false (PGV rule: never grants admission authority)")
+	}
+	expectedProfiles := map[string]bool{
+		"light-local":   true,
+		"ci-standard":   true,
+		"ci-strict":     true,
+		"governed-deep": true,
+	}
+	for _, p := range rule.Profiles {
+		if !expectedProfiles[p] {
+			t.Errorf("unexpected profile %q", p)
+		}
+	}
+	hasBoundaryEnforce := false
+	for _, f := range rule.EnabledByFlags {
+		if f == "--boundary-enforce" {
+			hasBoundaryEnforce = true
+		}
+	}
+	if !hasBoundaryEnforce {
+		t.Errorf("expected --boundary-enforce in enabled_by_flags, got %v", rule.EnabledByFlags)
+	}
+	hasBoundaryViolations := false
+	hasBoundaryAllow := false
+	for _, f := range rule.Fixtures {
+		if strings.Contains(f, "boundary-violation") {
+			hasBoundaryViolations = true
+		}
+		if strings.Contains(f, "boundary-allow") {
+			hasBoundaryAllow = true
+		}
+	}
+	if !hasBoundaryViolations {
+		t.Errorf("expected boundary-violation fixture, got %v", rule.Fixtures)
+	}
+	if !hasBoundaryAllow {
+		t.Errorf("expected boundary-allow fixture, got %v", rule.Fixtures)
 	}
 }
 

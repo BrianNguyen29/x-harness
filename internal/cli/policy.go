@@ -332,13 +332,15 @@ func curatedMatrix() []MatrixRule {
 		},
 		{
 			ID:                 "boundary.violation",
-			Description:        "Path-glob + import-regex boundary enforcement (V1). Surfaces violations in `xh boundary check`; admission integration per profile is V1-safe advisory only.",
+			Description:        "Path-glob + import-regex boundary enforcement (V1). Profile-keyed runtime: light-local and ci-standard are advisory-only; ci-strict blocks high/critical violations; governed-deep blocks all violations unless approved via boundary_approvals.rule_id. Missing policies never block (opt-in).",
 			PolicyFile:         "policies/boundaries.yaml",
 			RuntimeModule:      "internal/boundary",
 			Status:             matrixStatusAdvisory,
-			EnabledByDefault:   true,
+			EnabledByDefault:   false,
 			AdmissionAuthority: boolPtr(false),
+			EnabledByFlags:     []string{"--boundary-enforce"},
 			Profiles:           []string{"light-local", "ci-standard", "ci-strict", "governed-deep"},
+			Fixtures:           []string{"examples/golden/regression/boundary-violation", "examples/golden/regression/boundary-allow"},
 			Source:             matrixSourceCurated,
 		},
 	}

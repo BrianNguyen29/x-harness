@@ -51,6 +51,13 @@ func buildTaxonomy(predicate string) *FailureTaxonomy {
 			Recoverability: "retry_with_fixes",
 			NextAction:     "review_and_resubmit",
 		}
+	case "boundary_violation":
+		return &FailureTaxonomy{
+			FailureClass:   "boundary_violation",
+			FailureStage:   "verify_pipeline",
+			Recoverability: "retry_with_fixes",
+			NextAction:     "review_and_resubmit",
+		}
 	default:
 		return &FailureTaxonomy{
 			FailureClass:   "schema_or_policy_invalid",

@@ -494,6 +494,31 @@
       },
       "additionalProperties": false
     },
+    "boundary_approvals": {
+      "type": "array",
+      "description": "Optional list of approved boundary rule_ids. Each entry suppresses blocking for the named rule under governed-deep (block_all) enforcement. Other profiles and the contract-oracle check ignore this list. Minimal V1 shape: {rule_id, reason?}.",
+      "items": {
+        "type": "object",
+        "required": ["rule_id"],
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "approver": {
+            "type": "string"
+          },
+          "approved_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     "stale_ground": {
       "type": "boolean",
       "description": "Indicates the task context may be stale. When true, admission is blocked unless the stale ground is resolved. CLI flag --stale-ground overrides this card field."

@@ -1,0 +1,2 @@
+This fixture tests Go-only verify-stage boundary enforcement that is not implemented in the TS pipeline.
+TS benchmark should skip this case to avoid false accepts.

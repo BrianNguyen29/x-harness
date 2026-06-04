@@ -11,9 +11,9 @@ describe("examples command", () => {
     expect(exitCode).toBe(0);
     const output = JSON.parse(stdout);
     expect(output.ok).toBe(true);
-    expect(output.total).toBe(18);
-    expect(output.passed).toBe(18);
-    expect(output.results).toHaveLength(18);
+    expect(output.total).toBe(20);
+    expect(output.passed).toBe(20);
+    expect(output.results).toHaveLength(20);
 
     const names = output.results.map((r: { name: string }) => r.name);
     expect(names).toContain("regression/success-light");
@@ -34,12 +34,14 @@ describe("examples command", () => {
     expect(names).toContain("regression/blocked-missing-context-ref");
     expect(names).toContain("regression/blocked-contract-oracle");
     expect(names).toContain("regression/success-recovered-flow");
+    expect(names).toContain("regression/boundary-allow");
+    expect(names).toContain("regression/boundary-violation");
   });
 
   it("verify subcommand prints human-readable summary", async () => {
     const { stdout, exitCode } = await execaNode(["examples", "verify"]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("Golden examples: 18 total");
+    expect(stdout).toContain("Golden examples: 20 total");
     expect(stdout).toContain("regression/success-light");
     expect(stdout).toContain("regression/blocked-missing-evidence");
     expect(stdout).toContain("regression/failed-invalid-status");

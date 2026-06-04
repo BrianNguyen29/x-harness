@@ -1,0 +1,28 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-BOUNDARY-VIOLATION-001
+tier: light
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - src/ui/login.ts
+  manual_rationale: A UI file that violates a deny boundary rule (UI must not import internal/db directly).
+claim:
+  fix_status: fixed
+  summary: Added UI source file that triggers a deny boundary rule for golden regression coverage
+  evidence:
+    - description: Source file
+      url: ./src/ui/login.ts
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice

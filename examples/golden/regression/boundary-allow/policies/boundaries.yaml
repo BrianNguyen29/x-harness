@@ -1,0 +1,18 @@
+version: 1
+
+# Boundary policy for the boundary-allow golden fixture. Same deny
+# rule as the boundary-violation fixture, but with an allow entry
+# that exempts the `internal/db/public` import path the fixture's
+# source file uses. The verify-stage check is exercised across all
+# enforcement modes (off, advisory, block_high, block_all) and must
+# never raise a violation.
+boundaries:
+  - id: ui-cannot-access-db
+    description: "UI files must not import internal database packages directly."
+    from: "src/ui/**"
+    to_import: "internal/db/**"
+    action: deny
+    severity: critical
+    applies_to_languages: [typescript, javascript]
+    allow:
+      - "internal/db/public/**"
