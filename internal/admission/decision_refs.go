@@ -29,18 +29,19 @@ func evaluateDecisionRefs(doc map[string]any, tier string) []string {
 		return notes
 	}
 
-	if !hasAnyDecisionRef(doc) {
+	if !HasAnyDecisionRef(doc) {
 		notes = append(notes, decisionRefsEmptyNote)
 	}
 	return notes
 }
 
-// hasAnyDecisionRef reports whether doc.context_alignment.decision_refs is
-// a non-empty array containing at least one non-blank string. The check is
-// performed purely for advisory purposes and intentionally tolerates
-// nil/missing/non-array values, which all map to "empty" and trigger the
-// note.
-func hasAnyDecisionRef(doc map[string]any) bool {
+// HasAnyDecisionRef reports whether doc.context_alignment.decision_refs
+// is a non-empty array containing at least one non-blank string. Exposed
+// at package scope so the verify layer can apply profile-controlled
+// blocking (see internal/cli/verify.go DecisionEnforce) without
+// duplicating the path-traversal logic. Tolerates nil/missing/non-array
+// values; they all map to "empty" (returns false).
+func HasAnyDecisionRef(doc map[string]any) bool {
 	ctxAlign := mapValue(doc, "context_alignment")
 	if ctxAlign == nil {
 		return false

@@ -172,6 +172,7 @@ type VerifyProfile struct {
 	WorktreeAware   bool
 	StrictWithheld  bool
 	BoundaryEnforce string // off|advisory|block_high|block_all (default "" = use flag)
+	DecisionEnforce string // off|advisory|block for context_alignment.decision_refs (default "" = use flag)
 }
 
 // verifyProfileNames returns the sorted list of profile names for usage
@@ -195,6 +196,7 @@ var verifyProfiles = map[string]VerifyProfile{
 		ContractOracles: false,
 		WorktreeAware:   false,
 		BoundaryEnforce: "advisory",
+		DecisionEnforce: "advisory",
 	},
 	"ci-standard": {
 		Name:            "ci-standard",
@@ -205,10 +207,11 @@ var verifyProfiles = map[string]VerifyProfile{
 		ContractOracles: false,
 		WorktreeAware:   true,
 		BoundaryEnforce: "advisory",
+		DecisionEnforce: "advisory",
 	},
 	"ci-strict": {
 		Name:            "ci-strict",
-		Description:     "CI strict: mutation guard, context floor, contract oracles, strict withheld reason schema. Blocks high/critical boundary violations.",
+		Description:     "CI strict: mutation guard, context floor, contract oracles, strict withheld reason schema. Blocks high/critical boundary violations and missing context_alignment.decision_refs on standard/deep cards.",
 		MutationGuard:   true,
 		Strict:          true,
 		ContextFloor:    true,
@@ -216,10 +219,11 @@ var verifyProfiles = map[string]VerifyProfile{
 		WorktreeAware:   true,
 		StrictWithheld:  true,
 		BoundaryEnforce: "block_high",
+		DecisionEnforce: "block",
 	},
 	"governed-deep": {
 		Name:            "governed-deep",
-		Description:     "Governed deep: all ci-strict checks plus strict withheld reason schema. Blocks all boundary violations unless approved via boundary_approvals.",
+		Description:     "Governed deep: all ci-strict checks plus strict withheld reason schema. Blocks all boundary violations unless approved via boundary_approvals, and blocks missing context_alignment.decision_refs on standard/deep cards.",
 		MutationGuard:   true,
 		Strict:          true,
 		ContextFloor:    true,
@@ -227,6 +231,7 @@ var verifyProfiles = map[string]VerifyProfile{
 		WorktreeAware:   true,
 		StrictWithheld:  true,
 		BoundaryEnforce: "block_all",
+		DecisionEnforce: "block",
 	},
 }
 
@@ -235,7 +240,7 @@ var verifyProfiles = map[string]VerifyProfile{
 // to keep the explicit-flag override decision obvious to reviewers.
 //
 //nolint:unused
-func resolveVerifyProfile(args []string, useMutationGuard *bool, strict *bool, contextFloor *bool, contractOracles *bool, worktreeAware *bool, strictWithheld *bool, boundaryEnforce *string) string {
+func resolveVerifyProfile(args []string, useMutationGuard *bool, strict *bool, contextFloor *bool, contractOracles *bool, worktreeAware *bool, strictWithheld *bool, boundaryEnforce *string, decisionEnforce *string) string {
 	for i := 0; i < len(args); i++ {
 		if args[i] != "--profile" {
 			continue
@@ -271,6 +276,9 @@ func resolveVerifyProfile(args []string, useMutationGuard *bool, strict *bool, c
 		if *boundaryEnforce == "" {
 			*boundaryEnforce = profile.BoundaryEnforce
 		}
+		if *decisionEnforce == "" {
+			*decisionEnforce = profile.DecisionEnforce
+		}
 		return name
 	}
 	return ""
@@ -293,6 +301,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	contractOraclesPolicy := ""
 	boundaryEnforce := ""
 	boundaryPolicy := ""
+	decisionEnforce := ""
 	profileName := ""
 
 	// Track which flags the caller set explicitly so the profile layer
@@ -304,6 +313,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	explicitWorktreeAware := false
 	explicitStrictWithheld := false
 	explicitBoundaryEnforce := false
+	explicitDecisionEnforce := false
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -383,6 +393,19 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 				boundaryPolicy = args[i+1]
 				i++
 			}
+		case "--decision-enforce":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --decision-enforce requires a value (off|advisory|block)")
+				return ExitUsage
+			}
+			v := args[i+1]
+			if !isValidDecisionEnforce(v) {
+				fmt.Fprintf(stderr, "error: invalid --decision-enforce %q (allowed: off, advisory, block)\n", v)
+				return ExitUsage
+			}
+			decisionEnforce = v
+			explicitDecisionEnforce = true
+			i++
 		}
 	}
 
@@ -413,10 +436,13 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		if !explicitBoundaryEnforce {
 			boundaryEnforce = profile.BoundaryEnforce
 		}
+		if !explicitDecisionEnforce {
+			decisionEnforce = profile.DecisionEnforce
+		}
 	}
 
 	if (cardPath == "" && subagentPath == "") || (cardPath != "" && subagentPath != "") {
-		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--profile <light-local|ci-standard|ci-strict|governed-deep>] [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--strict-withheld-reason] [--trace] [--trace-dir <dir>] [--worktree-aware] [--context-floor] [--contract-oracles] [--contract-oracles-policy <path>] [--boundary-enforce off|advisory|block_high|block_all] [--boundary-policy <path>]")
+		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--profile <light-local|ci-standard|ci-strict|governed-deep>] [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--strict-withheld-reason] [--trace] [--trace-dir <dir>] [--worktree-aware] [--context-floor] [--contract-oracles] [--contract-oracles-policy <path>] [--boundary-enforce off|advisory|block_high|block_all] [--boundary-policy <path>] [--decision-enforce off|advisory|block]")
 		return ExitUsage
 	}
 
@@ -637,6 +663,37 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			// remaining items.
 			note := fmt.Sprintf("boundary advisory: %d total violation(s), 0 blocking under enforce=%s", len(boundaryResult.Violations), boundaryEnforce)
 			result.AdmissionNotes = append(result.AdmissionNotes, note)
+		}
+	}
+
+	// Decision-refs gate (profile-controlled). Mirrors the
+	// BoundaryEnforce style: off|advisory|block with the closed enum
+	// validated in isValidDecisionEnforce. The off and advisory modes
+	// never block at the verify layer; the advisory note from
+	// admission.Run is preserved as-is. The block mode withholds
+	// standard/deep cards whose context_alignment.decision_refs array
+	// is missing or contains no non-blank string entries, with the
+	// explicit `decision_refs_missing` blocking predicate so the
+	// failure remains traceable.
+	if decisionEnforce == "block" && result.OK {
+		if (effectiveTier == "standard" || effectiveTier == "deep") && !admission.HasAnyDecisionRef(doc) {
+			predicate := "decision_refs_missing"
+			recoverability := "retry_with_fixes"
+			result.OK = false
+			result.AdmissionOutcome = "blocked"
+			result.AcceptanceStatus = "withheld"
+			result.WithheldReason = &withheldReason{
+				Class:                "decision_refs_missing",
+				Stage:                "verification",
+				Owner:                ownerFromBlockingPredicate(predicate),
+				FailureClass:         "decision_refs_missing",
+				FailureStage:         "verify_pipeline",
+				Recoverability:       recoverability,
+				SchemaRecoverability: schemaRecoverabilityFromLegacy(recoverability),
+				NextAction:           "add_decision_refs_and_resubmit",
+				BlockingPredicate:    predicate,
+			}
+			result.AdmissionErrors = []string{"context_alignment.decision_refs is empty (verify-stage block; admission acceptance is not decision correctness)"}
 		}
 	}
 
@@ -982,6 +1039,17 @@ func productIntentStatusFromDoc(doc map[string]any) string {
 func isValidBoundaryEnforce(v string) bool {
 	switch v {
 	case "off", "advisory", "block_high", "block_all":
+		return true
+	}
+	return false
+}
+
+// isValidDecisionEnforce reports whether value is one of the supported
+// enforcement modes for the verify-stage decision_refs gate. Mirrors
+// the closed-enum style of isValidBoundaryEnforce.
+func isValidDecisionEnforce(v string) bool {
+	switch v {
+	case "off", "advisory", "block":
 		return true
 	}
 	return false
