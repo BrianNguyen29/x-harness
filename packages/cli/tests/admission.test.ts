@@ -4273,6 +4273,179 @@ describe("admission", () => {
     expect(result.notes.some((n) => n.includes("intent_contract"))).toBe(false);
   });
 
+  // intent_ref advisory tests (advisory-only; never blocks admission).
+  // intent_ref is an optional top-level string on a completion card that
+  // references a product intent record (id or path) described by
+  // product-intent.schema.json. The engine emits a top-level missing
+  // note for standard/deep when intent_ref is absent or blank and stays
+  // quiet otherwise. The light tier remains quiet. Parity-safe with
+  // internal/admission/intent_ref.go and the Go tests in
+  // internal/admission/admission_test.go. Wording matches policies/
+  // admission.yaml advisory_intent_ref block.
+  it("advises standard tier when intent_ref is missing", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "ok", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      done_checklist: { source_of_truth_read: true },
+      prediction: {
+        claim: "p",
+        expected_effect: "e",
+        falsification_method: "f",
+        horizon: "same_verify",
+      },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(
+      result.notes.some((n) => n.includes("intent_ref not declared"))
+    ).toBe(true);
+  });
+
+  it("advises standard tier when intent_ref is blank", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "ok", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      done_checklist: { source_of_truth_read: true },
+      prediction: {
+        claim: "p",
+        expected_effect: "e",
+        falsification_method: "f",
+        horizon: "same_verify",
+      },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      intent_ref: "   ",
+    });
+    expect(result.outcome).toBe("success");
+    expect(
+      result.notes.some((n) => n.includes("intent_ref not declared"))
+    ).toBe(true);
+  });
+
+  it("does not advise standard tier when intent_ref is present", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "ok", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      done_checklist: { source_of_truth_read: true },
+      prediction: {
+        claim: "p",
+        expected_effect: "e",
+        falsification_method: "f",
+        horizon: "same_verify",
+      },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      intent_ref: "doc/intake-lite.md",
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.notes.some((n) => n.includes("intent_ref"))).toBe(false);
+  });
+
+  it("advises deep tier when intent_ref is missing", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+      done_checklist: {
+        source_of_truth_read: true,
+        scope_explained: true,
+        read_write_sets_declared: true,
+        evidence_attached: true,
+        coverage_gap_declared: true,
+        risk_and_rollback_declared: true,
+        prediction_declared: true,
+      },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(
+      result.notes.some((n) => n.includes("intent_ref not declared"))
+    ).toBe(true);
+  });
+
+  it("does not advise light tier for missing intent_ref", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        manual_rationale: "simple doc fix",
+      },
+      intent_ref: "doc/intake-lite.md",
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.notes.some((n) => n.includes("intent_ref"))).toBe(false);
+  });
+
   // Verify-stage v1 auto-escalation drift guard. Loads the canonical
   // policies/escalation.yaml file and behaviorally checks that each
   // declared high_risk_path_pattern triggers the TypeScript

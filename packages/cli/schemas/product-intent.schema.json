@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "product-intent",
+  "description": "Optional product intent record used by the advisory 'intent_ref' field on completion cards. Mirrors the shape of intent_contract for safe V1. Required fields: schema_version, id, product_goal, acceptance_criteria. All other fields are optional but recommended. This schema does NOT gate admission in safe V1.",
+  "type": "object",
+  "required": ["schema_version", "id", "product_goal", "acceptance_criteria"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identifier (slug, doc path, or ticket id) for this product intent. Referenced from completion cards via the optional top-level intent_ref field."
+    },
+    "product_goal": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Plain-language statement of the intended product outcome."
+    },
+    "user_visible_change": {
+      "type": "boolean",
+      "description": "Whether this intent is intended to produce a user-visible change. An explicit false is a valid non-user-visible declaration."
+    },
+    "non_goals": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "statement": { "type": "string" },
+          "source_ref": { "type": "string" }
+        }
+      }
+    },
+    "protected_behaviors": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "ambiguity": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": ["none", "unresolved", "partial"]
+        },
+        "questions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

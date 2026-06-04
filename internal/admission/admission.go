@@ -162,6 +162,15 @@ func Run(doc map[string]any, strict bool, contextFloor bool) Result {
 	// quiet.
 	notes = append(notes, evaluateIntentContract(doc, tier)...)
 
+	// Intent ref advisory (optional; never blocks admission).
+	// Mirrors intent_contract: emits a top-level missing note when the
+	// optional top-level intent_ref field is absent or blank on
+	// standard/deep tiers. Light tier stays quiet. Safe V1 wording is
+	// parity-safe with the TS implementation in
+	// packages/cli/src/core/admission.ts and the policy documentation in
+	// policies/admission.yaml.
+	notes = append(notes, evaluateIntentRef(doc, tier)...)
+
 	// Command safety
 	cmdResult := evaluateCommandSafety(doc)
 	for _, e := range cmdResult.errors {
