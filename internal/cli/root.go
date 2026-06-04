@@ -79,6 +79,7 @@ var commands = []CommandInfo{
 	{Name: "contract", Description: "Run contract oracle checks", Maturity: MaturityExperimental},
 	{Name: "policy", Description: "Show policy enforcement matrix and rule explainers", Maturity: MaturityBeta},
 	{Name: "explain", Description: "Explain a completion card's admission/withheld state", Maturity: MaturityBeta},
+	{Name: "boundary", Description: "Lint/check/explain boundary policy against repo source files", Maturity: MaturityBeta},
 }
 
 func isBeginnerCommand(name string) bool {
@@ -195,6 +196,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handlePolicy(args[1:], stdout, stderr)
 	case "explain":
 		return handleExplain(args[1:], stdout, stderr)
+	case "boundary":
+		return handleBoundary(args[1:], stdout, stderr)
 	case "profile":
 		return handleProfile(args[1:], stdout, stderr)
 	case "repair":

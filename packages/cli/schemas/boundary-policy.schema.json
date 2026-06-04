@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "boundary-policy",
+  "description": "Schema for x-harness boundary policy file (policies/boundaries.yaml). V1 supports path-glob + import-regex enforcement only; AST parsers, semgrep, and codeql backends are explicitly out of scope for V1. Rules are applied during `xh boundary check` and surfaced as advisory or runtime_blocking depending on the active verify profile (V1 default: advisory only; admission integration per profile is opt-in).",
+  "type": "object",
+  "required": ["version", "boundaries"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1,
+      "description": "Policy schema version. V1 only."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional human-readable description of the policy file."
+    },
+    "boundaries": {
+      "type": "array",
+      "minItems": 0,
+      "description": "Boundary rules. Each rule is a deterministic path-glob + import-regex predicate. Rules are evaluated in declared order; a file is checked against every rule whose `from` glob matches the file path.",
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "rule": {
+      "type": "object",
+      "required": ["id", "from", "to_import", "action", "severity"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_\\-\\.]{0,63}$",
+          "description": "Stable rule identifier. Used as `rule_id` in violation output and as a discriminator in CI tooling."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable description shown in `xh boundary explain`."
+        },
+        "from": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Forward-slash glob (with `**` and `*`) matched against the candidate file's repo-relative path. A leading `./` is stripped before matching."
+        },
+        "to_import": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Substring or simple glob matched against an import path extracted from a single line. `**` is treated like `*`. An exact import line is a violation when this pattern matches the extracted import path."
+        },
+        "action": {
+          "type": "string",
+          "enum": ["deny", "require_intermediate", "warn"],
+          "description": "Action when the rule matches. `deny` raises a violation; `require_intermediate` raises a violation unless the import path also matches `intermediate`; `warn` raises a warning-level finding."
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["info", "warning", "high", "critical"],
+          "description": "Severity classification. The default V1 policy uses `warning` for advisory rules. Per-profile severity escalation is a V2 concern."
+        },
+        "intermediate": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Required intermediate path or import glob for `require_intermediate` rules. The violation is suppressed when the import path also contains/matches this substring/glob."
+        },
+        "allow": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Path/import glob exceptions. A violation is suppressed when the import path or file path matches any entry."
+        },
+        "applies_to_languages": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["javascript", "typescript", "go"]
+          },
+          "description": "Restrict the rule to specific languages (by file extension). When omitted, the rule applies to all supported languages."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
