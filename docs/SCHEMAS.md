@@ -49,6 +49,7 @@ These schemas are included in the package and used by command-specific features 
 | `approval-risk.schema.json`           | Approval-risk evaluation reports.            |
 | `attribution.schema.json`             | Attribution report artifacts.                |
 | `benchmark-report.schema.json`        | Benchmark JSON output.                       |
+| `boundary-policy.schema.json`         | Boundary policy (`policies/boundaries.yaml`) for `xh boundary` — V1 path-glob + import-regex rules with `action` (`deny`/`require_intermediate`/`warn`) and `severity` (`info`/`warning`/`high`/`critical`). |
 | `classifier.schema.json`              | Permission intent classifier result shape (`command`, `intents`, `risk`, `unknown`). |
 | `components-registry.schema.json`     | Component registry validation.               |
 | `context-alignment.schema.json`       | Context alignment evidence for verify --context-floor. |
