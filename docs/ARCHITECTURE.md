@@ -58,6 +58,10 @@ Loads `policies/admission.yaml` and executes the core verification logic. It ope
 
 > **Note:** Contract Oracle (`verify --contract-oracles`) and Context Floor (`verify --context-floor`) are **optional** verify stages. Both default to off and must be explicitly enabled. Contract Oracle performs line-level grep/dependency rule checks. Context Floor performs minimal file/ref presence checks.
 
+### 4a. Boundary checks (`xh boundary`)
+
+`xh boundary` is a verify-adjacent, deterministic policy checker. It loads `policies/boundaries.yaml` (schema: `schemas/boundary-policy.schema.json`) and matches each candidate file's path-glob (`from`) against the rule's import pattern (`to_import`) using simple regex (V1 — no AST, no semgrep, no LLM). Subcommands are `lint`, `check --all|--changed`, and `explain <file>`. Boundary checks are opt-in: when the policy file is missing, `xh boundary check` exits 0 with a warning instead of failing.
+
 ### 5. Metrics & Reporting Layer
 
 Computes deterministic, local-first performance metrics analyzing verification strength, state consistency, recovery ability, replayability, and execution costs without relying on external SaaS APIs or monitoring dashboards.

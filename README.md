@@ -199,7 +199,20 @@ These are the actions you'll use 95% of the time. The full list is in `xh --help
 > **Terminal**: `xh <action>` (e.g. `xh check`)
 > **Agent chat**: `/xh <action>` (e.g. `/xh check`)
 
-The advanced commands (`handoff`, `verify`, `report`, `packet`, `conformance`, `benchmark`, `contract`, `release`, …) are documented under [`docs/`](docs).
+The advanced commands (`handoff`, `verify`, `report`, `packet`, `conformance`, `benchmark`, `contract`, `release`, `boundary`, …) are documented under [`docs/`](docs).
+
+### Boundary checks (`xh boundary`)
+
+`xh boundary` runs deterministic, path-glob + import-regex checks against `policies/boundaries.yaml` (V1 scope; no AST, no semgrep, no LLM). Subcommands:
+
+```bash
+xh boundary lint                              # validate the policy file against the schema
+xh boundary check --all                       # scan the whole repo
+xh boundary check --changed                   # scan only files in `git diff --name-only`
+xh boundary explain <file>                    # show which rules apply to a single file
+```
+
+When `policies/boundaries.yaml` is absent, `xh boundary check` exits 0 with a warning (opt-in feature). See [`schemas/boundary-policy.schema.json`](schemas/boundary-policy.schema.json) for the rule shape (`id`, `from`, `to_import`, `action`, `severity`, `intermediate?`, `allow?`, `applies_to_languages?`).
 
 ---
 

@@ -21,6 +21,7 @@ enforces.
 - [Schemas](SCHEMAS.md)
 - [Recovery](RECOVERY.md)
 - [Packets](PACKETS.md)
+- Boundary policy: see `xh boundary {lint,check,explain}` and `schemas/boundary-policy.schema.json` (V1 path-glob + import-regex enforcement).
 
 ## Operations
 
