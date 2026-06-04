@@ -1,7 +1,7 @@
 {
   "failed": 0,
   "ok": true,
-  "passed": 18,
+  "passed": 20,
   "results": [
     {
       "acceptance_status": "withheld",
@@ -135,6 +135,22 @@
       "passed": true
     },
     {
+      "acceptance_status": "accepted",
+      "errors": [],
+      "name": "regression/boundary-allow",
+      "outcome": "success",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
+      "acceptance_status": "accepted",
+      "errors": [],
+      "name": "regression/boundary-violation",
+      "outcome": "success",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
       "acceptance_status": "withheld",
       "errors": [
         "completion card validation failed: /admission/outcome must be equal to constant",
@@ -179,5 +195,5 @@
       "passed": true
     }
   ],
-  "total": 18
+  "total": 20
 }

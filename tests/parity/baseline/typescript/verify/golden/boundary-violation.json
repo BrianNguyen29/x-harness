@@ -1,0 +1,56 @@
+{
+  "acceptance_status": "accepted",
+  "admission_outcome": "success",
+  "card_id": null,
+  "changed_files": {
+    "card_files": [
+      "src/ui/login.ts"
+    ],
+    "files": [
+      "src/ui/login.ts"
+    ],
+    "git_files": [],
+    "source": "card"
+  },
+  "checks": [
+    {
+      "name": "completion card valid",
+      "note": "completion card valid: examples/golden/regression/boundary-violation/completion-card.yaml",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "context floor advisory only for light tier",
+      "note": "context floor advisory only for light tier",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "admission checks passed",
+      "note": "admission checks passed",
+      "severity": "info",
+      "status": "passed"
+    }
+  ],
+  "decision": {
+    "acceptance_status": "accepted",
+    "outcome": "success"
+  },
+  "denominator_warning": "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
+  "episode": null,
+  "input_card_hash": "sha256:cd982744a926b9308fbd7b716c88768cf07161650a0a996abe55237b1987401d",
+  "ok": true,
+  "policy_hash": "sha256:5fd0b11e0d777043b97ab4179b18a85af3d30f74a48353ece32dd2801990ab52",
+  "product_intent_status": null,
+  "recovery": null,
+  "schema_version": 1,
+  "strict": false,
+  "task_id": "TASK-GOLDEN-BOUNDARY-VIOLATION-001",
+  "withheld_reason": null
+}
