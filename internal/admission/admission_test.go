@@ -3350,6 +3350,107 @@ func TestIntentRefLightNoAdvisory(t *testing.T) {
 	}
 }
 
+// decision_refs advisory tests (advisory-only; never blocks admission).
+// context_alignment.decision_refs is an optional string array on the
+// context_alignment object. The engine emits a top-level note for
+// standard/deep when the array is missing or contains no non-blank
+// string entries, and stays quiet otherwise. The light tier remains
+// quiet. Wording is parity-safe with the TS implementation in
+// packages/cli/src/core/admission.ts and the policy documentation in
+// policies/admission.yaml.
+func standardDecisionRefsFixture(refs []any) map[string]any {
+	doc := standardProductIntentFixture(nil)
+	if refs == nil {
+		return doc
+	}
+	doc["context_alignment"] = map[string]any{
+		"decision_refs": refs,
+	}
+	return doc
+}
+
+func deepDecisionRefsFixture(refs []any) map[string]any {
+	doc := deepProductIntentFixture(nil)
+	if refs == nil {
+		return doc
+	}
+	doc["context_alignment"] = map[string]any{
+		"decision_refs": refs,
+	}
+	return doc
+}
+
+func lightDecisionRefsFixture() map[string]any {
+	doc := lightProductIntentFixture()
+	doc["context_alignment"] = map[string]any{
+		"decision_refs": []any{"decisions/intake-lite.md"},
+	}
+	return doc
+}
+
+func TestDecisionRefsStandardMissingEmitsAdvisory(t *testing.T) {
+	result := Run(standardDecisionRefsFixture(nil), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted (advisory-only), got %s", result.AcceptanceStatus)
+	}
+	if !containsNote(result.Notes, "context_alignment.decision_refs is empty") {
+		t.Fatalf("expected decision_refs empty advisory note, got %v", result.Notes)
+	}
+}
+
+func TestDecisionRefsStandardEmptyArrayEmitsAdvisory(t *testing.T) {
+	result := Run(standardDecisionRefsFixture([]any{}), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "context_alignment.decision_refs is empty") {
+		t.Fatalf("expected decision_refs empty advisory for empty array, got %v", result.Notes)
+	}
+}
+
+func TestDecisionRefsStandardBlankEntriesEmitsAdvisory(t *testing.T) {
+	result := Run(standardDecisionRefsFixture([]any{"   ", ""}), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "context_alignment.decision_refs is empty") {
+		t.Fatalf("expected decision_refs empty advisory for blank entries, got %v", result.Notes)
+	}
+}
+
+func TestDecisionRefsStandardPresentEmitsNoAdvisory(t *testing.T) {
+	result := Run(standardDecisionRefsFixture([]any{"decisions/intake-lite.md"}), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if containsNote(result.Notes, "context_alignment.decision_refs is empty") {
+		t.Fatalf("did not expect decision_refs advisory when present, got %v", result.Notes)
+	}
+}
+
+func TestDecisionRefsDeepMissingEmitsAdvisory(t *testing.T) {
+	result := Run(deepDecisionRefsFixture(nil), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "context_alignment.decision_refs is empty") {
+		t.Fatalf("expected decision_refs empty advisory on deep, got %v", result.Notes)
+	}
+}
+
+func TestDecisionRefsLightNoAdvisory(t *testing.T) {
+	result := Run(lightDecisionRefsFixture(), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success for light, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if containsNote(result.Notes, "decision_refs") {
+		t.Fatalf("did not expect decision_refs advisory for light, got %v", result.Notes)
+	}
+}
+
 // TestEscalationDriftGuard compares policies/escalation.yaml
 // verify_stage_escalation.v1 declarations against the Go runtime
 // hardcoded copy in escalationHighRiskPathPatterns. It also verifies the
@@ -4019,6 +4120,10 @@ func TestAdvisoryDriftGuard(t *testing.T) {
 	if advisoryIntentContract == nil {
 		t.Fatalf("policies/admission.yaml missing advisory_intent_contract block")
 	}
+	advisoryDecisionRefs := mapValue(policyDoc, "advisory_decision_refs")
+	if advisoryDecisionRefs == nil {
+		t.Fatalf("policies/admission.yaml missing advisory_decision_refs block")
+	}
 
 	checks := []struct {
 		label   string
@@ -4084,6 +4189,11 @@ func TestAdvisoryDriftGuard(t *testing.T) {
 			label:   "advisory_intent_contract.user_visible_change_missing_note",
 			yaml:    stringInMap(advisoryIntentContract, "user_visible_change_missing_note"),
 			runtime: intentContractUvChangeNote,
+		},
+		{
+			label:   "advisory_decision_refs.empty_note",
+			yaml:    stringInMap(advisoryDecisionRefs, "empty_note"),
+			runtime: decisionRefsEmptyNote,
 		},
 	}
 

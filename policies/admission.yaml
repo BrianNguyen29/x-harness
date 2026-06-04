@@ -242,3 +242,28 @@ advisory_intent_ref:
   quiet_for_tiers:
     - light
   blocks_admission: false
+
+# Advisory-only context_alignment.decision_refs field. Never blocks
+# admission in safe V1. decision_refs is an optional string array on the
+# context_alignment object that references decision records (ADR-lite)
+# described by schemas/decision-record.schema.json. The engine does not
+# resolve or align the references; it only nudges the author to add at
+# least one entry when standard/deep cards omit them.
+# Emission rules:
+#   - standard/deep missing context_alignment.decision_refs, an empty
+#     array, or an array containing only blank strings -> top-level note
+#   - standard/deep present with at least one non-blank string -> no note
+#   - light tier -> no note (advisory remains quiet)
+# The note wording makes it explicit that admission acceptance is not
+# decision correctness; follow-up slices may add blocking decision gates.
+advisory_decision_refs:
+  field: context_alignment.decision_refs
+  related_fields:
+    - context_alignment
+  empty_note: "context_alignment.decision_refs is empty (advisory-only; admission acceptance is not decision correctness)"
+  emit_for_tiers:
+    - standard
+    - deep
+  quiet_for_tiers:
+    - light
+  blocks_admission: false

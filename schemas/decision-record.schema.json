@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "decision-record",
+  "description": "Optional decision record (ADR-lite) used by the advisory 'context_alignment.decision_refs' field on completion cards. Required fields: schema_version, id, decision, rationale. All other fields are optional but recommended. This schema does NOT gate admission in safe V1; it only defines a stable shape for `xh decision record` output and for downstream reference resolution in follow-up slices.",
+  "type": "object",
+  "required": ["schema_version", "id", "decision", "rationale"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identifier (slug) for this decision. Referenced from completion cards via the optional top-level context_alignment.decision_refs array."
+    },
+    "title": {
+      "type": "string",
+      "description": "Short human-readable title for this decision."
+    },
+    "date": {
+      "type": "string",
+      "description": "ISO-8601 date the decision was recorded."
+    },
+    "status": {
+      "enum": ["proposed", "accepted", "superseded", "deprecated"],
+      "description": "Lifecycle status of the decision. Mirrors the safe-V1 enum accepted by `xh decision record --status`."
+    },
+    "decision": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Plain-language statement of the decision that was made."
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Reasoning behind the decision, including the options considered and the tradeoffs accepted."
+    },
+    "context": {
+      "type": "string",
+      "description": "Optional situational context (problem statement, prior state) that motivated the decision."
+    },
+    "consequences": {
+      "type": "string",
+      "description": "Optional description of the consequences of the decision (positive, negative, neutral)."
+    },
+    "superseded_by": {
+      "type": "string",
+      "description": "Identifier of a later decision that supersedes this one. Use when status == superseded."
+    },
+    "tags": {
+      "type": "array",
+      "description": "Free-form tags for grouping or filtering decisions.",
+      "items": { "type": "string" }
+    },
+    "affected_paths": {
+      "type": "array",
+      "description": "Optional list of source paths affected by this decision (advisory only; not enforced).",
+      "items": { "type": "string" }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Free-form notes (open questions, follow-up work, etc.)."
+    }
+  },
+  "additionalProperties": false
+}

@@ -145,6 +145,16 @@ export interface AdmissionInput {
   // internal/admission/intent_ref.go and the policy documentation in
   // policies/admission.yaml.
   intent_ref?: string;
+  // Optional advisory references to decision records (ADR-lite) described
+  // by decision-record.schema.json. The references live under
+  // context_alignment.decision_refs (a string array) per
+  // schemas/context-alignment.schema.json. The engine emits a top-level
+  // note for standard/deep when the array is missing or contains no
+  // non-blank string entries, and stays quiet otherwise. The light tier
+  // remains quiet. Never blocks admission. Mirrors the Go implementation
+  // in internal/admission/decision_refs.go and the policy documentation
+  // in policies/admission.yaml.
+  decision_refs?: string[];
 }
 
 export interface AdmissionResult {
@@ -337,6 +347,9 @@ const INTENT_CONTRACT_UVCHANGE_MISSING_NOTE =
 const INTENT_REF_MISSING_NOTE =
   "intent_ref not declared (advisory-only; admission acceptance is not intent correctness)";
 
+const DECISION_REFS_EMPTY_NOTE =
+  "context_alignment.decision_refs is empty (advisory-only; admission acceptance is not decision correctness)";
+
 // Advisory note constants are exported so that the drift guard in
 // packages/cli/tests/admission.test.ts can assert parity between the
 // runtime values and the policy documentation in policies/admission.yaml.
@@ -356,6 +369,7 @@ export {
   INTENT_CONTRACT_GOAL_MISSING_NOTE,
   INTENT_CONTRACT_UVCHANGE_MISSING_NOTE,
   INTENT_REF_MISSING_NOTE,
+  DECISION_REFS_EMPTY_NOTE,
 };
 
 // evaluateProductIntent emits advisory notes (never errors) for standard and
@@ -520,8 +534,8 @@ function evaluateIntentContract(input: AdmissionInput): string[] {
 // or blank. The light tier remains quiet. A non-blank intent_ref (slug id,
 // path, or URI fragment) suppresses the note. This is the first safe-V1
 // vertical slice; it never blocks admission. Wording is parity-safe with
-// the Go implementation in internal/admission/intent_ref.go and the policy
-// documentation in policies/admission.yaml.
+// the Go implementation in internal/admission/intent_ref.go and the
+// policy documentation in policies/admission.yaml.
 function evaluateIntentRef(input: AdmissionInput): string[] {
   const notes: string[] = [];
   if (input.tier !== "standard" && input.tier !== "deep") {
@@ -533,6 +547,43 @@ function evaluateIntentRef(input: AdmissionInput): string[] {
   if (ref === "") {
     notes.push(INTENT_REF_MISSING_NOTE);
   }
+  return notes;
+}
+
+// evaluateDecisionRefs emits advisory notes (never errors) for standard
+// and deep tier cards when the optional context_alignment.decision_refs
+// array is missing or contains no non-blank string entries. A non-blank
+// entry (slug id, path, or URI fragment) suppresses the note. The light
+// tier remains quiet. This is the first safe-V1 vertical slice; it never
+// blocks admission. Wording is parity-safe with the Go implementation in
+// internal/admission/decision_refs.go and the policy documentation in
+// policies/admission.yaml.
+function evaluateDecisionRefs(input: AdmissionInput): string[] {
+  const notes: string[] = [];
+  if (input.tier !== "standard" && input.tier !== "deep") {
+    return notes;
+  }
+
+  const ctxAlign = input.context_alignment as
+    | Record<string, unknown>
+    | undefined;
+  if (ctxAlign == null) {
+    notes.push(DECISION_REFS_EMPTY_NOTE);
+    return notes;
+  }
+
+  const refsRaw = ctxAlign.decision_refs;
+  if (!Array.isArray(refsRaw)) {
+    notes.push(DECISION_REFS_EMPTY_NOTE);
+    return notes;
+  }
+
+  for (const entry of refsRaw) {
+    if (typeof entry === "string" && entry.trim() !== "") {
+      return notes;
+    }
+  }
+  notes.push(DECISION_REFS_EMPTY_NOTE);
   return notes;
 }
 
@@ -691,6 +742,15 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
   // the Go implementation in internal/admission/intent_ref.go and the
   // policy documentation in policies/admission.yaml.
   notes.push(...evaluateIntentRef(input));
+
+  // Decision refs advisory (optional; never blocks admission). Mirrors
+  // intent_ref: emits a top-level note on standard/deep when the
+  // optional context_alignment.decision_refs array is missing or
+  // contains no non-blank string entries. Light tier stays quiet. Safe
+  // V1 wording is parity-safe with the Go implementation in
+  // internal/admission/decision_refs.go and the policy documentation
+  // in policies/admission.yaml.
+  notes.push(...evaluateDecisionRefs(input));
 
   // Governance / human approval check for deep
   if (input.tier === "deep" && governance) {

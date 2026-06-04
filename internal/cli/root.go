@@ -50,6 +50,7 @@ var commands = []CommandInfo{
 	{Name: "recover", Description: "Alias for recovery suggest", Maturity: MaturityStable},
 	{Name: "packet", Description: "Work with claim/evidence packets", Maturity: MaturityBeta},
 	{Name: "intake", Description: "Evaluate task intake tiering", Maturity: MaturityExperimental},
+	{Name: "decision", Description: "Record or list decision memory records (ADR-lite)", Maturity: MaturityExperimental},
 	{Name: "governance", Description: "Evaluate governance rules", Maturity: MaturityExperimental},
 	{Name: "intervention", Description: "Record governance interventions", Maturity: MaturityExperimental},
 	{Name: "prediction", Description: "Evaluate prediction/checklist claims", Maturity: MaturityExperimental},
@@ -174,6 +175,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleIntervention(args[1:], stdout, stderr)
 	case "intake":
 		return handleIntake(args[1:], stdout, stderr)
+	case "decision":
+		return handleDecision(args[1:], stdout, stderr)
 	case "export":
 		return handleFrozenExport(append([]string{"--frozen"}, args[1:]...), stdout, stderr)
 	case "import":

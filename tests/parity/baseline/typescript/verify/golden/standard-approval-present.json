@@ -80,6 +80,12 @@
       "status": "passed"
     },
     {
+      "name": "context_alignment.decision_refs is empty (advisory-only; admission acceptance is not decision correctness)",
+      "note": "context_alignment.decision_refs is empty (advisory-only; admission acceptance is not decision correctness)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "severity": "info",
@@ -106,7 +112,7 @@
   "episode": null,
   "input_card_hash": "sha256:fd77088ac9e353107e86c696cf15f03880333c68a78880e711fab716a41138b5",
   "ok": false,
-  "policy_hash": "sha256:88a1f15c6422b489b468a3cd956467c2bee706a902c116459b966ba2dd12f6b2",
+  "policy_hash": "sha256:7ff19665f8907eeed97f1ff7d5b1e75235c543716e10dce8eb552e37c08f9d02",
   "product_intent_status": null,
   "recovery": {
     "next_action": "Add context_alignment with stale_ground_checked, at least one ref array, and resolve context questions.",
