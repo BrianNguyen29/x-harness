@@ -216,3 +216,29 @@ advisory_intent_contract:
   quiet_for_tiers:
     - light
   blocks_admission: false
+
+# Advisory-only intent_ref field. Never blocks admission in safe V1.
+# intent_ref is an optional top-level string on a completion card that
+# references a product intent record (id or path) described by
+# schemas/product-intent.schema.json. It links the card to a product_intent
+# status block and to the intent_contract declaration; the engine never
+# resolves or aligns the reference, it only nudges the author to set it
+# when standard/deep cards omit it.
+# Emission rules:
+#   - standard/deep missing or blank intent_ref -> top-level missing note
+#   - light tier -> no note (advisory remains quiet)
+#   - a non-blank value (slug, path, URI fragment) suppresses the note
+# The note wording makes it explicit that admission acceptance is not
+# intent correctness; follow-up slices may add blocking intent gates.
+advisory_intent_ref:
+  field: intent_ref
+  related_fields:
+    - product_intent
+    - intent_contract
+  missing_note: "intent_ref not declared (advisory-only; admission acceptance is not intent correctness)"
+  emit_for_tiers:
+    - standard
+    - deep
+  quiet_for_tiers:
+    - light
+  blocks_admission: false

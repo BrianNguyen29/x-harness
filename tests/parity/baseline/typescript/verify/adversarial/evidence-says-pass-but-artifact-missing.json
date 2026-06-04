@@ -46,6 +46,12 @@
       "status": "passed"
     },
     {
+      "name": "intent_ref not declared (advisory-only; admission acceptance is not intent correctness)",
+      "note": "intent_ref not declared (advisory-only; admission acceptance is not intent correctness)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
       "severity": "info",
@@ -84,7 +90,7 @@
   "episode": null,
   "input_card_hash": "sha256:4dd6ac89bd95f1ac90dcd004736d318cb95491e636690bbabc7a9f102fee1b81",
   "ok": false,
-  "policy_hash": "sha256:5fd0b11e0d777043b97ab4179b18a85af3d30f74a48353ece32dd2801990ab52",
+  "policy_hash": "sha256:88a1f15c6422b489b468a3cd956467c2bee706a902c116459b966ba2dd12f6b2",
   "product_intent_status": null,
   "recovery": {
     "next_action": "Attach validation evidence or explain why unavailable.",

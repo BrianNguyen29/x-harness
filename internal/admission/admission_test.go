@@ -1820,8 +1820,8 @@ func TestEscalationBlocksStandardWithAuthPath(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist":  map[string]any{"source_of_truth_read": true},
-		"prediction":      map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
 		"evidence": map[string]any{
 			"files_changed":    []any{"src/auth/session.ts"},
 			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
@@ -1855,9 +1855,9 @@ func TestEscalationAllowsDeepWithSchemaPath(t *testing.T) {
 		"tier":           "deep",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist":  map[string]any{"source_of_truth_read": true},
-		"prediction":      map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
-		"state":           map[string]any{"read_set": []any{"schemas/x.json"}, "write_set": []any{"schemas/x.json"}},
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
+		"state":          map[string]any{"read_set": []any{"schemas/x.json"}, "write_set": []any{"schemas/x.json"}},
 		"evidence": map[string]any{
 			"files_changed":    []any{"schemas/completion-card.schema.json"},
 			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
@@ -1931,8 +1931,8 @@ func TestEscalationBypassedByApprovedGovernance(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist":  map[string]any{"source_of_truth_read": true},
-		"prediction":      map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
 		"evidence": map[string]any{
 			"files_changed":    []any{"policies/admission.yaml"},
 			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
@@ -1978,8 +1978,8 @@ func TestEscalationBlocksStandardWithWorkflowPath(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist":  map[string]any{"source_of_truth_read": true},
-		"prediction":      map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
 		"evidence": map[string]any{
 			"files_changed":    []any{".github/workflows/x-harness-verify.yml"},
 			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
@@ -2671,10 +2671,10 @@ func standardProductIntentFixture(intent map[string]any) map[string]any {
 		"handoff":           map[string]any{"next_action": "none", "owner": "alice"},
 		"done_checklist":    map[string]any{"source_of_truth_read": true},
 		"prediction": map[string]any{
-			"claim":               "p",
-			"expected_effect":     "e",
+			"claim":                "p",
+			"expected_effect":      "e",
 			"falsification_method": "f",
-			"horizon":             "same_verify",
+			"horizon":              "same_verify",
 		},
 		"evidence": map[string]any{
 			"files_changed":    []any{"src/x.ts"},
@@ -2699,11 +2699,11 @@ func deepProductIntentFixture(intent map[string]any) map[string]any {
 		"command_evidence": []any{map[string]any{"command": "npm test", "exit_code": 0}},
 		"verification_artifacts": []any{
 			map[string]any{
-				"kind":              "unit_test",
-				"command":           "npm test",
-				"status":            "passed",
-				"verifies":          []any{"x"},
-				"does_not_verify":   []any{"y"},
+				"kind":            "unit_test",
+				"command":         "npm test",
+				"status":          "passed",
+				"verifies":        []any{"x"},
+				"does_not_verify": []any{"y"},
 			},
 		},
 		"untested_regions":   []any{"no e2e"},
@@ -3163,7 +3163,7 @@ func TestIntentContractStandardCompleteEmitsNoAdvisory(t *testing.T) {
 		},
 		"protected_behaviors": []any{"no schema change"},
 		"ambiguity": map[string]any{
-			"status":   "none",
+			"status":    "none",
 			"questions": []any{},
 		},
 		"notes": "first vertical slice",
@@ -3253,6 +3253,100 @@ func TestIntentContractLightNoAdvisory(t *testing.T) {
 	}
 	if containsNote(result.Notes, "intent_contract") {
 		t.Fatalf("did not expect intent_contract advisory for light, got %v", result.Notes)
+	}
+}
+
+// intent_ref advisory tests (advisory-only; never blocks admission).
+// intent_ref is an optional top-level string that references a product
+// intent record (id or path) described by
+// schemas/product-intent.schema.json. The engine emits a top-level
+// missing note for standard/deep when intent_ref is absent or blank and
+// stays quiet otherwise. The light tier remains quiet. Wording is
+// parity-safe with the TS implementation in
+// packages/cli/src/core/admission.ts and the policy documentation in
+// policies/admission.yaml.
+func standardIntentRefFixture(ref string) map[string]any {
+	doc := standardProductIntentFixture(nil)
+	if strings.TrimSpace(ref) != "" {
+		doc["intent_ref"] = ref
+	}
+	return doc
+}
+
+func deepIntentRefFixture(ref string) map[string]any {
+	doc := deepProductIntentFixture(nil)
+	if strings.TrimSpace(ref) != "" {
+		doc["intent_ref"] = ref
+	}
+	return doc
+}
+
+func lightIntentRefFixture() map[string]any {
+	doc := lightProductIntentFixture()
+	doc["intent_ref"] = "doc/intake-lite.md"
+	return doc
+}
+
+func TestIntentRefStandardMissingEmitsAdvisory(t *testing.T) {
+	result := Run(standardIntentRefFixture(""), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if result.AcceptanceStatus != "accepted" {
+		t.Fatalf("expected accepted (advisory-only), got %s", result.AcceptanceStatus)
+	}
+	if !containsNote(result.Notes, "intent_ref not declared") {
+		t.Fatalf("expected intent_ref missing advisory note, got %v", result.Notes)
+	}
+}
+
+func TestIntentRefStandardBlankEmitsAdvisory(t *testing.T) {
+	result := Run(standardIntentRefFixture("   "), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "intent_ref not declared") {
+		t.Fatalf("expected intent_ref advisory for blank value, got %v", result.Notes)
+	}
+}
+
+func TestIntentRefStandardPresentEmitsNoAdvisory(t *testing.T) {
+	result := Run(standardIntentRefFixture("doc/intake-lite.md"), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if containsNote(result.Notes, "intent_ref") {
+		t.Fatalf("did not expect intent_ref advisory for present value, got %v", result.Notes)
+	}
+}
+
+func TestIntentRefDeepMissingEmitsAdvisory(t *testing.T) {
+	result := Run(deepIntentRefFixture(""), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "intent_ref not declared") {
+		t.Fatalf("expected intent_ref missing advisory on deep, got %v", result.Notes)
+	}
+}
+
+func TestIntentRefDeepPresentEmitsNoAdvisory(t *testing.T) {
+	result := Run(deepIntentRefFixture("product-intent/intake-lite"), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if containsNote(result.Notes, "intent_ref") {
+		t.Fatalf("did not expect intent_ref advisory on deep when present, got %v", result.Notes)
+	}
+}
+
+func TestIntentRefLightNoAdvisory(t *testing.T) {
+	result := Run(lightIntentRefFixture(), false, false)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success for light, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if containsNote(result.Notes, "intent_ref") {
+		t.Fatalf("did not expect intent_ref advisory for light, got %v", result.Notes)
 	}
 }
 
@@ -3449,11 +3543,11 @@ func TestOperationEscalationBlocksLightWithDeleteFiles(t *testing.T) {
 				map[string]any{"command": "rm -rf dist", "exit_code": 0},
 			},
 		},
-		"claim":        map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
-		"verification": map[string]any{"status": "passed", "checks": []any{}},
-		"admission":    map[string]any{"outcome": "success"},
+		"claim":             map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
+		"verification":      map[string]any{"status": "passed", "checks": []any{}},
+		"admission":         map[string]any{"outcome": "success"},
 		"acceptance_status": "accepted",
-		"handoff":      map[string]any{"next_action": "n", "owner": "o"},
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
 	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
@@ -3471,19 +3565,19 @@ func TestOperationEscalationBlocksStandardWithGitMutation(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist":  map[string]any{"source_of_truth_read": true},
-		"prediction":      map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
 		"evidence": map[string]any{
 			"files_changed": []any{"src/x.ts"},
 			"command_evidence": []any{
 				map[string]any{"command": "git push origin main", "exit_code": 0},
 			},
 		},
-		"claim":        map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
-		"verification": map[string]any{"status": "passed", "checks": []any{}},
-		"admission":    map[string]any{"outcome": "success"},
+		"claim":             map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
+		"verification":      map[string]any{"status": "passed", "checks": []any{}},
+		"admission":         map[string]any{"outcome": "success"},
 		"acceptance_status": "accepted",
-		"handoff":      map[string]any{"next_action": "n", "owner": "o"},
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
 	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
@@ -3501,19 +3595,19 @@ func TestOperationEscalationBlocksStandardWithUnknownCommand(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist":  map[string]any{"source_of_truth_read": true},
-		"prediction":      map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
 		"evidence": map[string]any{
 			"files_changed": []any{"src/x.ts"},
 			"command_evidence": []any{
 				map[string]any{"command": "totally-unknown-tool --flag value", "exit_code": 0},
 			},
 		},
-		"claim":        map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
-		"verification": map[string]any{"status": "passed", "checks": []any{}},
-		"admission":    map[string]any{"outcome": "success"},
+		"claim":             map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
+		"verification":      map[string]any{"status": "passed", "checks": []any{}},
+		"admission":         map[string]any{"outcome": "success"},
 		"acceptance_status": "accepted",
-		"handoff":      map[string]any{"next_action": "n", "owner": "o"},
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
 	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
@@ -3545,11 +3639,11 @@ func TestOperationEscalationTriggersFromVerificationArtifacts(t *testing.T) {
 				},
 			},
 		},
-		"claim":        map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
-		"verification": map[string]any{"status": "passed", "checks": []any{}},
-		"admission":    map[string]any{"outcome": "success"},
+		"claim":             map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
+		"verification":      map[string]any{"status": "passed", "checks": []any{}},
+		"admission":         map[string]any{"outcome": "success"},
 		"acceptance_status": "accepted",
-		"handoff":      map[string]any{"next_action": "n", "owner": "o"},
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
 	result := Run(doc, false, false)
 	if result.Outcome != "failed" {
@@ -3567,9 +3661,9 @@ func TestOperationEscalationAllowsDeepWithBlockedCommand(t *testing.T) {
 		"tier":           "deep",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist":  map[string]any{"source_of_truth_read": true},
-		"prediction":      map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
-		"state":           map[string]any{"read_set": []any{"r"}, "write_set": []any{"w"}},
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
+		"state":          map[string]any{"read_set": []any{"r"}, "write_set": []any{"w"}},
 		"evidence": map[string]any{
 			"files_changed": []any{"src/x.ts"},
 			"command_evidence": []any{
@@ -3595,11 +3689,11 @@ func TestOperationEscalationAllowsDeepWithBlockedCommand(t *testing.T) {
 			},
 			"aggregate_risk": "high",
 		},
-		"claim":        map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
-		"verification": map[string]any{"status": "passed", "checks": []any{}},
-		"admission":    map[string]any{"outcome": "success"},
+		"claim":             map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
+		"verification":      map[string]any{"status": "passed", "checks": []any{}},
+		"admission":         map[string]any{"outcome": "success"},
 		"acceptance_status": "accepted",
-		"handoff":      map[string]any{"next_action": "n", "owner": "o"},
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
 	result := Run(doc, false, false)
 	if result.Outcome != "success" {
@@ -3624,11 +3718,11 @@ func TestOperationEscalationAllowsSafeBuildCommand(t *testing.T) {
 				map[string]any{"command": "npm test", "exit_code": 0},
 			},
 		},
-		"claim":        map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
-		"verification": map[string]any{"status": "passed", "checks": []any{}},
-		"admission":    map[string]any{"outcome": "success"},
+		"claim":             map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
+		"verification":      map[string]any{"status": "passed", "checks": []any{}},
+		"admission":         map[string]any{"outcome": "success"},
 		"acceptance_status": "accepted",
-		"handoff":      map[string]any{"next_action": "n", "owner": "o"},
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
 	result := Run(doc, false, false)
 	if result.Outcome != "success" {
@@ -3646,8 +3740,8 @@ func TestOperationEscalationBypassedByApprovedGovernance(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist":  map[string]any{"source_of_truth_read": true},
-		"prediction":      map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
+		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
 		"governance": map[string]any{
 			"approval_status": "approved",
 		},
@@ -3665,11 +3759,11 @@ func TestOperationEscalationBypassedByApprovedGovernance(t *testing.T) {
 				map[string]any{"command": "rm -rf dist", "exit_code": 0},
 			},
 		},
-		"claim":        map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
-		"verification": map[string]any{"status": "passed", "checks": []any{}},
-		"admission":    map[string]any{"outcome": "success"},
+		"claim":             map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
+		"verification":      map[string]any{"status": "passed", "checks": []any{}},
+		"admission":         map[string]any{"outcome": "success"},
 		"acceptance_status": "accepted",
-		"handoff":      map[string]any{"next_action": "n", "owner": "o"},
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
 	result := Run(doc, false, false)
 	if result.Outcome != "success" {
@@ -3727,11 +3821,11 @@ func TestEscalationSizeRulesDeferred(t *testing.T) {
 				map[string]any{"command": "go test", "exit_code": 0},
 			},
 		},
-		"claim":        map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
-		"verification": map[string]any{"status": "passed", "checks": []any{}},
-		"admission":    map[string]any{"outcome": "success"},
+		"claim":             map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
+		"verification":      map[string]any{"status": "passed", "checks": []any{}},
+		"admission":         map[string]any{"outcome": "success"},
 		"acceptance_status": "accepted",
-		"handoff":      map[string]any{"next_action": "n", "owner": "o"},
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
 	result := Run(doc, false, false)
 	if result.Outcome != "success" {
@@ -3852,11 +3946,11 @@ func TestEscalationOperationDriftGuard(t *testing.T) {
 						map[string]any{"command": sample, "exit_code": 0},
 					},
 				},
-				"claim":            map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
-				"verification":     map[string]any{"status": "passed", "checks": []any{}},
-				"admission":        map[string]any{"outcome": "success"},
+				"claim":             map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
+				"verification":      map[string]any{"status": "passed", "checks": []any{}},
+				"admission":         map[string]any{"outcome": "success"},
 				"acceptance_status": "accepted",
-				"handoff":          map[string]any{"next_action": "n", "owner": "o"},
+				"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 			}
 			result := Run(doc, false, false)
 			if result.BlockingPredicate != "tier_escalation_required" {
@@ -3881,11 +3975,11 @@ func TestEscalationOperationDriftGuard(t *testing.T) {
 						map[string]any{"command": safe, "exit_code": 0},
 					},
 				},
-				"claim":            map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
-				"verification":     map[string]any{"status": "passed", "checks": []any{}},
-				"admission":        map[string]any{"outcome": "success"},
+				"claim":             map[string]any{"fix_status": "fixed", "summary": "s", "evidence": []any{"e"}},
+				"verification":      map[string]any{"status": "passed", "checks": []any{}},
+				"admission":         map[string]any{"outcome": "success"},
 				"acceptance_status": "accepted",
-				"handoff":          map[string]any{"next_action": "n", "owner": "o"},
+				"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 			}
 			result := Run(doc, false, false)
 			if result.BlockingPredicate == "tier_escalation_required" {

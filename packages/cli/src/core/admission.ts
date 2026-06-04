@@ -137,6 +137,14 @@ export interface AdmissionInput {
   // the Go implementation in internal/admission/intent_contract.go and
   // the policy documentation in policies/admission.yaml.
   intent_contract?: Record<string, unknown>;
+  // Optional advisory reference to a product intent record (id or path)
+  // described by product-intent.schema.json. The engine emits a
+  // top-level missing note for standard/deep when intent_ref is absent
+  // or blank and stays quiet otherwise. The light tier remains quiet.
+  // Never blocks admission. Mirrors the Go implementation in
+  // internal/admission/intent_ref.go and the policy documentation in
+  // policies/admission.yaml.
+  intent_ref?: string;
 }
 
 export interface AdmissionResult {
@@ -326,6 +334,9 @@ const INTENT_CONTRACT_GOAL_MISSING_NOTE =
 const INTENT_CONTRACT_UVCHANGE_MISSING_NOTE =
   "intent_contract.user_visible_change not declared (advisory-only; consider declaring whether the change is user-visible)";
 
+const INTENT_REF_MISSING_NOTE =
+  "intent_ref not declared (advisory-only; admission acceptance is not intent correctness)";
+
 // Advisory note constants are exported so that the drift guard in
 // packages/cli/tests/admission.test.ts can assert parity between the
 // runtime values and the policy documentation in policies/admission.yaml.
@@ -344,6 +355,7 @@ export {
   INTENT_CONTRACT_MISSING_NOTE,
   INTENT_CONTRACT_GOAL_MISSING_NOTE,
   INTENT_CONTRACT_UVCHANGE_MISSING_NOTE,
+  INTENT_REF_MISSING_NOTE,
 };
 
 // evaluateProductIntent emits advisory notes (never errors) for standard and
@@ -503,6 +515,27 @@ function evaluateIntentContract(input: AdmissionInput): string[] {
   return notes;
 }
 
+// evaluateIntentRef emits advisory notes (never errors) for standard and
+// deep tier cards when the optional top-level intent_ref field is missing
+// or blank. The light tier remains quiet. A non-blank intent_ref (slug id,
+// path, or URI fragment) suppresses the note. This is the first safe-V1
+// vertical slice; it never blocks admission. Wording is parity-safe with
+// the Go implementation in internal/admission/intent_ref.go and the policy
+// documentation in policies/admission.yaml.
+function evaluateIntentRef(input: AdmissionInput): string[] {
+  const notes: string[] = [];
+  if (input.tier !== "standard" && input.tier !== "deep") {
+    return notes;
+  }
+
+  const refRaw = input.intent_ref;
+  const ref = typeof refRaw === "string" ? refRaw.trim() : "";
+  if (ref === "") {
+    notes.push(INTENT_REF_MISSING_NOTE);
+  }
+  return notes;
+}
+
 export function runAdmission(input: AdmissionInput): AdmissionResult {
   const errors: string[] = [];
   const notes: string[] = [];
@@ -650,6 +683,14 @@ export function runAdmission(input: AdmissionInput): AdmissionResult {
   // the key is absent. An explicit user_visible_change == false is
   // accepted and produces no uvchange note. Light tier stays quiet.
   notes.push(...evaluateIntentContract(input));
+
+  // Intent ref advisory (optional; never blocks admission). Mirrors
+  // intent_contract: emits a top-level missing note when the optional
+  // top-level intent_ref field is absent or blank on standard/deep
+  // tiers. Light tier stays quiet. Safe V1 wording is parity-safe with
+  // the Go implementation in internal/admission/intent_ref.go and the
+  // policy documentation in policies/admission.yaml.
+  notes.push(...evaluateIntentRef(input));
 
   // Governance / human approval check for deep
   if (input.tier === "deep" && governance) {

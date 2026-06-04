@@ -402,6 +402,11 @@
       },
       "additionalProperties": false
     },
+    "intent_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional advisory reference to a product intent record (id or path) described by product-intent.schema.json. Relates this card to the product_intent status block and to the intent_contract declaration. The engine emits an advisory note for standard/deep when intent_ref is missing or blank; light tier stays quiet. Never blocks admission in safe V1."
+    },
     "intent_contract": {
       "type": "object",
       "description": "Optional intent contract declaration. Advisory-only; admission acceptance is not intent correctness. On standard/deep the engine emits a top-level missing note when intent_contract is absent, a product_goal note when product_goal is missing/blank, and a user_visible_change note when the key is absent. An explicit user_visible_change == false is accepted and produces no uvchange note. The light tier remains quiet. Never blocks admission.",
