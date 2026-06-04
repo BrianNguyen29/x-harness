@@ -1,6 +1,10 @@
 import * as path from "node:path";
 import fs from "fs-extra";
-import { runAdmission, acceptanceStatus } from "./admission.js";
+import {
+  runAdmission,
+  acceptanceStatus,
+  hasAnyDecisionRef,
+} from "./admission.js";
 import { appendTrace } from "./trace.js";
 import type { TraceEvent } from "./trace.js";
 import { suggestRecovery, getRecoveryRoute } from "./recovery.js";
@@ -17,6 +21,7 @@ import { loadVerifySources } from "./verify-source-loader.js";
 import { buildAdmissionInput } from "./verify-admission-input.js";
 import { runVerifyGovernance } from "./verify-governance.js";
 import { evaluateApprovalRisk } from "./approval-risk.js";
+import { isValidDecisionEnforce } from "./decision.js";
 
 export { VerifyInputError } from "./verify-source-loader.js";
 
@@ -61,6 +66,16 @@ export interface VerifyPipelineOptions {
   diff?: string;
   changedFilesSource?: string;
   staleGround?: boolean;
+  // Profile-keyed default for `xh verify`. Mirrors the Go canonical
+  // VerifyProfile.DecisionEnforce semantics: an explicit value
+  // (`off`|`advisory`|`block`) always wins; an empty string means
+  // "use the profile default". Profile defaults:
+  //   light-local  -> advisory
+  //   ci-standard  -> advisory
+  //   ci-strict    -> block
+  //   governed-deep -> block
+  profile?: string;
+  decisionEnforce?: string;
 }
 
 export interface VerifyCheck {
@@ -280,16 +295,47 @@ export async function runVerifyPipeline(
     (guardResult.violated && (guardResult.unexpectedDeltas?.length ?? 0) > 0) ||
     (guardResult.enabled && Boolean(guardResult.skippedReason));
   const traceDirBlocked = traceDirGuardViolation !== null;
-  const finalOutcome = guardBlocked || traceDirBlocked ? "blocked" : outcome;
+  // Decision-refs gate (profile-controlled). Mirrors the Go canonical
+  // VerifyProfile.DecisionEnforce: an explicit value (off|advisory|block)
+  // always wins; an empty/unset value means "use the profile default".
+  // The off and advisory modes never block at the verify layer; the
+  // advisory note from admission.Run is preserved as-is. The block mode
+  // withholds standard/deep cards whose
+  // context_alignment.decision_refs array is missing or contains no
+  // non-blank string entries, with the explicit
+  // `decision_refs_missing` blocking predicate so the failure remains
+  // traceable. Light tier is always non-blocking, regardless of mode.
+  const decisionEnforceMode = resolveDecisionEnforceMode(
+    opts.profile,
+    opts.decisionEnforce
+  );
+  const decisionEnforceBlockReason = applyDecisionEnforceGate({
+    mode: decisionEnforceMode,
+    tier,
+    doc: loaded.card ?? null,
+  });
+  const finalOutcome =
+    guardBlocked || traceDirBlocked
+      ? "blocked"
+      : decisionEnforceBlockReason != null
+        ? "blocked"
+        : outcome;
   const finalAcceptance = acceptanceStatus(finalOutcome);
   const finalBlockingPredicate =
     guardBlocked || traceDirBlocked
       ? "verifier_not_read_only"
-      : blockingPredicate;
+      : decisionEnforceBlockReason != null
+        ? "decision_refs_missing"
+        : blockingPredicate;
   const finalRecoveryRoute =
     guardBlocked || traceDirBlocked
       ? getRecoveryRoute("verifier_not_read_only")
-      : (getRecoveryRoute(finalBlockingPredicate) ?? recoveryRoute);
+      : decisionEnforceBlockReason != null
+        ? getRecoveryRoute("decision_refs_missing")
+        : (getRecoveryRoute(finalBlockingPredicate) ?? recoveryRoute);
+  if (decisionEnforceBlockReason != null) {
+    errors.push(decisionEnforceBlockReason);
+  }
 
   const cardId = (loaded.card?.id as string | undefined) ?? null;
   const taskId =
@@ -358,4 +404,49 @@ export async function runVerifyPipeline(
     changedFiles,
     mutationGuardResult: guardResult,
   };
+}
+
+// Decision-enforce profile defaults mirror the Go canonical profiles in
+// `internal/cli/verify.go` (VerifyProfile.DecisionEnforce). Empty /
+// unset profile falls back to the off-by-default behavior: explicit
+// --decision-enforce flag still wins when set.
+const DECISION_ENFORCE_PROFILE_DEFAULTS: Record<string, string> = {
+  "light-local": "advisory",
+  "ci-standard": "advisory",
+  "ci-strict": "block",
+  "governed-deep": "block",
+};
+
+export function resolveDecisionEnforceMode(
+  profile: string | undefined,
+  explicit: string | undefined
+): string {
+  const explicitTrimmed = (explicit ?? "").trim();
+  if (explicitTrimmed !== "") {
+    if (!isValidDecisionEnforce(explicitTrimmed)) {
+      return "off";
+    }
+    return explicitTrimmed;
+  }
+  const profileTrimmed = (profile ?? "").trim();
+  if (profileTrimmed === "") return "off";
+  const profileDefault = DECISION_ENFORCE_PROFILE_DEFAULTS[profileTrimmed];
+  if (profileDefault === undefined) return "off";
+  return profileDefault;
+}
+
+// applyDecisionEnforceGate mirrors the verify-layer decision_refs gate
+// in `internal/cli/verify.go`. The block mode withholds standard/deep
+// cards whose context_alignment.decision_refs is missing or contains no
+// non-blank string entries; advisory and off return null (no block).
+// The light tier is always non-blocking regardless of mode.
+export function applyDecisionEnforceGate(args: {
+  mode: string;
+  tier: string;
+  doc: Record<string, unknown> | null;
+}): string | null {
+  if (args.mode !== "block") return null;
+  if (args.tier !== "standard" && args.tier !== "deep") return null;
+  if (hasAnyDecisionRef(args.doc)) return null;
+  return "context_alignment.decision_refs is empty (verify-stage block; admission acceptance is not decision correctness)";
 }

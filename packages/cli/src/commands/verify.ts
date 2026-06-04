@@ -228,6 +228,14 @@ export function verifyCommand(): Command {
       "--changed-files-source <mode>",
       "Changed files source for governance: card, git, union, strict"
     )
+    .option(
+      "--profile <name>",
+      "Verify profile (light-local|ci-standard|ci-strict|governed-deep). Sets the default for --decision-enforce when the flag is omitted; an explicit --decision-enforce always wins."
+    )
+    .option(
+      "--decision-enforce <mode>",
+      "Enforce context_alignment.decision_refs at the verify layer (off|advisory|block). Defaults to the profile default when --profile is set; otherwise off. Mirrors the Go canonical flag in internal/cli/verify.go."
+    )
     .option("--episode", "Write an audit episode package", false)
     .option(
       "--bundle",

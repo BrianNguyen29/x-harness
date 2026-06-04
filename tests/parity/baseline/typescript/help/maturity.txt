@@ -41,6 +41,7 @@ experimental:
   attribution
   components
   cost
+  decision
   episode
   evidence
   evolve

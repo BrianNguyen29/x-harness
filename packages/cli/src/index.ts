@@ -35,6 +35,7 @@ import { approvalRiskCommand } from "./commands/approval-risk.js";
 import { agentProfileCommand } from "./commands/agent-profile.js";
 import { costCommand } from "./commands/cost.js";
 import { profileCommand } from "./commands/profile.js";
+import { decisionCommand } from "./commands/decision.js";
 import { CliError, handleCliError } from "./core/exit.js";
 
 const program = new Command();
@@ -93,6 +94,7 @@ const commandMaturity: Record<string, string> = {
   "approval-risk": "experimental",
   "agent-profile": "experimental",
   cost: "experimental",
+  decision: "experimental",
 };
 
 function hideAdvancedCommands() {
@@ -211,6 +213,7 @@ program.addCommand(approvalRiskCommand());
 program.addCommand(agentProfileCommand());
 program.addCommand(costCommand());
 program.addCommand(profileCommand());
+program.addCommand(decisionCommand());
 
 // Commands with beginner-friendly aliases
 const verify = verifyCommand();
