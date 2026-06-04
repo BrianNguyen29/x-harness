@@ -1,0 +1,15 @@
+version: 1
+
+# Boundary policy for the boundary-violation golden fixture.
+# A deny rule whose `from` glob matches the fixture's source file and
+# whose `to_import` matches the forbidden import path. The rule
+# severity is `critical` so the verify-stage check is exercised by
+# both `block_high` and `block_all` enforcement modes.
+boundaries:
+  - id: ui-cannot-access-db
+    description: "UI files must not import internal database packages directly."
+    from: "src/ui/**"
+    to_import: "internal/db/**"
+    action: deny
+    severity: critical
+    applies_to_languages: [typescript, javascript]

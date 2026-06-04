@@ -12,6 +12,7 @@ import (
 	"github.com/BrianNguyen29/x-harness/internal/admission"
 	"github.com/BrianNguyen29/x-harness/internal/approvalrisk"
 	"github.com/BrianNguyen29/x-harness/internal/assets"
+	"github.com/BrianNguyen29/x-harness/internal/boundary"
 	"github.com/BrianNguyen29/x-harness/internal/contract"
 	"github.com/BrianNguyen29/x-harness/internal/loader"
 	"github.com/BrianNguyen29/x-harness/internal/mutationguard"
@@ -90,6 +91,8 @@ func ownerFromBlockingPredicate(predicate string) string {
 		return "implementation-worker"
 	case "verifier_not_read_only":
 		return "admission-verifier"
+	case "boundary_violation":
+		return "implementation-worker"
 	case "approval_missing", "permission_denied", "Fpermission":
 		return "user"
 	default:
@@ -119,6 +122,8 @@ func classFromFailureClass(failureClass string) string {
 		return "done_checklist_missing"
 	case "admission_mapping_invalid":
 		return "admission_mapping_invalid"
+	case "boundary_violation":
+		return "boundary_violation"
 	default:
 		return failureClass
 	}
@@ -166,6 +171,7 @@ type VerifyProfile struct {
 	ContractOracles bool
 	WorktreeAware   bool
 	StrictWithheld  bool
+	BoundaryEnforce string // off|advisory|block_high|block_all (default "" = use flag)
 }
 
 // verifyProfileNames returns the sorted list of profile names for usage
@@ -182,41 +188,45 @@ func verifyProfileNames() []string {
 var verifyProfiles = map[string]VerifyProfile{
 	"light-local": {
 		Name:            "light-local",
-		Description:     "Local development: minimal checks, no mutation guard.",
+		Description:     "Local development: minimal checks, no mutation guard. Boundary violations are advisory/warning only and never block.",
 		MutationGuard:   false,
 		Strict:          false,
 		ContextFloor:    false,
 		ContractOracles: false,
 		WorktreeAware:   false,
+		BoundaryEnforce: "advisory",
 	},
 	"ci-standard": {
 		Name:            "ci-standard",
-		Description:     "CI standard: mutation guard + context floor, advisory contract oracles.",
+		Description:     "CI standard: mutation guard + context floor, advisory contract oracles, advisory-only boundary enforcement.",
 		MutationGuard:   true,
 		Strict:          false,
 		ContextFloor:    true,
 		ContractOracles: false,
 		WorktreeAware:   true,
+		BoundaryEnforce: "advisory",
 	},
 	"ci-strict": {
 		Name:            "ci-strict",
-		Description:     "CI strict: mutation guard, context floor, contract oracles, strict withheld reason schema.",
+		Description:     "CI strict: mutation guard, context floor, contract oracles, strict withheld reason schema. Blocks high/critical boundary violations.",
 		MutationGuard:   true,
 		Strict:          true,
 		ContextFloor:    true,
 		ContractOracles: true,
 		WorktreeAware:   true,
 		StrictWithheld:  true,
+		BoundaryEnforce: "block_high",
 	},
 	"governed-deep": {
 		Name:            "governed-deep",
-		Description:     "Governed deep: all ci-strict checks plus strict withheld reason schema.",
+		Description:     "Governed deep: all ci-strict checks plus strict withheld reason schema. Blocks all boundary violations unless approved via boundary_approvals.",
 		MutationGuard:   true,
 		Strict:          true,
 		ContextFloor:    true,
 		ContractOracles: true,
 		WorktreeAware:   true,
 		StrictWithheld:  true,
+		BoundaryEnforce: "block_all",
 	},
 }
 
@@ -225,7 +235,7 @@ var verifyProfiles = map[string]VerifyProfile{
 // to keep the explicit-flag override decision obvious to reviewers.
 //
 //nolint:unused
-func resolveVerifyProfile(args []string, useMutationGuard *bool, strict *bool, contextFloor *bool, contractOracles *bool, worktreeAware *bool, strictWithheld *bool) string {
+func resolveVerifyProfile(args []string, useMutationGuard *bool, strict *bool, contextFloor *bool, contractOracles *bool, worktreeAware *bool, strictWithheld *bool, boundaryEnforce *string) string {
 	for i := 0; i < len(args); i++ {
 		if args[i] != "--profile" {
 			continue
@@ -258,6 +268,9 @@ func resolveVerifyProfile(args []string, useMutationGuard *bool, strict *bool, c
 		if !*strictWithheld {
 			*strictWithheld = profile.StrictWithheld
 		}
+		if *boundaryEnforce == "" {
+			*boundaryEnforce = profile.BoundaryEnforce
+		}
 		return name
 	}
 	return ""
@@ -278,6 +291,8 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	contextFloor := false
 	contractOracles := false
 	contractOraclesPolicy := ""
+	boundaryEnforce := ""
+	boundaryPolicy := ""
 	profileName := ""
 
 	// Track which flags the caller set explicitly so the profile layer
@@ -288,6 +303,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	explicitContractOracles := false
 	explicitWorktreeAware := false
 	explicitStrictWithheld := false
+	explicitBoundaryEnforce := false
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -349,6 +365,24 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 				contractOraclesPolicy = args[i+1]
 				i++
 			}
+		case "--boundary-enforce":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --boundary-enforce requires a value (off|advisory|block_high|block_all)")
+				return ExitUsage
+			}
+			v := args[i+1]
+			if !isValidBoundaryEnforce(v) {
+				fmt.Fprintf(stderr, "error: invalid --boundary-enforce %q (allowed: off, advisory, block_high, block_all)\n", v)
+				return ExitUsage
+			}
+			boundaryEnforce = v
+			explicitBoundaryEnforce = true
+			i++
+		case "--boundary-policy":
+			if i+1 < len(args) {
+				boundaryPolicy = args[i+1]
+				i++
+			}
 		}
 	}
 
@@ -376,10 +410,13 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		if !explicitStrictWithheld {
 			strictWithheldReason = profile.StrictWithheld
 		}
+		if !explicitBoundaryEnforce {
+			boundaryEnforce = profile.BoundaryEnforce
+		}
 	}
 
 	if (cardPath == "" && subagentPath == "") || (cardPath != "" && subagentPath != "") {
-		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--profile <light-local|ci-standard|ci-strict|governed-deep>] [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--strict-withheld-reason] [--trace] [--trace-dir <dir>] [--worktree-aware] [--context-floor] [--contract-oracles] [--contract-oracles-policy <path>]")
+		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--profile <light-local|ci-standard|ci-strict|governed-deep>] [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--strict-withheld-reason] [--trace] [--trace-dir <dir>] [--worktree-aware] [--context-floor] [--contract-oracles] [--contract-oracles-policy <path>] [--boundary-enforce off|advisory|block_high|block_all] [--boundary-policy <path>]")
 		return ExitUsage
 	}
 
@@ -526,6 +563,80 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 				BlockingPredicate:    predicate,
 			}
 			result.AdmissionErrors = violationSummaries
+		}
+	}
+
+	// Boundary check (opt-in via profile or --boundary-enforce). Skipped
+	// silently when no policy is loaded (boundary.Check treats nil
+	// policy as a no-op).
+	if boundaryEnforce != "" && boundaryEnforce != "off" && result.OK {
+		// Default policy path mirrors the boundary CLI command.
+		policyPath := boundaryPolicy
+		if policyPath == "" {
+			policyPath = filepath.Join(root, "policies", "boundaries.yaml")
+		}
+		// Load policy (nil is allowed; Check treats it as no-op).
+		var pol *boundary.Policy
+		if _, statErr := os.Stat(policyPath); statErr == nil {
+			loaded, loadErr := boundary.Load(policyPath)
+			if loadErr != nil {
+				fmt.Fprintf(stderr, "error: cannot load boundary policy %s: %v\n", policyPath, loadErr)
+				return ExitError
+			}
+			pol = loaded
+		} else if boundaryPolicy != "" {
+			// Explicit policy path that doesn't exist: surface the error.
+			fmt.Fprintf(stderr, "error: boundary policy not found: %s\n", policyPath)
+			return ExitError
+		}
+		boundaryResult, boundaryErr := boundary.Check(pol, policyPath, []string{root})
+		if boundaryErr != nil {
+			fmt.Fprintf(stderr, "error: boundary check failed: %v\n", boundaryErr)
+			return ExitError
+		}
+		// Apply enforcement to surviving violations. An approval list
+		// from the card suppresses blocking for matching rule_ids.
+		approved := extractBoundaryApprovals(doc)
+		blockingViolations := filterBoundaryViolationsByEnforce(boundaryResult.Violations, boundaryEnforce, approved)
+		if len(blockingViolations) > 0 {
+			result.OK = false
+			result.AdmissionOutcome = "blocked"
+			result.AcceptanceStatus = "withheld"
+			// Compact summary.
+			var violationSummaries []string
+			maxViolations := 3
+			if len(blockingViolations) < maxViolations {
+				maxViolations = len(blockingViolations)
+			}
+			for i := 0; i < maxViolations; i++ {
+				v := blockingViolations[i]
+				relPath, _ := filepath.Rel(root, v.File)
+				violationSummaries = append(violationSummaries, fmt.Sprintf("%s:%d: %s [%s/%s]", relPath, v.Line, v.Message, v.Severity, v.RuleID))
+			}
+			if len(blockingViolations) > maxViolations {
+				violationSummaries = append(violationSummaries, fmt.Sprintf("... and %d more violations", len(blockingViolations)-maxViolations))
+			}
+			predicate := "boundary_violation"
+			recoverability := "retry_with_fixes"
+			result.WithheldReason = &withheldReason{
+				Class:                classFromFailureClass("boundary_violation"),
+				Stage:                "verification",
+				Owner:                ownerFromBlockingPredicate(predicate),
+				FailureClass:         "boundary_violation",
+				FailureStage:         "verify_pipeline",
+				Recoverability:       recoverability,
+				SchemaRecoverability: schemaRecoverabilityFromLegacy(recoverability),
+				NextAction:           "review_and_resubmit",
+				BlockingPredicate:    predicate,
+			}
+			result.AdmissionErrors = violationSummaries
+		} else if boundaryResult.OK == false && len(boundaryResult.Violations) > 0 {
+			// Advisory mode: surface violations as a note without
+			// altering admission outcome. The note reports the total
+			// count so reviewers can see the suppressions and
+			// remaining items.
+			note := fmt.Sprintf("boundary advisory: %d total violation(s), 0 blocking under enforce=%s", len(boundaryResult.Violations), boundaryEnforce)
+			result.AdmissionNotes = append(result.AdmissionNotes, note)
 		}
 	}
 
@@ -862,4 +973,84 @@ func productIntentStatusFromDoc(doc map[string]any) string {
 		return ""
 	}
 	return strings.TrimSpace(stringValue(productIntent, "status"))
+}
+
+// isValidBoundaryEnforce reports whether value is one of the supported
+// enforcement modes for the verify-stage boundary check. The enum is
+// intentionally closed: future values must be added here and the
+// matrix/schema updated alongside.
+func isValidBoundaryEnforce(v string) bool {
+	switch v {
+	case "off", "advisory", "block_high", "block_all":
+		return true
+	}
+	return false
+}
+
+// extractBoundaryApprovals reads the optional `boundary_approvals` array
+// from a completion card document and returns the set of approved
+// `rule_id` values. The field is advisory-only and missing/empty
+// produces an empty set so callers can treat the result uniformly.
+func extractBoundaryApprovals(doc map[string]any) map[string]bool {
+	approved := map[string]bool{}
+	if doc == nil {
+		return approved
+	}
+	raw, ok := doc["boundary_approvals"]
+	if !ok || raw == nil {
+		return approved
+	}
+	arr, ok := raw.([]any)
+	if !ok {
+		return approved
+	}
+	for _, item := range arr {
+		entry, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		ruleID, _ := entry["rule_id"].(string)
+		ruleID = strings.TrimSpace(ruleID)
+		if ruleID == "" {
+			continue
+		}
+		approved[ruleID] = true
+	}
+	return approved
+}
+
+// boundaryBlocksSeverity returns true when the given severity should
+// block under the named enforcement mode. The mapping mirrors the V1
+// contract: light-local and ci-standard are advisory-only; ci-strict
+// blocks high and critical; governed-deep blocks everything.
+func boundaryBlocksSeverity(mode string, sev boundary.Severity) bool {
+	switch mode {
+	case "block_all":
+		return true
+	case "block_high":
+		return sev == boundary.SeverityHigh || sev == boundary.SeverityCritical
+	default:
+		return false
+	}
+}
+
+// filterBoundaryViolationsByEnforce returns the subset of violations
+// that should block admission under mode, after subtracting any
+// approved rule_ids. An empty result means the violations are
+// non-blocking (either advisory or approved).
+func filterBoundaryViolationsByEnforce(violations []boundary.Violation, mode string, approved map[string]bool) []boundary.Violation {
+	if mode == "off" || mode == "advisory" {
+		return nil
+	}
+	var blocking []boundary.Violation
+	for _, v := range violations {
+		if approved[v.RuleID] {
+			continue
+		}
+		if !boundaryBlocksSeverity(mode, v.Severity) {
+			continue
+		}
+		blocking = append(blocking, v)
+	}
+	return blocking
 }
