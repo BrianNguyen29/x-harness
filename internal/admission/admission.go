@@ -171,6 +171,15 @@ func Run(doc map[string]any, strict bool, contextFloor bool) Result {
 	// policies/admission.yaml.
 	notes = append(notes, evaluateIntentRef(doc, tier)...)
 
+	// Decision refs advisory (optional; never blocks admission).
+	// Mirrors intent_ref: emits a top-level note on standard/deep when
+	// the optional context_alignment.decision_refs array is missing or
+	// contains no non-blank string entries. Light tier stays quiet. Safe
+	// V1 wording is parity-safe with the TS implementation in
+	// packages/cli/src/core/admission.ts and the policy documentation in
+	// policies/admission.yaml.
+	notes = append(notes, evaluateDecisionRefs(doc, tier)...)
+
 	// Command safety
 	cmdResult := evaluateCommandSafety(doc)
 	for _, e := range cmdResult.errors {

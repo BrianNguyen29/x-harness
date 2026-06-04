@@ -52,7 +52,7 @@
   "episode": null,
   "input_card_hash": "sha256:0a11997d7428d3b99fda3070ce53544853bee537df6c261cd9ef1b85f5119f89",
   "ok": false,
-  "policy_hash": "sha256:88a1f15c6422b489b468a3cd956467c2bee706a902c116459b966ba2dd12f6b2",
+  "policy_hash": "sha256:7ff19665f8907eeed97f1ff7d5b1e75235c543716e10dce8eb552e37c08f9d02",
   "product_intent_status": null,
   "recovery": {
     "next_action": "Review intervention artifact for authority boundary violation and resolve.",

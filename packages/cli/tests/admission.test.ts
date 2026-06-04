@@ -4446,6 +4446,240 @@ describe("admission", () => {
     expect(result.notes.some((n) => n.includes("intent_ref"))).toBe(false);
   });
 
+  // decision_refs advisory tests (advisory-only; never blocks admission).
+  // context_alignment.decision_refs is an optional string array on the
+  // context_alignment object. The engine emits a top-level note for
+  // standard/deep when the array is missing or contains no non-blank
+  // string entries, and stays quiet otherwise. Light tier remains quiet.
+  // Parity-safe with internal/admission/decision_refs.go and the Go tests
+  // in internal/admission/admission_test.go. Wording matches policies/
+  // admission.yaml advisory_decision_refs block.
+  it("advises standard tier when context_alignment.decision_refs is missing", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "ok", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      done_checklist: { source_of_truth_read: true },
+      prediction: {
+        claim: "p",
+        expected_effect: "e",
+        falsification_method: "f",
+        horizon: "same_verify",
+      },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(
+      result.notes.some((n) =>
+        n.includes("context_alignment.decision_refs is empty")
+      )
+    ).toBe(true);
+  });
+
+  it("advises standard tier when decision_refs is an empty array", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "ok", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      done_checklist: { source_of_truth_read: true },
+      prediction: {
+        claim: "p",
+        expected_effect: "e",
+        falsification_method: "f",
+        horizon: "same_verify",
+      },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      context_alignment: {
+        stale_ground_checked: true,
+        product_contract_refs: [],
+        architecture_refs: [],
+        decision_refs: [],
+        test_matrix_refs: [],
+        unresolved_context_questions: [],
+        context_evidence: [],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(
+      result.notes.some((n) =>
+        n.includes("context_alignment.decision_refs is empty")
+      )
+    ).toBe(true);
+  });
+
+  it("advises standard tier when decision_refs entries are all blank", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "ok", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      done_checklist: { source_of_truth_read: true },
+      prediction: {
+        claim: "p",
+        expected_effect: "e",
+        falsification_method: "f",
+        horizon: "same_verify",
+      },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      context_alignment: {
+        stale_ground_checked: true,
+        product_contract_refs: [],
+        architecture_refs: [],
+        decision_refs: ["   ", ""],
+        test_matrix_refs: [],
+        unresolved_context_questions: [],
+        context_evidence: [],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(
+      result.notes.some((n) =>
+        n.includes("context_alignment.decision_refs is empty")
+      )
+    ).toBe(true);
+  });
+
+  it("does not advise standard tier when decision_refs has a non-blank entry", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "standard",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "ok", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      done_checklist: { source_of_truth_read: true },
+      prediction: {
+        claim: "p",
+        expected_effect: "e",
+        falsification_method: "f",
+        horizon: "same_verify",
+      },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+      },
+      context_alignment: {
+        stale_ground_checked: true,
+        product_contract_refs: [],
+        architecture_refs: [],
+        decision_refs: ["decisions/intake-lite.md"],
+        test_matrix_refs: [],
+        unresolved_context_questions: [],
+        context_evidence: [],
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(
+      result.notes.some((n) =>
+        n.includes("context_alignment.decision_refs is empty")
+      )
+    ).toBe(false);
+  });
+
+  it("advises deep tier when decision_refs is missing", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "deep",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      handoff: { next_action: "none", owner: "alice" },
+      state: { read_set: ["a.ts"], write_set: ["a.ts"] },
+      evidence: {
+        files_changed: ["a.ts"],
+        command_evidence: [{ command: "npm test", exit_code: 0 }],
+        verification_artifacts: [
+          {
+            kind: "unit_test",
+            command: "npm test",
+            status: "passed",
+            verifies: ["x"],
+            does_not_verify: ["y"],
+          },
+        ],
+        untested_regions: ["no e2e"],
+        remaining_risks: ["prod untested"],
+        rollback_policy: ["revert commit"],
+        execution_controls: ["feature flag"],
+      },
+      done_checklist: { source_of_truth_read: true },
+      prediction: {
+        claim: "Task completes successfully",
+        expected_effect: "Tests pass",
+        falsification_method: "Run tests",
+        horizon: "same_verify",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(result.acceptance_status).toBe("accepted");
+    expect(
+      result.notes.some((n) =>
+        n.includes("context_alignment.decision_refs is empty")
+      )
+    ).toBe(true);
+  });
+
+  it("does not advise light tier for missing decision_refs", () => {
+    const result = runAdmission({
+      schema_version: "1",
+      task_id: "T1",
+      tier: "light",
+      owner: "alice",
+      accountable: "bob",
+      claim: { fix_status: "fixed", summary: "done", evidence: ["e1"] },
+      verification: { status: "passed", checks: [] },
+      admission: { outcome: "success" },
+      acceptance_status: "accepted",
+      handoff: { next_action: "none", owner: "alice" },
+      evidence: {
+        files_changed: ["a.ts"],
+        manual_rationale: "simple doc fix",
+      },
+    });
+    expect(result.outcome).toBe("success");
+    expect(
+      result.notes.some((n) =>
+        n.includes("context_alignment.decision_refs is empty")
+      )
+    ).toBe(false);
+  });
+
   // Verify-stage v1 auto-escalation drift guard. Loads the canonical
   // policies/escalation.yaml file and behaviorally checks that each
   // declared high_risk_path_pattern triggers the TypeScript
@@ -5023,6 +5257,7 @@ describe("admission", () => {
         INTENT_CONTRACT_MISSING_NOTE,
         INTENT_CONTRACT_GOAL_MISSING_NOTE,
         INTENT_CONTRACT_UVCHANGE_MISSING_NOTE,
+        DECISION_REFS_EMPTY_NOTE,
       } = await import("../src/core/admission.js");
 
       const policy = loadAdmissionPolicy();
@@ -5034,11 +5269,13 @@ describe("admission", () => {
       const advisoryIntentContract = asRecord(
         policy["advisory_intent_contract"]
       );
+      const advisoryDecisionRefs = asRecord(policy["advisory_decision_refs"]);
 
       expect(advisoryIntent).toBeDefined();
       expect(advisoryTestAdequacy).toBeDefined();
       expect(advisoryEvidenceAdequacy).toBeDefined();
       expect(advisoryIntentContract).toBeDefined();
+      expect(advisoryDecisionRefs).toBeDefined();
 
       const checks: Array<{ label: string; yaml: unknown; runtime: string }> = [
         {
@@ -5100,6 +5337,11 @@ describe("admission", () => {
           label: "advisory_intent_contract.user_visible_change_missing_note",
           yaml: advisoryIntentContract?.["user_visible_change_missing_note"],
           runtime: INTENT_CONTRACT_UVCHANGE_MISSING_NOTE,
+        },
+        {
+          label: "advisory_decision_refs.empty_note",
+          yaml: advisoryDecisionRefs?.["empty_note"],
+          runtime: DECISION_REFS_EMPTY_NOTE,
         },
       ];
 

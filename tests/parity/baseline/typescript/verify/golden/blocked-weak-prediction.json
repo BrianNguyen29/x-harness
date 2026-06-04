@@ -53,6 +53,12 @@
       "status": "passed"
     },
     {
+      "name": "context_alignment.decision_refs is empty (advisory-only; admission acceptance is not decision correctness)",
+      "note": "context_alignment.decision_refs is empty (advisory-only; admission acceptance is not decision correctness)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
       "name": "mutation guard passed",
       "note": "mutation guard passed",
       "severity": "info",
@@ -121,7 +127,7 @@
   "episode": null,
   "input_card_hash": "sha256:da90d076124054ba0c84190b15a5a73b901763e06f2c66e8be17e7362878c3a6",
   "ok": false,
-  "policy_hash": "sha256:88a1f15c6422b489b468a3cd956467c2bee706a902c116459b966ba2dd12f6b2",
+  "policy_hash": "sha256:7ff19665f8907eeed97f1ff7d5b1e75235c543716e10dce8eb552e37c08f9d02",
   "product_intent_status": null,
   "recovery": {
     "next_action": "Attach validation evidence or explain why unavailable.",

@@ -30,6 +30,7 @@
             "evidence_adequacy not declared (advisory-only; admission acceptance is not evidence adequacy)",
             "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
             "intent_ref not declared (advisory-only; admission acceptance is not intent correctness)",
+            "context_alignment.decision_refs is empty (advisory-only; admission acceptance is not decision correctness)",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
             "governance enforced mode enabled",
             "mutation guard passed"
@@ -70,6 +71,7 @@
             "evidence_adequacy not declared (advisory-only; admission acceptance is not evidence adequacy)",
             "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
             "intent_ref not declared (advisory-only; admission acceptance is not intent correctness)",
+            "context_alignment.decision_refs is empty (advisory-only; admission acceptance is not decision correctness)",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
             "governance enforced mode enabled",
             "mutation guard passed"
@@ -109,6 +111,7 @@
             "evidence_adequacy not declared (advisory-only; admission acceptance is not evidence adequacy)",
             "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
             "intent_ref not declared (advisory-only; admission acceptance is not intent correctness)",
+            "context_alignment.decision_refs is empty (advisory-only; admission acceptance is not decision correctness)",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
             "governance enforced mode enabled",
             "mutation guard passed"
@@ -150,6 +153,7 @@
             "evidence_adequacy not declared (advisory-only; admission acceptance is not evidence adequacy)",
             "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
             "intent_ref not declared (advisory-only; admission acceptance is not intent correctness)",
+            "context_alignment.decision_refs is empty (advisory-only; admission acceptance is not decision correctness)",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
             "governance enforced mode enabled",
             "mutation guard passed"
@@ -193,6 +197,7 @@
             "evidence_adequacy not declared (advisory-only; admission acceptance is not evidence adequacy)",
             "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
             "intent_ref not declared (advisory-only; admission acceptance is not intent correctness)",
+            "context_alignment.decision_refs is empty (advisory-only; admission acceptance is not decision correctness)",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
             "governance enforced mode enabled",
             "mutation guard passed"
@@ -229,6 +234,7 @@
             "evidence_adequacy not declared (advisory-only; admission acceptance is not evidence adequacy)",
             "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
             "intent_ref not declared (advisory-only; admission acceptance is not intent correctness)",
+            "context_alignment.decision_refs is empty (advisory-only; admission acceptance is not decision correctness)",
             "context_acknowledged is missing or false (advisory-only; does not block admission)",
             "admission checks passed",
             "governance enforced mode enabled",
