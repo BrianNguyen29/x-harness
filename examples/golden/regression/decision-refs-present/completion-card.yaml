@@ -1,0 +1,65 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-DECISION-REFS-PRESENT-001
+tier: standard
+owner: alice
+accountable: bob
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - examples/golden/regression/decision-refs-present/README.md
+  architecture_refs:
+    - examples/golden/regression/decision-refs-present/README.md
+  decision_refs:
+    - examples/golden/regression/decision-refs-present/src/decisions/adr-001.md
+  test_matrix_refs:
+    - examples/golden/regression/decision-refs-present/README.md
+  unresolved_context_questions: []
+  context_evidence:
+    - ref: examples/golden/regression/decision-refs-present/src/decisions/adr-001.md
+      kind: decision_record
+      note: ADR-lite placeholder referenced by context_alignment.decision_refs
+state:
+  read_set:
+    - examples/golden/regression/decision-refs-present/README.md
+    - examples/golden/regression/decision-refs-present/src/decisions/adr-001.md
+  write_set:
+    - examples/golden/regression/decision-refs-present/src/decisions/adr-001.md
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Recorded an ADR-lite and linked it to a completion card via context_alignment.decision_refs
+  expected_effect: Admission emits no decision_refs empty advisory note because the array is populated
+  measurable_signal: git status
+  falsification_method: Remove the decision_refs entry; admission should still pass (advisory only)
+  horizon: same_verify
+evidence:
+  files_changed:
+    - examples/golden/regression/decision-refs-present/src/decisions/adr-001.md
+  command_evidence:
+    - command: git status
+      exit_code: 0
+claim:
+  fix_status: fixed
+  summary: Decision refs are present on a standard-tier card and admission passes without the empty advisory note
+  evidence:
+    - description: Source file with the ADR-lite
+      url: ./src/decisions/adr-001.md
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice

@@ -144,6 +144,48 @@
       "output": "verify/golden/boundary-violation.json"
     },
     {
+      "id": "verify:golden:decision-link-flow",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/regression/decision-link-flow/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 1,
+      "signal": null,
+      "output": "verify/golden/decision-link-flow.json"
+    },
+    {
+      "id": "verify:golden:decision-refs-empty-advisory",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/regression/decision-refs-empty-advisory/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/golden/decision-refs-empty-advisory.json"
+    },
+    {
+      "id": "verify:golden:decision-refs-present",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/regression/decision-refs-present/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/golden/decision-refs-present.json"
+    },
+    {
       "id": "verify:golden:deep-approval-required",
       "command": [
         "node",
