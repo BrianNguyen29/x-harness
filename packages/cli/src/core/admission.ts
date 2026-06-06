@@ -573,6 +573,21 @@ export function hasAnyDecisionRef(
   return false;
 }
 
+// hasAnyIntentRef reports whether doc carries a non-blank top-level
+// intent_ref string. Mirrors the Go helper
+// `internal/admission/intent_ref.go` `HasAnyIntentRef` and is reused
+// by the verify-layer intent_enforce block path. The predicate is
+// deliberately process/governance-only: it does not resolve or align
+// the reference.
+export function hasAnyIntentRef(
+  doc: Record<string, unknown> | null | undefined
+): boolean {
+  if (doc == null) return false;
+  const ref = doc.intent_ref;
+  if (typeof ref !== "string") return false;
+  return ref.trim() !== "";
+}
+
 // evaluateDecisionRefs emits advisory notes (never errors) for standard
 // and deep tier cards when the optional context_alignment.decision_refs
 // array is missing or contains no non-blank string entries. A non-blank

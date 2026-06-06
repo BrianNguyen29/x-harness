@@ -136,7 +136,7 @@
   "episode": null,
   "input_card_hash": "sha256:603370d47cd27b228219a2b9a1c97f2fef0b38e73dff1a62c2f2b1198d9340d6",
   "ok": false,
-  "policy_hash": "sha256:88a35b6601ea62ddb36be65bf6c4e7228c9bf01b5935efd075ba0509a30fdd19",
+  "policy_hash": "sha256:35fadd6c96855c24c6da194a47b7509c83a849205e9b0a50a49fb1274bc9dad4",
   "product_intent_status": null,
   "recovery": {
     "next_action": "Declare what each validation artifact verifies and does not verify.",

@@ -102,7 +102,7 @@
   "episode": null,
   "input_card_hash": "sha256:9de33f6a86fe469c15f57f5cd6f92f3aa7d6ab475b00038099be5f7fe75ddaa0",
   "ok": false,
-  "policy_hash": "sha256:88a35b6601ea62ddb36be65bf6c4e7228c9bf01b5935efd075ba0509a30fdd19",
+  "policy_hash": "sha256:35fadd6c96855c24c6da194a47b7509c83a849205e9b0a50a49fb1274bc9dad4",
   "product_intent_status": null,
   "recovery": {
     "next_action": "Declare the done_checklist required for standard or deep admission.",

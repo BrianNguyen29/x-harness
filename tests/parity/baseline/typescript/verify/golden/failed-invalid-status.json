@@ -127,7 +127,7 @@
   "episode": null,
   "input_card_hash": "sha256:47867064ad79d6c4ff5393dd67792fc3cce059e1bd36755a96870b7dda46aa15",
   "ok": false,
-  "policy_hash": "sha256:88a35b6601ea62ddb36be65bf6c4e7228c9bf01b5935efd075ba0509a30fdd19",
+  "policy_hash": "sha256:35fadd6c96855c24c6da194a47b7509c83a849205e9b0a50a49fb1274bc9dad4",
   "product_intent_status": null,
   "recovery": {
     "next_action": "Attach validation evidence or explain why unavailable.",

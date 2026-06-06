@@ -9,18 +9,22 @@ import (
 	"testing"
 )
 
-// writeStandardCardWithDecisionRefs writes a standard-tier completion
+// writeStandardCardWithIntentRef writes a standard-tier completion
 // card to the working directory. The card passes admission by default;
-// the decision_refs field is always present (the schema requires it)
-// and can be tuned via `refs`:
-//   - nil or []any{}: decision_refs is an empty array (triggers the
+// the optional top-level intent_ref field can be tuned via `ref`:
+//   - nil or empty string: intent_ref is missing (triggers the
 //     verify-layer block when enforcement is `block`)
-//   - non-empty: decision_refs has at least one non-blank string
+//   - non-blank: intent_ref carries a value that suppresses the gate
+//
+// The card always carries a non-empty decision_refs entry so the
+// decision_refs gate does not fire when the test profile (e.g.
+// governed-deep) defaults to block. This isolates the intent_ref
+// gate under test.
 //
 // The standard-tier context floor is auto-enabled by handleVerify, so
 // the card carries a minimal context_alignment that satisfies the
 // other ref checks (product_contract_refs points at a real file).
-func writeStandardCardWithDecisionRefs(t *testing.T, refs []any) {
+func writeStandardCardWithIntentRef(t *testing.T, ref string) {
 	t.Helper()
 	// A README.md file is required so product_contract_refs resolves
 	// under the auto-enabled context floor for standard tier.
@@ -34,26 +38,19 @@ func writeStandardCardWithDecisionRefs(t *testing.T, refs []any) {
 	refsBlock += "  product_contract_refs:\n    - README.md\n"
 	refsBlock += "  architecture_refs: []\n"
 	refsBlock += "  test_matrix_refs: []\n"
+	refsBlock += "  decision_refs:\n    - decisions/ADR-1.md\n"
 	refsBlock += "  unresolved_context_questions: []\n"
 	refsBlock += "  context_evidence: []\n"
-	if len(refs) == 0 {
-		// Empty or nil slice: emit an empty YAML array so the schema
-		// accepts the document and the runtime gate still triggers
-		// (HasAnyDecisionRef treats an empty array the same as a
-		// missing key).
-		refsBlock += "  decision_refs: []\n"
-	} else {
-		refsBlock += "  decision_refs:\n"
-		for _, r := range refs {
-			refsBlock += "    - " + strings.TrimSpace(toYAMLString(r)) + "\n"
-		}
+	intentRefLine := ""
+	if strings.TrimSpace(ref) != "" {
+		intentRefLine = "intent_ref: " + strings.TrimSpace(ref) + "\n"
 	}
 	cardYAML := `schema_version: "1"
-task_id: TASK-DECISION-ENFORCE-001
+task_id: TASK-INTENT-ENFORCE-001
 tier: standard
 owner: alice
 accountable: bob
-` + refsBlock + `done_checklist:
+` + refsBlock + intentRefLine + `done_checklist:
   source_of_truth_read: true
   scope_explained: true
   read_write_sets_declared: true
@@ -62,7 +59,7 @@ accountable: bob
   risk_and_rollback_declared: true
   prediction_declared: true
 prediction:
-  claim: TASK-DECISION-ENFORCE-001 claim
+  claim: TASK-INTENT-ENFORCE-001 claim
   expected_effect: works
   measurable_signal: tests pass
   falsification_method: skip fix
@@ -74,10 +71,10 @@ evidence:
     - command: go test ./...
       exit_code: 0
       runner: go-test
-      started_at: "2026-06-04T00:00:00Z"
+      started_at: "2026-06-06T00:00:00Z"
 claim:
   fix_status: fixed
-  summary: TASK-DECISION-ENFORCE-001
+  summary: TASK-INTENT-ENFORCE-001
   evidence:
     - description: source change
 verification:
@@ -97,18 +94,15 @@ handoff:
 	}
 }
 
-// toYAMLString is a tiny stringifier for []any elements so we can
-// embed them directly in the card. Non-string elements fall back to
-// the empty string (kept narrow; this helper is only used for the
-// decision_refs slice in these tests).
-func toYAMLString(v any) string {
-	if s, ok := v.(string); ok {
-		return s
-	}
-	return ""
-}
-
-func setupDecisionEnforceTestDir(t *testing.T) string {
+// setupIntentEnforceTestDir mirrors the helpers used by
+// verify_decision_test.go: a minimal temp dir with completion card
+// and the two schemas the verify pipeline needs (completion-card +
+// context-alignment), plus a no-op contract-oracle policy so
+// ci-strict and governed-deep (which auto-enable contract-oracles)
+// do not fail on a missing policy file. A dummy decisions/ADR-1.md
+// file is created so decision_refs references resolve under the
+// auto-enabled context floor for standard tier.
+func setupIntentEnforceTestDir(t *testing.T) string {
 	t.Helper()
 	tmpDir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test\n"), 0644); err != nil {
@@ -133,17 +127,12 @@ func setupDecisionEnforceTestDir(t *testing.T) string {
 			t.Fatal(err)
 		}
 	}
-	// A no-op contract-oracle policy so ci-strict and governed-deep
-	// (which auto-enable contract-oracles) do not fail on a missing
-	// policy file.
 	if err := os.WriteFile(filepath.Join(tmpDir, "policies", "contract-oracle.yaml"),
 		[]byte("version: 1\ngrep_rules: []\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	// A dummy decision file so refs like "decisions/intake-lite.md"
-	// resolve under the auto-enabled context floor.
-	if err := os.WriteFile(filepath.Join(tmpDir, "decisions", "intake-lite.md"),
-		[]byte("# Intake Lite\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "decisions", "ADR-1.md"),
+		[]byte("# ADR-1\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	origWd, err := os.Getwd()
@@ -157,16 +146,16 @@ func setupDecisionEnforceTestDir(t *testing.T) string {
 	return tmpDir
 }
 
-func TestVerifyDecisionEnforceOffDoesNotBlock(t *testing.T) {
+func TestVerifyIntentEnforceOffDoesNotBlock(t *testing.T) {
 	// off must never block; the advisory note from admission.Run is
 	// preserved (suppressing it would require invasive admission
 	// changes that the task scope defers).
-	setupDecisionEnforceTestDir(t)
-	writeStandardCardWithDecisionRefs(t, nil)
+	setupIntentEnforceTestDir(t)
+	writeStandardCardWithIntentRef(t, "")
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--card", "completion-card.yaml", "--decision-enforce", "off", "--json"}, &stdout, &stderr)
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--intent-enforce", "off", "--json"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
 	}
@@ -180,15 +169,15 @@ func TestVerifyDecisionEnforceOffDoesNotBlock(t *testing.T) {
 	}
 }
 
-func TestVerifyDecisionEnforceAdvisoryDoesNotBlock(t *testing.T) {
+func TestVerifyIntentEnforceAdvisoryDoesNotBlock(t *testing.T) {
 	// advisory preserves the existing safe-V1 behavior: a note is
 	// emitted, but admission is not withheld.
-	setupDecisionEnforceTestDir(t)
-	writeStandardCardWithDecisionRefs(t, nil)
+	setupIntentEnforceTestDir(t)
+	writeStandardCardWithIntentRef(t, "")
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--card", "completion-card.yaml", "--decision-enforce", "advisory", "--json"}, &stdout, &stderr)
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--intent-enforce", "advisory", "--json"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
 	}
@@ -202,24 +191,24 @@ func TestVerifyDecisionEnforceAdvisoryDoesNotBlock(t *testing.T) {
 	}
 	foundNote := false
 	for _, n := range result.AdmissionNotes {
-		if strings.Contains(n, "context_alignment.decision_refs is empty") {
+		if strings.Contains(n, "intent_ref not declared") {
 			foundNote = true
 		}
 	}
 	if !foundNote {
-		t.Fatalf("expected decision_refs empty advisory note, got: %v", result.AdmissionNotes)
+		t.Fatalf("expected intent_ref missing advisory note, got: %v", result.AdmissionNotes)
 	}
 }
 
-func TestVerifyDecisionEnforceBlockBlocksWhenMissing(t *testing.T) {
-	// block on a standard card with no decision_refs must withhold
-	// with the decision_refs_missing predicate.
-	setupDecisionEnforceTestDir(t)
-	writeStandardCardWithDecisionRefs(t, nil)
+func TestVerifyIntentEnforceBlockBlocksWhenMissing(t *testing.T) {
+	// block on a standard card with no intent_ref must withhold
+	// with the intent_ref_missing predicate.
+	setupIntentEnforceTestDir(t)
+	writeStandardCardWithIntentRef(t, "")
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--card", "completion-card.yaml", "--decision-enforce", "block", "--json"}, &stdout, &stderr)
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--intent-enforce", "block", "--json"}, &stdout, &stderr)
 	if code == ExitOK {
 		t.Fatalf("expected non-ok exit, got %d. stdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
 	}
@@ -229,7 +218,7 @@ func TestVerifyDecisionEnforceBlockBlocksWhenMissing(t *testing.T) {
 		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
 	}
 	if result.OK {
-		t.Fatal("expected not ok under block when decision_refs is missing")
+		t.Fatal("expected not ok under block when intent_ref is missing")
 	}
 	if result.AdmissionOutcome != "blocked" {
 		t.Fatalf("expected admission_outcome=blocked, got %s", result.AdmissionOutcome)
@@ -240,29 +229,28 @@ func TestVerifyDecisionEnforceBlockBlocksWhenMissing(t *testing.T) {
 	if result.WithheldReason == nil {
 		t.Fatal("expected withheld_reason")
 	}
-	if result.WithheldReason.BlockingPredicate != "decision_refs_missing" {
-		t.Fatalf("expected blocking_predicate=decision_refs_missing, got %s", result.WithheldReason.BlockingPredicate)
+	if result.WithheldReason.BlockingPredicate != "intent_ref_missing" {
+		t.Fatalf("expected blocking_predicate=intent_ref_missing, got %s", result.WithheldReason.BlockingPredicate)
 	}
-	if result.WithheldReason.FailureClass != "decision_refs_missing" {
-		t.Fatalf("expected failure_class=decision_refs_missing, got %s", result.WithheldReason.FailureClass)
+	if result.WithheldReason.FailureClass != "intent_ref_missing" {
+		t.Fatalf("expected failure_class=intent_ref_missing, got %s", result.WithheldReason.FailureClass)
 	}
-	if result.WithheldReason.Class != "decision_refs_missing" {
-		t.Fatalf("expected class=decision_refs_missing, got %s", result.WithheldReason.Class)
+	if result.WithheldReason.Class != "intent_ref_missing" {
+		t.Fatalf("expected class=intent_ref_missing, got %s", result.WithheldReason.Class)
 	}
 	if result.WithheldReason.Owner != "implementation-worker" {
 		t.Fatalf("expected owner=implementation-worker, got %s", result.WithheldReason.Owner)
 	}
 }
 
-func TestVerifyDecisionEnforceBlockPassesWithRefs(t *testing.T) {
-	// block on a standard card with at least one non-blank ref must
-	// pass.
-	setupDecisionEnforceTestDir(t)
-	writeStandardCardWithDecisionRefs(t, []any{"decisions/intake-lite.md"})
+func TestVerifyIntentEnforceBlockPassesWithRef(t *testing.T) {
+	// block on a standard card with a non-blank intent_ref must pass.
+	setupIntentEnforceTestDir(t)
+	writeStandardCardWithIntentRef(t, "doc/intake-lite.md")
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--card", "completion-card.yaml", "--decision-enforce", "block", "--json"}, &stdout, &stderr)
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--intent-enforce", "block", "--json"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
 	}
@@ -272,20 +260,20 @@ func TestVerifyDecisionEnforceBlockPassesWithRefs(t *testing.T) {
 		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
 	}
 	if !result.OK {
-		t.Fatalf("expected ok with non-empty decision_refs, got outcome=%s status=%s", result.AdmissionOutcome, result.AcceptanceStatus)
+		t.Fatalf("expected ok with non-blank intent_ref, got outcome=%s status=%s", result.AdmissionOutcome, result.AcceptanceStatus)
 	}
 }
 
-func TestVerifyDecisionEnforceBlockEmptyArrayBlocks(t *testing.T) {
-	// block on a card with an empty decision_refs array must withhold
-	// with the decision_refs_missing predicate. The runtime check
-	// mirrors the advisory semantics in admission.evaluateDecisionRefs.
-	setupDecisionEnforceTestDir(t)
-	writeStandardCardWithDecisionRefs(t, []any{})
+func TestVerifyIntentEnforceBlockBlankStringBlocks(t *testing.T) {
+	// block on a card with a blank intent_ref string must withhold
+	// with the intent_ref_missing predicate. The runtime check
+	// mirrors the advisory semantics in admission.evaluateIntentRef.
+	setupIntentEnforceTestDir(t)
+	writeStandardCardWithIntentRef(t, "   ")
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--card", "completion-card.yaml", "--decision-enforce", "block", "--json"}, &stdout, &stderr)
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--intent-enforce", "block", "--json"}, &stdout, &stderr)
 	if code == ExitOK {
 		t.Fatalf("expected non-ok exit, got %d. stdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
 	}
@@ -294,20 +282,20 @@ func TestVerifyDecisionEnforceBlockEmptyArrayBlocks(t *testing.T) {
 		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
 	}
 	if result.OK {
-		t.Fatal("expected not ok for empty array under block")
+		t.Fatal("expected not ok for blank string under block")
 	}
-	if result.WithheldReason == nil || result.WithheldReason.BlockingPredicate != "decision_refs_missing" {
-		t.Fatalf("expected decision_refs_missing predicate, got %+v", result.WithheldReason)
+	if result.WithheldReason == nil || result.WithheldReason.BlockingPredicate != "intent_ref_missing" {
+		t.Fatalf("expected intent_ref_missing predicate, got %+v", result.WithheldReason)
 	}
 }
 
-func TestVerifyDecisionEnforceLightTierPasses(t *testing.T) {
+func TestVerifyIntentEnforceLightTierPasses(t *testing.T) {
 	// The check is tier-scoped: light cards must pass under block
-	// even without decision_refs. Use a light card that is otherwise
+	// even without intent_ref. Use a light card that is otherwise
 	// schema-valid.
-	setupDecisionEnforceTestDir(t)
+	setupIntentEnforceTestDir(t)
 	cardYAML := `schema_version: "1"
-task_id: TASK-DECISION-LIGHT-001
+task_id: TASK-INTENT-LIGHT-001
 tier: light
 owner: alice
 accountable: bob
@@ -317,7 +305,7 @@ evidence:
   manual_rationale: Simple change
 claim:
   fix_status: fixed
-  summary: TASK-DECISION-LIGHT-001
+  summary: TASK-INTENT-LIGHT-001
   evidence:
     - description: source change
 verification:
@@ -338,7 +326,7 @@ handoff:
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--card", "completion-card.yaml", "--decision-enforce", "block", "--json"}, &stdout, &stderr)
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--intent-enforce", "block", "--json"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d for light, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
 	}
@@ -351,15 +339,15 @@ handoff:
 	}
 }
 
-func TestVerifyDecisionEnforceExplicitOffOverridesProfile(t *testing.T) {
-	// ci-strict would default to block; an explicit --decision-enforce
-	// off must win.
-	setupDecisionEnforceTestDir(t)
-	writeStandardCardWithDecisionRefs(t, nil)
+func TestVerifyIntentEnforceExplicitOffOverridesProfile(t *testing.T) {
+	// governed-deep would default to block; an explicit
+	// --intent-enforce off must win.
+	setupIntentEnforceTestDir(t)
+	writeStandardCardWithIntentRef(t, "")
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--profile", "ci-strict", "--decision-enforce", "off", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
+	code := Run([]string{"verify", "--profile", "governed-deep", "--intent-enforce", "off", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d with explicit off, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
 	}
@@ -372,19 +360,15 @@ func TestVerifyDecisionEnforceExplicitOffOverridesProfile(t *testing.T) {
 	}
 }
 
-func TestVerifyDecisionEnforceExplicitAdvisoryOverridesProfile(t *testing.T) {
+func TestVerifyIntentEnforceExplicitAdvisoryOverridesProfile(t *testing.T) {
 	// governed-deep would default to block; explicit advisory must
-	// not block. The card is also missing intent_ref, so the
-	// --intent-enforce advisory flag must be passed explicitly to
-	// isolate the decision-enforce behavior under test; without it,
-	// the governed-deep default of block would withhold the card on
-	// the new intent_ref gate.
-	setupDecisionEnforceTestDir(t)
-	writeStandardCardWithDecisionRefs(t, nil)
+	// not block.
+	setupIntentEnforceTestDir(t)
+	writeStandardCardWithIntentRef(t, "")
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--profile", "governed-deep", "--decision-enforce", "advisory", "--intent-enforce", "advisory", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
+	code := Run([]string{"verify", "--profile", "governed-deep", "--intent-enforce", "advisory", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d with explicit advisory, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
 	}
@@ -397,22 +381,22 @@ func TestVerifyDecisionEnforceExplicitAdvisoryOverridesProfile(t *testing.T) {
 	}
 }
 
-func TestVerifyDecisionEnforceInvalidValueUsageError(t *testing.T) {
+func TestVerifyIntentEnforceInvalidValueUsageError(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--card", "x.yaml", "--decision-enforce", "bogus"}, &stdout, &stderr)
+	code := Run([]string{"verify", "--card", "x.yaml", "--intent-enforce", "bogus"}, &stdout, &stderr)
 	if code != ExitUsage {
 		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "invalid --decision-enforce") {
+	if !strings.Contains(stderr.String(), "invalid --intent-enforce") {
 		t.Fatalf("expected invalid value error, got: %s", stderr.String())
 	}
 }
 
-func TestVerifyDecisionEnforceMissingValueUsageError(t *testing.T) {
+func TestVerifyIntentEnforceMissingValueUsageError(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--card", "x.yaml", "--decision-enforce"}, &stdout, &stderr)
+	code := Run([]string{"verify", "--card", "x.yaml", "--intent-enforce"}, &stdout, &stderr)
 	if code != ExitUsage {
 		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
 	}
@@ -421,48 +405,23 @@ func TestVerifyDecisionEnforceMissingValueUsageError(t *testing.T) {
 	}
 }
 
-func TestVerifyHelpDocumentsDecisionEnforce(t *testing.T) {
+func TestVerifyHelpDocumentsIntentEnforce(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	code := Run([]string{"verify", "--help"}, &stdout, &stderr)
 	if code != ExitUsage {
 		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "--decision-enforce") {
-		t.Fatalf("expected usage to mention --decision-enforce, got: %s", stderr.String())
+	if !strings.Contains(stderr.String(), "--intent-enforce") {
+		t.Fatalf("expected usage to mention --intent-enforce, got: %s", stderr.String())
 	}
 }
 
-func TestVerifyProfileCIStrictBlocksMissingDecisionRefs(t *testing.T) {
-	// ci-strict defaults to block; the missing-decision_refs case
-	// must withhold with the decision_refs_missing predicate.
-	setupDecisionEnforceTestDir(t)
-	writeStandardCardWithDecisionRefs(t, nil)
-
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	code := Run([]string{"verify", "--profile", "ci-strict", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
-	if code == ExitOK {
-		t.Fatalf("expected non-ok exit, got %d. stdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
-	}
-	var result VerifyResult
-	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
-		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
-	}
-	if result.OK {
-		t.Fatal("expected not ok under ci-strict with missing decision_refs")
-	}
-	if result.WithheldReason == nil {
-		t.Fatal("expected withheld_reason")
-	}
-	if result.WithheldReason.BlockingPredicate != "decision_refs_missing" {
-		t.Fatalf("expected blocking_predicate=decision_refs_missing, got %s", result.WithheldReason.BlockingPredicate)
-	}
-}
-
-func TestVerifyProfileGovernedDeepBlocksMissingDecisionRefs(t *testing.T) {
-	setupDecisionEnforceTestDir(t)
-	writeStandardCardWithDecisionRefs(t, nil)
+func TestVerifyProfileGovernedDeepBlocksMissingIntentRef(t *testing.T) {
+	// governed-deep defaults to block; the missing-intent_ref case
+	// must withhold with the intent_ref_missing predicate.
+	setupIntentEnforceTestDir(t)
+	writeStandardCardWithIntentRef(t, "")
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -474,16 +433,80 @@ func TestVerifyProfileGovernedDeepBlocksMissingDecisionRefs(t *testing.T) {
 	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
 		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
 	}
-	if result.WithheldReason == nil || result.WithheldReason.BlockingPredicate != "decision_refs_missing" {
-		t.Fatalf("expected decision_refs_missing predicate, got %+v", result.WithheldReason)
+	if result.OK {
+		t.Fatal("expected not ok under governed-deep with missing intent_ref")
+	}
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason")
+	}
+	if result.WithheldReason.BlockingPredicate != "intent_ref_missing" {
+		t.Fatalf("expected blocking_predicate=intent_ref_missing, got %s", result.WithheldReason.BlockingPredicate)
 	}
 }
 
-func TestVerifyProfileLightLocalAdvisoryForDecisionRefs(t *testing.T) {
+func TestVerifyProfileCIStrictAdvisoryForIntentRefByDefault(t *testing.T) {
+	// Conservative per oracle review: ci-strict stays advisory for
+	// intent_ref by default. The card is missing intent_ref but the
+	// verify layer must not block; the advisory note from
+	// admission.Run is preserved.
+	setupIntentEnforceTestDir(t)
+	writeStandardCardWithIntentRef(t, "")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--profile", "ci-strict", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d under ci-strict advisory, got %d. stdout: %s\nstderr: %s", ExitOK, code, stdout.String(), stderr.String())
+	}
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if !result.OK {
+		t.Fatalf("expected ok under ci-strict advisory, got outcome=%s status=%s", result.AdmissionOutcome, result.AcceptanceStatus)
+	}
+	foundNote := false
+	for _, n := range result.AdmissionNotes {
+		if strings.Contains(n, "intent_ref not declared") {
+			foundNote = true
+		}
+	}
+	if !foundNote {
+		t.Fatalf("expected intent_ref advisory note under ci-strict, got: %v", result.AdmissionNotes)
+	}
+}
+
+func TestVerifyProfileCIStrictExplicitBlockBlocksMissingIntentRef(t *testing.T) {
+	// ci-strict stays advisory by default; explicit --intent-enforce
+	// block can still block under any profile.
+	setupIntentEnforceTestDir(t)
+	writeStandardCardWithIntentRef(t, "")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--profile", "ci-strict", "--intent-enforce", "block", "--card", "completion-card.yaml", "--json"}, &stdout, &stderr)
+	if code == ExitOK {
+		t.Fatalf("expected non-ok exit, got %d. stdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.OK {
+		t.Fatal("expected not ok under ci-strict with explicit block and missing intent_ref")
+	}
+	if result.WithheldReason == nil || result.WithheldReason.BlockingPredicate != "intent_ref_missing" {
+		t.Fatalf("expected intent_ref_missing predicate, got %+v", result.WithheldReason)
+	}
+}
+
+func TestVerifyProfileLightLocalAdvisoryForIntentRef(t *testing.T) {
 	// light-local defaults to advisory; it must NOT block and the
-	// advisory note must still appear in AdmissionNotes.
-	setupDecisionEnforceTestDir(t)
-	writeStandardCardWithDecisionRefs(t, nil)
+	// advisory note must still appear in AdmissionNotes (light tier
+	// stays quiet at the admission layer; the verify layer is also
+	// quiet because the intent_ref gate never applies to light).
+	setupIntentEnforceTestDir(t)
+	writeStandardCardWithIntentRef(t, "")
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -498,22 +521,13 @@ func TestVerifyProfileLightLocalAdvisoryForDecisionRefs(t *testing.T) {
 	if !result.OK {
 		t.Fatalf("expected ok under light-local advisory, got outcome=%s status=%s", result.AdmissionOutcome, result.AcceptanceStatus)
 	}
-	foundNote := false
-	for _, n := range result.AdmissionNotes {
-		if strings.Contains(n, "context_alignment.decision_refs is empty") {
-			foundNote = true
-		}
-	}
-	if !foundNote {
-		t.Fatalf("expected decision_refs advisory note under light-local, got: %v", result.AdmissionNotes)
-	}
 }
 
-func TestVerifyProfileCIStandardAdvisoryForDecisionRefs(t *testing.T) {
+func TestVerifyProfileCIStandardAdvisoryForIntentRef(t *testing.T) {
 	// ci-standard defaults to advisory; it must NOT block even when
-	// the card has no decision_refs.
-	setupDecisionEnforceTestDir(t)
-	writeStandardCardWithDecisionRefs(t, nil)
+	// the card has no intent_ref.
+	setupIntentEnforceTestDir(t)
+	writeStandardCardWithIntentRef(t, "")
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -530,7 +544,7 @@ func TestVerifyProfileCIStandardAdvisoryForDecisionRefs(t *testing.T) {
 	}
 }
 
-func TestIsValidDecisionEnforce(t *testing.T) {
+func TestIsValidIntentEnforce(t *testing.T) {
 	cases := map[string]bool{
 		"off":      true,
 		"advisory": true,
@@ -541,8 +555,8 @@ func TestIsValidDecisionEnforce(t *testing.T) {
 		"bogus":    false,
 	}
 	for v, want := range cases {
-		if got := isValidDecisionEnforce(v); got != want {
-			t.Errorf("isValidDecisionEnforce(%q) = %v, want %v", v, got, want)
+		if got := isValidIntentEnforce(v); got != want {
+			t.Errorf("isValidIntentEnforce(%q) = %v, want %v", v, got, want)
 		}
 	}
 }

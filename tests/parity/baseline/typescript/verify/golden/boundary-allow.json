@@ -46,7 +46,7 @@
   "episode": null,
   "input_card_hash": "sha256:8b3ce7876defda16b516479d75fab90b5247e86696510d1c53305e6e500f2a21",
   "ok": true,
-  "policy_hash": "sha256:88a35b6601ea62ddb36be65bf6c4e7228c9bf01b5935efd075ba0509a30fdd19",
+  "policy_hash": "sha256:35fadd6c96855c24c6da194a47b7509c83a849205e9b0a50a49fb1274bc9dad4",
   "product_intent_status": null,
   "recovery": null,
   "schema_version": 1,

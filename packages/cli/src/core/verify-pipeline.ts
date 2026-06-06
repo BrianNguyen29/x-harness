@@ -4,6 +4,7 @@ import {
   runAdmission,
   acceptanceStatus,
   hasAnyDecisionRef,
+  hasAnyIntentRef,
 } from "./admission.js";
 import { appendTrace } from "./trace.js";
 import type { TraceEvent } from "./trace.js";
@@ -76,6 +77,15 @@ export interface VerifyPipelineOptions {
   //   governed-deep -> block
   profile?: string;
   decisionEnforce?: string;
+  // Profile-keyed default for the verify-layer intent_ref gate. Mirrors
+  // the Go canonical VerifyProfile.IntentEnforce semantics: an explicit
+  // value (`off`|`advisory`|`block`) always wins; an empty string means
+  // "use the profile default". Conservative profile defaults:
+  //   light-local   -> advisory
+  //   ci-standard   -> advisory
+  //   ci-strict     -> advisory (not block)
+  //   governed-deep -> block
+  intentEnforce?: string;
 }
 
 export interface VerifyCheck {
@@ -314,27 +324,52 @@ export async function runVerifyPipeline(
     tier,
     doc: loaded.card ?? null,
   });
+  // Intent-ref gate (profile-controlled). Mirrors the decision-refs
+  // gate but with conservative per-oracle profile defaults: only
+  // governed-deep defaults to block; ci-strict, ci-standard, and
+  // light-local stay advisory by default. An explicit
+  // --intent-enforce block can still block under any profile. The
+  // predicate is process/governance-only and never implies product
+  // correctness.
+  const intentEnforceMode = resolveIntentEnforceMode(
+    opts.profile,
+    opts.intentEnforce
+  );
+  const intentEnforceBlockReason = applyIntentEnforceGate({
+    mode: intentEnforceMode,
+    tier,
+    doc: loaded.card ?? null,
+  });
   const finalOutcome =
     guardBlocked || traceDirBlocked
       ? "blocked"
       : decisionEnforceBlockReason != null
         ? "blocked"
-        : outcome;
+        : intentEnforceBlockReason != null
+          ? "blocked"
+          : outcome;
   const finalAcceptance = acceptanceStatus(finalOutcome);
   const finalBlockingPredicate =
     guardBlocked || traceDirBlocked
       ? "verifier_not_read_only"
       : decisionEnforceBlockReason != null
         ? "decision_refs_missing"
-        : blockingPredicate;
+        : intentEnforceBlockReason != null
+          ? "intent_ref_missing"
+          : blockingPredicate;
   const finalRecoveryRoute =
     guardBlocked || traceDirBlocked
       ? getRecoveryRoute("verifier_not_read_only")
       : decisionEnforceBlockReason != null
         ? getRecoveryRoute("decision_refs_missing")
-        : (getRecoveryRoute(finalBlockingPredicate) ?? recoveryRoute);
+        : intentEnforceBlockReason != null
+          ? getRecoveryRoute("intent_ref_missing")
+          : (getRecoveryRoute(finalBlockingPredicate) ?? recoveryRoute);
   if (decisionEnforceBlockReason != null) {
     errors.push(decisionEnforceBlockReason);
+  }
+  if (intentEnforceBlockReason != null) {
+    errors.push(intentEnforceBlockReason);
   }
 
   const cardId = (loaded.card?.id as string | undefined) ?? null;
@@ -449,4 +484,59 @@ export function applyDecisionEnforceGate(args: {
   if (args.tier !== "standard" && args.tier !== "deep") return null;
   if (hasAnyDecisionRef(args.doc)) return null;
   return "context_alignment.decision_refs is empty (verify-stage block; admission acceptance is not decision correctness)";
+}
+
+// isValidIntentEnforce reports whether value is one of the supported
+// enforcement modes for the verify-stage intent_ref gate. Mirrors the
+// closed-enum style of isValidDecisionEnforce (in
+// `packages/cli/src/core/decision.ts`).
+export function isValidIntentEnforce(value: string): boolean {
+  return value === "off" || value === "advisory" || value === "block";
+}
+
+// Intent-enforce profile defaults mirror the Go canonical profiles in
+// `internal/cli/verify.go` (VerifyProfile.IntentEnforce). Conservative
+// per-oracle defaults: only governed-deep blocks by default; ci-strict,
+// ci-standard, and light-local stay advisory. An explicit
+// --intent-enforce block can still block under any profile.
+const INTENT_ENFORCE_PROFILE_DEFAULTS: Record<string, string> = {
+  "light-local": "advisory",
+  "ci-standard": "advisory",
+  "ci-strict": "advisory",
+  "governed-deep": "block",
+};
+
+export function resolveIntentEnforceMode(
+  profile: string | undefined,
+  explicit: string | undefined
+): string {
+  const explicitTrimmed = (explicit ?? "").trim();
+  if (explicitTrimmed !== "") {
+    if (!isValidIntentEnforce(explicitTrimmed)) {
+      return "off";
+    }
+    return explicitTrimmed;
+  }
+  const profileTrimmed = (profile ?? "").trim();
+  if (profileTrimmed === "") return "off";
+  const profileDefault = INTENT_ENFORCE_PROFILE_DEFAULTS[profileTrimmed];
+  if (profileDefault === undefined) return "off";
+  return profileDefault;
+}
+
+// applyIntentEnforceGate mirrors the verify-layer intent_ref gate in
+// `internal/cli/verify.go`. The block mode withholds standard/deep
+// cards whose top-level intent_ref is missing or blank; advisory and
+// off return null (no block). The light tier is always non-blocking
+// regardless of mode. The predicate is process/governance-only and
+// never implies product correctness.
+export function applyIntentEnforceGate(args: {
+  mode: string;
+  tier: string;
+  doc: Record<string, unknown> | null;
+}): string | null {
+  if (args.mode !== "block") return null;
+  if (args.tier !== "standard" && args.tier !== "deep") return null;
+  if (hasAnyIntentRef(args.doc)) return null;
+  return "intent_ref not declared (verify-stage block; admission acceptance is not intent correctness)";
 }

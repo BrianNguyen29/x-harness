@@ -34,3 +34,15 @@ func evaluateIntentRef(doc map[string]any, tier string) []string {
 	}
 	return notes
 }
+
+// HasAnyIntentRef reports whether doc carries a non-blank top-level
+// intent_ref string. Exposed at package scope so the verify layer can
+// apply profile-controlled blocking (see internal/cli/verify.go
+// IntentEnforce) without duplicating the trim/lookup logic. Tolerates
+// nil/missing/non-string values; they all map to "empty" (returns false).
+// The predicate is deliberately process/governance-only: it does not
+// resolve or align the reference.
+func HasAnyIntentRef(doc map[string]any) bool {
+	ref := strings.TrimSpace(stringValue(doc, "intent_ref"))
+	return ref != ""
+}

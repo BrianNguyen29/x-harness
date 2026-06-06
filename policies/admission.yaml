@@ -303,3 +303,42 @@ verify_layer_decision_gate:
     - light
   explicit_flag: --decision-enforce
   blocks_admission: false  # admission core stays advisory; verify layer adds the block
+
+# Profile-controlled blocking for the advisory_intent_ref gate. The
+# runtime engine never alters admission core: it remains a non-blocking
+# advisory note by default. Profile-controlled blocking is wired into
+# the verify layer (internal/cli/verify.go) via the --intent-enforce
+# flag and the VerifyProfile.IntentEnforce field. Off and advisory
+# never block at the verify layer; block withholds standard/deep cards
+# whose top-level intent_ref is missing or blank with the
+# `intent_ref_missing` blocking predicate. The predicate is
+# deliberately process/governance-only; it does not imply product
+# correctness. Conservative profile defaults per oracle review:
+#   - light-local: advisory  (never blocks)
+#   - ci-standard: advisory  (never blocks by default)
+#   - ci-strict:   advisory  (not block; explicit --intent-enforce block
+#                              can still block under any profile)
+#   - governed-deep: block   (default blocks missing/blank intent_ref)
+# The blocking predicate is deliberately distinct from admission
+# predicates so failures remain traceable: the engine still reports
+# the advisory note, and the verify layer adds a separate
+# withheld_reason with class=intent_ref_missing.
+verify_layer_intent_gate:
+  field: intent_ref
+  profile_defaults:
+    light-local: advisory
+    ci-standard: advisory
+    ci-strict: advisory
+    governed-deep: block
+  enforcement_modes:
+    - off
+    - advisory
+    - block
+  block_predicate: intent_ref_missing
+  block_tiers:
+    - standard
+    - deep
+  quiet_tiers:
+    - light
+  explicit_flag: --intent-enforce
+  blocks_admission: false  # admission core stays advisory; verify layer adds the block

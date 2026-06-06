@@ -110,7 +110,7 @@
   "episode": null,
   "input_card_hash": "sha256:3c0f41eece7f5fe0e79137a40a4d4d4908bbc862c7cd6fa6449766329cfa6f90",
   "ok": false,
-  "policy_hash": "sha256:88a35b6601ea62ddb36be65bf6c4e7228c9bf01b5935efd075ba0509a30fdd19",
+  "policy_hash": "sha256:35fadd6c96855c24c6da194a47b7509c83a849205e9b0a50a49fb1274bc9dad4",
   "product_intent_status": null,
   "recovery": {
     "next_action": "Add context_alignment with stale_ground_checked, at least one ref array, and resolve context questions.",
