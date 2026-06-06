@@ -1,0 +1,36 @@
+schema_version: "1"
+id: adr-001
+title: "Use decision_refs as the ADR-lite handle on completion cards"
+date: "2026-06-05"
+status: "accepted"
+decision: >
+  Reference decision records from completion cards via the
+  context_alignment.decision_refs array. The array holds slug
+  identifiers and is advisory-only in safe V1.
+rationale: >
+  Decision records (ADR-lite) are useful for traceability of
+  high-impact code decisions. Surfacing them on the completion card
+  keeps the link between the work and the rationale without
+  re-architecting the existing card schema. The card layer stays
+  the source of truth for outcome; the decision record stays the
+  source of truth for rationale.
+context: >
+  This decision was recorded as part of the P3-S3 decision-memory
+  vertical slice. The safe V1 slice only adds the advisory handle
+  and a file-first record; it does not block admission and does not
+  require any new profile flags.
+consequences: >
+  Follow-up slices may add a verify-layer decision_refs gate wired
+  to the ci-strict and governed-deep profiles via
+  --decision-enforce block. The current behavior is advisory-only.
+tags:
+  - p3-s3
+  - decision-memory
+  - adr-lite
+affected_paths:
+  - examples/golden/regression/decision-link-flow/decisions/adr-001.yaml
+  - examples/golden/regression/decision-link-flow/completion-card.yaml
+notes: >
+  Fixture-only decision record. Authored by hand to mirror the
+  shape emitted by `xh decision record` so the regression check
+  exercises the same shape a real record would have on disk.

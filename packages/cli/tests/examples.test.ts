@@ -11,9 +11,9 @@ describe("examples command", () => {
     expect(exitCode).toBe(0);
     const output = JSON.parse(stdout);
     expect(output.ok).toBe(true);
-    expect(output.total).toBe(20);
-    expect(output.passed).toBe(20);
-    expect(output.results).toHaveLength(20);
+    expect(output.total).toBe(23);
+    expect(output.passed).toBe(23);
+    expect(output.results).toHaveLength(23);
 
     const names = output.results.map((r: { name: string }) => r.name);
     expect(names).toContain("regression/success-light");
@@ -36,12 +36,15 @@ describe("examples command", () => {
     expect(names).toContain("regression/success-recovered-flow");
     expect(names).toContain("regression/boundary-allow");
     expect(names).toContain("regression/boundary-violation");
+    expect(names).toContain("regression/decision-refs-present");
+    expect(names).toContain("regression/decision-link-flow");
+    expect(names).toContain("regression/decision-refs-empty-advisory");
   });
 
   it("verify subcommand prints human-readable summary", async () => {
     const { stdout, exitCode } = await execaNode(["examples", "verify"]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("Golden examples: 20 total");
+    expect(stdout).toContain("Golden examples: 23 total");
     expect(stdout).toContain("regression/success-light");
     expect(stdout).toContain("regression/blocked-missing-evidence");
     expect(stdout).toContain("regression/failed-invalid-status");
@@ -184,5 +187,24 @@ describe("examples command", () => {
     );
     expect(recoveredFlow.outcome).toBe("success");
     expect(recoveredFlow.acceptance_status).toBe("accepted");
+
+    const decisionRefsPresent = output.results.find(
+      (r: { name: string }) => r.name === "regression/decision-refs-present"
+    );
+    expect(decisionRefsPresent.outcome).toBe("success");
+    expect(decisionRefsPresent.acceptance_status).toBe("accepted");
+
+    const decisionLinkFlow = output.results.find(
+      (r: { name: string }) => r.name === "regression/decision-link-flow"
+    );
+    expect(decisionLinkFlow.outcome).toBe("success");
+    expect(decisionLinkFlow.acceptance_status).toBe("accepted");
+
+    const decisionRefsEmptyAdvisory = output.results.find(
+      (r: { name: string }) =>
+        r.name === "regression/decision-refs-empty-advisory"
+    );
+    expect(decisionRefsEmptyAdvisory.outcome).toBe("success");
+    expect(decisionRefsEmptyAdvisory.acceptance_status).toBe("accepted");
   });
 });

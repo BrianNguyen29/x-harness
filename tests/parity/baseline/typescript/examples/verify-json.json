@@ -1,7 +1,7 @@
 {
   "failed": 0,
   "ok": true,
-  "passed": 20,
+  "passed": 23,
   "results": [
     {
       "acceptance_status": "withheld",
@@ -151,6 +151,30 @@
       "passed": true
     },
     {
+      "acceptance_status": "accepted",
+      "errors": [],
+      "name": "regression/decision-link-flow",
+      "outcome": "success",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
+      "acceptance_status": "accepted",
+      "errors": [],
+      "name": "regression/decision-refs-empty-advisory",
+      "outcome": "success",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
+      "acceptance_status": "accepted",
+      "errors": [],
+      "name": "regression/decision-refs-present",
+      "outcome": "success",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
       "acceptance_status": "withheld",
       "errors": [
         "completion card validation failed: /admission/outcome must be equal to constant",
@@ -195,5 +219,5 @@
       "passed": true
     }
   ],
-  "total": 20
+  "total": 23
 }

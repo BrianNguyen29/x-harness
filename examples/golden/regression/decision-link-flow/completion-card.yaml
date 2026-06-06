@@ -1,0 +1,69 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-DECISION-LINK-FLOW-001
+tier: standard
+owner: alice
+accountable: bob
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - examples/golden/regression/decision-link-flow/README.md
+  architecture_refs:
+    - examples/golden/regression/decision-link-flow/README.md
+  decision_refs:
+    - adr-001
+  test_matrix_refs:
+    - examples/golden/regression/decision-link-flow/README.md
+  unresolved_context_questions: []
+  context_evidence:
+    - ref: examples/golden/regression/decision-link-flow/decisions/adr-001.yaml
+      kind: decision_record
+      note: Decision record on disk that matches the linked slug in context_alignment.decision_refs
+state:
+  read_set:
+    - examples/golden/regression/decision-link-flow/README.md
+    - examples/golden/regression/decision-link-flow/decisions/adr-001.yaml
+  write_set:
+    - examples/golden/regression/decision-link-flow/decisions/adr-001.yaml
+    - examples/golden/regression/decision-link-flow/completion-card.yaml
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Recorded a decision record and linked it to a completion card via xh decision link
+  expected_effect: The completion card carries the linked slug in context_alignment.decision_refs and admission passes
+  measurable_signal: git status
+  falsification_method: Clear decision_refs and rerun; admission should still pass (advisory only)
+  horizon: same_verify
+evidence:
+  files_changed:
+    - examples/golden/regression/decision-link-flow/decisions/adr-001.yaml
+    - examples/golden/regression/decision-link-flow/completion-card.yaml
+  command_evidence:
+    - command: git status
+      exit_code: 0
+claim:
+  fix_status: fixed
+  summary: Decision record and link flow is exercised end-to-end; admission passes with the linked slug in context_alignment.decision_refs
+  evidence:
+    - description: Decision record on disk
+      url: ./decisions/adr-001.yaml
+    - description: Completion card with linked slug
+      url: ./completion-card.yaml
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice

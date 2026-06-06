@@ -1,0 +1,110 @@
+{
+  "acceptance_status": "withheld",
+  "admission_outcome": "failed",
+  "card_id": null,
+  "changed_files": {
+    "card_files": [
+      "examples/golden/regression/decision-link-flow/completion-card.yaml",
+      "examples/golden/regression/decision-link-flow/decisions/adr-001.yaml"
+    ],
+    "files": [
+      "examples/golden/regression/decision-link-flow/completion-card.yaml",
+      "examples/golden/regression/decision-link-flow/decisions/adr-001.yaml"
+    ],
+    "git_files": [],
+    "source": "card"
+  },
+  "checks": [
+    {
+      "name": "completion card valid",
+      "note": "completion card valid: examples/golden/regression/decision-link-flow/completion-card.yaml",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "tier \"standard\" recommends verification_artifacts",
+      "note": "tier \"standard\" recommends verification_artifacts",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "tier \"standard\" recommends evidence scope (verifies/does_not_verify)",
+      "note": "tier \"standard\" recommends evidence scope (verifies/does_not_verify)",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "tier \"standard\" recommends untested_regions",
+      "note": "tier \"standard\" recommends untested_regions",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "product_intent.status not declared (advisory-only; admission acceptance is not product correctness)",
+      "note": "product_intent.status not declared (advisory-only; admission acceptance is not product correctness)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "test_adequacy not declared (advisory-only; admission acceptance is not test adequacy)",
+      "note": "test_adequacy not declared (advisory-only; admission acceptance is not test adequacy)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "evidence_adequacy not declared (advisory-only; admission acceptance is not evidence adequacy)",
+      "note": "evidence_adequacy not declared (advisory-only; admission acceptance is not evidence adequacy)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
+      "note": "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "intent_ref not declared (advisory-only; admission acceptance is not intent correctness)",
+      "note": "intent_ref not declared (advisory-only; admission acceptance is not intent correctness)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "mutation guard passed",
+      "note": "mutation guard passed",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "referenced file does not exist",
+      "note": "referenced file does not exist: adr-001",
+      "severity": "error",
+      "status": "failed"
+    }
+  ],
+  "decision": {
+    "acceptance_status": "withheld",
+    "outcome": "failed"
+  },
+  "denominator_warning": "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
+  "episode": null,
+  "input_card_hash": "sha256:f9c6f6c2545a9610a4bf1f55308b753fe1326839d114ee19038471b9b99004d9",
+  "ok": false,
+  "policy_hash": "sha256:88a35b6601ea62ddb36be65bf6c4e7228c9bf01b5935efd075ba0509a30fdd19",
+  "product_intent_status": null,
+  "recovery": {
+    "next_action": "Add context_alignment with stale_ground_checked, at least one ref array, and resolve context questions.",
+    "owner": "implementation-worker",
+    "predicate": "context_floor_blocked"
+  },
+  "schema_version": 1,
+  "strict": false,
+  "task_id": "TASK-GOLDEN-DECISION-LINK-FLOW-001",
+  "withheld_reason": "referenced file does not exist: adr-001"
+}
