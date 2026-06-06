@@ -6,7 +6,10 @@ import { fileURLToPath } from "node:url";
 import { execaNode } from "../src/test-helpers.js";
 import {
   applyDecisionEnforceGate,
+  applyIntentEnforceGate,
+  isValidIntentEnforce,
   resolveDecisionEnforceMode,
+  resolveIntentEnforceMode,
 } from "../src/core/verify-pipeline.js";
 import {
   applyDecisionLinkRefs,
@@ -20,7 +23,10 @@ import {
   defaultDecisionOutputPath,
   isJsonExtension,
 } from "../src/core/decision.js";
-import { hasAnyDecisionRef as hasAnyDecisionRefFromAdmission } from "../src/core/admission.js";
+import {
+  hasAnyDecisionRef as hasAnyDecisionRefFromAdmission,
+  hasAnyIntentRef as hasAnyIntentRefFromAdmission,
+} from "../src/core/admission.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(path.join(__dirname, "..", "..", ".."));
@@ -778,3 +784,301 @@ handoff:
 });
 
 void execaNode;
+
+describe("hasAnyIntentRef parity helper", () => {
+  it("returns false for missing intent_ref", () => {
+    expect(hasAnyIntentRefFromAdmission({})).toBe(false);
+  });
+
+  it("returns false for blank strings", () => {
+    expect(hasAnyIntentRefFromAdmission({ intent_ref: "" })).toBe(false);
+    expect(hasAnyIntentRefFromAdmission({ intent_ref: "   " })).toBe(false);
+  });
+
+  it("returns true for non-blank strings", () => {
+    expect(
+      hasAnyIntentRefFromAdmission({ intent_ref: "doc/intake-lite.md" })
+    ).toBe(true);
+  });
+});
+
+describe("isValidIntentEnforce enforces the closed enum", () => {
+  it("accepts the canonical modes", () => {
+    expect(isValidIntentEnforce("off")).toBe(true);
+    expect(isValidIntentEnforce("advisory")).toBe(true);
+    expect(isValidIntentEnforce("block")).toBe(true);
+  });
+
+  it("rejects empty and unknown values", () => {
+    expect(isValidIntentEnforce("")).toBe(false);
+    expect(isValidIntentEnforce("bogus")).toBe(false);
+    expect(isValidIntentEnforce("high")).toBe(false);
+  });
+});
+
+describe("resolveIntentEnforceMode", () => {
+  it("returns the explicit value when set", () => {
+    expect(resolveIntentEnforceMode("governed-deep", "off")).toBe("off");
+    expect(resolveIntentEnforceMode("light-local", "block")).toBe("block");
+  });
+
+  it("uses the conservative profile default when explicit is empty", () => {
+    expect(resolveIntentEnforceMode("light-local", "")).toBe("advisory");
+    expect(resolveIntentEnforceMode("ci-standard", "")).toBe("advisory");
+    expect(resolveIntentEnforceMode("ci-strict", "")).toBe("advisory");
+    expect(resolveIntentEnforceMode("governed-deep", "")).toBe("block");
+  });
+
+  it("falls back to off when neither is set or profile is unknown", () => {
+    expect(resolveIntentEnforceMode(undefined, undefined)).toBe("off");
+    expect(resolveIntentEnforceMode("bogus", "")).toBe("off");
+  });
+
+  it("treats invalid explicit values as off", () => {
+    expect(resolveIntentEnforceMode("governed-deep", "bogus")).toBe("off");
+  });
+});
+
+describe("applyIntentEnforceGate", () => {
+  it("returns null in off and advisory modes", () => {
+    expect(
+      applyIntentEnforceGate({ mode: "off", tier: "standard", doc: {} })
+    ).toBeNull();
+    expect(
+      applyIntentEnforceGate({ mode: "advisory", tier: "deep", doc: {} })
+    ).toBeNull();
+  });
+
+  it("returns null for light tier even in block mode", () => {
+    expect(
+      applyIntentEnforceGate({ mode: "block", tier: "light", doc: {} })
+    ).toBeNull();
+  });
+
+  it("blocks standard/deep cards without intent_ref in block mode", () => {
+    const reason = applyIntentEnforceGate({
+      mode: "block",
+      tier: "standard",
+      doc: {},
+    });
+    expect(reason).toMatch(/intent_ref not declared/);
+  });
+
+  it("does not block cards with a non-blank intent_ref", () => {
+    expect(
+      applyIntentEnforceGate({
+        mode: "block",
+        tier: "deep",
+        doc: { intent_ref: "doc/intake-lite.md" },
+      })
+    ).toBeNull();
+  });
+
+  it("blocks cards with a blank intent_ref string", () => {
+    const reason = applyIntentEnforceGate({
+      mode: "block",
+      tier: "standard",
+      doc: { intent_ref: "   " },
+    });
+    expect(reason).toMatch(/intent_ref not declared/);
+  });
+});
+
+describe("xh verify --intent-enforce (built dist)", () => {
+  function writeStandardCardWithDecisionRef(): string {
+    // A non-empty decision_refs entry keeps the governed-deep profile
+    // default from withholding on the decision_refs gate, isolating
+    // the intent_ref gate under test. README and decisions/ADR-1.md
+    // exist so the context floor for standard tier resolves.
+    writeFile("README.md", "# Product\n");
+    writeFile("decisions/ADR-1.md", "# ADR-1\n");
+    return writeFile(
+      "completion-card.yaml",
+      `schema_version: "1"
+task_id: TASK-INTENT-ENFORCE-001
+tier: standard
+owner: alice
+accountable: bob
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - README.md
+  architecture_refs: []
+  test_matrix_refs: []
+  decision_refs:
+    - decisions/ADR-1.md
+  unresolved_context_questions: []
+  context_evidence: []
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: TASK-INTENT-ENFORCE-001 claim
+  expected_effect: works
+  measurable_signal: tests pass
+  falsification_method: skip fix
+  horizon: same_verify
+evidence:
+  files_changed:
+    - src/main.go
+  command_evidence:
+    - command: go test ./...
+      exit_code: 0
+      runner: go-test
+      started_at: "2026-06-06T00:00:00Z"
+claim:
+  fix_status: fixed
+  summary: TASK-INTENT-ENFORCE-001
+  evidence:
+    - description: source change
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+    );
+  }
+
+  it("--intent-enforce off does not block", async () => {
+    const card = writeStandardCardWithDecisionRef();
+    const result = await execaNodeWorkdir([
+      "verify",
+      "--card",
+      card,
+      "--intent-enforce",
+      "off",
+      "--json",
+    ]);
+    expect(result.exitCode).toBe(0);
+    const event = JSON.parse(result.stdout);
+    expect(event.admission_outcome).toBe("success");
+  });
+
+  it("--intent-enforce block withholds when intent_ref is missing", async () => {
+    const card = writeStandardCardWithDecisionRef();
+    const result = await execaNodeWorkdir([
+      "verify",
+      "--card",
+      card,
+      "--intent-enforce",
+      "block",
+      "--json",
+    ]);
+    expect(result.exitCode).toBe(1);
+    const event = JSON.parse(result.stdout);
+    expect(event.admission_outcome).toBe("blocked");
+    expect(event.acceptance_status).toBe("withheld");
+  });
+
+  it("--intent-enforce block accepts when intent_ref is non-blank", async () => {
+    const card = writeStandardCardWithDecisionRef();
+    const data = fs.readFileSync(card, "utf-8");
+    fs.writeFileSync(
+      card,
+      data + "\nintent_ref: doc/intake-lite.md\n",
+      "utf-8"
+    );
+    const result = await execaNodeWorkdir([
+      "verify",
+      "--card",
+      card,
+      "--intent-enforce",
+      "block",
+      "--json",
+    ]);
+    expect(result.exitCode).toBe(0);
+    const event = JSON.parse(result.stdout);
+    expect(event.admission_outcome).toBe("success");
+  });
+
+  it("--profile governed-deep blocks missing intent_ref by default", async () => {
+    const card = writeStandardCardWithDecisionRef();
+    const result = await execaNodeWorkdir([
+      "verify",
+      "--profile",
+      "governed-deep",
+      "--card",
+      card,
+      "--json",
+    ]);
+    expect(result.exitCode).toBe(1);
+    const event = JSON.parse(result.stdout);
+    expect(event.admission_outcome).toBe("blocked");
+  });
+
+  it("--profile ci-strict stays advisory for intent_ref by default", async () => {
+    const card = writeStandardCardWithDecisionRef();
+    const result = await execaNodeWorkdir([
+      "verify",
+      "--profile",
+      "ci-strict",
+      "--card",
+      card,
+      "--json",
+    ]);
+    expect(result.exitCode).toBe(0);
+    const event = JSON.parse(result.stdout);
+    expect(event.admission_outcome).toBe("success");
+  });
+
+  it("--profile ci-strict with explicit --intent-enforce block blocks", async () => {
+    const card = writeStandardCardWithDecisionRef();
+    const result = await execaNodeWorkdir([
+      "verify",
+      "--profile",
+      "ci-strict",
+      "--intent-enforce",
+      "block",
+      "--card",
+      card,
+      "--json",
+    ]);
+    expect(result.exitCode).toBe(1);
+    const event = JSON.parse(result.stdout);
+    expect(event.admission_outcome).toBe("blocked");
+  });
+
+  it("--profile light-local never blocks for intent_ref", async () => {
+    const card = writeStandardCardWithDecisionRef();
+    const result = await execaNodeWorkdir([
+      "verify",
+      "--profile",
+      "light-local",
+      "--card",
+      card,
+      "--json",
+    ]);
+    expect(result.exitCode).toBe(0);
+    const event = JSON.parse(result.stdout);
+    expect(event.admission_outcome).toBe("success");
+  });
+
+  it("explicit --intent-enforce off overrides governed-deep block default", async () => {
+    const card = writeStandardCardWithDecisionRef();
+    const result = await execaNodeWorkdir([
+      "verify",
+      "--profile",
+      "governed-deep",
+      "--intent-enforce",
+      "off",
+      "--card",
+      card,
+      "--json",
+    ]);
+    expect(result.exitCode).toBe(0);
+    const event = JSON.parse(result.stdout);
+    expect(event.admission_outcome).toBe("success");
+  });
+});

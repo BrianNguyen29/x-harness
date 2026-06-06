@@ -173,6 +173,7 @@ type VerifyProfile struct {
 	StrictWithheld  bool
 	BoundaryEnforce string // off|advisory|block_high|block_all (default "" = use flag)
 	DecisionEnforce string // off|advisory|block for context_alignment.decision_refs (default "" = use flag)
+	IntentEnforce   string // off|advisory|block for top-level intent_ref (default "" = use flag)
 }
 
 // verifyProfileNames returns the sorted list of profile names for usage
@@ -189,7 +190,7 @@ func verifyProfileNames() []string {
 var verifyProfiles = map[string]VerifyProfile{
 	"light-local": {
 		Name:            "light-local",
-		Description:     "Local development: minimal checks, no mutation guard. Boundary violations are advisory/warning only and never block.",
+		Description:     "Local development: minimal checks, no mutation guard. Boundary violations are advisory/warning only and never block. intent_ref is advisory-only and never blocks.",
 		MutationGuard:   false,
 		Strict:          false,
 		ContextFloor:    false,
@@ -197,10 +198,11 @@ var verifyProfiles = map[string]VerifyProfile{
 		WorktreeAware:   false,
 		BoundaryEnforce: "advisory",
 		DecisionEnforce: "advisory",
+		IntentEnforce:   "advisory",
 	},
 	"ci-standard": {
 		Name:            "ci-standard",
-		Description:     "CI standard: mutation guard + context floor, advisory contract oracles, advisory-only boundary enforcement.",
+		Description:     "CI standard: mutation guard + context floor, advisory contract oracles, advisory-only boundary enforcement. intent_ref is advisory-only and never blocks by default.",
 		MutationGuard:   true,
 		Strict:          false,
 		ContextFloor:    true,
@@ -208,10 +210,11 @@ var verifyProfiles = map[string]VerifyProfile{
 		WorktreeAware:   true,
 		BoundaryEnforce: "advisory",
 		DecisionEnforce: "advisory",
+		IntentEnforce:   "advisory",
 	},
 	"ci-strict": {
 		Name:            "ci-strict",
-		Description:     "CI strict: mutation guard, context floor, contract oracles, strict withheld reason schema. Blocks high/critical boundary violations and missing context_alignment.decision_refs on standard/deep cards.",
+		Description:     "CI strict: mutation guard, context floor, contract oracles, strict withheld reason schema. Blocks high/critical boundary violations and missing context_alignment.decision_refs on standard/deep cards. intent_ref is advisory-only and never blocks by default; explicit --intent-enforce block can block.",
 		MutationGuard:   true,
 		Strict:          true,
 		ContextFloor:    true,
@@ -220,10 +223,11 @@ var verifyProfiles = map[string]VerifyProfile{
 		StrictWithheld:  true,
 		BoundaryEnforce: "block_high",
 		DecisionEnforce: "block",
+		IntentEnforce:   "advisory",
 	},
 	"governed-deep": {
 		Name:            "governed-deep",
-		Description:     "Governed deep: all ci-strict checks plus strict withheld reason schema. Blocks all boundary violations unless approved via boundary_approvals, and blocks missing context_alignment.decision_refs on standard/deep cards.",
+		Description:     "Governed deep: all ci-strict checks plus strict withheld reason schema. Blocks all boundary violations unless approved via boundary_approvals, blocks missing context_alignment.decision_refs on standard/deep cards, and blocks missing/blank intent_ref on standard/deep cards.",
 		MutationGuard:   true,
 		Strict:          true,
 		ContextFloor:    true,
@@ -232,6 +236,7 @@ var verifyProfiles = map[string]VerifyProfile{
 		StrictWithheld:  true,
 		BoundaryEnforce: "block_all",
 		DecisionEnforce: "block",
+		IntentEnforce:   "block",
 	},
 }
 
@@ -240,7 +245,7 @@ var verifyProfiles = map[string]VerifyProfile{
 // to keep the explicit-flag override decision obvious to reviewers.
 //
 //nolint:unused
-func resolveVerifyProfile(args []string, useMutationGuard *bool, strict *bool, contextFloor *bool, contractOracles *bool, worktreeAware *bool, strictWithheld *bool, boundaryEnforce *string, decisionEnforce *string) string {
+func resolveVerifyProfile(args []string, useMutationGuard *bool, strict *bool, contextFloor *bool, contractOracles *bool, worktreeAware *bool, strictWithheld *bool, boundaryEnforce *string, decisionEnforce *string, intentEnforce *string) string {
 	for i := 0; i < len(args); i++ {
 		if args[i] != "--profile" {
 			continue
@@ -279,6 +284,9 @@ func resolveVerifyProfile(args []string, useMutationGuard *bool, strict *bool, c
 		if *decisionEnforce == "" {
 			*decisionEnforce = profile.DecisionEnforce
 		}
+		if *intentEnforce == "" {
+			*intentEnforce = profile.IntentEnforce
+		}
 		return name
 	}
 	return ""
@@ -302,6 +310,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	boundaryEnforce := ""
 	boundaryPolicy := ""
 	decisionEnforce := ""
+	intentEnforce := ""
 	profileName := ""
 
 	// Track which flags the caller set explicitly so the profile layer
@@ -314,6 +323,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	explicitStrictWithheld := false
 	explicitBoundaryEnforce := false
 	explicitDecisionEnforce := false
+	explicitIntentEnforce := false
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -406,6 +416,19 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			decisionEnforce = v
 			explicitDecisionEnforce = true
 			i++
+		case "--intent-enforce":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --intent-enforce requires a value (off|advisory|block)")
+				return ExitUsage
+			}
+			v := args[i+1]
+			if !isValidIntentEnforce(v) {
+				fmt.Fprintf(stderr, "error: invalid --intent-enforce %q (allowed: off, advisory, block)\n", v)
+				return ExitUsage
+			}
+			intentEnforce = v
+			explicitIntentEnforce = true
+			i++
 		}
 	}
 
@@ -439,10 +462,13 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		if !explicitDecisionEnforce {
 			decisionEnforce = profile.DecisionEnforce
 		}
+		if !explicitIntentEnforce {
+			intentEnforce = profile.IntentEnforce
+		}
 	}
 
 	if (cardPath == "" && subagentPath == "") || (cardPath != "" && subagentPath != "") {
-		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--profile <light-local|ci-standard|ci-strict|governed-deep>] [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--strict-withheld-reason] [--trace] [--trace-dir <dir>] [--worktree-aware] [--context-floor] [--contract-oracles] [--contract-oracles-policy <path>] [--boundary-enforce off|advisory|block_high|block_all] [--boundary-policy <path>] [--decision-enforce off|advisory|block]")
+		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--profile <light-local|ci-standard|ci-strict|governed-deep>] [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--strict-withheld-reason] [--trace] [--trace-dir <dir>] [--worktree-aware] [--context-floor] [--contract-oracles] [--contract-oracles-policy <path>] [--boundary-enforce off|advisory|block_high|block_all] [--boundary-policy <path>] [--decision-enforce off|advisory|block] [--intent-enforce off|advisory|block]")
 		return ExitUsage
 	}
 
@@ -694,6 +720,41 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 				BlockingPredicate:    predicate,
 			}
 			result.AdmissionErrors = []string{"context_alignment.decision_refs is empty (verify-stage block; admission acceptance is not decision correctness)"}
+		}
+	}
+
+	// Intent-ref gate (profile-controlled). Mirrors the decision-refs
+	// gate: off|advisory|block with the closed enum validated in
+	// isValidIntentEnforce. The off and advisory modes never block at
+	// the verify layer; the advisory note from admission.Run is
+	// preserved as-is. The block mode withholds standard/deep cards
+	// whose top-level intent_ref is missing or blank, with the
+	// explicit `intent_ref_missing` blocking predicate so the failure
+	// remains traceable. The predicate is deliberately
+	// process/governance-only; it does not imply product correctness.
+	// Profile defaults are conservative per oracle review: light-local,
+	// ci-standard, and ci-strict are advisory by default; only
+	// governed-deep blocks by default. An explicit --intent-enforce
+	// block can still block under any profile.
+	if intentEnforce == "block" && result.OK {
+		if (effectiveTier == "standard" || effectiveTier == "deep") && !admission.HasAnyIntentRef(doc) {
+			predicate := "intent_ref_missing"
+			recoverability := "retry_with_fixes"
+			result.OK = false
+			result.AdmissionOutcome = "blocked"
+			result.AcceptanceStatus = "withheld"
+			result.WithheldReason = &withheldReason{
+				Class:                "intent_ref_missing",
+				Stage:                "verification",
+				Owner:                ownerFromBlockingPredicate(predicate),
+				FailureClass:         "intent_ref_missing",
+				FailureStage:         "verify_pipeline",
+				Recoverability:       recoverability,
+				SchemaRecoverability: schemaRecoverabilityFromLegacy(recoverability),
+				NextAction:           "add_intent_ref_and_resubmit",
+				BlockingPredicate:    predicate,
+			}
+			result.AdmissionErrors = []string{"intent_ref not declared (verify-stage block; admission acceptance is not intent correctness)"}
 		}
 	}
 
@@ -1048,6 +1109,17 @@ func isValidBoundaryEnforce(v string) bool {
 // enforcement modes for the verify-stage decision_refs gate. Mirrors
 // the closed-enum style of isValidBoundaryEnforce.
 func isValidDecisionEnforce(v string) bool {
+	switch v {
+	case "off", "advisory", "block":
+		return true
+	}
+	return false
+}
+
+// isValidIntentEnforce reports whether value is one of the supported
+// enforcement modes for the verify-stage intent_ref gate. Mirrors the
+// closed-enum style of isValidDecisionEnforce.
+func isValidIntentEnforce(v string) bool {
 	switch v {
 	case "off", "advisory", "block":
 		return true
