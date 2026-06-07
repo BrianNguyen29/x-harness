@@ -4,6 +4,12 @@ import yaml from "yaml";
 
 export type IntakeLabel = "tiny" | "normal" | "high_risk";
 export type RuntimeTier = "light" | "standard" | "deep";
+export type AmbiguityStatus = "none" | "unresolved" | "partial";
+
+// PRODUCT_INTENT_SCHEMA_VERSION is the schema_version emitted by
+// `xh intake contract` for safe V1 product intent records. Fixed for the
+// first slice to keep the contract deterministic.
+export const PRODUCT_INTENT_SCHEMA_VERSION = "1";
 
 export interface IntakePolicy {
   intake_labels: Record<
@@ -334,5 +340,196 @@ export function explainCardIntake(
     negative_signals_considered: classification.negative_signals_considered,
     errors,
     warnings,
+  };
+}
+
+// splitCsv splits a comma-delimited raw string into trimmed, non-empty
+// entries. Used for repeatable flags that accept either repeated flag
+// calls or a single comma-separated value.
+export function splitCsv(raw: string): string[] {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+// parseBoolStrict parses a strict boolean. Returns null when the value is
+// not one of true/yes/1/false/no/0 (case-insensitive). Mirrors the Go
+// helper used by `xh intake contract --visible`.
+export function parseBoolStrict(raw: string): boolean | null {
+  switch (raw.toLowerCase().trim()) {
+    case "true":
+    case "yes":
+    case "1":
+      return true;
+    case "false":
+    case "no":
+    case "0":
+      return false;
+    default:
+      return null;
+  }
+}
+
+// normalizeAmbiguityStatus coerces --ambiguity input into the safe V1
+// enum (none/unresolved/partial). Empty input maps to "none". Returns
+// null on unrecognized values.
+export function normalizeAmbiguityStatus(raw: string): AmbiguityStatus | null {
+  switch (raw.toLowerCase().trim()) {
+    case "":
+    case "none":
+      return "none";
+    case "unresolved":
+      return "unresolved";
+    case "partial":
+      return "partial";
+    default:
+      return null;
+  }
+}
+
+export interface ProductIntentSpec {
+  id: string;
+  product_goal: string;
+  user_visible_change: boolean | null;
+  non_goals: string[];
+  acceptance: string[];
+  protected_behavior: string[];
+  ambiguity_status: AmbiguityStatus;
+  ambiguity_questions: string[];
+  notes: string;
+}
+
+export interface ProductIntentAcceptanceCriterion {
+  id: string;
+  statement: string;
+  source_ref: string;
+}
+
+export interface ProductIntentRecord {
+  schema_version: string;
+  id: string;
+  product_goal: string;
+  user_visible_change: boolean | null;
+  non_goals: string[];
+  acceptance_criteria: ProductIntentAcceptanceCriterion[];
+  protected_behaviors: string[];
+  ambiguity: { status: AmbiguityStatus; questions: string[] };
+  notes: string;
+}
+
+export interface ProductIntentBuildResult {
+  record: ProductIntentRecord | null;
+  error?: string;
+}
+
+// buildProductIntentRecord converts a structured spec into a record
+// matching schemas/product-intent.schema.json (safe V1). Required
+// fields: id, product_goal, at least one acceptance. Optional fields
+// that are unset are emitted as null/empty values for stable round-trip.
+export function buildProductIntentRecord(
+  spec: ProductIntentSpec
+): ProductIntentBuildResult {
+  if (spec.id.trim() === "") {
+    return { record: null, error: "--id is required" };
+  }
+  if (spec.product_goal.trim() === "") {
+    return { record: null, error: "--goal is required" };
+  }
+  if (spec.acceptance.length === 0) {
+    return { record: null, error: "at least one --acceptance is required" };
+  }
+  for (let i = 0; i < spec.acceptance.length; i++) {
+    if (spec.acceptance[i].trim() === "") {
+      return {
+        record: null,
+        error: `--acceptance entry ${i + 1} is blank`,
+      };
+    }
+  }
+
+  const acceptanceCriteria: ProductIntentAcceptanceCriterion[] =
+    spec.acceptance.map((statement, i) => ({
+      id: `ac-${i + 1}`,
+      statement,
+      source_ref: "",
+    }));
+
+  return {
+    record: {
+      schema_version: PRODUCT_INTENT_SCHEMA_VERSION,
+      id: spec.id,
+      product_goal: spec.product_goal,
+      user_visible_change: spec.user_visible_change,
+      non_goals: spec.non_goals,
+      acceptance_criteria: acceptanceCriteria,
+      protected_behaviors: spec.protected_behavior,
+      ambiguity: {
+        status: spec.ambiguity_status,
+        questions: spec.ambiguity_questions,
+      },
+      notes: spec.notes,
+    },
+  };
+}
+
+// writeProductIntentOutput writes the rendered product intent record
+// to disk. To keep the slice safe V1, the parent directory must already
+// exist; we do not auto-create intermediate directories because that
+// would hide typos and is unnecessary for the typical use case where the
+// user writes into a known workspace path.
+export async function writeProductIntentOutput(
+  outputPath: string,
+  data: string
+): Promise<{ error?: string }> {
+  const parent = path.dirname(outputPath);
+  try {
+    const exists = await fs.pathExists(parent);
+    if (!exists) {
+      return { error: `parent directory does not exist: ${parent}` };
+    }
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+  try {
+    await fs.writeFile(outputPath, data);
+    return {};
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+export interface HandoffAutoResult {
+  selected_tier: RuntimeTier;
+  intake_label: IntakeLabel;
+  task: string;
+  files: string[];
+  signals: string[];
+  reasoning: string[];
+  auto_escalated: boolean;
+  command_suggestion: string;
+}
+
+// formatHandoffAutoResult turns a classifier result into the minimal
+// handoff suggestion payload emitted by `xh intake handoff --tier auto`.
+export function formatHandoffAutoResult(
+  classification: IntakeClassification,
+  task: string,
+  files: string[]
+): HandoffAutoResult {
+  return {
+    selected_tier: classification.runtime_tier,
+    intake_label: classification.intake_label,
+    task,
+    files,
+    signals: classification.signals,
+    reasoning: classification.reasoning,
+    auto_escalated: classification.auto_escalated,
+    command_suggestion: `xh handoff ${classification.runtime_tier} --task ${JSON.stringify(task)}`,
   };
 }

@@ -1,10 +1,17 @@
 import { Command } from "commander";
 import * as path from "node:path";
+import yaml from "yaml";
 import { readYamlOrJson } from "../core/schema.js";
 import {
+  buildProductIntentRecord,
   classifyTask,
   explainCardIntake,
+  formatHandoffAutoResult,
   loadIntakePolicy,
+  normalizeAmbiguityStatus,
+  parseBoolStrict,
+  splitCsv,
+  writeProductIntentOutput,
 } from "../core/intake.js";
 
 export interface IntakeOptions {
@@ -19,6 +26,28 @@ export interface IntakeExplainOptions {
   card?: string;
   json?: boolean;
   root?: string;
+}
+
+export interface IntakeContractOptions {
+  id?: string;
+  goal?: string;
+  visible?: string;
+  nonGoal?: string[];
+  acceptance?: string[];
+  protectedBehavior?: string[];
+  ambiguity?: string;
+  ambiguityQuestion?: string[];
+  note?: string;
+  output?: string;
+  json?: boolean;
+}
+
+export interface IntakeHandoffOptions {
+  tier?: string;
+  task?: string;
+  file?: string[];
+  root?: string;
+  json?: boolean;
 }
 
 export async function intakeClassifyAction(opts: IntakeOptions): Promise<void> {
@@ -141,6 +170,128 @@ export async function intakeExplainAction(
   process.exit(explanation.ok ? 0 : 1);
 }
 
+export async function intakeContractAction(
+  opts: IntakeContractOptions
+): Promise<void> {
+  let userVisibleChange: boolean | null = null;
+  if (opts.visible !== undefined && opts.visible !== "") {
+    const parsed = parseBoolStrict(opts.visible);
+    if (parsed === null) {
+      console.error(
+        `error: --visible expected true or false, got ${JSON.stringify(opts.visible)}`
+      );
+      process.exit(2);
+    }
+    userVisibleChange = parsed;
+  }
+
+  const ambiguity = normalizeAmbiguityStatus(opts.ambiguity ?? "");
+  if (ambiguity === null) {
+    console.error(
+      `error: --ambiguity expected none, unresolved, or partial, got ${JSON.stringify(opts.ambiguity)}`
+    );
+    process.exit(2);
+  }
+
+  const result = buildProductIntentRecord({
+    id: opts.id ?? "",
+    product_goal: opts.goal ?? "",
+    user_visible_change: userVisibleChange,
+    non_goals: flattenList(opts.nonGoal),
+    acceptance: flattenList(opts.acceptance),
+    protected_behavior: flattenList(opts.protectedBehavior),
+    ambiguity_status: ambiguity,
+    ambiguity_questions: flattenList(opts.ambiguityQuestion),
+    notes: opts.note ?? "",
+  });
+  if (result.error || !result.record) {
+    console.error(`error: ${result.error ?? "unknown error"}`);
+    process.exit(2);
+  }
+  const record = result.record;
+
+  const rendered = opts.json
+    ? `${JSON.stringify(record, null, 2)}\n`
+    : yaml.stringify(record);
+
+  if (opts.output) {
+    const writeResult = await writeProductIntentOutput(opts.output, rendered);
+    if (writeResult.error) {
+      console.error(`error: ${writeResult.error}`);
+      process.exit(1);
+    }
+    return;
+  }
+
+  process.stdout.write(rendered);
+}
+
+export async function intakeHandoffAction(
+  opts: IntakeHandoffOptions
+): Promise<void> {
+  if (opts.tier === undefined || opts.tier === "") {
+    console.error(
+      "error: --tier is required (safe V1 supports only --tier auto)"
+    );
+    process.exit(2);
+  }
+  if (opts.tier !== "auto") {
+    console.error(
+      `error: --tier ${JSON.stringify(opts.tier)} is not supported in safe V1; use \`xh handoff ${opts.tier}\` for explicit tiers, or pass --tier auto`
+    );
+    process.exit(2);
+  }
+
+  const root = path.resolve(opts.root ?? process.cwd());
+  const policy = loadIntakePolicy(root);
+  if (!policy) {
+    console.error("Error: policies/intake.yaml not found");
+    process.exit(2);
+  }
+
+  const task = opts.task ?? "unknown";
+  const files = flattenList(opts.file);
+
+  const classification = classifyTask(task, files, "", policy);
+  const result = formatHandoffAutoResult(classification, task, files);
+
+  if (opts.json) {
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    return;
+  }
+
+  console.log(`Task: ${task}`);
+  if (files.length > 0) {
+    console.log(`Files: ${files.join(", ")}`);
+  }
+  console.log(`Selected tier: ${classification.runtime_tier}`);
+  console.log(`Intake label: ${classification.intake_label}`);
+  if (classification.auto_escalated) {
+    console.log("Auto escalated: yes");
+  }
+  console.log("Reasoning:");
+  for (const r of classification.reasoning) {
+    console.log(`  - ${r}`);
+  }
+  console.log("");
+  console.log(`Suggested next: ${result.command_suggestion}`);
+}
+
+// flattenList takes repeated `--flag a --flag b` values (collected by
+// Commander as string[]) and, for each value, splits it by comma. This
+// mirrors the Go `appendList` helper used by `xh intake contract/handoff`
+// so callers can pass either repeatable flags or comma-delimited values.
+function flattenList(values: string[] | undefined): string[] {
+  if (!values) return [];
+  const out: string[] = [];
+  for (const value of values) {
+    for (const part of splitCsv(value)) {
+      out.push(part);
+    }
+  }
+  return out;
+}
+
 export function intakeCommand(): Command {
   return new Command("intake")
     .description("Intake classification for x-harness tasks")
@@ -161,5 +312,72 @@ export function intakeCommand(): Command {
         .option("--json", "Output JSON", false)
         .option("--root <path>", "Repository root", process.cwd())
         .action(intakeExplainAction)
+    )
+    .addCommand(
+      new Command("contract")
+        .description(
+          "Build a safe V1 product intent record from structured flags"
+        )
+        .option("--id <id>", "Stable identifier for the product intent")
+        .option("--goal <text>", "Plain-language product goal")
+        .option("--visible <value>", "true or false (user-visible change)")
+        .option(
+          "--non-goal <text>",
+          "Non-goal entry (repeatable or comma-delimited)",
+          collectStrings,
+          [] as string[]
+        )
+        .option(
+          "--acceptance <text>",
+          "Acceptance criterion (repeatable or comma-delimited)",
+          collectStrings,
+          [] as string[]
+        )
+        .option(
+          "--protected-behavior <text>",
+          "Protected behavior (repeatable or comma-delimited)",
+          collectStrings,
+          [] as string[]
+        )
+        .option(
+          "--ambiguity <status>",
+          "Ambiguity status: none, unresolved, or partial"
+        )
+        .option(
+          "--ambiguity-question <text>",
+          "Ambiguity question (repeatable or comma-delimited)",
+          collectStrings,
+          [] as string[]
+        )
+        .option("--note <text>", "Free-form notes")
+        .option("--output <path>", "Write the record to a file")
+        .option("--json", "Output JSON instead of YAML", false)
+        .action(intakeContractAction)
+    )
+    .addCommand(
+      new Command("handoff")
+        .description(
+          "Suggest a handoff command after running the intake classifier (safe V1: --tier auto only)"
+        )
+        .option("--tier <tier>", "Tier selector (safe V1 supports only 'auto')")
+        .option("--task <text>", "Task description", "")
+        .option(
+          "--file <path>",
+          "File path (repeatable or comma-delimited)",
+          collectStrings,
+          [] as string[]
+        )
+        .option("--root <path>", "Repository root", process.cwd())
+        .option("--json", "Output JSON instead of text", false)
+        .action(intakeHandoffAction)
     );
 }
+
+// collectStrings is a Commander option parser that accumulates repeated
+// flag values into an array. The action layer then splits each value
+// by comma so callers can pass either repeatable flags or
+// comma-delimited values.
+const collectStrings = (value: string, previous: string[] = []): string[] => [
+  ...previous,
+  value,
+];
