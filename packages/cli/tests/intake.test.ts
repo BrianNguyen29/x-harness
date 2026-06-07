@@ -265,3 +265,372 @@ handoff:
     expect(parsed.warnings[0]).toContain("no intake block");
   });
 });
+
+describe("intake contract", () => {
+  it("rejects missing --id with usage error", async () => {
+    const { stderr, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--goal",
+      "x",
+      "--acceptance",
+      "y",
+    ]);
+    expect(exitCode).toBe(2);
+    expect(stderr).toContain("--id is required");
+  });
+
+  it("rejects missing --goal with usage error", async () => {
+    const { stderr, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--id",
+      "x",
+      "--acceptance",
+      "y",
+    ]);
+    expect(exitCode).toBe(2);
+    expect(stderr).toContain("--goal is required");
+  });
+
+  it("rejects missing --acceptance with usage error", async () => {
+    const { stderr, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--id",
+      "x",
+      "--goal",
+      "y",
+    ]);
+    expect(exitCode).toBe(2);
+    expect(stderr).toContain("--acceptance is required");
+  });
+
+  it("emits YAML to stdout by default", async () => {
+    const { stdout, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--id",
+      "intake-lite",
+      "--goal",
+      "ship the safe V1 slice",
+      "--visible",
+      "true",
+      "--non-goal",
+      "block admission",
+      "--non-goal",
+      "add new admission predicate",
+      "--acceptance",
+      "advisory note emitted on standard",
+      "--acceptance",
+      "no --from flag is added",
+      "--protected-behavior",
+      "intent_ref is never required",
+      "--ambiguity",
+      "none",
+      "--note",
+      "first vertical slice",
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("id: intake-lite");
+    expect(stdout).toContain("product_goal: ship the safe V1 slice");
+    expect(stdout).toContain("user_visible_change: true");
+    expect(stdout).toContain("- block admission");
+    expect(stdout).toContain("- add new admission predicate");
+    expect(stdout).toContain("- id: ac-1");
+    expect(stdout).toContain("statement: advisory note emitted on standard");
+    expect(stdout).toContain("- id: ac-2");
+    expect(stdout).toContain("statement: no --from flag is added");
+    expect(stdout).toContain("- intent_ref is never required");
+    expect(stdout).toContain("status: none");
+    expect(stdout).toContain("notes: first vertical slice");
+  });
+
+  it("emits JSON to stdout with --json", async () => {
+    const { stdout, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--id",
+      "intake-lite",
+      "--goal",
+      "ship the safe V1 slice",
+      "--visible",
+      "false",
+      "--acceptance",
+      "advisory note emitted on standard",
+      "--ambiguity",
+      "partial",
+      "--ambiguity-question",
+      "Should intent_ref be deep-only?",
+      "--json",
+    ]);
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.schema_version).toBe("1");
+    expect(parsed.id).toBe("intake-lite");
+    expect(parsed.product_goal).toBe("ship the safe V1 slice");
+    expect(parsed.user_visible_change).toBe(false);
+    expect(parsed.ambiguity.status).toBe("partial");
+    expect(parsed.ambiguity.questions).toContain(
+      "Should intent_ref be deep-only?"
+    );
+    expect(parsed.acceptance_criteria[0].id).toBe("ac-1");
+    expect(parsed.acceptance_criteria[0].statement).toBe(
+      "advisory note emitted on standard"
+    );
+  });
+
+  it("writes the record to --output and emits nothing on stdout", async () => {
+    const tmpDir = path.join(
+      repoRoot,
+      ".x-harness",
+      "tmp",
+      "intake-contract-output"
+    );
+    fs.mkdirSync(tmpDir, { recursive: true });
+    const out = path.join(tmpDir, "intent.yaml");
+    const { stdout, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--id",
+      "intake-lite",
+      "--goal",
+      "ship the safe V1 slice",
+      "--acceptance",
+      "advisory note emitted on standard",
+      "--output",
+      out,
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toBe("");
+    const data = fs.readFileSync(out, "utf-8");
+    expect(data).toContain("id: intake-lite");
+    expect(data).toContain("product_goal: ship the safe V1 slice");
+    expect(data).toContain("statement: advisory note emitted on standard");
+  });
+
+  it("fails when --output parent directory does not exist", async () => {
+    const tmpDir = path.join(
+      repoRoot,
+      ".x-harness",
+      "tmp",
+      "intake-contract-missing-parent"
+    );
+    fs.mkdirSync(tmpDir, { recursive: true });
+    const out = path.join(tmpDir, "does", "not", "exist", "intent.yaml");
+    const { stderr, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--id",
+      "intake-lite",
+      "--goal",
+      "ship the safe V1 slice",
+      "--acceptance",
+      "advisory note emitted on standard",
+      "--output",
+      out,
+    ]);
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("parent directory does not exist");
+  });
+
+  it("rejects invalid --visible", async () => {
+    const { stderr, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--id",
+      "x",
+      "--goal",
+      "y",
+      "--acceptance",
+      "z",
+      "--visible",
+      "maybe",
+    ]);
+    expect(exitCode).toBe(2);
+    expect(stderr).toContain("--visible");
+  });
+
+  it("rejects invalid --ambiguity", async () => {
+    const { stderr, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--id",
+      "x",
+      "--goal",
+      "y",
+      "--acceptance",
+      "z",
+      "--ambiguity",
+      "maybe",
+    ]);
+    expect(exitCode).toBe(2);
+    expect(stderr).toContain("--ambiguity");
+  });
+
+  it("accepts comma-delimited list values", async () => {
+    const { stdout, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--id",
+      "intake-lite",
+      "--goal",
+      "ship",
+      "--non-goal",
+      "a, b, c",
+      "--acceptance",
+      "x, y",
+      "--json",
+    ]);
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.non_goals).toEqual(["a", "b", "c"]);
+    expect(parsed.acceptance_criteria).toHaveLength(2);
+    expect(parsed.acceptance_criteria[0].statement).toBe("x");
+    expect(parsed.acceptance_criteria[1].statement).toBe("y");
+  });
+});
+
+describe("intake handoff", () => {
+  function uniqueHandoffDir(label: string): string {
+    const tmpDir = path.join(
+      repoRoot,
+      ".x-harness",
+      "tmp",
+      `intake-handoff-${label}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    );
+    fs.mkdirSync(path.join(tmpDir, "policies"), { recursive: true });
+    const policyContent = `version: 1
+intake_labels:
+  tiny:
+    runtime_tier: light
+    signals:
+      - comment_only
+  normal:
+    runtime_tier: standard
+    signals:
+      - routine_implementation
+  high_risk:
+    runtime_tier: deep
+    signals:
+      - auth
+high_risk_signals:
+  auth:
+    description: Auth changes
+    examples:
+      - login
+runtime_tier_confirmation:
+  tiers: [light, standard, deep]
+  note: Tiers remain light, standard, deep.
+`;
+    fs.writeFileSync(
+      path.join(tmpDir, "policies", "intake.yaml"),
+      policyContent
+    );
+    return tmpDir;
+  }
+
+  it("rejects missing --tier with usage error", async () => {
+    const { stderr, exitCode } = await execaNode([
+      "intake",
+      "handoff",
+      "--task",
+      "fix bug",
+    ]);
+    expect(exitCode).toBe(2);
+    expect(stderr).toContain("--tier is required");
+  });
+
+  it("rejects explicit tier with safe V1 message", async () => {
+    const tmpDir = uniqueHandoffDir("explicit");
+    const { stderr, exitCode } = await execaNode([
+      "intake",
+      "handoff",
+      "--tier",
+      "standard",
+      "--root",
+      tmpDir,
+    ]);
+    expect(exitCode).toBe(2);
+    expect(stderr).toContain("safe V1");
+  });
+
+  it("emits auto handoff text for a routine task", async () => {
+    const tmpDir = uniqueHandoffDir("normal");
+    const { stdout, exitCode } = await execaNode([
+      "intake",
+      "handoff",
+      "--tier",
+      "auto",
+      "--task",
+      "fix bug in formatter",
+      "--file",
+      "src/formatter.go",
+      "--root",
+      tmpDir,
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("Selected tier: standard");
+    expect(stdout).toContain("Intake label: normal");
+    expect(stdout).toContain("Suggested next: xh handoff standard");
+  });
+
+  it("emits auto handoff text for a high-risk task", async () => {
+    const tmpDir = uniqueHandoffDir("high-risk");
+    const { stdout, exitCode } = await execaNode([
+      "intake",
+      "handoff",
+      "--tier",
+      "auto",
+      "--task",
+      "update auth logic",
+      "--root",
+      tmpDir,
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("Selected tier: deep");
+    expect(stdout).toContain("Intake label: high_risk");
+    expect(stdout).toContain("Auto escalated: yes");
+  });
+
+  it("emits JSON for auto handoff", async () => {
+    const tmpDir = uniqueHandoffDir("json");
+    const { stdout, exitCode } = await execaNode([
+      "intake",
+      "handoff",
+      "--tier",
+      "auto",
+      "--task",
+      "fix bug in formatter",
+      "--root",
+      tmpDir,
+      "--json",
+    ]);
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.selected_tier).toBe("standard");
+    expect(parsed.intake_label).toBe("normal");
+    expect(parsed.command_suggestion).toContain("xh handoff standard");
+    expect(parsed.command_suggestion).toContain("fix bug in formatter");
+  });
+
+  it("fails with usage error when intake policy is missing", async () => {
+    const tmpDir = path.join(
+      repoRoot,
+      ".x-harness",
+      "tmp",
+      `intake-handoff-no-policy-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    );
+    fs.mkdirSync(tmpDir, { recursive: true });
+    const { stderr, exitCode } = await execaNode([
+      "intake",
+      "handoff",
+      "--tier",
+      "auto",
+      "--root",
+      tmpDir,
+    ]);
+    expect(exitCode).toBe(2);
+    expect(stderr).toContain("intake.yaml not found");
+  });
+});
