@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import * as path from "node:path";
+import fs from "fs-extra";
 import yaml from "yaml";
 import { readYamlOrJson } from "../core/schema.js";
 import {
@@ -9,6 +10,7 @@ import {
   formatHandoffAutoResult,
   loadIntakePolicy,
   normalizeAmbiguityStatus,
+  ParseMarkdownIntent,
   parseBoolStrict,
   splitCsv,
   writeProductIntentOutput,
@@ -38,6 +40,7 @@ export interface IntakeContractOptions {
   ambiguity?: string;
   ambiguityQuestion?: string[];
   note?: string;
+  from?: string;
   output?: string;
   json?: boolean;
 }
@@ -185,7 +188,7 @@ export async function intakeContractAction(
     userVisibleChange = parsed;
   }
 
-  const ambiguity = normalizeAmbiguityStatus(opts.ambiguity ?? "");
+  let ambiguity = normalizeAmbiguityStatus(opts.ambiguity ?? "");
   if (ambiguity === null) {
     console.error(
       `error: --ambiguity expected none, unresolved, or partial, got ${JSON.stringify(opts.ambiguity)}`
@@ -193,16 +196,67 @@ export async function intakeContractAction(
     process.exit(2);
   }
 
+  let id = opts.id ?? "";
+  let productGoal = opts.goal ?? "";
+  let nonGoals = flattenList(opts.nonGoal);
+  let acceptance = flattenList(opts.acceptance);
+  let protectedBehavior = flattenList(opts.protectedBehavior);
+  let ambiguityQuestions = flattenList(opts.ambiguityQuestion);
+  let notes = opts.note ?? "";
+
+  if (opts.from) {
+    const contentFlagSet =
+      id !== "" ||
+      productGoal !== "" ||
+      userVisibleChange !== null ||
+      nonGoals.length > 0 ||
+      acceptance.length > 0 ||
+      protectedBehavior.length > 0 ||
+      opts.ambiguity !== undefined ||
+      ambiguityQuestions.length > 0 ||
+      notes !== "";
+    if (contentFlagSet) {
+      console.error(
+        "error: --from is mutually exclusive with --id/--goal/--visible/--non-goal/--acceptance/--protected-behavior/--ambiguity/--ambiguity-question/--note"
+      );
+      process.exit(2);
+    }
+    let data: string;
+    try {
+      data = await fs.readFile(opts.from, "utf-8");
+    } catch (err) {
+      console.error(
+        `error: --from ${err instanceof Error ? err.message : String(err)}`
+      );
+      process.exit(1);
+    }
+    const parsed = ParseMarkdownIntent(data);
+    if (parsed.error || !parsed.spec) {
+      console.error(`error: ${parsed.error ?? "unknown error"}`);
+      process.exit(2);
+    }
+    const mdSpec = parsed.spec;
+    id = mdSpec.id;
+    productGoal = mdSpec.product_goal;
+    userVisibleChange = mdSpec.user_visible_change;
+    nonGoals = mdSpec.non_goals;
+    acceptance = mdSpec.acceptance;
+    protectedBehavior = mdSpec.protected_behaviors;
+    if (mdSpec.ambiguity_set) ambiguity = "partial";
+    ambiguityQuestions = mdSpec.ambiguity_questions;
+    notes = mdSpec.notes;
+  }
+
   const result = buildProductIntentRecord({
-    id: opts.id ?? "",
-    product_goal: opts.goal ?? "",
+    id,
+    product_goal: productGoal,
     user_visible_change: userVisibleChange,
-    non_goals: flattenList(opts.nonGoal),
-    acceptance: flattenList(opts.acceptance),
-    protected_behavior: flattenList(opts.protectedBehavior),
+    non_goals: nonGoals,
+    acceptance,
+    protected_behavior: protectedBehavior,
     ambiguity_status: ambiguity,
-    ambiguity_questions: flattenList(opts.ambiguityQuestion),
-    notes: opts.note ?? "",
+    ambiguity_questions: ambiguityQuestions,
+    notes,
   });
   if (result.error || !result.record) {
     console.error(`error: ${result.error ?? "unknown error"}`);
@@ -316,7 +370,7 @@ export function intakeCommand(): Command {
     .addCommand(
       new Command("contract")
         .description(
-          "Build a safe V1 product intent record from structured flags"
+          "Build a safe V1 product intent record from structured flags or --from <markdown>"
         )
         .option("--id <id>", "Stable identifier for the product intent")
         .option("--goal <text>", "Plain-language product goal")
@@ -350,6 +404,10 @@ export function intakeCommand(): Command {
           [] as string[]
         )
         .option("--note <text>", "Free-form notes")
+        .option(
+          "--from <path>",
+          "Read product intent fields from a markdown file (mutually exclusive with content flags)"
+        )
         .option("--output <path>", "Write the record to a file")
         .option("--json", "Output JSON instead of YAML", false)
         .action(intakeContractAction)

@@ -275,6 +275,8 @@ func handleIntakeContract(args []string, stdout, stderr io.Writer) int {
 	}
 	outputPath := ""
 	jsonMode := false
+	fromPath := ""
+	ambiguitySet := false
 
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
@@ -332,6 +334,7 @@ func handleIntakeContract(args []string, stdout, stderr io.Writer) int {
 				return ExitUsage
 			}
 			spec.AmbiguityStatus = args[i+1]
+			ambiguitySet = true
 			i++
 		case "--ambiguity-question":
 			if i+1 >= len(args) {
@@ -347,6 +350,13 @@ func handleIntakeContract(args []string, stdout, stderr io.Writer) int {
 			}
 			spec.Notes = args[i+1]
 			i++
+		case "--from":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --from requires a value")
+				return ExitUsage
+			}
+			fromPath = args[i+1]
+			i++
 		case "--output":
 			if i+1 >= len(args) {
 				fmt.Fprintln(stderr, "error: --output requires a value")
@@ -357,7 +367,7 @@ func handleIntakeContract(args []string, stdout, stderr io.Writer) int {
 		case "--json":
 			jsonMode = true
 		case "-h", "--help":
-			fmt.Fprintln(stderr, "usage: xh intake contract [--id <id>] [--goal <text>] [--visible true|false] [--non-goal <text> ...] [--acceptance <text> ...] [--protected-behavior <text> ...] [--ambiguity none|unresolved|partial] [--ambiguity-question <text> ...] [--note <text>] [--output <path>] [--json]")
+			fmt.Fprintln(stderr, "usage: xh intake contract [--id <id>] [--goal <text>] [--visible true|false] [--non-goal <text> ...] [--acceptance <text> ...] [--protected-behavior <text> ...] [--ambiguity none|unresolved|partial] [--ambiguity-question <text> ...] [--note <text>] [--from <markdown-path>] [--output <path>] [--json]")
 			return ExitUsage
 		default:
 			if strings.HasPrefix(arg, "-") {
@@ -367,6 +377,34 @@ func handleIntakeContract(args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "unexpected argument: %s\n", arg)
 			return ExitUsage
 		}
+	}
+
+	if fromPath != "" {
+		if hasContentFlags(spec, ambiguitySet) {
+			fmt.Fprintln(stderr, "error: --from is mutually exclusive with --id/--goal/--visible/--non-goal/--acceptance/--protected-behavior/--ambiguity/--ambiguity-question/--note")
+			return ExitUsage
+		}
+		data, err := os.ReadFile(fromPath)
+		if err != nil {
+			fmt.Fprintf(stderr, "error: --from %v\n", err)
+			return ExitError
+		}
+		mdSpec, err := intake.ParseMarkdown(string(data))
+		if err != nil {
+			fmt.Fprintf(stderr, "error: %v\n", err)
+			return ExitUsage
+		}
+		spec.ID = mdSpec.ID
+		spec.ProductGoal = mdSpec.ProductGoal
+		spec.UserVisibleChange = mdSpec.UserVisibleChange
+		spec.NonGoals = mdSpec.NonGoals
+		spec.Acceptance = mdSpec.Acceptance
+		spec.ProtectedBehavior = mdSpec.ProtectedBehaviors
+		if mdSpec.AmbiguitySet {
+			spec.AmbiguityStatus = "partial"
+		}
+		spec.AmbiguityQuestions = mdSpec.AmbiguityQuestions
+		spec.Notes = mdSpec.Notes
 	}
 
 	ambiguityStatus, err := normalizeAmbiguityStatus(spec.AmbiguityStatus)
@@ -502,6 +540,22 @@ func parseBoolStrict(raw string) (bool, error) {
 		return false, nil
 	}
 	return false, fmt.Errorf("expected true or false, got %q", raw)
+}
+
+// hasContentFlags reports whether any content flag was provided
+// alongside a `--from` markdown path. --ambiguity defaults to "none"
+// in the spec, so the caller tracks the explicit-set case via
+// ambiguitySet.
+func hasContentFlags(spec productIntentSpec, ambiguitySet bool) bool {
+	return spec.ID != "" ||
+		spec.ProductGoal != "" ||
+		spec.UserVisibleChange != nil ||
+		len(spec.NonGoals) > 0 ||
+		len(spec.Acceptance) > 0 ||
+		len(spec.ProtectedBehavior) > 0 ||
+		ambiguitySet ||
+		len(spec.AmbiguityQuestions) > 0 ||
+		spec.Notes != ""
 }
 
 func normalizeAmbiguityStatus(raw string) (string, error) {
