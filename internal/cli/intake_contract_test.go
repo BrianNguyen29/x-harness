@@ -215,7 +215,7 @@ func TestIntakeContractUnknownFlag(t *testing.T) {
 		"--id", "x",
 		"--goal", "y",
 		"--acceptance", "z",
-		"--from", "issue.md",
+		"--bogus-flag", "issue.md",
 	}, &stdout, &stderr)
 	if code != ExitUsage {
 		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
@@ -293,5 +293,244 @@ func TestIntakeContractCommaDelimited(t *testing.T) {
 	acc, _ := doc["acceptance_criteria"].([]any)
 	if len(acc) != 2 {
 		t.Fatalf("expected 2 acceptance_criteria, got %d (%v)", len(acc), acc)
+	}
+}
+
+// TestIntakeContractFromMarkdownDefaults covers the markdown
+// heading-based parser: # Title -> id=slug, product_goal=title;
+// ## Acceptance -> acceptance_criteria list; ## Notes -> notes.
+func TestIntakeContractFromMarkdownDefaults(t *testing.T) {
+	tmpDir := t.TempDir()
+	mdPath := filepath.Join(tmpDir, "intent.md")
+	md := "# Foo Bar\n\n## Acceptance\n- first\n- [x] second\n\n## Notes\nfirst line\nsecond line\n"
+	if err := os.WriteFile(mdPath, []byte(md), 0644); err != nil {
+		t.Fatalf("write markdown: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{
+		"intake", "contract",
+		"--from", mdPath,
+		"--json",
+	}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &doc); err != nil {
+		t.Fatalf("output is not valid JSON: %v", err)
+	}
+	if doc["id"] != "foo-bar" {
+		t.Fatalf("expected id=foo-bar, got %v", doc["id"])
+	}
+	if doc["product_goal"] != "Foo Bar" {
+		t.Fatalf("expected product_goal=Foo Bar, got %v", doc["product_goal"])
+	}
+	acc, _ := doc["acceptance_criteria"].([]any)
+	if len(acc) != 2 {
+		t.Fatalf("expected 2 acceptance_criteria, got %d", len(acc))
+	}
+	if doc["notes"] != "first line\nsecond line" {
+		t.Fatalf("expected notes joined, got %v", doc["notes"])
+	}
+}
+
+// TestIntakeContractFromMarkdownOverridesGoal covers the rule that a
+// ## Goal section overrides the title-derived product_goal.
+func TestIntakeContractFromMarkdownOverridesGoal(t *testing.T) {
+	tmpDir := t.TempDir()
+	mdPath := filepath.Join(tmpDir, "intent.md")
+	md := "# Foo Bar\n\n## Goal\nCustom goal from section\n"
+	if err := os.WriteFile(mdPath, []byte(md), 0644); err != nil {
+		t.Fatalf("write markdown: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{
+		"intake", "contract",
+		"--from", mdPath,
+		"--json",
+	}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--acceptance is required") {
+		t.Fatalf("expected --acceptance required error, got: %s", stderr.String())
+	}
+}
+
+// TestIntakeContractFromMarkdownFull covers all known sections in one
+// markdown file and verifies the resulting JSON record.
+func TestIntakeContractFromMarkdownFull(t *testing.T) {
+	tmpDir := t.TempDir()
+	mdPath := filepath.Join(tmpDir, "intent.md")
+	md := `# Foo Bar
+
+## Goal
+Custom goal text
+
+## Non-Goals
+- skip auth
+- skip release
+
+## Acceptance
+- [ ] a
+- [x] b
+
+## Protected Behavior
+- intent_ref advisory only
+
+## Ambiguity
+- q1
+- q2
+
+## User-Visible Change
+yes
+
+## Notes
+Some notes
+`
+	if err := os.WriteFile(mdPath, []byte(md), 0644); err != nil {
+		t.Fatalf("write markdown: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{
+		"intake", "contract",
+		"--from", mdPath,
+		"--json",
+	}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &doc); err != nil {
+		t.Fatalf("output is not valid JSON: %v", err)
+	}
+	if doc["id"] != "foo-bar" {
+		t.Fatalf("expected id=foo-bar, got %v", doc["id"])
+	}
+	if doc["product_goal"] != "Custom goal text" {
+		t.Fatalf("expected product_goal=Custom goal text, got %v", doc["product_goal"])
+	}
+	ng, _ := doc["non_goals"].([]any)
+	if len(ng) != 2 {
+		t.Fatalf("expected 2 non_goals, got %d", len(ng))
+	}
+	acc, _ := doc["acceptance_criteria"].([]any)
+	if len(acc) != 2 {
+		t.Fatalf("expected 2 acceptance_criteria, got %d", len(acc))
+	}
+	pb, _ := doc["protected_behaviors"].([]any)
+	if len(pb) != 1 {
+		t.Fatalf("expected 1 protected_behaviors, got %d", len(pb))
+	}
+	if doc["user_visible_change"] != true {
+		t.Fatalf("expected user_visible_change=true, got %v", doc["user_visible_change"])
+	}
+	amb, _ := doc["ambiguity"].(map[string]any)
+	if amb == nil || amb["status"] != "partial" {
+		t.Fatalf("expected ambiguity.status=partial, got %v", doc["ambiguity"])
+	}
+	if doc["notes"] != "Some notes" {
+		t.Fatalf("expected notes=Some notes, got %v", doc["notes"])
+	}
+}
+
+// TestIntakeContractFromMarkdownMutuallyExclusive covers the rule
+// that --from and content flags cannot be combined.
+func TestIntakeContractFromMarkdownMutuallyExclusive(t *testing.T) {
+	tmpDir := t.TempDir()
+	mdPath := filepath.Join(tmpDir, "intent.md")
+	if err := os.WriteFile(mdPath, []byte("# T\n"), 0644); err != nil {
+		t.Fatalf("write markdown: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{
+		"intake", "contract",
+		"--from", mdPath,
+		"--id", "x",
+	}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "mutually exclusive") {
+		t.Fatalf("expected mutually exclusive error, got: %s", stderr.String())
+	}
+}
+
+// TestIntakeContractFromMarkdownMissingFile covers the rule that a
+// missing --from file surfaces a runtime error.
+func TestIntakeContractFromMarkdownMissingFile(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{
+		"intake", "contract",
+		"--from", "/nonexistent/path.md",
+	}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitError, code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--from") {
+		t.Fatalf("expected --from error, got: %s", stderr.String())
+	}
+}
+
+// TestIntakeContractFromMarkdownInvalidBool covers the rule that a
+// strict bool parse error in ## User-Visible Change becomes a usage
+// error.
+func TestIntakeContractFromMarkdownInvalidBool(t *testing.T) {
+	tmpDir := t.TempDir()
+	mdPath := filepath.Join(tmpDir, "intent.md")
+	md := "# T\n\n## User-Visible Change\nmaybe\n"
+	if err := os.WriteFile(mdPath, []byte(md), 0644); err != nil {
+		t.Fatalf("write markdown: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{
+		"intake", "contract",
+		"--from", mdPath,
+	}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "user-visible change") {
+		t.Fatalf("expected user-visible change error, got: %s", stderr.String())
+	}
+}
+
+// TestIntakeContractFromMarkdownWithOutput covers --from combined
+// with --output: the file is written and stdout is empty.
+func TestIntakeContractFromMarkdownWithOutput(t *testing.T) {
+	tmpDir := t.TempDir()
+	mdPath := filepath.Join(tmpDir, "intent.md")
+	outPath := filepath.Join(tmpDir, "intent.yaml")
+	md := "# Foo\n\n## Acceptance\n- one\n"
+	if err := os.WriteFile(mdPath, []byte(md), 0644); err != nil {
+		t.Fatalf("write markdown: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{
+		"intake", "contract",
+		"--from", mdPath,
+		"--output", outPath,
+	}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout when --output is set, got: %s", stdout.String())
+	}
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("output file not written: %v", err)
+	}
+	for _, want := range []string{"id: foo", "product_goal: Foo", "statement: one"} {
+		if !strings.Contains(string(data), want) {
+			t.Fatalf("expected file to contain %q, got:\n%s", want, string(data))
+		}
 	}
 }

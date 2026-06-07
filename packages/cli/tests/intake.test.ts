@@ -489,6 +489,153 @@ describe("intake contract", () => {
     expect(parsed.acceptance_criteria[0].statement).toBe("x");
     expect(parsed.acceptance_criteria[1].statement).toBe("y");
   });
+
+  function uniqueFromDir(label: string): string {
+    const tmpDir = path.join(
+      repoRoot,
+      ".x-harness",
+      "tmp",
+      `intake-from-${label}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    );
+    fs.mkdirSync(tmpDir, { recursive: true });
+    return tmpDir;
+  }
+
+  it("parses --from markdown with title defaults", async () => {
+    const tmpDir = uniqueFromDir("defaults");
+    const mdPath = path.join(tmpDir, "intent.md");
+    fs.writeFileSync(
+      mdPath,
+      "# Foo Bar\n\n## Acceptance\n- first\n- [x] second\n\n## Notes\nfirst line\nsecond line\n"
+    );
+    const { stdout, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--from",
+      mdPath,
+      "--json",
+    ]);
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.id).toBe("foo-bar");
+    expect(parsed.product_goal).toBe("Foo Bar");
+    expect(parsed.acceptance_criteria).toHaveLength(2);
+    expect(parsed.notes).toBe("first line\nsecond line");
+  });
+
+  it("parses --from markdown with full section coverage", async () => {
+    const tmpDir = uniqueFromDir("full");
+    const mdPath = path.join(tmpDir, "intent.md");
+    fs.writeFileSync(
+      mdPath,
+      `# Foo Bar
+
+## Goal
+Custom goal text
+
+## Non-Goals
+- skip auth
+- skip release
+
+## Acceptance
+- [ ] a
+- [x] b
+
+## Protected Behavior
+- intent_ref advisory only
+
+## Ambiguity
+- q1
+- q2
+
+## User-Visible Change
+yes
+
+## Notes
+Some notes
+`
+    );
+    const { stdout, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--from",
+      mdPath,
+      "--json",
+    ]);
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.id).toBe("foo-bar");
+    expect(parsed.product_goal).toBe("Custom goal text");
+    expect(parsed.non_goals).toEqual(["skip auth", "skip release"]);
+    expect(parsed.acceptance_criteria).toHaveLength(2);
+    expect(parsed.protected_behaviors).toEqual(["intent_ref advisory only"]);
+    expect(parsed.user_visible_change).toBe(true);
+    expect(parsed.ambiguity.status).toBe("partial");
+    expect(parsed.ambiguity.questions).toEqual(["q1", "q2"]);
+    expect(parsed.notes).toBe("Some notes");
+  });
+
+  it("rejects --from combined with content flags", async () => {
+    const tmpDir = uniqueFromDir("mutex");
+    const mdPath = path.join(tmpDir, "intent.md");
+    fs.writeFileSync(mdPath, "# T\n\n## Acceptance\n- a\n");
+    const { stderr, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--from",
+      mdPath,
+      "--id",
+      "x",
+    ]);
+    expect(exitCode).toBe(2);
+    expect(stderr).toContain("mutually exclusive");
+  });
+
+  it("fails when --from file does not exist", async () => {
+    const { stderr, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--from",
+      "/nonexistent/path.md",
+    ]);
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("--from");
+  });
+
+  it("fails when --from markdown has invalid bool", async () => {
+    const tmpDir = uniqueFromDir("invalid-bool");
+    const mdPath = path.join(tmpDir, "intent.md");
+    fs.writeFileSync(mdPath, "# T\n\n## User-Visible Change\nmaybe\n");
+    const { stderr, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--from",
+      mdPath,
+    ]);
+    expect(exitCode).toBe(2);
+    expect(stderr).toContain("user-visible change");
+  });
+
+  it("writes --from output to --output file", async () => {
+    const tmpDir = uniqueFromDir("output");
+    const mdPath = path.join(tmpDir, "intent.md");
+    const outPath = path.join(tmpDir, "intent.yaml");
+    fs.writeFileSync(mdPath, "# Foo\n\n## Acceptance\n- one\n");
+    const { stdout, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--from",
+      mdPath,
+      "--output",
+      outPath,
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toBe("");
+    const data = fs.readFileSync(outPath, "utf-8");
+    expect(data).toContain("id: foo");
+    expect(data).toContain("product_goal: Foo");
+    expect(data).toContain("statement: one");
+  });
 });
 
 describe("intake handoff", () => {

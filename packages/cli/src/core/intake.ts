@@ -474,6 +474,226 @@ export function buildProductIntentRecord(
   };
 }
 
+// MarkdownIntentSpec is the result of parsing a markdown file for
+// `xh intake contract --from <path>`. Field names mirror the
+// product-intent schema. Unknown sections are skipped. Section
+// validation is delegated to the canonical record builder.
+export interface MarkdownIntentSpec {
+  title: string;
+  id: string;
+  product_goal: string;
+  user_visible_change: boolean | null;
+  non_goals: string[];
+  acceptance: string[];
+  protected_behaviors: string[];
+  ambiguity_questions: string[];
+  notes: string;
+  ambiguity_set: boolean;
+}
+
+const MARKDOWN_SECTION_ALIASES: Record<string, string> = {
+  goal: "goal",
+  "product goal": "goal",
+  acceptance: "acceptance",
+  "acceptance criteria": "acceptance",
+  criteria: "acceptance",
+  "non goals": "non-goals",
+  "out of scope": "non-goals",
+  "protected behavior": "protected-behavior",
+  "protected behaviors": "protected-behavior",
+  ambiguity: "ambiguity",
+  "open questions": "ambiguity",
+  "unresolved questions": "ambiguity",
+  "user visible change": "user-visible-change",
+  notes: "notes",
+  context: "notes",
+  problem: "notes",
+};
+
+const MARKDOWN_LIST_RE = /^\s*(?:[-*]|\d+\.)\s+(?:\[[ xX]\]\s+)?(.*)$/;
+
+function canonicalSection(heading: string): string | null {
+  const normalized = heading
+    .toLowerCase()
+    .trim()
+    .replace(/[-_]+/g, " ")
+    .split(/\s+/)
+    .filter((part) => part.length > 0)
+    .join(" ");
+  return MARKDOWN_SECTION_ALIASES[normalized] ?? null;
+}
+
+function extractMarkdownListItems(lines: string[]): string[] {
+  const items: string[] = [];
+  for (const line of lines) {
+    const match = MARKDOWN_LIST_RE.exec(line);
+    if (!match) continue;
+    const text = match[1].trim();
+    if (text.length === 0) continue;
+    items.push(text);
+  }
+  return items;
+}
+
+function firstMarkdownNonEmptyText(lines: string[]): string {
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.length === 0) continue;
+    const match = MARKDOWN_LIST_RE.exec(line);
+    if (match) {
+      const text = match[1].trim();
+      if (text.length > 0) return text;
+      continue;
+    }
+    return trimmed;
+  }
+  return "";
+}
+
+function joinMarkdownNonEmptyText(lines: string[]): string {
+  const parts: string[] = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.length === 0) continue;
+    const match = MARKDOWN_LIST_RE.exec(line);
+    if (match) {
+      const text = match[1].trim();
+      if (text.length > 0) parts.push(text);
+      continue;
+    }
+    parts.push(trimmed);
+  }
+  return parts.join("\n");
+}
+
+function slugifyMarkdownTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function parseMarkdownBoolStrict(raw: string): boolean | null {
+  switch (raw.toLowerCase().trim()) {
+    case "true":
+    case "yes":
+    case "1":
+      return true;
+    case "false":
+    case "no":
+    case "0":
+      return false;
+    default:
+      return null;
+  }
+}
+
+// ParseMarkdownIntent parses heading-based product intent content. Headings
+// are matched case-insensitively; only `##` (level 2) sections are
+// recognized for known section names. `###` headings are treated as
+// content within the current section. The top-level `#` title provides
+// default id and product_goal values unless overridden by sections.
+export function ParseMarkdownIntent(md: string): {
+  spec: MarkdownIntentSpec | null;
+  error?: string;
+} {
+  const spec: MarkdownIntentSpec = {
+    title: "",
+    id: "",
+    product_goal: "",
+    user_visible_change: null,
+    non_goals: [],
+    acceptance: [],
+    protected_behaviors: [],
+    ambiguity_questions: [],
+    notes: "",
+    ambiguity_set: false,
+  };
+
+  let currentSection = "";
+  let sectionLines: string[] = [];
+
+  const flush = (): string | null => {
+    if (currentSection === "") return null;
+    return applyMarkdownSection(spec, currentSection, sectionLines);
+  };
+
+  for (const raw of md.split("\n")) {
+    const line = raw.replace(/[ \t\r]+$/, "");
+    if (line.startsWith("# ") && !line.startsWith("## ")) {
+      const title = line.slice(2).trim();
+      if (spec.title === "") spec.title = title;
+      continue;
+    }
+    if (line.startsWith("## ")) {
+      const err = flush();
+      if (err) return { spec: null, error: err };
+      currentSection = line.slice(3).trim();
+      sectionLines = [];
+      continue;
+    }
+    sectionLines.push(line);
+  }
+  const trailingErr = flush();
+  if (trailingErr) return { spec: null, error: trailingErr };
+
+  // Title-derived defaults: id always defaults to slugify(title);
+  // product_goal defaults to title only when no Goal section set it.
+  if (spec.id === "" && spec.title !== "") {
+    spec.id = slugifyMarkdownTitle(spec.title);
+  }
+  if (spec.product_goal === "" && spec.title !== "") {
+    spec.product_goal = spec.title;
+  }
+  return { spec };
+}
+
+function applyMarkdownSection(
+  spec: MarkdownIntentSpec,
+  heading: string,
+  lines: string[]
+): string | null {
+  const canonical = canonicalSection(heading);
+  if (!canonical) return null;
+  switch (canonical) {
+    case "goal":
+      spec.product_goal = firstMarkdownNonEmptyText(lines);
+      return null;
+    case "acceptance":
+      spec.acceptance = extractMarkdownListItems(lines);
+      return null;
+    case "non-goals":
+      spec.non_goals = extractMarkdownListItems(lines);
+      return null;
+    case "protected-behavior":
+      spec.protected_behaviors = extractMarkdownListItems(lines);
+      return null;
+    case "ambiguity": {
+      const items = extractMarkdownListItems(lines);
+      if (items.length > 0) {
+        spec.ambiguity_set = true;
+        spec.ambiguity_questions = items;
+      }
+      return null;
+    }
+    case "user-visible-change": {
+      const text = firstMarkdownNonEmptyText(lines);
+      if (text === "") return null;
+      const parsed = parseMarkdownBoolStrict(text);
+      if (parsed === null) {
+        return `--from user-visible change: expected true or false, got "${text}"`;
+      }
+      spec.user_visible_change = parsed;
+      return null;
+    }
+    case "notes":
+      spec.notes = joinMarkdownNonEmptyText(lines);
+      return null;
+  }
+  return null;
+}
+
 // writeProductIntentOutput writes the rendered product intent record
 // to disk. To keep the slice safe V1, the parent directory must already
 // exist; we do not auto-create intermediate directories because that
