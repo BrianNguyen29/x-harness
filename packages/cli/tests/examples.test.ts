@@ -11,9 +11,9 @@ describe("examples command", () => {
     expect(exitCode).toBe(0);
     const output = JSON.parse(stdout);
     expect(output.ok).toBe(true);
-    expect(output.total).toBe(23);
-    expect(output.passed).toBe(23);
-    expect(output.results).toHaveLength(23);
+    expect(output.total).toBe(25);
+    expect(output.passed).toBe(25);
+    expect(output.results).toHaveLength(25);
 
     const names = output.results.map((r: { name: string }) => r.name);
     expect(names).toContain("regression/success-light");
@@ -39,12 +39,14 @@ describe("examples command", () => {
     expect(names).toContain("regression/decision-refs-present");
     expect(names).toContain("regression/decision-link-flow");
     expect(names).toContain("regression/decision-refs-empty-advisory");
+    expect(names).toContain("regression/intent-ref-present");
+    expect(names).toContain("regression/intent-ref-empty-advisory");
   });
 
   it("verify subcommand prints human-readable summary", async () => {
     const { stdout, exitCode } = await execaNode(["examples", "verify"]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("Golden examples: 23 total");
+    expect(stdout).toContain("Golden examples: 25 total");
     expect(stdout).toContain("regression/success-light");
     expect(stdout).toContain("regression/blocked-missing-evidence");
     expect(stdout).toContain("regression/failed-invalid-status");
@@ -206,5 +208,17 @@ describe("examples command", () => {
     );
     expect(decisionRefsEmptyAdvisory.outcome).toBe("success");
     expect(decisionRefsEmptyAdvisory.acceptance_status).toBe("accepted");
+
+    const intentRefPresent = output.results.find(
+      (r: { name: string }) => r.name === "regression/intent-ref-present"
+    );
+    expect(intentRefPresent.outcome).toBe("success");
+    expect(intentRefPresent.acceptance_status).toBe("accepted");
+
+    const intentRefEmptyAdvisory = output.results.find(
+      (r: { name: string }) => r.name === "regression/intent-ref-empty-advisory"
+    );
+    expect(intentRefEmptyAdvisory.outcome).toBe("success");
+    expect(intentRefEmptyAdvisory.acceptance_status).toBe("accepted");
   });
 });

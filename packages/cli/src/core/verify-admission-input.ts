@@ -54,6 +54,11 @@ export function buildAdmissionInput(
       context_alignment: card.context_alignment as
         | Record<string, unknown>
         | undefined,
+      // Forward the top-level intent_ref so the admission engine does not
+      // emit a false "intent_ref not declared" advisory note for cards that
+      // already declare it. Mirrors the Go examples/verify paths that pass
+      // the raw card to admission and matches examples.ts forwarding.
+      intent_ref: card.intent_ref as string | undefined,
       product_intent: card.product_intent as
         | Record<string, unknown>
         | undefined,

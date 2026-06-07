@@ -228,6 +228,34 @@
       "output": "verify/golden/failed-typecheck-recovery-route.json"
     },
     {
+      "id": "verify:golden:intent-ref-empty-advisory",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/regression/intent-ref-empty-advisory/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/golden/intent-ref-empty-advisory.json"
+    },
+    {
+      "id": "verify:golden:intent-ref-present",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/regression/intent-ref-present/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/golden/intent-ref-present.json"
+    },
+    {
       "id": "verify:golden:multi-agent-success",
       "command": [
         "node",

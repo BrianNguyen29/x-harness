@@ -1,0 +1,60 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-INTENT-REF-EMPTY-ADVISORY-001
+tier: standard
+owner: alice
+accountable: bob
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - examples/golden/regression/intent-ref-empty-advisory/README.md
+  architecture_refs:
+    - examples/golden/regression/intent-ref-empty-advisory/README.md
+  decision_refs: []
+  test_matrix_refs:
+    - examples/golden/regression/intent-ref-empty-advisory/README.md
+  unresolved_context_questions: []
+  context_evidence: []
+state:
+  read_set:
+    - examples/golden/regression/intent-ref-empty-advisory/README.md
+  write_set:
+    - examples/golden/regression/intent-ref-empty-advisory/completion-card.yaml
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Standard-tier card with no top-level intent_ref is admitted because the gate is advisory-only in safe V1
+  expected_effect: Admission emits the missing advisory note but still returns success and accepted
+  measurable_signal: git status
+  falsification_method: Set the top-level intent_ref to a non-blank slug; the missing advisory note should be suppressed while admission still passes
+  horizon: same_verify
+evidence:
+  files_changed:
+    - examples/golden/regression/intent-ref-empty-advisory/completion-card.yaml
+  command_evidence:
+    - command: git status
+      exit_code: 0
+claim:
+  fix_status: fixed
+  summary: Missing top-level intent_ref is advisory-only in safe V1 and never blocks admission
+  evidence:
+    - description: Completion card with no top-level intent_ref field
+      url: ./completion-card.yaml
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice

@@ -1,7 +1,7 @@
 {
   "failed": 0,
   "ok": true,
-  "passed": 23,
+  "passed": 25,
   "results": [
     {
       "acceptance_status": "withheld",
@@ -189,6 +189,22 @@
     {
       "acceptance_status": "accepted",
       "errors": [],
+      "name": "regression/intent-ref-empty-advisory",
+      "outcome": "success",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
+      "acceptance_status": "accepted",
+      "errors": [],
+      "name": "regression/intent-ref-present",
+      "outcome": "success",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
+      "acceptance_status": "accepted",
+      "errors": [],
       "name": "regression/success-context-alignment",
       "outcome": "success",
       "output_mismatch": null,
@@ -219,5 +235,5 @@
       "passed": true
     }
   ],
-  "total": 23
+  "total": 25
 }

@@ -1,0 +1,66 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-INTENT-REF-PRESENT-001
+tier: standard
+owner: alice
+accountable: bob
+intent_ref: doc/intake-lite.md
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - examples/golden/regression/intent-ref-present/README.md
+  architecture_refs:
+    - examples/golden/regression/intent-ref-present/README.md
+  decision_refs:
+    - examples/golden/regression/intent-ref-present/src/intent/intake-lite.md
+  test_matrix_refs:
+    - examples/golden/regression/intent-ref-present/README.md
+  unresolved_context_questions: []
+  context_evidence:
+    - ref: examples/golden/regression/intent-ref-present/src/intent/intake-lite.md
+      kind: product_intent_record
+      note: Product intent record referenced by the top-level intent_ref field
+state:
+  read_set:
+    - examples/golden/regression/intent-ref-present/README.md
+    - examples/golden/regression/intent-ref-present/src/intent/intake-lite.md
+  write_set:
+    - examples/golden/regression/intent-ref-present/src/intent/intake-lite.md
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Linked a product intent record to a completion card via the top-level intent_ref field
+  expected_effect: Admission emits no intent_ref advisory note because the top-level intent_ref is a non-blank slug
+  measurable_signal: git status
+  falsification_method: Clear the top-level intent_ref; the admission layer should still pass (advisory only) and surface the missing note
+  horizon: same_verify
+evidence:
+  files_changed:
+    - examples/golden/regression/intent-ref-present/src/intent/intake-lite.md
+  command_evidence:
+    - command: git status
+      exit_code: 0
+claim:
+  fix_status: fixed
+  summary: A standard-tier card with a non-blank top-level intent_ref is admitted without the empty/missing advisory note
+  evidence:
+    - description: Product intent record on disk matching the linked intent_ref slug
+      url: ./src/intent/intake-lite.md
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
