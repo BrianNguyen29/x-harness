@@ -92,6 +92,15 @@ async function verifyExample(example: GoldenExample): Promise<{
       approval_receipt: card.approval_receipt as
         | Record<string, unknown>
         | undefined,
+      // Forward the top-level intent_ref and the context_alignment block so
+      // the admission engine does not emit false "missing" advisory notes
+      // for intent_ref or context_alignment.decision_refs on cards that
+      // already declare them. Mirrors the Go examples path that passes the
+      // raw doc to admission.Run.
+      intent_ref: card.intent_ref as string | undefined,
+      context_alignment: card.context_alignment as
+        | Record<string, unknown>
+        | undefined,
       isCardMode: true,
       staleGround: false,
     };
