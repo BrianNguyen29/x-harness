@@ -1,0 +1,13 @@
+> monorepo@0.1.0 test:web
+> vitest run packages/web
+
+ RUN  v1.6.0  /home/user/work/monorepo
+
+ ✓ packages/web/app/settings/form.test.tsx (3 tests) 15ms
+   ✓ uses shared validator to reject empty display name
+   ✓ uses shared validator to reject invalid email format
+   ✓ renders form with valid input
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Duration  320ms
