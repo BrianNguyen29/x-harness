@@ -6,8 +6,21 @@ Welcome to `x-harness`! Follow this guide to set up the CLI, run local verificat
 > **Local Development**: build the native Go CLI with `go build ./cmd/x-harness` and run `./x-harness <command>`. The TypeScript compatibility CLI remains available after `npm install && npm run build` via `node packages/cli/dist/index.js <command>`.
 >
 > **Command syntax**:
+>
 > - **Terminal / shell:** `xh <command>` (e.g., `xh check`)
 > - **Agent chat:** `/xh <command>` (e.g., `/xh check`)
+
+---
+
+## 🚀 Fast track
+
+If you already have the CLI built, run the guided onboarding in one step:
+
+```bash
+xh start
+```
+
+This runs doctor, examples verify, and an init wizard preview in sequence. Add `--apply` to actually install assets.
 
 ---
 
@@ -39,19 +52,20 @@ You should see a JSON report detailing passing validations with `"healthy": true
 
 ### 3. Beginner Actions
 
-`x-harness` provides nine beginner-friendly actions:
+`x-harness` provides ten beginner-friendly actions:
 
-| Action        | Description                                              |
-| :------------ | :------------------------------------------------------- |
-| **`check`**   | Run read-only verification against a completion card        |
-| **`prepare`** | Check if workspace is ready for agent task handoff        |
-| **`recover`** | Get recovery playbook suggestions from errors or trace     |
-| **`doctor`**  | Validate workspace health and configuration                |
-| **`actions`** | List all beginner-friendly actions                        |
-| **`status`**  | Show trace summary (alias for report without --metrics)  |
-| **`reset`**   | Clean generated harness state (requires --confirm)        |
+| Action        | Description                                                                        |
+| :------------ | :--------------------------------------------------------------------------------- |
+| **`start`**   | Guided onboarding: doctor, examples verify, init wizard, next steps                |
+| **`check`**   | Run read-only verification against a completion card                               |
+| **`prepare`** | Check if workspace is ready for agent task handoff                                 |
+| **`recover`** | Get recovery playbook suggestions from errors or trace                             |
+| **`doctor`**  | Validate workspace health and configuration                                        |
+| **`actions`** | List all beginner-friendly actions                                                 |
+| **`status`**  | Show trace summary (alias for report without --metrics)                            |
+| **`reset`**   | Clean generated harness state (requires --confirm)                                 |
 | **`init`**    | Install core harness assets, schemas, policies, and adapters (default `--minimal`) |
-| **`add`**     | Add a metadata helper file for compatibility modes        |
+| **`add`**     | Add a metadata helper file for compatibility modes                                 |
 
 ### 4. Run Contract Oracle Checks (Optional)
 

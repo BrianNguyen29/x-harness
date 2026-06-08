@@ -14,6 +14,7 @@ describe("progressive disclosure", () => {
     const { stdout, exitCode } = await execaNode(["--help"]);
     expect(exitCode).toBe(0);
     // Beginner commands should be present
+    expect(stdout).toContain("start");
     expect(stdout).toContain("check");
     expect(stdout).toContain("prepare");
     expect(stdout).toContain("doctor");

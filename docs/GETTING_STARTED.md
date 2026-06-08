@@ -23,6 +23,16 @@ It does **not** run your agents, replace CI, or guarantee correctness. It is a *
 
 A passing `xh verify` means your **card matches the policy**. It does **not** mean the underlying code is bug-free, secure, or production-ready. The verifier is read-only and never edits your source to "fix" things while checking.
 
+## Quick start
+
+Run the guided onboarding:
+
+```bash
+xh start
+```
+
+This runs a read-only check of your workspace (doctor), verifies the bundled examples, and previews the init wizard.
+
 ## Next steps
 
 1. **Hands-on** — [QUICKSTART.md](QUICKSTART.md): build the CLI and run your first verification.

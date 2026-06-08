@@ -70,6 +70,7 @@ var commands = []CommandInfo{
 	{Name: "profile", Description: "Recommend installation profiles", Maturity: MaturityBeta},
 	{Name: "repair", Description: "Repair managed files from manifest", Maturity: MaturityBeta},
 	{Name: "uninstall", Description: "Uninstall managed files using manifest", Maturity: MaturityBeta},
+	{Name: "start", Description: "Guided onboarding: doctor, examples verify, init wizard, next steps", Primary: true, Maturity: MaturityBeta},
 	{Name: "actions", Description: "List beginner-friendly actions", Maturity: MaturityBeta},
 	{Name: "card", Description: "Generate or verify admission cards", Maturity: MaturityBeta},
 	{Name: "conformance", Description: "Run conformance checks", Maturity: MaturityBeta},
@@ -85,7 +86,7 @@ var commands = []CommandInfo{
 
 func isBeginnerCommand(name string) bool {
 	switch name {
-	case "check", "prepare", "recover", "doctor", "actions", "status", "reset", "init", "add":
+	case "check", "prepare", "recover", "doctor", "actions", "status", "reset", "init", "add", "start":
 		return true
 	}
 	return false
@@ -113,6 +114,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 	case "actions":
 		printActions(stdout)
 		return ExitOK
+	case "start":
+		return handleStart(args[1:], stdout, stderr)
 	case "context":
 		return handleContext(args[1:], stdout, stderr)
 	case "verify", "check":
@@ -244,6 +247,7 @@ func printStartHere(w io.Writer) {
 	WriteLine(w, "")
 	WriteLine(w, "Start here — a few commands to get you going:")
 	WriteLine(w, "")
+	WriteLine(w, "  xh start           Guided onboarding: doctor, examples verify, init wizard, next steps")
 	WriteLine(w, "  xh check (verify)  Run read-only verification against a completion card")
 	WriteLine(w, "  xh prepare         Check if workspace is ready for agent task handoff")
 	WriteLine(w, "  xh recover         Get recovery playbook suggestions from errors or trace")

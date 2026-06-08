@@ -36,6 +36,7 @@ import { agentProfileCommand } from "./commands/agent-profile.js";
 import { costCommand } from "./commands/cost.js";
 import { profileCommand } from "./commands/profile.js";
 import { decisionCommand } from "./commands/decision.js";
+import { startCommand } from "./commands/start.js";
 import { CliError, handleCliError } from "./core/exit.js";
 
 const program = new Command();
@@ -54,6 +55,7 @@ const beginnerCommands = new Set([
   "reset",
   "init",
   "add",
+  "start",
 ]);
 
 const commandMaturity: Record<string, string> = {
@@ -66,6 +68,7 @@ const commandMaturity: Record<string, string> = {
   reset: "stable",
   init: "stable",
   add: "stable",
+  start: "beta",
   verify: "stable",
   handoff: "stable",
   report: "stable",
@@ -112,6 +115,9 @@ function printStartHere() {
   console.log("");
   console.log("Start here — a few commands to get you going:");
   console.log("");
+  console.log(
+    "  xh start           Guided onboarding: doctor, examples verify, init wizard, next steps"
+  );
   console.log(
     "  xh check (verify)  Run read-only verification against a completion card"
   );
@@ -217,6 +223,7 @@ program.addCommand(agentProfileCommand());
 program.addCommand(costCommand());
 program.addCommand(profileCommand());
 program.addCommand(decisionCommand());
+program.addCommand(startCommand());
 
 // Commands with beginner-friendly aliases
 const verify = verifyCommand();
@@ -289,6 +296,9 @@ actions.action(() => {
   );
   console.log(
     "| :----------- | :------------------------------------------------------- |"
+  );
+  console.log(
+    "| **start**    | Guided onboarding: doctor, examples verify, init wizard, next steps |"
   );
   console.log(
     "| **prepare**  | Check if workspace is ready for agent task handoff        |"
