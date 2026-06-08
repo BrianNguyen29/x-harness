@@ -12,6 +12,8 @@
 
 [English](README.md) | [Tiếng Việt](README.vi.md)
 
+> **New to x-harness?** Read [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md) for a conceptual primer, then try the [Quickstart](#quick-start-5-minutes).
+
 ---
 
 ## What is x-harness?
@@ -290,6 +292,7 @@ You only need **one**. Adapters are thin wrappers around the same CLI; they do n
 
 | Document | What it covers |
 | :-- | :-- |
+| [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md) | Conceptual primer: what x-harness solves and core ideas. |
 | [`docs/QUICKSTART.md`](docs/QUICKSTART.md) | Step-by-step local setup and first verify. |
 | [`docs/FAQ.md`](docs/FAQ.md) | Frequently asked questions (Go vs TS, LLM usage, etc.). |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Layer model, validation cycle, design notes. |

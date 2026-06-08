@@ -12,6 +12,8 @@
 
 [Tiếng Việt](README.vi.md) | [English](README.md)
 
+> **Mới biết đến x-harness?** Đọc [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md) để có cái nhìn tổng quan về khái niệm, sau đó thử [Quickstart](#bắt-đầu-nhanh-5-phút).
+
 ---
 
 ## x-harness là gì?
@@ -290,6 +292,7 @@ Bạn chỉ cần **một**. Adapter là lớp vỏ mỏng quanh cùng một CLI
 
 | Tài liệu | Nội dung |
 | :-- | :-- |
+| [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md) | Khái niệm cơ bản: vấn đề x-harness giải quyết và ý tưởng cốt lõi. |
 | [`docs/QUICKSTART.md`](docs/QUICKSTART.md) | Hướng dẫn cài đặt cục bộ từng bước và lần verify đầu tiên. |
 | [`docs/FAQ.md`](docs/FAQ.md) | Câu hỏi thường gặp (Go vs TS, có dùng LLM không, …). |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Mô hình phân lớp, chu trình xác thực, ghi chú thiết kế. |

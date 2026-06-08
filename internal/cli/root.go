@@ -240,21 +240,24 @@ func knownCommand(name string) bool {
 func printStartHere(w io.Writer) {
 	WriteLine(w, "xh %s", Version)
 	WriteLine(w, "")
+	WriteLine(w, "A lightweight verify-gated harness for AI-agent workflows.")
+	WriteLine(w, "")
 	WriteLine(w, "Start here — a few commands to get you going:")
 	WriteLine(w, "")
-	WriteLine(w, "  xh check          Run read-only verification against a completion card")
-	WriteLine(w, "  xh prepare        Check if workspace is ready for agent task handoff")
-	WriteLine(w, "  xh recover        Get recovery playbook suggestions from errors or trace")
-	WriteLine(w, "  xh doctor         Validate workspace health and configuration")
-	WriteLine(w, "  xh actions        Show this list of actions")
-	WriteLine(w, "  xh status         Show trace summary")
-	WriteLine(w, "  xh reset          Clean generated harness state")
+	WriteLine(w, "  xh check (verify)  Run read-only verification against a completion card")
+	WriteLine(w, "  xh prepare         Check if workspace is ready for agent task handoff")
+	WriteLine(w, "  xh recover         Get recovery playbook suggestions from errors or trace")
+	WriteLine(w, "  xh doctor          Validate workspace health and configuration")
+	WriteLine(w, "  xh actions         Show this list of actions")
+	WriteLine(w, "  xh status          Show trace summary")
+	WriteLine(w, "  xh reset           Clean generated harness state")
 	WriteLine(w, "")
-	WriteLine(w, "For the full command list:")
-	WriteLine(w, "  xh --help-all")
+	WriteLine(w, "Discover more:")
+	WriteLine(w, "  xh --help            Common commands and usage")
+	WriteLine(w, "  xh --help-all        All commands")
+	WriteLine(w, "  xh --help-maturity   Commands grouped by stability")
 	WriteLine(w, "")
-	WriteLine(w, "For commands grouped by maturity:")
-	WriteLine(w, "  xh --help-maturity")
+	WriteLine(w, "New to x-harness? See docs/GETTING_STARTED.md")
 }
 
 func printHelp(w io.Writer) {
@@ -265,12 +268,30 @@ func printHelp(w io.Writer) {
 	WriteLine(w, "Usage:")
 	WriteLine(w, "  xh <command> [options]")
 	WriteLine(w, "")
-	WriteLine(w, "Commands:")
+	WriteLine(w, "Common commands (beginner-friendly):")
 	for _, command := range commands {
 		if isBeginnerCommand(command.Name) {
-			WriteLine(w, "  %-12s %s", command.Name, command.Description)
+			name := command.Name
+			desc := command.Description
+			switch name {
+			case "check":
+				name = "check (verify)"
+				desc = "Run read-only verification against a completion card"
+			case "prepare":
+				desc = "Check if workspace is ready for agent task handoff"
+			case "recover":
+				desc = "Get recovery playbook suggestions from errors or trace"
+			case "status":
+				desc = "Show trace summary"
+			case "reset":
+				desc = "Clean generated harness state"
+			}
+			WriteLine(w, "  %-18s %s", name, desc)
 		}
 	}
+	WriteLine(w, "")
+	WriteLine(w, "For command-specific help:")
+	WriteLine(w, "  xh <command> --help")
 	WriteLine(w, "")
 	WriteLine(w, "Advanced:")
 	WriteLine(w, "  xh --help-all          Show all commands")
