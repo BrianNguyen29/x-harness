@@ -206,19 +206,86 @@ describe("adapter contract", () => {
           ).toBe(true);
         });
 
-        it("includes slash command notation for agent adapters", () => {
-          // Preferred pattern: /xh <action>; legacy: /xh-check, /xh-prepare, etc.
-          const hasSlashCommands =
-            content.includes("/xh <action>") ||
-            content.includes("/xh check") ||
-            content.includes("/xh packet");
+        it("prefers namespaced /xh:<action> syntax", () => {
           expect(
-            hasSlashCommands,
-            `${filePath} should include slash command notation (e.g., /xh check or /xh packet)`
+            content.includes("/xh:<action>"),
+            `${filePath} should prefer namespaced /xh:<action> syntax`
+          ).toBe(true);
+        });
+
+        it("retains space-delimited /xh <action> as compatibility", () => {
+          expect(
+            content.includes("/xh <action>"),
+            `${filePath} should retain space-delimited /xh <action> for compatibility`
           ).toBe(true);
         });
 
         it("retains legacy /xh-check style as compatibility", () => {
+          const legacySlashCommands = [
+            "/xh-check",
+            "/xh-prepare",
+            "/xh-recover",
+            "/xh-doctor",
+            "/xh-actions",
+            "/xh-status",
+            "/xh-reset",
+          ];
+          const hasLegacy = legacySlashCommands.some((cmd) =>
+            content.includes(cmd)
+          );
+          expect(
+            hasLegacy,
+            `${filePath} should retain legacy slash command notation for compatibility`
+          ).toBe(true);
+        });
+
+        it("includes mapping table for prepare/verify/intake/recover", () => {
+          const requiredMappings = [
+            "/xh:prepare",
+            "/xh:verify",
+            "/xh:intake",
+            "/xh:recover",
+          ];
+          const hasAllMappings = requiredMappings.every((cmd) =>
+            content.includes(cmd)
+          );
+          expect(
+            hasAllMappings,
+            `${filePath} should include mapping table for ${requiredMappings.join(", ")}`
+          ).toBe(true);
+        });
+      });
+    }
+  });
+
+  describe("adapter config and rule files slash command notation", () => {
+    const configFiles: { adapter: string; path: string }[] = [
+      {
+        adapter: "cursor",
+        path: "adapters/cursor/rules/x-harness.mdc",
+      },
+      {
+        adapter: "opencode",
+        path: "adapters/opencode/opencode.example.json",
+      },
+    ];
+
+    for (const { adapter, path: filePath } of configFiles) {
+      const fullPath = path.join(repoRoot, filePath);
+      if (!fs.existsSync(fullPath)) continue;
+
+      describe(adapter, () => {
+        const content = fs.readFileSync(fullPath, "utf-8");
+
+        it(`${filePath} prefers /xh:<action> notation`, () => {
+          expect(content).toContain("/xh:<action>");
+        });
+
+        it(`${filePath} retains /xh <action> compatibility`, () => {
+          expect(content).toContain("/xh <action>");
+        });
+
+        it(`${filePath} retains legacy slash command compatibility`, () => {
           const legacySlashCommands = [
             "/xh-check",
             "/xh-prepare",

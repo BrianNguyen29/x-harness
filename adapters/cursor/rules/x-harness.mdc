@@ -46,6 +46,21 @@ node packages/cli/dist/index.js status
 node packages/cli/dist/index.js reset --confirm
 ```
 
+## Slash commands
+
+In agent chat, `/xh:<action>` is the preferred shortcut notation and maps directly to the `xh <action>` CLI commands above.
+
+| Namespaced      | Maps to CLI   |
+| :-------------- | :------------ |
+| `/xh:prepare`   | `xh prepare`  |
+| `/xh:verify`    | `xh verify`   |
+| `/xh:intake`    | `xh intake`   |
+| `/xh:recover`   | `xh recover`  |
+
+Examples: `/xh:check`, `/xh:prepare`, `/xh:recover`, `/xh:doctor`, `/xh:actions`, `/xh:status`, `/xh:reset`.
+
+The space-delimited `/xh <action>` and legacy `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset` styles remain supported for compatibility.
+
 <!-- BEGIN X-HARNESS MANAGED CONTRACT: cursor-rules-contract -->
 <!-- generated-by: x-harness -->
 <!-- contract-hash: ec6438371a039c93 -->
