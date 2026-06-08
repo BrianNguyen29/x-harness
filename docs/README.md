@@ -7,7 +7,8 @@ enforces.
 
 ## Start Here
 
-- [Quickstart](QUICKSTART.md)
+- [Getting Started](GETTING_STARTED.md) — conceptual primer (read this first)
+- [Quickstart](QUICKSTART.md) — step-by-step setup and first verify
 - [First Accepted Card](tutorials/first-accepted-card.md) — end-to-end beginner walkthrough
 - [FAQ](FAQ.md)
 - [Architecture](ARCHITECTURE.md)

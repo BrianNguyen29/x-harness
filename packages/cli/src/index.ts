@@ -108,29 +108,32 @@ function hideAdvancedCommands() {
 function printStartHere() {
   console.log("xh 0.1.0");
   console.log("");
+  console.log("A lightweight verify-gated harness for AI-agent workflows.");
+  console.log("");
   console.log("Start here — a few commands to get you going:");
   console.log("");
   console.log(
-    "  xh check          Run read-only verification against a completion card"
+    "  xh check (verify)  Run read-only verification against a completion card"
   );
   console.log(
-    "  xh prepare        Check if workspace is ready for agent task handoff"
+    "  xh prepare         Check if workspace is ready for agent task handoff"
   );
   console.log(
-    "  xh recover        Get recovery playbook suggestions from errors or trace"
+    "  xh recover         Get recovery playbook suggestions from errors or trace"
   );
   console.log(
-    "  xh doctor         Validate workspace health and configuration"
+    "  xh doctor          Validate workspace health and configuration"
   );
-  console.log("  xh actions        Show this list of actions");
-  console.log("  xh status         Show trace summary");
-  console.log("  xh reset          Clean generated harness state");
+  console.log("  xh actions         Show this list of actions");
+  console.log("  xh status          Show trace summary");
+  console.log("  xh reset           Clean generated harness state");
   console.log("");
-  console.log("For the full command list:");
-  console.log("  xh --help-all");
+  console.log("Discover more:");
+  console.log("  xh --help            Common commands and usage");
+  console.log("  xh --help-all        All commands");
+  console.log("  xh --help-maturity   Commands grouped by stability");
   console.log("");
-  console.log("For commands grouped by maturity:");
-  console.log("  xh --help-maturity");
+  console.log("New to x-harness? See docs/GETTING_STARTED.md");
 }
 
 function printHelpMaturity() {
@@ -347,9 +350,11 @@ hideAdvancedCommands();
 program.addHelpText(
   "after",
   `
-Advanced:
+Common commands shown above. For all commands:
   xh --help-all          Show all commands
   xh --help-maturity     Show commands grouped by maturity
+
+For command-specific help: xh <command> --help
 `
 );
 
