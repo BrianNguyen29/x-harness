@@ -209,7 +209,7 @@ func TestPolicyMissingSubcommand(t *testing.T) {
 	if code != ExitUsage {
 		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitUsage, code, stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "usage:") {
+	if !strings.Contains(stderr.String(), "policy requires a subcommand") {
 		t.Fatalf("expected usage message, got %q", stderr.String())
 	}
 }

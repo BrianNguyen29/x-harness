@@ -466,7 +466,7 @@ func buildProductIntentRecord(spec productIntentSpec) (map[string]any, error) {
 		return nil, fmt.Errorf("--goal is required")
 	}
 	if len(spec.Acceptance) == 0 {
-		return nil, fmt.Errorf("at least one --acceptance is required")
+		return nil, fmt.Errorf("at least one --acceptance is required (when using --from, include an ## Acceptance section with at least one item)")
 	}
 	for i, item := range spec.Acceptance {
 		if strings.TrimSpace(item) == "" {

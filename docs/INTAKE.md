@@ -39,7 +39,7 @@ Generates a product-intent record (`schemas/product-intent.schema.json`).
 xh intake contract --id <id> --goal "<text>" --acceptance "<criterion>" [--visible true|false] [--non-goal "<text>"] [--protected-behavior "<text>"] [--ambiguity none|unresolved|partial] [--note "<text>"] [--output <path>] [--json]
 ```
 
-You can also ingest a markdown description with `--from <markdown-path>` instead of passing individual flags.
+You can also ingest a markdown description with `--from <markdown-path>` instead of passing individual flags. When using `--from`, the markdown must include an `## Acceptance` (or `## Acceptance Criteria`) section with at least one item. If you use individual flags instead, at least one `--acceptance` is required.
 
 ### `xh intake handoff --tier auto`
 
