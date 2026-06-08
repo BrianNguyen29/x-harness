@@ -550,6 +550,191 @@ func TestContextSyncWritePreservesSurroundingContent(t *testing.T) {
 	}
 }
 
+func TestContextManifestWriteAndCheckFresh(t *testing.T) {
+	tmpDir := t.TempDir()
+	f1 := filepath.Join(tmpDir, "a.txt")
+	f2 := filepath.Join(tmpDir, "b.txt")
+	if err := os.WriteFile(f1, []byte("hello"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(f2, []byte("world"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	manifestPath := filepath.Join(tmpDir, "manifest.yaml")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "manifest", "write", "--files", f1 + "," + f2, "--out", manifestPath}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "wrote manifest") {
+		t.Fatalf("expected write confirmation, got stdout: %q", stdout.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"context", "manifest", "check", "--manifest", manifestPath}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "all entries fresh") {
+		t.Fatalf("expected fresh message, got stdout: %q", stdout.String())
+	}
+}
+
+func TestContextManifestWriteAndCheckStale(t *testing.T) {
+	tmpDir := t.TempDir()
+	f1 := filepath.Join(tmpDir, "a.txt")
+	if err := os.WriteFile(f1, []byte("hello"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	manifestPath := filepath.Join(tmpDir, "manifest.yaml")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "manifest", "write", "--files", f1, "--out", manifestPath}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	// Modify file to make it stale
+	if err := os.WriteFile(f1, []byte("modified"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"context", "manifest", "check", "--manifest", manifestPath}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d", ExitError, code)
+	}
+	combined := stdout.String() + stderr.String()
+	if !strings.Contains(combined, "stale") {
+		t.Fatalf("expected stale message, got combined: %q", combined)
+	}
+}
+
+func TestContextManifestCheckDeleted(t *testing.T) {
+	tmpDir := t.TempDir()
+	f1 := filepath.Join(tmpDir, "a.txt")
+	if err := os.WriteFile(f1, []byte("hello"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	manifestPath := filepath.Join(tmpDir, "manifest.yaml")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "manifest", "write", "--files", f1, "--out", manifestPath}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	if err := os.Remove(f1); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"context", "manifest", "check", "--manifest", manifestPath}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d", ExitError, code)
+	}
+	combined := stdout.String() + stderr.String()
+	if !strings.Contains(combined, "stale") {
+		t.Fatalf("expected stale message for deleted file, got combined: %q", combined)
+	}
+}
+
+func TestContextManifestWriteJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	f1 := filepath.Join(tmpDir, "a.txt")
+	if err := os.WriteFile(f1, []byte("hello"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	manifestPath := filepath.Join(tmpDir, "manifest.yaml")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "manifest", "write", "--files", f1, "--out", manifestPath, "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result["ok"] != true {
+		t.Fatalf("expected ok=true, got %v", result["ok"])
+	}
+}
+
+func TestContextManifestCheckJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	f1 := filepath.Join(tmpDir, "a.txt")
+	if err := os.WriteFile(f1, []byte("hello"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	manifestPath := filepath.Join(tmpDir, "manifest.yaml")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "manifest", "write", "--files", f1, "--out", manifestPath}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"context", "manifest", "check", "--manifest", manifestPath, "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d; stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result["ok"] != true {
+		t.Fatalf("expected ok=true, got %v", result["ok"])
+	}
+	stale, ok := result["stale"].([]any)
+	if !ok || len(stale) != 0 {
+		t.Fatalf("expected empty stale list, got %v", result["stale"])
+	}
+}
+
+func TestContextManifestCheckMissingManifest(t *testing.T) {
+	tmpDir := t.TempDir()
+	manifestPath := filepath.Join(tmpDir, "missing.yaml")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "manifest", "check", "--manifest", manifestPath}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected exit code %d, got %d", ExitError, code)
+	}
+	combined := stdout.String() + stderr.String()
+	if !strings.Contains(combined, "cannot read manifest") && !strings.Contains(combined, "Error") {
+		t.Fatalf("expected error message, got combined: %q", combined)
+	}
+}
+
+func TestContextManifestWriteMissingFilesFlag(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "manifest", "write"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+}
+
 func findRepoRoot() (string, error) {
 	wd, err := os.Getwd()
 	if err != nil {

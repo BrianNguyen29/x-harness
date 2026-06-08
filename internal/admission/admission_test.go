@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/BrianNguyen29/x-harness/internal/contextmanifest"
 	"github.com/BrianNguyen29/x-harness/internal/loader"
 )
 
@@ -2435,6 +2436,254 @@ func TestContextFloorNoFlagNoBlock(t *testing.T) {
 
 // TestContextFloorMissingReferencedFile tests that standard tier fails when a referenced
 // file in context_alignment does not exist.
+func TestContextFloorManifestFreshNoAdvisory(t *testing.T) {
+	tmpDir := t.TempDir()
+	refFile := filepath.Join(tmpDir, "contract.md")
+	if err := os.WriteFile(refFile, []byte("contract"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	manifestPath := filepath.Join(tmpDir, "manifest.yaml")
+	manifest, err := contextmanifest.Generate([]string{refFile}, "", "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := contextmanifest.Write(manifest, manifestPath); err != nil {
+		t.Fatal(err)
+	}
+
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"item": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"context_alignment": map[string]any{
+			"stale_ground_checked":  true,
+			"product_contract_refs": []any{refFile},
+		},
+		"context_manifest": manifestPath,
+		"evidence": map[string]any{
+			"files_changed":    []any{"f.go"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false, true)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if containsNote(result.Notes, "context_stale") {
+		t.Fatalf("did not expect context_stale advisory for fresh manifest, got notes: %v", result.Notes)
+	}
+}
+
+func TestContextFloorManifestStaleEmitsAdvisory(t *testing.T) {
+	tmpDir := t.TempDir()
+	refFile := filepath.Join(tmpDir, "contract.md")
+	if err := os.WriteFile(refFile, []byte("contract"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	manifestPath := filepath.Join(tmpDir, "manifest.yaml")
+	manifest, err := contextmanifest.Generate([]string{refFile}, "", "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := contextmanifest.Write(manifest, manifestPath); err != nil {
+		t.Fatal(err)
+	}
+
+	// Modify file to make manifest stale
+	if err := os.WriteFile(refFile, []byte("modified contract"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"item": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"context_alignment": map[string]any{
+			"stale_ground_checked":  true,
+			"product_contract_refs": []any{refFile},
+		},
+		"context_manifest": manifestPath,
+		"evidence": map[string]any{
+			"files_changed":    []any{"f.go"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false, true)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "context_stale advisory") {
+		t.Fatalf("expected context_stale advisory note, got notes: %v", result.Notes)
+	}
+}
+
+func TestContextFloorManifestObjectPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	refFile := filepath.Join(tmpDir, "contract.md")
+	if err := os.WriteFile(refFile, []byte("contract"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	manifestPath := filepath.Join(tmpDir, "manifest.yaml")
+	manifest, err := contextmanifest.Generate([]string{refFile}, "", "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := contextmanifest.Write(manifest, manifestPath); err != nil {
+		t.Fatal(err)
+	}
+
+	// Modify to make stale
+	if err := os.WriteFile(refFile, []byte("modified"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"item": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"context_alignment": map[string]any{
+			"stale_ground_checked":  true,
+			"product_contract_refs": []any{refFile},
+		},
+		"context_manifest": map[string]any{"path": manifestPath},
+		"evidence": map[string]any{
+			"files_changed":    []any{"f.go"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false, true)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if !containsNote(result.Notes, "context_stale advisory") {
+		t.Fatalf("expected context_stale advisory note for object path, got notes: %v", result.Notes)
+	}
+}
+
+func TestContextFloorManifestMissingNoEffect(t *testing.T) {
+	tmpDir := t.TempDir()
+	refFile := filepath.Join(tmpDir, "contract.md")
+	if err := os.WriteFile(refFile, []byte("contract"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"item": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"context_alignment": map[string]any{
+			"stale_ground_checked":  true,
+			"product_contract_refs": []any{refFile},
+		},
+		"evidence": map[string]any{
+			"files_changed":    []any{"f.go"},
+			"command_evidence": []any{map[string]any{"command": "go test", "exit_code": 0}},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed",
+			"summary":    "s",
+			"evidence":   []any{"e"},
+		},
+		"verification": map[string]any{
+			"status": "passed",
+			"checks": []any{},
+		},
+		"admission": map[string]any{
+			"outcome": "success",
+		},
+		"acceptance_status": "accepted",
+		"handoff": map[string]any{
+			"next_action": "n",
+			"owner":       "o",
+		},
+	}
+	result := Run(doc, false, true)
+	if result.Outcome != "success" {
+		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
+	}
+	if containsNote(result.Notes, "context_stale") {
+		t.Fatalf("did not expect context_stale advisory when no manifest, got notes: %v", result.Notes)
+	}
+}
+
 func TestContextFloorMissingReferencedFile(t *testing.T) {
 	doc := map[string]any{
 		"schema_version": "1",

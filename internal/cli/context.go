@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/BrianNguyen29/x-harness/internal/contextcheck"
+	"github.com/BrianNguyen29/x-harness/internal/contextmanifest"
 )
 
 // ContractFact is a single canonical contract fact.
@@ -328,9 +330,174 @@ func runContextGC(args []string, stdout io.Writer, stderr io.Writer) int {
 	return ExitUsage
 }
 
+func runContextManifest(args []string, stdout io.Writer, stderr io.Writer) int {
+	if len(args) == 0 {
+		fmt.Fprintln(stderr, "usage: x-harness context manifest write --files <paths> [--out <path>] [--json] | context manifest check --manifest <path> [--json]")
+		return ExitUsage
+	}
+
+	switch args[0] {
+	case "write":
+		return runContextManifestWrite(args[1:], stdout, stderr)
+	case "check":
+		return runContextManifestCheck(args[1:], stdout, stderr)
+	default:
+		fmt.Fprintf(stderr, "unknown manifest subcommand: %s\n", args[0])
+		return ExitUsage
+	}
+}
+
+func runContextManifestWrite(args []string, stdout io.Writer, stderr io.Writer) int {
+	var files []string
+	out := ".x-harness/context-manifest.yaml"
+	jsonMode := false
+	reason := ""
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "--files":
+			if i+1 < len(args) {
+				for _, f := range strings.Split(args[i+1], ",") {
+					f = strings.TrimSpace(f)
+					if f != "" {
+						files = append(files, f)
+					}
+				}
+				i++
+			}
+		case "--out":
+			if i+1 < len(args) {
+				out = args[i+1]
+				i++
+			}
+		case "--json":
+			jsonMode = true
+		case "--reason":
+			if i+1 < len(args) {
+				reason = args[i+1]
+				i++
+			}
+		}
+	}
+
+	if len(files) == 0 {
+		fmt.Fprintln(stderr, "usage: x-harness context manifest write --files <comma-separated-paths> [--out <path>] [--json] [--reason <reason>]")
+		return ExitUsage
+	}
+
+	manifest, err := contextmanifest.Generate(files, ".", reason)
+	if err != nil {
+		if jsonMode {
+			_ = WriteJSON(stdout, map[string]any{"ok": false, "error": err.Error()})
+		} else {
+			fmt.Fprintf(stderr, "Error: %v\n", err)
+		}
+		return ExitError
+	}
+
+	if err := contextmanifest.Write(manifest, out); err != nil {
+		if jsonMode {
+			_ = WriteJSON(stdout, map[string]any{"ok": false, "error": err.Error()})
+		} else {
+			fmt.Fprintf(stderr, "Error: %v\n", err)
+		}
+		return ExitError
+	}
+
+	if jsonMode {
+		entries := make([]map[string]string, len(manifest.Entries))
+		for i, e := range manifest.Entries {
+			entries[i] = map[string]string{
+				"path":   e.Path,
+				"sha256": e.SHA256,
+			}
+		}
+		_ = WriteJSON(stdout, map[string]any{
+			"ok":      true,
+			"out":     out,
+			"entries": entries,
+		})
+	} else {
+		fmt.Fprintf(stdout, "wrote manifest (%d entries) to %s\n", len(manifest.Entries), out)
+	}
+	return ExitOK
+}
+
+func runContextManifestCheck(args []string, stdout io.Writer, stderr io.Writer) int {
+	manifestPath := ""
+	jsonMode := false
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "--manifest":
+			if i+1 < len(args) {
+				manifestPath = args[i+1]
+				i++
+			}
+		case "--json":
+			jsonMode = true
+		}
+	}
+
+	if manifestPath == "" {
+		fmt.Fprintln(stderr, "usage: x-harness context manifest check --manifest <path> [--json]")
+		return ExitUsage
+	}
+
+	manifest, err := contextmanifest.Read(manifestPath)
+	if err != nil {
+		if jsonMode {
+			_ = WriteJSON(stdout, map[string]any{"ok": false, "error": err.Error()})
+		} else {
+			fmt.Fprintf(stderr, "Error: %v\n", err)
+		}
+		return ExitError
+	}
+
+	if err := contextmanifest.Validate(manifest); err != nil {
+		if jsonMode {
+			_ = WriteJSON(stdout, map[string]any{"ok": false, "error": err.Error()})
+		} else {
+			fmt.Fprintf(stderr, "Error: invalid manifest: %v\n", err)
+		}
+		return ExitError
+	}
+
+	stale, err := contextmanifest.Check(manifest, ".")
+	if err != nil {
+		if jsonMode {
+			_ = WriteJSON(stdout, map[string]any{"ok": false, "error": err.Error()})
+		} else {
+			fmt.Fprintf(stderr, "Error: %v\n", err)
+		}
+		return ExitError
+	}
+
+	if jsonMode {
+		result := map[string]any{
+			"ok":    len(stale) == 0,
+			"stale": stale,
+		}
+		data, _ := json.Marshal(result)
+		fmt.Fprintln(stdout, string(data))
+	} else {
+		if len(stale) == 0 {
+			fmt.Fprintln(stdout, "manifest check passed: all entries fresh")
+		} else {
+			fmt.Fprintf(stdout, "manifest check failed: stale entries: %s\n", strings.Join(stale, ", "))
+		}
+	}
+	if len(stale) > 0 {
+		return ExitError
+	}
+	return ExitOK
+}
+
 func handleContext(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: x-harness context --contract [--json] | context sync --check|--write [--root <path>] [--json] | context gc --check|--write [--root <path>] [--json]")
+		fmt.Fprintln(stderr, "usage: x-harness context --contract [--json] | context sync --check|--write [--root <path>] [--json] | context gc --check|--write [--root <path>] [--json] | context manifest write --files <paths> [--out <path>] [--json] | context manifest check --manifest <path> [--json]")
 		return ExitUsage
 	}
 
@@ -341,6 +508,8 @@ func handleContext(args []string, stdout io.Writer, stderr io.Writer) int {
 		return runContextSync(args[1:], stdout, stderr)
 	case "gc":
 		return runContextGC(args[1:], stdout, stderr)
+	case "manifest":
+		return runContextManifest(args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "unknown context subcommand: %s\n", args[0])
 		return ExitUsage
