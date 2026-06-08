@@ -34,22 +34,33 @@
     ]
   },
   "slash_commands": {
-    "pattern": "/xh:<action>",
-    "maps_to": "xh <action>",
-    "description": "Agent-chat shortcut notation mapped to xh CLI commands",
+    "pattern": "/xh:<command>",
+    "maps_to": "xh <command>",
+    "description": "Agent-chat slash notation mapped to xh CLI commands. Not a shell binary or filesystem path.",
     "examples": [
       "/xh:check",
       "/xh:prepare",
-      "/xh:verify",
-      "/xh:intake",
       "/xh:recover",
       "/xh:doctor",
       "/xh:actions",
       "/xh:status",
-      "/xh:reset"
+      "/xh:reset",
+      "/xh:verify",
+      "/xh:intake",
+      "/xh:handoff",
+      "/xh:decision",
+      "/xh:boundary",
+      "/xh:context",
+      "/xh:packet",
+      "/xh:examples",
+      "/xh:trace",
+      "/xh:report",
+      "/xh:verify --card completion-card.yaml --json",
+      "/xh:intake contract --from issue.md",
+      "/xh:context manifest check --manifest .x-harness/context-manifest.yaml --json"
     ],
     "compatibility": [
-      "/xh <action>",
+      "/xh <command>",
       "/xh check",
       "/xh prepare",
       "/xh recover"

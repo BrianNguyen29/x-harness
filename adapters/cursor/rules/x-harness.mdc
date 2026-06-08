@@ -48,18 +48,34 @@ node packages/cli/dist/index.js reset --confirm
 
 ## Slash commands
 
-In agent chat, `/xh:<action>` is the preferred shortcut notation and maps directly to the `xh <action>` CLI commands above.
+In agent chat, `/xh:<command>` is the preferred shortcut notation and maps directly to the `xh <command>` CLI commands above. It is not a shell binary or filesystem path.
 
-| Namespaced      | Maps to CLI   |
-| :-------------- | :------------ |
-| `/xh:prepare`   | `xh prepare`  |
-| `/xh:verify`    | `xh verify`   |
-| `/xh:intake`    | `xh intake`   |
-| `/xh:recover`   | `xh recover`  |
+| Namespaced       | Maps to CLI    |
+| :--------------- | :------------- |
+| `/xh:check`      | `xh check`     |
+| `/xh:prepare`    | `xh prepare`   |
+| `/xh:recover`    | `xh recover`   |
+| `/xh:doctor`     | `xh doctor`    |
+| `/xh:actions`    | `xh actions`   |
+| `/xh:status`     | `xh status`    |
+| `/xh:reset`      | `xh reset`     |
+| `/xh:verify`     | `xh verify`    |
+| `/xh:intake`     | `xh intake`    |
+| `/xh:handoff`    | `xh handoff`   |
+| `/xh:decision`   | `xh decision`  |
+| `/xh:boundary`   | `xh boundary`  |
+| `/xh:context`    | `xh context`   |
+| `/xh:packet`     | `xh packet`    |
+| `/xh:examples`   | `xh examples`  |
+| `/xh:trace`      | `xh trace`     |
+| `/xh:report`     | `xh report`    |
 
-Examples: `/xh:check`, `/xh:prepare`, `/xh:recover`, `/xh:doctor`, `/xh:actions`, `/xh:status`, `/xh:reset`.
+Examples with args and subcommands:
+- `/xh:verify --card completion-card.yaml --json`
+- `/xh:intake contract --from issue.md`
+- `/xh:context manifest check --manifest .x-harness/context-manifest.yaml --json`
 
-The space-delimited `/xh <action>` and legacy `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset` styles remain supported for compatibility.
+The space-delimited `/xh <command>` and legacy `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset` styles remain supported for compatibility.
 
 <!-- BEGIN X-HARNESS MANAGED CONTRACT: cursor-rules-contract -->
 <!-- generated-by: x-harness -->
