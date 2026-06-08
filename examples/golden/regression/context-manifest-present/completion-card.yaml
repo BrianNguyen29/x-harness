@@ -1,0 +1,62 @@
+schema_version: "1"
+task_id: TASK-GOLDEN-CONTEXT-MANIFEST-PRESENT-001
+tier: standard
+owner: alice
+accountable: bob
+context_manifest: examples/golden/regression/context-manifest-present/context-manifest.yaml
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - examples/golden/regression/context-manifest-present/README.md
+  architecture_refs:
+    - examples/golden/regression/context-manifest-present/README.md
+  decision_refs:
+    - examples/golden/regression/context-manifest-present/README.md
+  test_matrix_refs:
+    - examples/golden/regression/context-manifest-present/README.md
+  unresolved_context_questions: []
+  context_evidence: []
+state:
+  read_set:
+    - examples/golden/regression/context-manifest-present/README.md
+  write_set:
+    - examples/golden/regression/context-manifest-present/completion-card.yaml
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: A completion card that references a context manifest file via the top-level context_manifest field
+  expected_effect: Admission accepts the card because context_manifest is schema-valid and advisory-only at the admission layer
+  measurable_signal: git status
+  falsification_method: Remove the context_manifest field; admission should still pass because the field is optional at schema level
+  horizon: same_verify
+evidence:
+  files_changed:
+    - examples/golden/regression/context-manifest-present/completion-card.yaml
+  command_evidence:
+    - command: git status
+      exit_code: 0
+claim:
+  fix_status: fixed
+  summary: A standard-tier card with a context_manifest reference is accepted at the admission layer
+  evidence:
+    - description: Context manifest file referenced by the card
+      url: ./context-manifest.yaml
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice

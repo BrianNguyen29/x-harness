@@ -1,7 +1,7 @@
 {
   "failed": 0,
   "ok": true,
-  "passed": 25,
+  "passed": 26,
   "results": [
     {
       "acceptance_status": "withheld",
@@ -153,6 +153,14 @@
     {
       "acceptance_status": "accepted",
       "errors": [],
+      "name": "regression/context-manifest-present",
+      "outcome": "success",
+      "output_mismatch": null,
+      "passed": true
+    },
+    {
+      "acceptance_status": "accepted",
+      "errors": [],
       "name": "regression/decision-link-flow",
       "outcome": "success",
       "output_mismatch": null,
@@ -235,5 +243,5 @@
       "passed": true
     }
   ],
-  "total": 25
+  "total": 26
 }

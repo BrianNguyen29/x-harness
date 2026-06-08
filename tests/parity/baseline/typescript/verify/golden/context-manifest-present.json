@@ -1,0 +1,104 @@
+{
+  "acceptance_status": "accepted",
+  "admission_outcome": "success",
+  "card_id": null,
+  "changed_files": {
+    "card_files": [
+      "examples/golden/regression/context-manifest-present/completion-card.yaml"
+    ],
+    "files": [
+      "examples/golden/regression/context-manifest-present/completion-card.yaml"
+    ],
+    "git_files": [],
+    "source": "card"
+  },
+  "checks": [
+    {
+      "name": "completion card valid",
+      "note": "completion card valid: examples/golden/regression/context-manifest-present/completion-card.yaml",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "tier \"standard\" recommends verification_artifacts",
+      "note": "tier \"standard\" recommends verification_artifacts",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "tier \"standard\" recommends evidence scope (verifies/does_not_verify)",
+      "note": "tier \"standard\" recommends evidence scope (verifies/does_not_verify)",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "tier \"standard\" recommends untested_regions",
+      "note": "tier \"standard\" recommends untested_regions",
+      "severity": "warning",
+      "status": "warning"
+    },
+    {
+      "name": "product_intent.status not declared (advisory-only; admission acceptance is not product correctness)",
+      "note": "product_intent.status not declared (advisory-only; admission acceptance is not product correctness)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "test_adequacy not declared (advisory-only; admission acceptance is not test adequacy)",
+      "note": "test_adequacy not declared (advisory-only; admission acceptance is not test adequacy)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "evidence_adequacy not declared (advisory-only; admission acceptance is not evidence adequacy)",
+      "note": "evidence_adequacy not declared (advisory-only; admission acceptance is not evidence adequacy)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
+      "note": "intent_contract not declared (advisory-only; admission acceptance is not intent correctness)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "intent_ref not declared (advisory-only; admission acceptance is not intent correctness)",
+      "note": "intent_ref not declared (advisory-only; admission acceptance is not intent correctness)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "note": "context_acknowledged is missing or false (advisory-only; does not block admission)",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "admission checks passed",
+      "note": "admission checks passed",
+      "severity": "info",
+      "status": "passed"
+    },
+    {
+      "name": "mutation guard passed",
+      "note": "mutation guard passed",
+      "severity": "info",
+      "status": "passed"
+    }
+  ],
+  "decision": {
+    "acceptance_status": "accepted",
+    "outcome": "success"
+  },
+  "denominator_warning": "Verify-event success must not be interpreted as task-level success, production reliability, benchmark success, or safety guarantee.",
+  "episode": null,
+  "input_card_hash": "sha256:596cdba6719f6234aab1af5f897186d92c8789d990d4e2e29930744018b406f0",
+  "ok": true,
+  "policy_hash": "sha256:35fadd6c96855c24c6da194a47b7509c83a849205e9b0a50a49fb1274bc9dad4",
+  "product_intent_status": null,
+  "recovery": null,
+  "schema_version": 1,
+  "strict": false,
+  "task_id": "TASK-GOLDEN-CONTEXT-MANIFEST-PRESENT-001",
+  "withheld_reason": null
+}

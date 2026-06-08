@@ -11,9 +11,9 @@ describe("examples command", () => {
     expect(exitCode).toBe(0);
     const output = JSON.parse(stdout);
     expect(output.ok).toBe(true);
-    expect(output.total).toBe(25);
-    expect(output.passed).toBe(25);
-    expect(output.results).toHaveLength(25);
+    expect(output.total).toBe(26);
+    expect(output.passed).toBe(26);
+    expect(output.results).toHaveLength(26);
 
     const names = output.results.map((r: { name: string }) => r.name);
     expect(names).toContain("regression/success-light");
@@ -41,12 +41,13 @@ describe("examples command", () => {
     expect(names).toContain("regression/decision-refs-empty-advisory");
     expect(names).toContain("regression/intent-ref-present");
     expect(names).toContain("regression/intent-ref-empty-advisory");
+    expect(names).toContain("regression/context-manifest-present");
   });
 
   it("verify subcommand prints human-readable summary", async () => {
     const { stdout, exitCode } = await execaNode(["examples", "verify"]);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("Golden examples: 25 total");
+    expect(stdout).toContain("Golden examples: 26 total");
     expect(stdout).toContain("regression/success-light");
     expect(stdout).toContain("regression/blocked-missing-evidence");
     expect(stdout).toContain("regression/failed-invalid-status");
@@ -220,5 +221,11 @@ describe("examples command", () => {
     );
     expect(intentRefEmptyAdvisory.outcome).toBe("success");
     expect(intentRefEmptyAdvisory.acceptance_status).toBe("accepted");
+
+    const contextManifestPresent = output.results.find(
+      (r: { name: string }) => r.name === "regression/context-manifest-present"
+    );
+    expect(contextManifestPresent.outcome).toBe("success");
+    expect(contextManifestPresent.acceptance_status).toBe("accepted");
   });
 });

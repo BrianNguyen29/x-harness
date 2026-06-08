@@ -13,6 +13,7 @@ import (
 	"github.com/BrianNguyen29/x-harness/internal/approvalrisk"
 	"github.com/BrianNguyen29/x-harness/internal/assets"
 	"github.com/BrianNguyen29/x-harness/internal/boundary"
+	"github.com/BrianNguyen29/x-harness/internal/contextmanifest"
 	"github.com/BrianNguyen29/x-harness/internal/contract"
 	"github.com/BrianNguyen29/x-harness/internal/loader"
 	"github.com/BrianNguyen29/x-harness/internal/mutationguard"
@@ -174,6 +175,7 @@ type VerifyProfile struct {
 	BoundaryEnforce string // off|advisory|block_high|block_all (default "" = use flag)
 	DecisionEnforce string // off|advisory|block for context_alignment.decision_refs (default "" = use flag)
 	IntentEnforce   string // off|advisory|block for top-level intent_ref (default "" = use flag)
+	ContextEnforce  string // off|advisory|block for context manifest staleness (default "" = use flag)
 }
 
 // verifyProfileNames returns the sorted list of profile names for usage
@@ -199,10 +201,11 @@ var verifyProfiles = map[string]VerifyProfile{
 		BoundaryEnforce: "advisory",
 		DecisionEnforce: "advisory",
 		IntentEnforce:   "advisory",
+		ContextEnforce:  "advisory",
 	},
 	"ci-standard": {
 		Name:            "ci-standard",
-		Description:     "CI standard: mutation guard + context floor, advisory contract oracles, advisory-only boundary enforcement. intent_ref is advisory-only and never blocks by default.",
+		Description:     "CI standard: mutation guard + context floor, advisory contract oracles, advisory-only boundary enforcement. intent_ref is advisory-only and never blocks by default. context manifest staleness is advisory-only.",
 		MutationGuard:   true,
 		Strict:          false,
 		ContextFloor:    true,
@@ -211,10 +214,11 @@ var verifyProfiles = map[string]VerifyProfile{
 		BoundaryEnforce: "advisory",
 		DecisionEnforce: "advisory",
 		IntentEnforce:   "advisory",
+		ContextEnforce:  "advisory",
 	},
 	"ci-strict": {
 		Name:            "ci-strict",
-		Description:     "CI strict: mutation guard, context floor, contract oracles, strict withheld reason schema. Blocks high/critical boundary violations and missing context_alignment.decision_refs on standard/deep cards. intent_ref is advisory-only and never blocks by default; explicit --intent-enforce block can block.",
+		Description:     "CI strict: mutation guard, context floor, contract oracles, strict withheld reason schema. Blocks high/critical boundary violations and missing context_alignment.decision_refs on standard/deep cards. intent_ref is advisory-only by default; explicit --intent-enforce block can block. context manifest staleness is blocked by default.",
 		MutationGuard:   true,
 		Strict:          true,
 		ContextFloor:    true,
@@ -224,10 +228,11 @@ var verifyProfiles = map[string]VerifyProfile{
 		BoundaryEnforce: "block_high",
 		DecisionEnforce: "block",
 		IntentEnforce:   "advisory",
+		ContextEnforce:  "block",
 	},
 	"governed-deep": {
 		Name:            "governed-deep",
-		Description:     "Governed deep: all ci-strict checks plus strict withheld reason schema. Blocks all boundary violations unless approved via boundary_approvals, blocks missing context_alignment.decision_refs on standard/deep cards, and blocks missing/blank intent_ref on standard/deep cards.",
+		Description:     "Governed deep: all ci-strict checks plus strict withheld reason schema. Blocks all boundary violations unless approved via boundary_approvals, blocks missing context_alignment.decision_refs on standard/deep cards, blocks missing/blank intent_ref on standard/deep cards, and blocks stale context manifests on standard/deep cards.",
 		MutationGuard:   true,
 		Strict:          true,
 		ContextFloor:    true,
@@ -237,6 +242,7 @@ var verifyProfiles = map[string]VerifyProfile{
 		BoundaryEnforce: "block_all",
 		DecisionEnforce: "block",
 		IntentEnforce:   "block",
+		ContextEnforce:  "block",
 	},
 }
 
@@ -311,6 +317,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	boundaryPolicy := ""
 	decisionEnforce := ""
 	intentEnforce := ""
+	contextEnforce := ""
 	profileName := ""
 
 	// Track which flags the caller set explicitly so the profile layer
@@ -324,6 +331,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	explicitBoundaryEnforce := false
 	explicitDecisionEnforce := false
 	explicitIntentEnforce := false
+	explicitContextEnforce := false
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -429,6 +437,19 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			intentEnforce = v
 			explicitIntentEnforce = true
 			i++
+		case "--context-enforce":
+			if i+1 >= len(args) {
+				fmt.Fprintln(stderr, "error: --context-enforce requires a value (off|advisory|block)")
+				return ExitUsage
+			}
+			v := args[i+1]
+			if !isValidContextEnforce(v) {
+				fmt.Fprintf(stderr, "error: invalid --context-enforce %q (allowed: off, advisory, block)\n", v)
+				return ExitUsage
+			}
+			contextEnforce = v
+			explicitContextEnforce = true
+			i++
 		}
 	}
 
@@ -465,10 +486,13 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		if !explicitIntentEnforce {
 			intentEnforce = profile.IntentEnforce
 		}
+		if !explicitContextEnforce {
+			contextEnforce = profile.ContextEnforce
+		}
 	}
 
 	if (cardPath == "" && subagentPath == "") || (cardPath != "" && subagentPath != "") {
-		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--profile <light-local|ci-standard|ci-strict|governed-deep>] [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--strict-withheld-reason] [--trace] [--trace-dir <dir>] [--worktree-aware] [--context-floor] [--contract-oracles] [--contract-oracles-policy <path>] [--boundary-enforce off|advisory|block_high|block_all] [--boundary-policy <path>] [--decision-enforce off|advisory|block] [--intent-enforce off|advisory|block]")
+		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--profile <light-local|ci-standard|ci-strict|governed-deep>] [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--strict-withheld-reason] [--trace] [--trace-dir <dir>] [--worktree-aware] [--context-floor] [--contract-oracles] [--contract-oracles-policy <path>] [--boundary-enforce off|advisory|block_high|block_all] [--boundary-policy <path>] [--decision-enforce off|advisory|block] [--intent-enforce off|advisory|block] [--context-enforce off|advisory|block]")
 		return ExitUsage
 	}
 
@@ -755,6 +779,58 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 				BlockingPredicate:    predicate,
 			}
 			result.AdmissionErrors = []string{"intent_ref not declared (verify-stage block; admission acceptance is not intent correctness)"}
+		}
+	}
+
+	// Context-enforce gate (profile-controlled). Mirrors the
+	// decision-refs and intent-ref gates: off|advisory|block with the
+	// closed enum validated in isValidContextEnforce. The off and
+	// advisory modes never block at the verify layer. The block mode
+	// withholds standard/deep cards whose context_manifest is present,
+	// readable, valid, and stale. Missing manifest skips silently;
+	// invalid/unreadable manifest is advisory-only and never blocks.
+	// Light tier is always non-blocking regardless of mode.
+	if contextEnforce != "" && contextEnforce != "off" && result.OK {
+		if effectiveTier == "standard" || effectiveTier == "deep" {
+			manifestPath := resolveContextManifestPathFromDoc(doc)
+			if manifestPath != "" {
+				resolved := resolveManifestPath(manifestPath, filepath.Dir(cardPath))
+				if resolved != "" {
+					manifest, err := contextmanifest.Read(resolved)
+					if err == nil {
+						if err := contextmanifest.Validate(manifest); err == nil {
+							stale, _ := contextmanifest.Check(manifest, root)
+							if len(stale) > 0 {
+								if contextEnforce == "block" {
+									predicate := "context_stale"
+									recoverability := "retry_with_fixes"
+									result.OK = false
+									result.AdmissionOutcome = "blocked"
+									result.AcceptanceStatus = "withheld"
+									result.WithheldReason = &withheldReason{
+										Class:                "context_stale",
+										Stage:                "verification",
+										Owner:                ownerFromBlockingPredicate(predicate),
+										FailureClass:         "context_stale",
+										FailureStage:         "verify_pipeline",
+										Recoverability:       recoverability,
+										SchemaRecoverability: schemaRecoverabilityFromLegacy(recoverability),
+										NextAction:           "refresh_context_manifest_and_resubmit",
+										BlockingPredicate:    predicate,
+									}
+									result.AdmissionErrors = append(result.AdmissionErrors, fmt.Sprintf("context manifest stale: %s (verify-stage block; admission acceptance is not context correctness)", strings.Join(stale, ", ")))
+								} else {
+									result.AdmissionNotes = append(result.AdmissionNotes, fmt.Sprintf("context_stale advisory: manifest stale for %s", strings.Join(stale, ", ")))
+								}
+							}
+						} else {
+							result.AdmissionNotes = append(result.AdmissionNotes, fmt.Sprintf("context_manifest advisory: invalid manifest at %s", resolved))
+						}
+					} else {
+						result.AdmissionNotes = append(result.AdmissionNotes, fmt.Sprintf("context_manifest advisory: cannot read manifest at %s", resolved))
+					}
+				}
+			}
 		}
 	}
 
@@ -1193,4 +1269,64 @@ func filterBoundaryViolationsByEnforce(violations []boundary.Violation, mode str
 		blocking = append(blocking, v)
 	}
 	return blocking
+}
+
+// isValidContextEnforce reports whether value is one of the supported
+// enforcement modes for the verify-stage context manifest staleness
+// gate. Mirrors the closed-enum style of isValidDecisionEnforce.
+func isValidContextEnforce(v string) bool {
+	switch v {
+	case "off", "advisory", "block":
+		return true
+	}
+	return false
+}
+
+// resolveContextManifestPathFromDoc extracts the manifest path from a
+// completion card document. It supports a top-level string
+// "context_manifest" or an object with a "path" field.
+func resolveContextManifestPathFromDoc(doc map[string]any) string {
+	if doc == nil {
+		return ""
+	}
+	raw, ok := doc["context_manifest"]
+	if !ok || raw == nil {
+		return ""
+	}
+	if s, ok := raw.(string); ok {
+		return strings.TrimSpace(s)
+	}
+	if m, ok := raw.(map[string]any); ok {
+		if s, ok := m["path"].(string); ok {
+			return strings.TrimSpace(s)
+		}
+	}
+	return ""
+}
+
+// resolveManifestPath resolves a manifest path relative to cardDir or
+// cwd. Returns empty string when the file does not exist.
+func resolveManifestPath(manifestPath, cardDir string) string {
+	if filepath.IsAbs(manifestPath) {
+		if _, err := os.Stat(manifestPath); err == nil {
+			return manifestPath
+		}
+		return ""
+	}
+	for _, base := range []string{"", cardDir} {
+		candidate := manifestPath
+		if base != "" {
+			candidate = filepath.Join(base, manifestPath)
+		} else {
+			absPath, err := filepath.Abs(manifestPath)
+			if err != nil {
+				continue
+			}
+			candidate = absPath
+		}
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
+		}
+	}
+	return ""
 }
