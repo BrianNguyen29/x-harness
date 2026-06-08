@@ -25,14 +25,34 @@ This adapter provides system-agnostic conventions for integrating x-harness into
 
 **Slash commands for agent adapters:**
 
-| Namespaced      | Maps to CLI   |
-| :-------------- | :------------ |
-| `/xh:prepare`   | `xh prepare`  |
-| `/xh:verify`    | `xh verify`   |
-| `/xh:intake`    | `xh intake`   |
-| `/xh:recover`   | `xh recover`  |
+`/xh:<command>` is agent-chat slash notation; it is not a shell binary or filesystem path.
 
-Use `/xh:<action>` as the preferred shortcut notation in agent chat (for example, `/xh:check`, `/xh:packet create --card <path>`). The space-delimited `/xh <action>` and legacy `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset` styles remain supported for compatibility.
+| Namespaced       | Maps to CLI    |
+| :--------------- | :------------- |
+| `/xh:check`      | `xh check`     |
+| `/xh:prepare`    | `xh prepare`   |
+| `/xh:recover`    | `xh recover`   |
+| `/xh:doctor`     | `xh doctor`    |
+| `/xh:actions`    | `xh actions`   |
+| `/xh:status`     | `xh status`    |
+| `/xh:reset`      | `xh reset`     |
+| `/xh:verify`     | `xh verify`    |
+| `/xh:intake`     | `xh intake`    |
+| `/xh:handoff`    | `xh handoff`   |
+| `/xh:decision`   | `xh decision`  |
+| `/xh:boundary`   | `xh boundary`  |
+| `/xh:context`    | `xh context`   |
+| `/xh:packet`     | `xh packet`    |
+| `/xh:examples`   | `xh examples`  |
+| `/xh:trace`      | `xh trace`     |
+| `/xh:report`     | `xh report`    |
+
+Examples with args and subcommands:
+- `/xh:verify --card completion-card.yaml --json`
+- `/xh:intake contract --from issue.md`
+- `/xh:context manifest check --manifest .x-harness/context-manifest.yaml --json`
+
+Use `/xh:<command>` as the preferred shortcut notation in agent chat. The space-delimited `/xh <action>` and legacy `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset` styles remain supported for compatibility.
 
 ## Workflow
 

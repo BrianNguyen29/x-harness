@@ -206,10 +206,10 @@ describe("adapter contract", () => {
           ).toBe(true);
         });
 
-        it("prefers namespaced /xh:<action> syntax", () => {
+        it("prefers namespaced /xh:<command> syntax", () => {
           expect(
-            content.includes("/xh:<action>"),
-            `${filePath} should prefer namespaced /xh:<action> syntax`
+            content.includes("/xh:<command>"),
+            `${filePath} should prefer namespaced /xh:<command> syntax`
           ).toBe(true);
         });
 
@@ -254,6 +254,58 @@ describe("adapter contract", () => {
             `${filePath} should include mapping table for ${requiredMappings.join(", ")}`
           ).toBe(true);
         });
+
+        it("includes broader mapping table for all listed commands", () => {
+          const broaderMappings = [
+            "/xh:check",
+            "/xh:prepare",
+            "/xh:recover",
+            "/xh:doctor",
+            "/xh:actions",
+            "/xh:status",
+            "/xh:reset",
+            "/xh:verify",
+            "/xh:intake",
+            "/xh:handoff",
+            "/xh:decision",
+            "/xh:boundary",
+            "/xh:context",
+            "/xh:packet",
+            "/xh:examples",
+            "/xh:trace",
+            "/xh:report",
+          ];
+          const hasAllMappings = broaderMappings.every((cmd) =>
+            content.includes(cmd)
+          );
+          expect(
+            hasAllMappings,
+            `${filePath} should include broader mapping table for ${broaderMappings.join(", ")}`
+          ).toBe(true);
+        });
+
+        it("includes args examples with subcommands", () => {
+          const argsExamples = [
+            "/xh:verify --card completion-card.yaml --json",
+            "/xh:intake contract --from issue.md",
+            "/xh:context manifest check --manifest .x-harness/context-manifest.yaml --json",
+          ];
+          const hasAllArgs = argsExamples.every((ex) => content.includes(ex));
+          expect(
+            hasAllArgs,
+            `${filePath} should include args examples: ${argsExamples.join(", ")}`
+          ).toBe(true);
+        });
+
+        it("explicitly states /xh:<command> is agent-chat notation, not a shell path", () => {
+          expect(
+            content.includes("agent-chat") ||
+              content.includes("not a shell") ||
+              content.includes("not a shell binary") ||
+              content.includes("filesystem path"),
+            `${filePath} should clarify /xh:<command> is agent-chat notation`
+          ).toBe(true);
+        });
       });
     }
   });
@@ -277,12 +329,12 @@ describe("adapter contract", () => {
       describe(adapter, () => {
         const content = fs.readFileSync(fullPath, "utf-8");
 
-        it(`${filePath} prefers /xh:<action> notation`, () => {
-          expect(content).toContain("/xh:<action>");
+        it(`${filePath} prefers /xh:<command> notation`, () => {
+          expect(content).toContain("/xh:<command>");
         });
 
-        it(`${filePath} retains /xh <action> compatibility`, () => {
-          expect(content).toContain("/xh <action>");
+        it(`${filePath} retains /xh <command> compatibility`, () => {
+          expect(content).toContain("/xh <command>");
         });
 
         it(`${filePath} retains legacy slash command compatibility`, () => {
@@ -303,6 +355,43 @@ describe("adapter contract", () => {
             `${filePath} should retain legacy slash command notation for compatibility`
           ).toBe(true);
         });
+
+        if (adapter === "opencode" && filePath.endsWith(".json")) {
+          it(`${filePath} is valid JSON`, () => {
+            expect(() => JSON.parse(content)).not.toThrow();
+          });
+
+          it(`${filePath} includes broader command examples`, () => {
+            const parsed = JSON.parse(content);
+            const examples = parsed.slash_commands?.examples || [];
+            const broaderCommands = [
+              "/xh:handoff",
+              "/xh:decision",
+              "/xh:boundary",
+              "/xh:context",
+              "/xh:packet",
+              "/xh:examples",
+              "/xh:trace",
+              "/xh:report",
+            ];
+            const hasAll = broaderCommands.every((cmd) =>
+              examples.includes(cmd)
+            );
+            expect(hasAll).toBe(true);
+          });
+
+          it(`${filePath} includes args examples`, () => {
+            const parsed = JSON.parse(content);
+            const examples = parsed.slash_commands?.examples || [];
+            const argsExamples = [
+              "/xh:verify --card completion-card.yaml --json",
+              "/xh:intake contract --from issue.md",
+              "/xh:context manifest check --manifest .x-harness/context-manifest.yaml --json",
+            ];
+            const hasAll = argsExamples.every((ex) => examples.includes(ex));
+            expect(hasAll).toBe(true);
+          });
+        }
       });
     }
   });
