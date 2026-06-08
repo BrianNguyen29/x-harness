@@ -1,0 +1,122 @@
+schema_version: "1"
+task_id: TASK-MONOREPO-VALIDATOR-001
+tier: standard
+owner: charlie
+accountable: dana
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - examples/real-world/monorepo/README.md
+  architecture_refs: []
+  decision_refs: []
+  test_matrix_refs: []
+  unresolved_context_questions: []
+  context_evidence: []
+state:
+  read_set:
+    - packages/shared/src/validators/settings.ts
+    - packages/web/app/settings/form.tsx
+  write_set:
+    - packages/shared/src/validators/settings.ts
+    - packages/shared/src/validators/settings.test.ts
+    - packages/web/app/settings/form.tsx
+    - packages/web/app/settings/form.test.tsx
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Added shared email/display-name validator consumed by web settings form
+  expected_effect: Settings form rejects empty display names and invalid emails using shared validators; tests pass in both packages and typecheck passes
+  measurable_signal: npm test -- shared && npm test -- web && npm run typecheck
+  falsification_method: Remove validation rules from shared validators; empty names and invalid emails should be accepted in form tests
+  horizon: same_verify
+evidence:
+  files_changed:
+    - packages/shared/src/validators/settings.ts
+    - packages/shared/src/validators/settings.test.ts
+    - packages/web/app/settings/form.tsx
+    - packages/web/app/settings/form.test.tsx
+  command_evidence:
+    - command: npm test -- shared
+      exit_code: 0
+    - command: npm test -- web
+      exit_code: 0
+    - command: npm run typecheck
+      exit_code: 0
+  verification_artifacts:
+    - kind: unit_test
+      command: npm test -- shared
+      status: passed
+      verifies:
+        - "empty display name is rejected by shared validator"
+        - "invalid email format is rejected by shared validator"
+        - "valid input is accepted by shared validator"
+      does_not_verify:
+        - "integration with web form UI"
+        - "browser runtime behavior"
+      confidence: medium
+    - kind: unit_test
+      command: npm test -- web
+      status: passed
+      verifies:
+        - "web form uses shared validator for email"
+        - "web form uses shared validator for display name"
+        - "form renders error messages correctly"
+      does_not_verify:
+        - "server-side validation"
+        - "E2E browser behavior"
+        - "shared validator internals"
+      confidence: medium
+    - kind: typecheck
+      command: npm run typecheck
+      status: passed
+      verifies:
+        - "TypeScript type consistency across changed files in both packages"
+      does_not_verify:
+        - "runtime browser type safety"
+        - "cross-package build output correctness"
+      confidence: medium
+  untested_regions:
+    - "No E2E test was run for the settings page navigation flow."
+    - "No visual regression test was run for the form UI."
+    - "Cross-package import resolution was not tested at build time."
+  remaining_risks:
+    - "Email regex may reject valid but uncommon addresses."
+    - "Form state reset behavior on route change was not tested."
+    - "Shared validator change may break other consumers not in read_set."
+  rollback_policy:
+    - "Revert the commit adding packages/shared/src/validators/settings.ts and packages/web/app/settings/form.tsx."
+    - "Pin packages/web to previous shared package version if published separately."
+  execution_controls:
+    - "Deploy behind a feature flag; enable for internal users first."
+    - "Monitor error rates for settings form submissions after rollout."
+claim:
+  fix_status: fixed
+  summary: Added shared email/display-name validator in packages/shared and consumed it from packages/web settings form with cross-package tests
+  evidence:
+    - description: Shared validator source
+      url: ./packages/shared/src/validators/settings.ts
+    - description: Shared validator unit tests
+      url: ./packages/shared/src/validators/settings.test.ts
+    - description: Web form consuming shared validator
+      url: ./packages/web/app/settings/form.tsx
+    - description: Web form unit tests
+      url: ./packages/web/app/settings/form.test.tsx
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: charlie

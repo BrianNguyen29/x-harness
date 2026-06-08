@@ -1,0 +1,13 @@
+> monorepo@0.1.0 test:shared
+> vitest run packages/shared
+
+ RUN  v1.6.0  /home/user/work/monorepo
+
+ ✓ packages/shared/src/validators/settings.test.ts (3 tests) 8ms
+   ✓ rejects empty display name
+   ✓ rejects invalid email format
+   ✓ accepts valid input
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Duration  210ms

@@ -1,0 +1,9 @@
+> monorepo@0.1.0 typecheck
+> tsc --noEmit
+
+packages/shared/src/validators/settings.ts: ok
+packages/shared/src/validators/settings.test.ts: ok
+packages/web/app/settings/form.tsx: ok
+packages/web/app/settings/form.test.tsx: ok
+
+No errors found.

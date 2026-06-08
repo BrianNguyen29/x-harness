@@ -1,0 +1,18 @@
+version: 1
+
+# Optional boundary policy for monorepo example.
+# This file is reference-only and not required by admission in V1.
+# It demonstrates allowed and denied cross-package dependencies.
+
+boundaries:
+  - rule_id: web-may-use-shared
+    from: packages/web
+    to: packages/shared
+    action: allow
+    reason: Web app is explicitly allowed to depend on shared utilities.
+
+  - rule_id: web-may-not-use-internal
+    from: packages/web
+    to: packages/internal
+    action: deny
+    reason: Web app must not depend on internal-only packages.
