@@ -21,11 +21,13 @@ enforces.
 - [Schemas](SCHEMAS.md)
 - [Recovery](RECOVERY.md)
 - [Packets](PACKETS.md)
-- Boundary policy: see `xh boundary {lint,check,explain}` and `schemas/boundary-policy.schema.json` (V1 path-glob + import-regex enforcement).
+- [Boundary](BOUNDARY.md) — deterministic path-glob + import-regex policy enforcement
+- [Intake](INTAKE.md) — task intake tiering and product-intent records
+- [Decision](DECISION.md) — lightweight decision memory records (ADR-lite)
 
 ## Operations
 
-- [CI](CI.md) — TypeScript/Go dual-run, race/fuzz, release signing, and smoke gates
+- [CI](CI.md) — Go-native primary gates with TypeScript compatibility parity, race/fuzz, release signing, and smoke gates
 - [Report Formats](REPORT_FORMATS.md)
 - [Cleanup](CLEANUP.md)
 - [Release Security](RELEASE_SECURITY.md)

@@ -217,7 +217,7 @@ The following decisions have been reviewed and approved. They are encoded below 
 3. **Medium severity scanner findings:** Advisory in strict v1.
 4. **Non-git fallback:** Strict requires a Git workspace. Non-Git workspaces cannot pass strict conformance.
 5. **Exit code `2` usage:** Reserved for usage errors only. Conformance failures use exit code `1`.
-6. **Golden example expansion:** Strict-specific fixtures live under `examples/golden/conformance-strict/` (e.g., `success-strict`, `blocked-strict-mutation-guard`).
+6. **Golden example expansion:** Strict-specific fixtures are intended to live under `examples/golden/conformance-strict/` (e.g., `success-strict`, `blocked-strict-mutation-guard`). The directory is created as needed; not all fixtures may be populated at every commit.
 7. **Adapters doctor scope:** File-local only in v1. External URL or network checks are out of scope.
 8. **Release profile boundary:** Independent gate. Strict conformance is recommended but not a hard prerequisite for release.
 
