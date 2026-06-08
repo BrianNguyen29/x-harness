@@ -616,6 +616,24 @@ Some notes
     expect(stderr).toContain("user-visible change");
   });
 
+  it("fails when --from markdown is missing acceptance", async () => {
+    const tmpDir = uniqueFromDir("missing-acceptance");
+    const mdPath = path.join(tmpDir, "intent.md");
+    fs.writeFileSync(
+      mdPath,
+      "# Foo Bar\n\n## Goal\nCustom goal from section\n"
+    );
+    const { stderr, exitCode } = await execaNode([
+      "intake",
+      "contract",
+      "--from",
+      mdPath,
+      "--json",
+    ]);
+    expect(exitCode).toBe(2);
+    expect(stderr).toContain("--acceptance is required");
+  });
+
   it("writes --from output to --output file", async () => {
     const tmpDir = uniqueFromDir("output");
     const mdPath = path.join(tmpDir, "intent.md");

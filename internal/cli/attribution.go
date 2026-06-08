@@ -10,8 +10,7 @@ import (
 
 func handleAttribution(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: x-harness attribution explain --episode <dir> [--json]")
-		fmt.Fprintln(stderr, "       x-harness attribution report [--episodes-dir <dir>] [--group-by <field>] [--since <duration>] [--json]")
+		fmt.Fprintln(stderr, "attribution requires a subcommand: explain, report")
 		return ExitUsage
 	}
 

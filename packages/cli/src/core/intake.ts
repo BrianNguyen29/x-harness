@@ -438,7 +438,11 @@ export function buildProductIntentRecord(
     return { record: null, error: "--goal is required" };
   }
   if (spec.acceptance.length === 0) {
-    return { record: null, error: "at least one --acceptance is required" };
+    return {
+      record: null,
+      error:
+        "at least one --acceptance is required (when using --from, include an ## Acceptance section with at least one item)",
+    };
   }
   for (let i = 0; i < spec.acceptance.length; i++) {
     if (spec.acceptance[i].trim() === "") {

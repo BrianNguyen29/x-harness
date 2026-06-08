@@ -155,6 +155,7 @@ jobs:
 4. Runs `npm run parity:check-go` to validate that Go CLI behavior matches the committed TypeScript baseline
 5. Runs a bounded Go fuzz smoke target (`FuzzValidate`)
 6. Runs Go-native primary gates: policy matrix, strict verify, verify profile (`ci-standard`), policy explain, explain card, evidence run, docs drift, release verify-docs, doctor, examples verify, regression suite, adversarial benchmark, and conformance minimal
+   - Note: `conformance run` supports only `minimal` and `strict` profiles. `ci-standard` is a `xh verify` profile, not a conformance profile.
 7. Runs TypeScript compatibility gates as a secondary validation layer
 
 The release workflow also builds native Go binaries for Linux, macOS, and

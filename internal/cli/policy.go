@@ -362,7 +362,7 @@ func buildMatrix() Matrix {
 
 func handlePolicy(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: xh policy <matrix> [--json]")
+		fmt.Fprintln(stderr, "policy requires a subcommand: matrix, explain")
 		return ExitUsage
 	}
 
