@@ -121,6 +121,14 @@ Scoop and Homebrew manifests are generated automatically at release time from [`
 
 ## Quick start (5 minutes)
 
+### Fast track
+
+```bash
+xh start
+```
+
+Or follow the steps manually:
+
 ### 1. Health-check the workspace
 
 ```bash
@@ -190,6 +198,7 @@ These are the actions you'll use most often. The full list is in `xh --help-all`
 
 | Action | What it does |
 | :-- | :-- |
+| **`start`** | Guided onboarding: doctor, examples verify, init wizard, next steps. |
 | **`verify`** | Run the read-only verification gate on a completion card. |
 | **`check`** | Alias for `verify`. |
 | **`doctor`** | Validate workspace health (schemas, policies, links, freshness). |
