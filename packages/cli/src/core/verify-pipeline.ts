@@ -23,6 +23,11 @@ import { buildAdmissionInput } from "./verify-admission-input.js";
 import { runVerifyGovernance } from "./verify-governance.js";
 import { evaluateApprovalRisk } from "./approval-risk.js";
 import { isValidDecisionEnforce } from "./decision.js";
+import {
+  checkManifest,
+  readManifest,
+  validateManifest,
+} from "./context-manifest.js";
 
 export { VerifyInputError } from "./verify-source-loader.js";
 
@@ -86,6 +91,16 @@ export interface VerifyPipelineOptions {
   //   ci-strict     -> advisory (not block)
   //   governed-deep -> block
   intentEnforce?: string;
+  // Profile-keyed default for the verify-layer context manifest
+  // staleness gate. Mirrors the Go canonical
+  // VerifyProfile.ContextEnforce semantics: an explicit value
+  // (`off`|`advisory`|`block`) always wins; an empty string means
+  // "use the profile default". Profile defaults:
+  //   light-local   -> advisory
+  //   ci-standard   -> advisory
+  //   ci-strict     -> block
+  //   governed-deep -> block
+  contextEnforce?: string;
 }
 
 export interface VerifyCheck {
@@ -340,6 +355,23 @@ export async function runVerifyPipeline(
     tier,
     doc: loaded.card ?? null,
   });
+  // Context-enforce gate (profile-controlled). Mirrors the decision-refs
+  // and intent-ref gates: off|advisory|block. The off and advisory modes
+  // never block at the verify layer. The block mode withholds standard/deep
+  // cards whose context_manifest is present, readable, valid, and stale.
+  // Missing manifest skips silently; invalid/unreadable manifest is
+  // advisory-only and never blocks. Light tier is always non-blocking.
+  const contextEnforceMode = resolveContextEnforceMode(
+    opts.profile,
+    opts.contextEnforce
+  );
+  const contextEnforceBlockReason = applyContextEnforceGate({
+    mode: contextEnforceMode,
+    tier,
+    doc: loaded.card ?? null,
+    cardPath: loaded.cardPath ?? "",
+    cwd,
+  });
   const finalOutcome =
     guardBlocked || traceDirBlocked
       ? "blocked"
@@ -347,7 +379,9 @@ export async function runVerifyPipeline(
         ? "blocked"
         : intentEnforceBlockReason != null
           ? "blocked"
-          : outcome;
+          : contextEnforceBlockReason != null
+            ? "blocked"
+            : outcome;
   const finalAcceptance = acceptanceStatus(finalOutcome);
   const finalBlockingPredicate =
     guardBlocked || traceDirBlocked
@@ -356,7 +390,9 @@ export async function runVerifyPipeline(
         ? "decision_refs_missing"
         : intentEnforceBlockReason != null
           ? "intent_ref_missing"
-          : blockingPredicate;
+          : contextEnforceBlockReason != null
+            ? "context_stale"
+            : blockingPredicate;
   const finalRecoveryRoute =
     guardBlocked || traceDirBlocked
       ? getRecoveryRoute("verifier_not_read_only")
@@ -364,12 +400,17 @@ export async function runVerifyPipeline(
         ? getRecoveryRoute("decision_refs_missing")
         : intentEnforceBlockReason != null
           ? getRecoveryRoute("intent_ref_missing")
-          : (getRecoveryRoute(finalBlockingPredicate) ?? recoveryRoute);
+          : contextEnforceBlockReason != null
+            ? getRecoveryRoute("context_stale")
+            : (getRecoveryRoute(finalBlockingPredicate) ?? recoveryRoute);
   if (decisionEnforceBlockReason != null) {
     errors.push(decisionEnforceBlockReason);
   }
   if (intentEnforceBlockReason != null) {
     errors.push(intentEnforceBlockReason);
+  }
+  if (contextEnforceBlockReason != null) {
+    errors.push(contextEnforceBlockReason);
   }
 
   const cardId = (loaded.card?.id as string | undefined) ?? null;
@@ -539,4 +580,110 @@ export function applyIntentEnforceGate(args: {
   if (args.tier !== "standard" && args.tier !== "deep") return null;
   if (hasAnyIntentRef(args.doc)) return null;
   return "intent_ref not declared (verify-stage block; admission acceptance is not intent correctness)";
+}
+
+// isValidContextEnforce reports whether value is one of the supported
+// enforcement modes for the verify-stage context manifest staleness
+// gate. Mirrors the closed-enum style of isValidDecisionEnforce.
+export function isValidContextEnforce(value: string): boolean {
+  return value === "off" || value === "advisory" || value === "block";
+}
+
+// Context-enforce profile defaults mirror the Go canonical profiles in
+// `internal/cli/verify.go` (VerifyProfile.ContextEnforce).
+const CONTEXT_ENFORCE_PROFILE_DEFAULTS: Record<string, string> = {
+  "light-local": "advisory",
+  "ci-standard": "advisory",
+  "ci-strict": "block",
+  "governed-deep": "block",
+};
+
+export function resolveContextEnforceMode(
+  profile: string | undefined,
+  explicit: string | undefined
+): string {
+  const explicitTrimmed = (explicit ?? "").trim();
+  if (explicitTrimmed !== "") {
+    if (!isValidContextEnforce(explicitTrimmed)) {
+      return "off";
+    }
+    return explicitTrimmed;
+  }
+  const profileTrimmed = (profile ?? "").trim();
+  if (profileTrimmed === "") return "off";
+  const profileDefault = CONTEXT_ENFORCE_PROFILE_DEFAULTS[profileTrimmed];
+  if (profileDefault === undefined) return "off";
+  return profileDefault;
+}
+
+// resolveContextManifestPathFromDoc extracts the manifest path from a
+// completion card document. It supports a top-level string
+// "context_manifest" or an object with a "path" field.
+function resolveContextManifestPathFromDoc(
+  doc: Record<string, unknown> | null
+): string {
+  if (doc == null) return "";
+  const raw = doc["context_manifest"];
+  if (raw == null) return "";
+  if (typeof raw === "string") {
+    return raw.trim();
+  }
+  if (typeof raw === "object" && !Array.isArray(raw)) {
+    const m = raw as Record<string, unknown>;
+    if (typeof m["path"] === "string") {
+      return m["path"].trim();
+    }
+  }
+  return "";
+}
+
+// resolveManifestPath resolves a manifest path relative to cardDir or
+// cwd. Returns empty string when the file does not exist.
+function resolveManifestPath(
+  manifestPath: string,
+  cardDir: string,
+  cwd: string
+): string {
+  if (path.isAbsolute(manifestPath)) {
+    if (fs.existsSync(manifestPath)) return manifestPath;
+    return "";
+  }
+  for (const base of [cwd, cardDir]) {
+    if (!base) continue;
+    const candidate = path.resolve(base, manifestPath);
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return "";
+}
+
+// applyContextEnforceGate mirrors the verify-layer context manifest
+// staleness gate in `internal/cli/verify.go`. The block mode
+// withholds standard/deep cards whose context_manifest is present,
+// readable, valid, and stale. Missing manifest skips; invalid/unreadable
+// manifest is advisory-only and never blocks.
+export function applyContextEnforceGate(args: {
+  mode: string;
+  tier: string;
+  doc: Record<string, unknown> | null;
+  cardPath: string;
+  cwd: string;
+}): string | null {
+  if (args.mode !== "block") return null;
+  if (args.tier !== "standard" && args.tier !== "deep") return null;
+  const manifestPath = resolveContextManifestPathFromDoc(args.doc);
+  if (manifestPath === "") return null;
+  const cardDir = args.cardPath ? path.dirname(args.cardPath) : "";
+  const resolved = resolveManifestPath(manifestPath, cardDir, args.cwd);
+  if (resolved === "") return null;
+  try {
+    const manifest = readManifest(resolved);
+    validateManifest(manifest);
+    const stale = checkManifest(manifest, args.cwd);
+    if (stale.length > 0) {
+      return `context manifest stale: ${stale.join(", ")} (verify-stage block; admission acceptance is not context correctness)`;
+    }
+  } catch {
+    // Invalid/unreadable manifest is advisory-only; never blocks.
+  }
+  return null;
 }

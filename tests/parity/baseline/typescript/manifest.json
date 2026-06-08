@@ -144,6 +144,20 @@
       "output": "verify/golden/boundary-violation.json"
     },
     {
+      "id": "verify:golden:context-manifest-present",
+      "command": [
+        "node",
+        "packages/cli/dist/index.js",
+        "verify",
+        "--card",
+        "examples/golden/regression/context-manifest-present/completion-card.yaml",
+        "--json"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "output": "verify/golden/context-manifest-present.json"
+    },
+    {
       "id": "verify:golden:decision-link-flow",
       "command": [
         "node",

@@ -10,6 +10,9 @@ import {
   isValidIntentEnforce,
   resolveDecisionEnforceMode,
   resolveIntentEnforceMode,
+  isValidContextEnforce,
+  resolveContextEnforceMode,
+  applyContextEnforceGate,
 } from "../src/core/verify-pipeline.js";
 import {
   applyDecisionLinkRefs,
@@ -27,6 +30,10 @@ import {
   hasAnyDecisionRef as hasAnyDecisionRefFromAdmission,
   hasAnyIntentRef as hasAnyIntentRefFromAdmission,
 } from "../src/core/admission.js";
+import {
+  generateManifest,
+  writeManifest,
+} from "../src/core/context-manifest.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(path.join(__dirname, "..", "..", ".."));
@@ -1071,6 +1078,335 @@ handoff:
       "verify",
       "--profile",
       "governed-deep",
+      "--intent-enforce",
+      "off",
+      "--card",
+      card,
+      "--json",
+    ]);
+    expect(result.exitCode).toBe(0);
+    const event = JSON.parse(result.stdout);
+    expect(event.admission_outcome).toBe("success");
+  });
+});
+
+describe("isValidContextEnforce enforces the closed enum", () => {
+  it("accepts the canonical modes", () => {
+    expect(isValidContextEnforce("off")).toBe(true);
+    expect(isValidContextEnforce("advisory")).toBe(true);
+    expect(isValidContextEnforce("block")).toBe(true);
+  });
+  it("rejects empty and unknown values", () => {
+    expect(isValidContextEnforce("")).toBe(false);
+    expect(isValidContextEnforce("bogus")).toBe(false);
+    expect(isValidContextEnforce("high")).toBe(false);
+  });
+});
+
+describe("resolveContextEnforceMode", () => {
+  it("returns the explicit value when set", () => {
+    expect(resolveContextEnforceMode("ci-strict", "off")).toBe("off");
+    expect(resolveContextEnforceMode("light-local", "block")).toBe("block");
+  });
+  it("uses the profile default when explicit is empty", () => {
+    expect(resolveContextEnforceMode("light-local", "")).toBe("advisory");
+    expect(resolveContextEnforceMode("ci-standard", "")).toBe("advisory");
+    expect(resolveContextEnforceMode("ci-strict", "")).toBe("block");
+    expect(resolveContextEnforceMode("governed-deep", "")).toBe("block");
+  });
+  it("falls back to off when neither is set or profile is unknown", () => {
+    expect(resolveContextEnforceMode(undefined, undefined)).toBe("off");
+    expect(resolveContextEnforceMode("bogus", "")).toBe("off");
+  });
+  it("treats invalid explicit values as off", () => {
+    expect(resolveContextEnforceMode("ci-strict", "bogus")).toBe("off");
+  });
+});
+
+describe("applyContextEnforceGate", () => {
+  it("returns null in off and advisory modes", () => {
+    expect(
+      applyContextEnforceGate({
+        mode: "off",
+        tier: "standard",
+        doc: {},
+        cardPath: "",
+        cwd: process.cwd(),
+      })
+    ).toBeNull();
+    expect(
+      applyContextEnforceGate({
+        mode: "advisory",
+        tier: "deep",
+        doc: {},
+        cardPath: "",
+        cwd: process.cwd(),
+      })
+    ).toBeNull();
+  });
+  it("returns null for light tier even in block mode", () => {
+    expect(
+      applyContextEnforceGate({
+        mode: "block",
+        tier: "light",
+        doc: {},
+        cardPath: "",
+        cwd: process.cwd(),
+      })
+    ).toBeNull();
+  });
+  it("returns null when manifest is missing", () => {
+    expect(
+      applyContextEnforceGate({
+        mode: "block",
+        tier: "standard",
+        doc: { context_manifest: "nonexistent.yaml" },
+        cardPath: "",
+        cwd: process.cwd(),
+      })
+    ).toBeNull();
+  });
+  it("returns null when context_manifest is absent", () => {
+    expect(
+      applyContextEnforceGate({
+        mode: "block",
+        tier: "standard",
+        doc: {},
+        cardPath: "",
+        cwd: process.cwd(),
+      })
+    ).toBeNull();
+  });
+  it("blocks when manifest is stale", () => {
+    const manifestPath = path.join(workDir, "manifest.yaml");
+    fs.writeFileSync(manifestPath, "version: \"1\"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n", "utf-8");
+    const reason = applyContextEnforceGate({
+      mode: "block",
+      tier: "standard",
+      doc: { context_manifest: "manifest.yaml" },
+      cardPath: "",
+      cwd: workDir,
+    });
+    expect(reason).toMatch(/context manifest stale/);
+  });
+  it("does not block when manifest is fresh", () => {
+    const filePath = path.join(workDir, "fresh.txt");
+    fs.writeFileSync(filePath, "fresh content\n", "utf-8");
+    const manifestPath = path.join(workDir, "manifest.yaml");
+    const manifest = generateManifest([filePath], workDir, "test");
+    writeManifest(manifest, manifestPath);
+    const reason = applyContextEnforceGate({
+      mode: "block",
+      tier: "standard",
+      doc: { context_manifest: "manifest.yaml" },
+      cardPath: "",
+      cwd: workDir,
+    });
+    expect(reason).toBeNull();
+  });
+});
+
+describe("xh verify --context-enforce (built dist)", () => {
+  function writeStandardCardWithManifest(manifestPath: string): string {
+    writeFile("README.md", "# Product\n");
+    writeFile("decisions/ADR-1.md", "# ADR-1\n");
+    const manifestLine = manifestPath
+      ? `context_manifest: ${manifestPath}\n`
+      : "";
+    return writeFile(
+      "completion-card.yaml",
+      `schema_version: "1"
+task_id: TASK-CONTEXT-ENFORCE-001
+tier: standard
+owner: alice
+accountable: bob
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - README.md
+  architecture_refs: []
+  test_matrix_refs: []
+  decision_refs:
+    - decisions/ADR-1.md
+  unresolved_context_questions: []
+  context_evidence: []
+${manifestLine}done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: TASK-CONTEXT-ENFORCE-001 claim
+  expected_effect: works
+  measurable_signal: tests pass
+  falsification_method: skip fix
+  horizon: same_verify
+evidence:
+  files_changed:
+    - src/main.go
+  command_evidence:
+    - command: go test ./...
+      exit_code: 0
+      runner: go-test
+      started_at: "2026-06-06T00:00:00Z"
+claim:
+  fix_status: fixed
+  summary: TASK-CONTEXT-ENFORCE-001
+  evidence:
+    - description: source change
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+`
+    );
+  }
+
+  it("--context-enforce off does not block", async () => {
+    const card = writeStandardCardWithManifest(".x-harness/context-manifest.yaml");
+    fs.mkdirSync(path.join(workDir, ".x-harness"), { recursive: true });
+    fs.writeFileSync(
+      path.join(workDir, ".x-harness", "context-manifest.yaml"),
+      "version: \"1\"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n",
+      "utf-8"
+    );
+    const result = await execaNodeWorkdir([
+      "verify",
+      "--card",
+      card,
+      "--context-enforce",
+      "off",
+      "--intent-enforce",
+      "off",
+      "--json",
+    ]);
+    expect(result.exitCode).toBe(0);
+    const event = JSON.parse(result.stdout);
+    expect(event.admission_outcome).toBe("success");
+  });
+
+  it("--context-enforce block withholds when manifest is stale", async () => {
+    const card = writeStandardCardWithManifest(".x-harness/context-manifest.yaml");
+    fs.mkdirSync(path.join(workDir, ".x-harness"), { recursive: true });
+    fs.writeFileSync(
+      path.join(workDir, ".x-harness", "context-manifest.yaml"),
+      "version: \"1\"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n",
+      "utf-8"
+    );
+    const result = await execaNodeWorkdir([
+      "verify",
+      "--card",
+      card,
+      "--context-enforce",
+      "block",
+      "--intent-enforce",
+      "off",
+      "--json",
+    ]);
+    expect(result.exitCode).toBe(1);
+    const event = JSON.parse(result.stdout);
+    expect(event.admission_outcome).toBe("blocked");
+    expect(event.acceptance_status).toBe("withheld");
+  });
+
+  it("--context-enforce block accepts when manifest is fresh", async () => {
+    const card = writeStandardCardWithManifest(".x-harness/context-manifest.yaml");
+    fs.mkdirSync(path.join(workDir, ".x-harness"), { recursive: true });
+    fs.writeFileSync(path.join(workDir, "fresh.txt"), "fresh content\n", "utf-8");
+    await execaNodeWorkdir([
+      "context",
+      "manifest",
+      "write",
+      "--files",
+      "fresh.txt",
+      "--out",
+      ".x-harness/context-manifest.yaml",
+    ]);
+    const result = await execaNodeWorkdir([
+      "verify",
+      "--card",
+      card,
+      "--context-enforce",
+      "block",
+      "--intent-enforce",
+      "off",
+      "--json",
+    ]);
+    expect(result.exitCode).toBe(0);
+    const event = JSON.parse(result.stdout);
+    expect(event.admission_outcome).toBe("success");
+  });
+
+  it("--profile ci-strict blocks stale manifest by default", async () => {
+    const card = writeStandardCardWithManifest(".x-harness/context-manifest.yaml");
+    fs.mkdirSync(path.join(workDir, ".x-harness"), { recursive: true });
+    fs.writeFileSync(
+      path.join(workDir, ".x-harness", "context-manifest.yaml"),
+      "version: \"1\"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n",
+      "utf-8"
+    );
+    const result = await execaNodeWorkdir([
+      "verify",
+      "--profile",
+      "ci-strict",
+      "--intent-enforce",
+      "off",
+      "--card",
+      card,
+      "--json",
+    ]);
+    expect(result.exitCode).toBe(1);
+    const event = JSON.parse(result.stdout);
+    expect(event.admission_outcome).toBe("blocked");
+  });
+
+  it("--profile ci-standard does not block by default", async () => {
+    const card = writeStandardCardWithManifest(".x-harness/context-manifest.yaml");
+    fs.mkdirSync(path.join(workDir, ".x-harness"), { recursive: true });
+    fs.writeFileSync(
+      path.join(workDir, ".x-harness", "context-manifest.yaml"),
+      "version: \"1\"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n",
+      "utf-8"
+    );
+    const result = await execaNodeWorkdir([
+      "verify",
+      "--profile",
+      "ci-standard",
+      "--intent-enforce",
+      "off",
+      "--card",
+      card,
+      "--json",
+    ]);
+    expect(result.exitCode).toBe(0);
+    const event = JSON.parse(result.stdout);
+    expect(event.admission_outcome).toBe("success");
+  });
+
+  it("explicit --context-enforce off overrides ci-strict block default", async () => {
+    const card = writeStandardCardWithManifest(".x-harness/context-manifest.yaml");
+    fs.mkdirSync(path.join(workDir, ".x-harness"), { recursive: true });
+    fs.writeFileSync(
+      path.join(workDir, ".x-harness", "context-manifest.yaml"),
+      "version: \"1\"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n",
+      "utf-8"
+    );
+    const result = await execaNodeWorkdir([
+      "verify",
+      "--profile",
+      "ci-strict",
+      "--context-enforce",
+      "off",
       "--intent-enforce",
       "off",
       "--card",

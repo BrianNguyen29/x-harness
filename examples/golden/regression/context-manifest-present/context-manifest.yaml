@@ -1,0 +1,6 @@
+version: "1"
+entries:
+  - path: examples/golden/regression/context-manifest-present/README.md
+    sha256: a885ef6396adb0308a2af54bc50d8213d6a16e5366e0eaa725b40bb03a24089f
+    read_at: "2026-06-08T00:00:00Z"
+    reason: Golden fixture self-reference

@@ -16,6 +16,13 @@ import {
   renderRuntimeContractMarkdown,
 } from "../core/contract.js";
 import { checkStaleness, getSourceOfTruthFiles } from "../core/staleness.js";
+import {
+  generateManifest,
+  checkManifest,
+  readManifest,
+  validateManifest,
+  writeManifest,
+} from "../core/context-manifest.js";
 
 interface ContextOptions {
   verbose?: boolean;
@@ -140,6 +147,86 @@ export function contextCommand(): Command {
         root: opts.stalenessRoot,
       });
     });
+
+  const manifestCmd = new Command("manifest")
+    .description("Generate and check context manifest files");
+
+  manifestCmd
+    .command("write")
+    .description("Write a context manifest for the given files")
+    .requiredOption("--files <paths>", "Comma-separated file paths")
+    .option("--out <path>", "Output manifest path", ".x-harness/context-manifest.yaml")
+    .option("--json", "Output JSON")
+    .option("--reason <reason>", "Reason for the manifest")
+    .action(async (opts: { files: string; out: string; json?: boolean; reason?: string }, command: Command) => {
+      const files = opts.files
+        .split(",")
+        .map((f) => f.trim())
+        .filter((f) => f !== "");
+      if (files.length === 0) {
+        console.error("Error: --files is required");
+        process.exit(2);
+      }
+      const manifest = generateManifest(files, process.cwd(), opts.reason ?? "");
+      writeManifest(manifest, opts.out);
+      const parentOpts = command.parent?.parent?.opts() as Record<string, unknown> | undefined;
+      const json = opts.json ?? (parentOpts?.json as boolean | undefined) ?? false;
+      if (json) {
+        console.log(
+          JSON.stringify(
+            {
+              ok: true,
+              out: opts.out,
+              entries: manifest.entries.map((e) => ({
+                path: e.path,
+                sha256: e.sha256,
+              })),
+            },
+            null,
+            2
+          )
+        );
+      } else {
+        console.log(`wrote manifest (${manifest.entries.length} entries) to ${opts.out}`);
+      }
+    });
+
+  manifestCmd
+    .command("check")
+    .description("Check a context manifest for stale entries")
+    .requiredOption("--manifest <path>", "Path to manifest file")
+    .option("--json", "Output JSON")
+    .action(async (opts: { manifest: string; json?: boolean }, command: Command) => {
+      try {
+        const manifest = readManifest(opts.manifest);
+        validateManifest(manifest);
+        const stale = checkManifest(manifest, process.cwd());
+        const parentOpts = command.parent?.parent?.opts() as Record<string, unknown> | undefined;
+        const json = opts.json ?? (parentOpts?.json as boolean | undefined) ?? false;
+        if (json) {
+          console.log(JSON.stringify({ ok: stale.length === 0, stale }, null, 2));
+        } else {
+          if (stale.length === 0) {
+            console.log("manifest check passed: all entries fresh");
+          } else {
+            console.log(`manifest check failed: stale entries: ${stale.join(", ")}`);
+          }
+        }
+        process.exitCode = stale.length > 0 ? 1 : 0;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        const parentOpts = command.parent?.parent?.opts() as Record<string, unknown> | undefined;
+        const json = opts.json ?? (parentOpts?.json as boolean | undefined) ?? false;
+        if (json) {
+          console.log(JSON.stringify({ ok: false, error: message }));
+        } else {
+          console.error(`Error: ${message}`);
+        }
+        process.exitCode = 1;
+      }
+    });
+
+  cmd.addCommand(manifestCmd);
 
   cmd.action(async (opts: ContextOptions) => {
     const root = path.resolve(opts.root ?? process.cwd());

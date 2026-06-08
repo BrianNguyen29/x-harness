@@ -240,6 +240,10 @@ export function verifyCommand(): Command {
       "--intent-enforce <mode>",
       "Enforce top-level intent_ref at the verify layer (off|advisory|block). Conservative per-oracle profile defaults (light-local/ci-standard/ci-strict = advisory, governed-deep = block); an explicit flag always wins. Mirrors the Go canonical flag in internal/cli/verify.go."
     )
+    .option(
+      "--context-enforce <mode>",
+      "Enforce context manifest staleness at the verify layer (off|advisory|block). Profile defaults: light-local/ci-standard = advisory, ci-strict/governed-deep = block. Missing manifest skips; invalid/unreadable manifest is advisory-only. Mirrors the Go canonical flag in internal/cli/verify.go."
+    )
     .option("--episode", "Write an audit episode package", false)
     .option(
       "--bundle",
