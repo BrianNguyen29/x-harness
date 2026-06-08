@@ -228,7 +228,8 @@ function isAllowedInvalidTierReference(line: string): boolean {
     /priority.*\b(medium|large|small)\b/i.test(line) ||
     /context[_ -]?class.*\b(medium|large|small)\b/i.test(line) ||
     /default_token_impact.*\b(medium|large|small)\b/i.test(line) ||
-    /runtime_impact.*\b(medium|large|small)\b/i.test(line)
+    /runtime_impact.*\b(medium|large|small)\b/i.test(line) ||
+    /severity.*\b(medium|large|small)\b/i.test(line)
   );
 }
 
