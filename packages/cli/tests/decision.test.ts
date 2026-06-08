@@ -1179,7 +1179,11 @@ describe("applyContextEnforceGate", () => {
   });
   it("blocks when manifest is stale", () => {
     const manifestPath = path.join(workDir, "manifest.yaml");
-    fs.writeFileSync(manifestPath, "version: \"1\"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n", "utf-8");
+    fs.writeFileSync(
+      manifestPath,
+      'version: "1"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n',
+      "utf-8"
+    );
     const reason = applyContextEnforceGate({
       mode: "block",
       tier: "standard",
@@ -1273,11 +1277,13 @@ handoff:
   }
 
   it("--context-enforce off does not block", async () => {
-    const card = writeStandardCardWithManifest(".x-harness/context-manifest.yaml");
+    const card = writeStandardCardWithManifest(
+      ".x-harness/context-manifest.yaml"
+    );
     fs.mkdirSync(path.join(workDir, ".x-harness"), { recursive: true });
     fs.writeFileSync(
       path.join(workDir, ".x-harness", "context-manifest.yaml"),
-      "version: \"1\"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n",
+      'version: "1"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n',
       "utf-8"
     );
     const result = await execaNodeWorkdir([
@@ -1296,11 +1302,13 @@ handoff:
   });
 
   it("--context-enforce block withholds when manifest is stale", async () => {
-    const card = writeStandardCardWithManifest(".x-harness/context-manifest.yaml");
+    const card = writeStandardCardWithManifest(
+      ".x-harness/context-manifest.yaml"
+    );
     fs.mkdirSync(path.join(workDir, ".x-harness"), { recursive: true });
     fs.writeFileSync(
       path.join(workDir, ".x-harness", "context-manifest.yaml"),
-      "version: \"1\"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n",
+      'version: "1"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n',
       "utf-8"
     );
     const result = await execaNodeWorkdir([
@@ -1320,9 +1328,15 @@ handoff:
   });
 
   it("--context-enforce block accepts when manifest is fresh", async () => {
-    const card = writeStandardCardWithManifest(".x-harness/context-manifest.yaml");
+    const card = writeStandardCardWithManifest(
+      ".x-harness/context-manifest.yaml"
+    );
     fs.mkdirSync(path.join(workDir, ".x-harness"), { recursive: true });
-    fs.writeFileSync(path.join(workDir, "fresh.txt"), "fresh content\n", "utf-8");
+    fs.writeFileSync(
+      path.join(workDir, "fresh.txt"),
+      "fresh content\n",
+      "utf-8"
+    );
     await execaNodeWorkdir([
       "context",
       "manifest",
@@ -1348,11 +1362,13 @@ handoff:
   });
 
   it("--profile ci-strict blocks stale manifest by default", async () => {
-    const card = writeStandardCardWithManifest(".x-harness/context-manifest.yaml");
+    const card = writeStandardCardWithManifest(
+      ".x-harness/context-manifest.yaml"
+    );
     fs.mkdirSync(path.join(workDir, ".x-harness"), { recursive: true });
     fs.writeFileSync(
       path.join(workDir, ".x-harness", "context-manifest.yaml"),
-      "version: \"1\"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n",
+      'version: "1"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n',
       "utf-8"
     );
     const result = await execaNodeWorkdir([
@@ -1371,11 +1387,13 @@ handoff:
   });
 
   it("--profile ci-standard does not block by default", async () => {
-    const card = writeStandardCardWithManifest(".x-harness/context-manifest.yaml");
+    const card = writeStandardCardWithManifest(
+      ".x-harness/context-manifest.yaml"
+    );
     fs.mkdirSync(path.join(workDir, ".x-harness"), { recursive: true });
     fs.writeFileSync(
       path.join(workDir, ".x-harness", "context-manifest.yaml"),
-      "version: \"1\"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n",
+      'version: "1"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n',
       "utf-8"
     );
     const result = await execaNodeWorkdir([
@@ -1394,11 +1412,13 @@ handoff:
   });
 
   it("explicit --context-enforce off overrides ci-strict block default", async () => {
-    const card = writeStandardCardWithManifest(".x-harness/context-manifest.yaml");
+    const card = writeStandardCardWithManifest(
+      ".x-harness/context-manifest.yaml"
+    );
     fs.mkdirSync(path.join(workDir, ".x-harness"), { recursive: true });
     fs.writeFileSync(
       path.join(workDir, ".x-harness", "context-manifest.yaml"),
-      "version: \"1\"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n",
+      'version: "1"\nentries:\n  - path: stale.txt\n    sha256: deadbeef\n',
       "utf-8"
     );
     const result = await execaNodeWorkdir([

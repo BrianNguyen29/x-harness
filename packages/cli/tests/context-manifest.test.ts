@@ -66,10 +66,14 @@ describe("context manifest write", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("wrote manifest");
     expect(result.stdout).toContain(".x-harness/context-manifest.yaml");
-    const manifestPath = path.join(workDir, ".x-harness", "context-manifest.yaml");
+    const manifestPath = path.join(
+      workDir,
+      ".x-harness",
+      "context-manifest.yaml"
+    );
     expect(fs.existsSync(manifestPath)).toBe(true);
     const content = fs.readFileSync(manifestPath, "utf-8");
-    expect(content).toContain("version: \"1\"");
+    expect(content).toContain('version: "1"');
     expect(content).toContain("a.txt");
     expect(content).toContain("b.txt");
   });
@@ -105,7 +109,11 @@ describe("context manifest write", () => {
       "test-reason",
     ]);
     expect(result.exitCode).toBe(0);
-    const manifestPath = path.join(workDir, ".x-harness", "context-manifest.yaml");
+    const manifestPath = path.join(
+      workDir,
+      ".x-harness",
+      "context-manifest.yaml"
+    );
     const content = fs.readFileSync(manifestPath, "utf-8");
     expect(content).toContain("test-reason");
   });
@@ -122,7 +130,9 @@ describe("context manifest write", () => {
       "custom-manifest.yaml",
     ]);
     expect(result.exitCode).toBe(0);
-    expect(fs.existsSync(path.join(workDir, "custom-manifest.yaml"))).toBe(true);
+    expect(fs.existsSync(path.join(workDir, "custom-manifest.yaml"))).toBe(
+      true
+    );
   });
 });
 
