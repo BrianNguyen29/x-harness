@@ -2,9 +2,13 @@ package admission
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/BrianNguyen29/x-harness/internal/contextmanifest"
+	"github.com/BrianNguyen29/x-harness/internal/repo"
 )
 
 // contextFloorResult holds the errors and notes from context floor evaluation.
@@ -82,7 +86,70 @@ func evaluateContextFloor(doc map[string]any, tier string) contextFloorResult {
 	fileErrors := validateContextFiles(ctxAlign, cardDir)
 	result.errors = append(result.errors, fileErrors...)
 
+	// Advisory context manifest check (never blocks admission)
+	if manifestPath := resolveContextManifestPath(doc); manifestPath != "" {
+		resolved := resolveManifestPath(manifestPath, cardDir)
+		if resolved != "" {
+			if manifest, err := contextmanifest.Read(resolved); err == nil {
+				if err := contextmanifest.Validate(manifest); err == nil {
+					baseDir := "."
+					if root, err := repo.FindRoot(""); err == nil {
+						baseDir = root
+					}
+					stale, _ := contextmanifest.Check(manifest, baseDir)
+					if len(stale) > 0 {
+						result.notes = append(result.notes, fmt.Sprintf("context_stale advisory: manifest stale for %s", strings.Join(stale, ", ")))
+					}
+				}
+			}
+		}
+	}
+
 	return result
+}
+
+// resolveContextManifestPath extracts the manifest path from a completion card.
+// It supports a top-level string "context_manifest" or an object with a "path" field.
+func resolveContextManifestPath(doc map[string]any) string {
+	if doc == nil {
+		return ""
+	}
+	raw, ok := doc["context_manifest"]
+	if !ok || raw == nil {
+		return ""
+	}
+	if s, ok := raw.(string); ok {
+		return strings.TrimSpace(s)
+	}
+	if m, ok := raw.(map[string]any); ok {
+		if s, ok := m["path"].(string); ok {
+			return strings.TrimSpace(s)
+		}
+	}
+	return ""
+}
+
+// resolveManifestPath resolves a manifest path relative to cardDir or cwd.
+func resolveManifestPath(path, cardDir string) string {
+	if filepath.IsAbs(path) {
+		return path
+	}
+	for _, base := range []string{"", cardDir} {
+		candidate := path
+		if base != "" {
+			candidate = filepath.Join(base, path)
+		} else {
+			absPath, err := filepath.Abs(path)
+			if err != nil {
+				continue
+			}
+			candidate = absPath
+		}
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
+		}
+	}
+	return ""
 }
 
 // validateContextFiles checks that all file references in context_alignment exist.

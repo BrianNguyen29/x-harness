@@ -10,7 +10,12 @@ version: 1
 # and doctor --context are implemented. Hard anchor enforcement (referenced_anchor_missing)
 # remains advanced deferred. See docs/VERIFY_GATE.md §7.
 #
-# Reference: schemas/context-alignment.schema.json
+# Phase 4 context manifest: detection wired/advisory; blocking deferred.
+# The Go core can write/check context-manifest.yaml and emits advisory
+# context_stale notes during context-floor admission when a manifest is
+# present and stale. Blocking enforcement is deferred to a future slice.
+#
+# Reference: schemas/context-alignment.schema.json, schemas/context-manifest.schema.json
 # See also: policies/stale-ground.yaml
 
 context_floor:

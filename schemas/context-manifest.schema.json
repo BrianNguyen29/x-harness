@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://x-harness.io/schemas/context-manifest.schema.json",
+  "title": "Context Manifest",
+  "description": "Machine-readable snapshot of context file hashes used for stale-context detection.",
+  "type": "object",
+  "required": ["version", "entries"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "enum": ["1"],
+      "description": "Manifest format version."
+    },
+    "entries": {
+      "type": "array",
+      "description": "List of context file entries.",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Repository-relative file path using forward slashes."
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "Hex-encoded SHA-256 of the raw file content."
+          },
+          "read_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp when the entry was recorded."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Optional human-readable reason for inclusion."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
