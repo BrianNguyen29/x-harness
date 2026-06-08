@@ -76,11 +76,11 @@ jobs:
           - name: parity
             command: npm run parity:check-go
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: "1.22"
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 22
           cache: npm
@@ -91,8 +91,8 @@ jobs:
     name: go-fuzz-smoke
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: "1.22"
       - run: go test -fuzz=FuzzValidate -fuzztime=15s ./internal/schema
@@ -100,19 +100,33 @@ jobs:
   verify-gates:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 22
           cache: npm
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: "1.22"
       - run: npm ci
       - run: npm run build
       - run: go build -o ./x-harness ./cmd/x-harness
+      - name: Go-native policy matrix
+        run: ./x-harness policy matrix --json
       - name: Go-native strict verify gate
         run: ./x-harness verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
+      - name: Go-native verify profile gate (ci-standard)
+        run: ./x-harness verify --profile ci-standard --card examples/ci/strict-verify/completion-card.yaml --json
+      - name: Go-native policy explain gate
+        run: ./x-harness policy explain admission.evidence_floor --json
+      - name: Go-native explain card gate
+        run: ./x-harness explain --card examples/ci/strict-verify/completion-card.yaml --json
+      - name: Go-native evidence run gate
+        run: ./x-harness evidence run -- echo phase1-gate
+      - name: Go-native docs drift gate
+        run: ./x-harness doctor --docs-drift --root . --json
+      - name: Go-native release verify-docs gate
+        run: ./x-harness release verify-docs --root .
       - name: Go-native workspace doctor
         run: ./x-harness doctor --root . --json
       - name: Go-native golden examples
@@ -138,9 +152,9 @@ jobs:
 1. Installs Node and Go dependencies/toolchains
 2. Type-checks, builds, lints, formats, and tests the TypeScript CLI
 3. Runs Go tests, race detector, `go vet`, and `go build ./cmd/x-harness`
-4. Runs `npm run parity:check-go` against the committed TypeScript baseline
+4. Runs `npm run parity:check-go` to validate that Go CLI behavior matches the committed TypeScript baseline
 5. Runs a bounded Go fuzz smoke target (`FuzzValidate`)
-6. Runs Go-native primary gates: strict verify, doctor, examples verify, regression suite, adversarial benchmark, and conformance minimal
+6. Runs Go-native primary gates: policy matrix, strict verify, verify profile (`ci-standard`), policy explain, explain card, evidence run, docs drift, release verify-docs, doctor, examples verify, regression suite, adversarial benchmark, and conformance minimal
 7. Runs TypeScript compatibility gates as a secondary validation layer
 
 The release workflow also builds native Go binaries for Linux, macOS, and
@@ -148,10 +162,13 @@ Windows, generates SHA256 checksums, signs tag-release binaries with cosign,
 runs smoke tests on Linux/macOS/Windows amd64 artifacts, and attaches all
 release artifacts to the GitHub Release for tagged builds.
 
+## Parity checks
+
+`npm run parity:check-go` validates that the Go CLI output matches the committed TypeScript baseline for key commands. This ensures the Go implementation does not drift from the canonical behavior established by the TypeScript CLI during the compatibility window. If parity fails, update the baseline with `npm run parity:capture-ts` after confirming the Go behavior is correct.
+
 ## Local-build fallback
 
-During the Go rewrite migration, source checkouts can run either the native Go
-binary or the TypeScript compatibility CLI.
+Source checkouts can run either the native Go binary or the TypeScript compatibility CLI. The Go CLI is the canonical primary runtime; TypeScript remains a compatibility baseline.
 
 ### Option A: build in CI
 

@@ -15,7 +15,7 @@ Packets are immutable, self-describing evidence containers that x-harness agents
 |------|---------|
 | `claim` | Agent's completion claim |
 
-The `claim` type is the only packet type supported by the current CLI. Other types (`evidence`, `cg_packet`, `procedure_pack`, `recovery_packet`) are defined in the schema but not supported by current commands.
+The `claim` type is the only packet type supported by current CLI commands. Other types (`evidence`, `cg_packet`, `procedure_pack`, `recovery_packet`) are defined in the schema but are not yet supported by CLI subcommands.
 
 ## Packet structure
 

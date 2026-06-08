@@ -16,7 +16,7 @@ x-harness adapters are thin conventions that make the harness usable inside spec
 | **`init`**   | (standalone)           | Install core harness assets, schemas, policies, and adapters (default `--minimal`) |
 | **`add`**    | (standalone)           | Add a metadata helper file for compatibility modes        |
 
-**Slash commands for agent adapters:** Use `/xh <action>` in agent chat (for example, `/xh check`, `/xh packet create --card <path>`). The legacy `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset` style remains supported for compatibility.
+**Slash commands for agent adapters:** Use `/xh <action>` in agent chat (for example, `/xh check`, `/xh doctor`). The legacy `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset` style remains supported for compatibility. Beta commands such as `packet` are available via the CLI but are not part of the beginner stable adapter interface.
 
 ## Default constraints (all adapters)
 
@@ -67,7 +67,7 @@ x-harness adapters are thin conventions that make the harness usable inside spec
 | Tier     | When to use                                         | Evidence required                                                                                             |
 | -------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | light    | Narrow, low-ceremony work                           | `files_changed` + (`command_evidence` or `manual_rationale`)                                                    |
-| standard | Bounded multi-step work                             | `files_changed` + `command_evidence` (verification artifacts)                                                   |
+| standard | Bounded multi-step work                             | `files_changed` + `command_evidence` + `done_checklist` + `prediction`                                          |
 | deep     | High-stakes, multi-source, high-cost-of-being-wrong | `files_changed` + `command_evidence` + `evidence_scope` + `untested_regions` + `remaining_risks` + `execution_controls` + `rollback_policy` + `state.read_set` + `state.write_set` |
 
 ## Agent roles

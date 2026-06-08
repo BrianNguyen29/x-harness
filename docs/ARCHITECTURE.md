@@ -46,7 +46,7 @@ Translates platform-specific conventions into unified `x-harness` parameters. It
 
 ### 2. Tooling & CLI Layer
 
-Provides developer utilities to scaffold templates (`init`, `handoff`), modify files (`add`, `repair`), clear logs (`clean`, `reset`), run audits (`verify`, `doctor`, `conformance`), and emit reports (`report`, `benchmark`, `release`). The full command list is grouped by maturity and exposed via `xh --help-all` / `xh --help-maturity`. The native Go CLI is the rewrite target; the TypeScript CLI remains a compatibility baseline during migration.
+Provides developer utilities to scaffold templates (`init`, `handoff`), modify files (`add`, `repair`), clear logs (`clean`, `reset`), run audits (`verify`, `doctor`, `conformance`), and emit reports (`report`, `benchmark`, `release`). The full command list is grouped by maturity and exposed via `xh --help-all` / `xh --help-maturity`. The native Go CLI is the canonical primary runtime. The TypeScript CLI remains a source-checkout compatibility baseline.
 
 ### 3. Validator Layer
 
@@ -61,6 +61,17 @@ Loads `policies/admission.yaml` and executes the core verification logic. It ope
 ### 4a. Boundary checks (`xh boundary`)
 
 `xh boundary` is a verify-adjacent, deterministic policy checker. It loads `policies/boundaries.yaml` (schema: `schemas/boundary-policy.schema.json`) and matches each candidate file's path-glob (`from`) against the rule's import pattern (`to_import`) using simple regex (V1 — no AST, no semgrep, no LLM). Subcommands are `lint`, `check --all|--changed`, and `explain <file>`. Boundary checks are opt-in: when the policy file is missing, `xh boundary check` exits 0 with a warning instead of failing.
+
+### 4b. Enforce stages in verify
+
+The verify gate supports opt-in enforce flags that turn advisory checks into blocking predicates:
+
+- `--boundary-enforce off|advisory|block_high|block_all` — boundary policy enforcement
+- `--decision-enforce off|advisory|block` — decision record linkage validation
+- `--intent-enforce off|advisory|block` — permission-intent classification enforcement
+- `--context-enforce off|advisory|block` — context manifest freshness enforcement
+
+All enforce flags default to `off` and must be explicitly enabled.
 
 ### 5. Metrics & Reporting Layer
 

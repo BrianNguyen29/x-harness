@@ -103,17 +103,17 @@ _(The command returns a non-zero exit code `1` because the evidence floor policy
 
 ### 6. Initialize x-harness in Another Repository
 
-To integrate `x-harness` into a separate development project, run the `init` command in the root of that project:
+To integrate `x-harness` into a separate development project, run the `init` command with the target directory:
 
 ```bash
 # Minimal mode (default; installs core agent rules, verify gate config, and handoff templates)
-xh init --minimal
+xh init --minimal ./my-project
 
 # Standard mode (Minimal + schemas, policies, and solo agent examples)
-xh init --standard
+xh init --standard ./my-project
 
 # Full mode (Standard + multi-agent examples, platform adapters, and GitHub Actions)
-xh init --full
+xh init --full ./my-project
 ```
 
 If `init` finds conflicting harness files in the target workspace, it stops with a blocked summary and exits with a non-zero code instead of silently half-installing. Use `--force` only when you intend to overwrite those files.

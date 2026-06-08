@@ -40,7 +40,7 @@ In multi-agent or long-running sessions, the following artifact precedence appli
 1. Source files and git diff are authoritative for implementation state.
 2. `completion-card.yaml` is authoritative for completion claim state.
 3. `policies/admission.yaml` is authoritative for admission policy.
-4. `./x-harness verify` output is authoritative for accepted/withheld mapping in Go-native source checkouts; TypeScript `node packages/cli/dist/index.js verify` remains the compatibility baseline during dual-run.
+4. `./x-harness verify` output is authoritative for accepted/withheld mapping in Go-native source checkouts; the TypeScript compatibility CLI remains the baseline for parity checks.
 5. Chat summaries are non-authoritative.
 
 ### Adapter rule

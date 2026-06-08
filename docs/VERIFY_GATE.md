@@ -98,6 +98,21 @@ Behavior:
 - The hard-error on a missing or unreadable policy file only applies **once Contract Oracle has been explicitly enabled** (via `--contract-oracles`, `--contract-oracles-policy <path>`, or the standalone `xh contract check`). When Contract Oracle is not enabled, the verify gate ignores the policy file entirely and never hard-errors on its absence. This is consistent with the FAQ: Contract Oracle is off by default and does not affect ordinary verify runs.
 - Failures produce a `blocked` outcome with `blocking_predicate: contract_oracle_blocked`.
 
+## Enforce flags
+
+The verify gate supports optional enforce flags that promote advisory checks into blocking predicates:
+
+- `--boundary-enforce off|advisory|block_high|block_all` — promotes boundary policy violations to advisory or blocking findings. Requires `--boundary-policy <path>` when using a non-default policy.
+- `--decision-enforce off|advisory|block` — validates that the completion card links to decision records when required.
+- `--intent-enforce off|advisory|block` — validates permission-intent classification and approval receipts for high-risk commands.
+- `--context-enforce off|advisory|block` — validates context manifest freshness and managed-block consistency.
+
+All enforce flags default to `off`. They are intended for CI and strict conformance runs where additional policy dimensions must be admission-critical.
+
+## Context manifest relation
+
+The `xh context manifest write` command generates a manifest of file hashes (default `.x-harness/context-manifest.yaml`). `xh context manifest check --manifest <path>` verifies that the tracked files have not drifted. When `--context-enforce` is enabled, verify checks manifest freshness as part of the admission gate.
+
 ## Compatibility boundary
 
 The Go runtime emits `withheld_reason` as a **compatibility superset** that includes both strict-schema fields and legacy fields:

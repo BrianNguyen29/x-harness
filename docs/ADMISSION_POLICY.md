@@ -10,26 +10,15 @@ Reject success if canonical `claim.fix_status` is `partial` or `not_fixed`, if v
 
 ## Evidence floor
 
-The evidence floor depends on tier:
+The canonical evidence floor is defined in the generated contract block below. In summary:
 
-### light
-
-Required: `files_changed` and one of `command_evidence` or `manual_rationale`.
-
-### standard
-
-Required: `files_changed`, `command_evidence`.
-Recommended: `evidence_scope_declared`, `untested_regions_declared`.
-Completion-card mode also requires `done_checklist` and a falsifiable `prediction`.
+- **light**: `files_changed` and one of `command_evidence` or `manual_rationale`.
+- **standard**: `files_changed` + `command_evidence` + `done_checklist` + `prediction`.
+- **deep**: `files_changed` + `command_evidence` + `evidence_scope_declared` + `untested_regions_declared` + `remaining_risks_declared` + `execution_controls_present` + `rollback_policy_present` + `done_checklist` + `prediction`. Runtime-enforced: `verification_artifacts`, `state.read_set`, `state.write_set`.
 
 `done_checklist` is cross-checked against declared evidence, prediction, verification artifacts, and state where applicable. Optional checklist blocks on `light` cards are also checked for honesty if present. In strict or deep mode, `read_write_sets_declared: true` must be backed by `state.read_set` and `state.write_set`.
 
-### deep
-
-Required: `files_changed`, `command_evidence`, `evidence_scope_declared`, `untested_regions_declared`, `remaining_risks_declared`.
-Also required: `execution_controls_present`, `rollback_policy_present`.
-Runtime-enforced artifacts: `verification_artifacts`, `state.read_set`, and `state.write_set`.
-Completion-card mode also requires `done_checklist` and a falsifiable `prediction`.
+> The exact floor definitions below are managed by x-harness and take precedence over any human-written summary.
 
 ## Rejection conditions
 
