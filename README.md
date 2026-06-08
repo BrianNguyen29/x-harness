@@ -46,18 +46,20 @@ In short: `x-harness` is **not** an agent runtime, an issue tracker, a planning 
    Agent writes a "completion card" (a small YAML file)
         │
         ▼
-   xh check --card completion-card.yaml
-        │
-        ▼
-   Read-only verification gate evaluates the card
-   against schemas + policies (no source mutation)
-        │
-        ▼
-   ┌───────────────────────────────────────────┐
-   │  acceptance_status: accepted   → exit 0  │   ✅ done
-   │  acceptance_status: withheld   → exit 1  │   🚧 not done, with a recovery path
-   └───────────────────────────────────────────┘
+   xh verify --card completion-card.yaml
+         │
+         ▼
+    Read-only verification gate evaluates the card
+    against schemas + policies (no source mutation)
+         │
+         ▼
+    ┌───────────────────────────────────────────┐
+    │  acceptance_status: accepted   → exit 0  │   ✅ done
+    │  acceptance_status: withheld   → exit 1  │   🚧 not done, with a recovery path
+    └───────────────────────────────────────────┘
 ```
+
+> `check` is an alias for `verify` — both run the same read-only gate.
 
 The verifier is **read-only**. It inspects your card and evidence; it never edits your source to "fix" things while checking. The agent must produce a passing card itself.
 
@@ -68,7 +70,7 @@ The verifier is **read-only**. It inspects your card and evidence; it never edit
 | Term | What it means in x-harness |
 | :-- | :-- |
 | **Completion card** | A YAML file (e.g. `completion-card.yaml`) where an agent records what it claims to have done, with what evidence. |
-| **Verify gate** | The `xh check` / `xh verify` command. It runs the read-only admission logic. |
+| **Verify gate** | The `xh verify` command (alias `xh check`). It runs the read-only admission logic. |
 | **Accepted** | Verification passed. Exit code `0`. The task is officially done. |
 | **Withheld** | Any non-success outcome (`failed`, `blocked`, `skipped`, `timeout`, `error`). Exit code `1`. |
 | **Tier** | One of `light`, `standard`, or `deep`. Determines how much evidence is required. |
@@ -127,10 +129,10 @@ This validates that schemas, policies, templates, and adapter links are present 
 
 ### 2. Run your first verification
 
-The repo ships with **golden examples** — pre-validated reference scenarios. Try a known-good one:
+The repo ships with **26 golden examples** — pre-validated reference scenarios spanning regression, capability, adversarial, conformance-strict, and recovery suites. Try a known-good one:
 
 ```bash
-xh check --card examples/golden/regression/success-light/completion-card.yaml
+xh verify --card examples/golden/regression/success-light/completion-card.yaml
 ```
 
 Expected output:
@@ -144,7 +146,7 @@ checks: 2 passed, 0 failed
 Now try one that is missing required evidence:
 
 ```bash
-xh check --card examples/golden/regression/blocked-missing-evidence/completion-card.yaml
+xh verify --card examples/golden/regression/blocked-missing-evidence/completion-card.yaml
 # exit code 1
 ```
 
@@ -180,26 +182,30 @@ This generates a structured Markdown file with the explicit file set, evidence c
 
 ---
 
-## The nine beginner actions
+## Beginner actions
 
-These are the actions you'll use 95% of the time. The full list is in `xh --help-all`.
+These are the actions you'll use most often. The full list is in `xh --help-all`.
 
 | Action | What it does |
 | :-- | :-- |
-| **`check`** | Run the read-only verification gate on a completion card. |
+| **`verify`** | Run the read-only verification gate on a completion card. |
+| **`check`** | Alias for `verify`. |
+| **`doctor`** | Validate workspace health (schemas, policies, links, freshness). |
+| **`examples`** | Verify bundled golden and real-world examples. |
+| **`context`** | Show canonical context and runtime contract. |
+| **`explain`** | Explain a completion card's admission or withheld state. |
 | **`prepare`** | Check whether your workspace is ready for an agent handoff. |
 | **`recover`** | Generate a recovery playbook from an error message or trace. |
-| **`doctor`** | Validate workspace health (schemas, policies, links, freshness). |
 | **`actions`** | List all beginner-friendly actions (this list). |
 | **`status`** | Show a trace summary or card metrics. |
 | **`reset`** | Clean generated harness state (requires `--confirm`). |
 | **`init`** | Install harness assets into a target workspace. |
 | **`add`** | Add a metadata helper file (claim, evidence, or completion card). |
 
-> **Terminal**: `xh <action>` (e.g. `xh check`)
-> **Agent chat**: `/xh <action>` (e.g. `/xh check`)
+> **Terminal**: `xh <action>` (e.g. `xh verify`)
+> **Agent chat**: `/xh:<action>` (e.g. `/xh:verify`) — see [`docs/ADAPTERS.md`](docs/ADAPTERS.md)
 
-The advanced commands (`handoff`, `verify`, `report`, `packet`, `conformance`, `benchmark`, `contract`, `release`, `boundary`, …) are documented under [`docs/`](docs).
+The advanced commands (`handoff`, `report`, `packet`, `conformance`, `benchmark`, `contract`, `release`, `boundary`, `intake`, `decision`, …) are documented under [`docs/`](docs).
 
 ### Boundary checks (`xh boundary`)
 
@@ -212,7 +218,7 @@ xh boundary check --changed                   # scan only files in `git diff --n
 xh boundary explain <file>                    # show which rules apply to a single file
 ```
 
-When `policies/boundaries.yaml` is absent, `xh boundary check` exits 0 with a warning (opt-in feature). See [`schemas/boundary-policy.schema.json`](schemas/boundary-policy.schema.json) for the rule shape (`id`, `from`, `to_import`, `action`, `severity`, `intermediate?`, `allow?`, `applies_to_languages?`).
+When `policies/boundaries.yaml` is absent, `xh boundary check` exits 0 with a warning (opt-in feature). See [`docs/BOUNDARY.md`](docs/BOUNDARY.md) and [`schemas/boundary-policy.schema.json`](schemas/boundary-policy.schema.json) for the rule shape (`id`, `from`, `to_import`, `action`, `severity`, `intermediate?`, `allow?`, `applies_to_languages?`).
 
 ---
 
@@ -224,7 +230,7 @@ Task delegation uses **only** these three tiers. The labels `small`, `medium`, a
 | :-- | :-- | :-- | :-- |
 | **`light`** | Narrow, low-ceremony work (1–3 files, near read-only). | `files_changed` + (`command_evidence` _or_ `manual_rationale`). | Optional |
 | **`standard`** | Normal multi-step work, bounded synthesis. | `files_changed` + `command_evidence` + `done_checklist` + `prediction`. | Optional |
-| **`deep`** | High-stakes work: architectural changes, migrations, multi-dependency. | Everything `standard` requires, **plus** `evidence_scope`, `untested_regions`, `remaining_risks`, `execution_controls`, `rollback_policy`, `state.read_set`, `state.write_set`. | Required |
+| **`deep`** | High-stakes work: architectural changes, migrations, multi-dependency. | Everything `standard` requires, **plus** `evidence_scope`, `untested_regions`, `remaining_risks`, `execution_controls`, `rollback_policy`, `verification_artifacts`, `state.read_set`, `state.write_set`. | Required |
 
 See [`docs/ADMISSION_POLICY.md`](docs/ADMISSION_POLICY.md) for the full rules.
 
@@ -239,7 +245,7 @@ See [`docs/ADMISSION_POLICY.md`](docs/ADMISSION_POLICY.md) for the full rules.
        │
        ▼
 ┌──────────────┐
-│ xh check ... │  loads schema, loads policy, evaluates evidence floor
+│ xh verify ...│  loads schema, loads policy, evaluates evidence floor
 └──────┬───────┘
        │  read-only
        ▼
@@ -253,6 +259,10 @@ Optional, opt-in verify stages (off by default):
 
 - `xh verify --contract-oracles` — rule-based line-level assertions (`grep_rules`, `dependency_rules`).
 - `xh verify --context-floor` — minimal file/ref presence checks.
+- `xh verify --context-enforce off|advisory|block` — enforce context-manifest alignment.
+- `xh verify --boundary-enforce off|advisory|block_high|block_all` — enforce boundary policy.
+- `xh verify --decision-enforce off|advisory|block` — enforce decision-memory linkage.
+- `xh verify --intent-enforce off|advisory|block` — enforce product-intent declaration.
 - `xh verify --strict` — strict-schema mode for `withheld_reason` output.
 - `xh verify --mutation-guard` — detect any verifier-side source mutation.
 
@@ -288,6 +298,9 @@ You only need **one**. Adapters are thin wrappers around the same CLI; they do n
 | [`docs/SCHEMAS.md`](docs/SCHEMAS.md) | JSON schema inventory. |
 | [`docs/RECOVERY.md`](docs/RECOVERY.md) | Recovery routing and playbook generation. |
 | [`docs/ADAPTERS.md`](docs/ADAPTERS.md) | Full adapter guide and tier-selection reference. |
+| [`docs/BOUNDARY.md`](docs/BOUNDARY.md) | Boundary policy lint, check, and verify integration. |
+| [`docs/INTAKE.md`](docs/INTAKE.md) | Task intake tiering and readiness evaluation. |
+| [`docs/DECISION.md`](docs/DECISION.md) | Decision-memory records (ADR-lite) and linkage. |
 | [`docs/CONFORMANCE_STRICT_PROFILE.md`](docs/CONFORMANCE_STRICT_PROFILE.md) | Strict-profile rules and verification criteria. |
 | [`docs/TYPESCRIPT_MAINTENANCE.md`](docs/TYPESCRIPT_MAINTENANCE.md) | Maintenance policy for the TypeScript fallback. |
 | [`docs/CI.md`](docs/CI.md) | CI integration and dual-run gates. |
@@ -300,11 +313,16 @@ The authoritative contract is [`X_HARNESS.md`](X_HARNESS.md).
 
 ---
 
+## Examples at a glance
+
+- **26 golden examples** — pre-validated reference scenarios across regression, capability, adversarial, conformance-strict, and recovery suites under [`examples/golden/`](examples/golden/).
+- **Real-world examples** — Next.js app and monorepo boundary setups under [`examples/real-world/`](examples/real-world/).
+
 ## Project status
 
 - **Version**: `0.99.0-rc1` (release candidate). The CLI is feature-complete for the v0.x contract, but the project is **pre-1.0**. Pin your version and expect minor contract changes before `1.0`.
 - **Native runtime**: Go CLI (recommended). The TypeScript CLI is a source-checkout compatibility baseline only and is no longer shipped in the published npm package.
-- **No production claims**: A passing `xh check` is **not** a guarantee of correctness. It means your card matches the policy. See [`docs/VERIFY_GATE.md`](docs/VERIFY_GATE.md) for what the gate does and does not check.
+- **No production claims**: A passing `xh verify` is **not** a guarantee of correctness. It means your card matches the policy. See [`docs/VERIFY_GATE.md`](docs/VERIFY_GATE.md) for what the gate does and does not check.
 
 ---
 
