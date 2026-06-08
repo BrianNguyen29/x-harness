@@ -1,0 +1,8 @@
+> nextjs-app@0.1.0 typecheck
+> tsc --noEmit
+
+app/settings/page.tsx: ok
+app/settings/form.tsx: ok
+app/settings/form.test.tsx: ok
+
+No errors found.

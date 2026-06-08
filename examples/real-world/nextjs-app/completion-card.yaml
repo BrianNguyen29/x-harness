@@ -1,0 +1,99 @@
+schema_version: "1"
+task_id: TASK-NEXTJS-SETTINGS-001
+tier: standard
+owner: charlie
+accountable: dana
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - examples/real-world/nextjs-app/README.md
+  architecture_refs: []
+  decision_refs: []
+  test_matrix_refs: []
+  unresolved_context_questions: []
+  context_evidence: []
+state:
+  read_set:
+    - app/settings/page.tsx
+    - app/settings/form.tsx
+  write_set:
+    - app/settings/page.tsx
+    - app/settings/form.tsx
+    - app/settings/form.test.tsx
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Added Next.js settings page with client-side form validation
+  expected_effect: Settings form rejects empty display names and invalid emails; tests and typecheck pass
+  measurable_signal: npm test -- form && npm run typecheck
+  falsification_method: Run tests without validation rules; empty names and invalid emails should be accepted
+  horizon: same_verify
+evidence:
+  files_changed:
+    - app/settings/page.tsx
+    - app/settings/form.tsx
+    - app/settings/form.test.tsx
+  command_evidence:
+    - command: npm test -- form
+      exit_code: 0
+    - command: npm run typecheck
+      exit_code: 0
+  verification_artifacts:
+    - kind: unit_test
+      command: npm test -- form
+      status: passed
+      verifies:
+        - "empty display name is rejected"
+        - "invalid email format is rejected"
+        - "valid input is accepted"
+      does_not_verify:
+        - "server-side validation"
+        - "E2E browser behavior"
+      confidence: medium
+    - kind: typecheck
+      command: npm run typecheck
+      status: passed
+      verifies:
+        - "TypeScript type consistency across changed files"
+      does_not_verify:
+        - "runtime browser type safety"
+      confidence: medium
+  untested_regions:
+    - "No E2E test was run for the settings page navigation flow."
+    - "No visual regression test was run for the form UI."
+  remaining_risks:
+    - "Email regex may reject valid but uncommon addresses."
+    - "Form state reset behavior on route change was not tested."
+  rollback_policy:
+    - "Revert the commit adding app/settings/* and remove the route from navigation."
+  execution_controls:
+    - "Deploy behind a feature flag; enable for internal users first."
+claim:
+  fix_status: fixed
+  summary: Added Next.js settings page with client-side form validation and scoped evidence
+  evidence:
+    - description: Settings page source
+      url: ./app/settings/page.tsx
+    - description: Form component with validation
+      url: ./app/settings/form.tsx
+    - description: Unit tests
+      url: ./app/settings/form.test.tsx
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: admission-passed
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: charlie

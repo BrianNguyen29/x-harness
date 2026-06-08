@@ -1,0 +1,13 @@
+> nextjs-app@0.1.0 test
+> vitest run
+
+ RUN  v1.6.0  /home/user/work/nextjs-app
+
+ ✓ app/settings/form.test.tsx (3 tests) 12ms
+   ✓ rejects empty display name
+   ✓ rejects invalid email format
+   ✓ accepts valid input
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Duration  345ms

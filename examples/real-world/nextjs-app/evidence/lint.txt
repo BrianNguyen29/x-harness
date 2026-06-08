@@ -1,0 +1,4 @@
+> nextjs-app@0.1.0 lint
+> eslint app/settings/
+
+No errors or warnings found.
