@@ -32,5 +32,36 @@
       "templates/SUBAGENT_TASK_standard.md",
       "templates/SUBAGENT_TASK_deep.md"
     ]
+  },
+  "slash_commands": {
+    "pattern": "/xh:<action>",
+    "maps_to": "xh <action>",
+    "description": "Agent-chat shortcut notation mapped to xh CLI commands",
+    "examples": [
+      "/xh:check",
+      "/xh:prepare",
+      "/xh:verify",
+      "/xh:intake",
+      "/xh:recover",
+      "/xh:doctor",
+      "/xh:actions",
+      "/xh:status",
+      "/xh:reset"
+    ],
+    "compatibility": [
+      "/xh <action>",
+      "/xh check",
+      "/xh prepare",
+      "/xh recover"
+    ],
+    "legacy": [
+      "/xh-check",
+      "/xh-prepare",
+      "/xh-recover",
+      "/xh-doctor",
+      "/xh-actions",
+      "/xh-status",
+      "/xh-reset"
+    ]
   }
 }
