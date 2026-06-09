@@ -188,13 +188,13 @@ jobs:
           set -euo pipefail
           PACK_FILE="$(find "$PWD/.x-harness/release" -name 'x-harness-*.tgz' -print -quit)"
           TMP_REPO="$(mktemp -d)"
-          (cd "$TMP_REPO" && npm init -y)
-          npm --prefix "$TMP_REPO" install "$PACK_FILE"
-          "$TMP_REPO/node_modules/.bin/xh" init "$TMP_REPO/harness" --minimal
+          tar -xzf "$PACK_FILE" -C "$TMP_REPO"
+          PACKAGED_CLI="$TMP_REPO/package/bin/x-harness.js"
+          node "$PACKAGED_CLI" init "$TMP_REPO/harness" --minimal
           test -f "$TMP_REPO/harness/AGENTS.md"
           cp "$PWD/examples/00-minimal/completion-card.yaml" "$TMP_REPO/harness/completion-card.yaml"
-          "$TMP_REPO/node_modules/.bin/xh" verify --card "$TMP_REPO/harness/completion-card.yaml" --json
-          "$TMP_REPO/node_modules/.bin/xh" doctor --root "$PWD"
+          node "$PACKAGED_CLI" verify --card "$TMP_REPO/harness/completion-card.yaml" --json
+          node "$PACKAGED_CLI" doctor --root "$PWD"
 
       - name: Packed CLI Go smoke test (forced Go path)
         shell: bash
@@ -202,12 +202,12 @@ jobs:
           set -euo pipefail
           PACK_FILE="$(find "$PWD/.x-harness/release" -name 'x-harness-*.tgz' -print -quit)"
           TMP_REPO="$(mktemp -d)"
-          (cd "$TMP_REPO" && npm init -y)
-          npm --prefix "$TMP_REPO" install "$PACK_FILE"
-          X_HARNESS_GO=1 "$TMP_REPO/node_modules/.bin/xh" --version
-          X_HARNESS_GO=1 "$TMP_REPO/node_modules/.bin/xh" doctor --root "$PWD" --json >/dev/null
-          X_HARNESS_GO=1 "$TMP_REPO/node_modules/.bin/xh" examples verify --json >/dev/null
-          X_HARNESS_GO=1 "$TMP_REPO/node_modules/.bin/xh" verify --card "$PWD/examples/golden/regression/success-light/completion-card.yaml" --json >/dev/null
+          tar -xzf "$PACK_FILE" -C "$TMP_REPO"
+          PACKAGED_CLI="$TMP_REPO/package/bin/x-harness.js"
+          X_HARNESS_GO=1 node "$PACKAGED_CLI" --version
+          X_HARNESS_GO=1 node "$PACKAGED_CLI" doctor --root "$PWD" --json >/dev/null
+          X_HARNESS_GO=1 node "$PACKAGED_CLI" examples verify --json >/dev/null
+          X_HARNESS_GO=1 node "$PACKAGED_CLI" verify --card "$PWD/examples/golden/regression/success-light/completion-card.yaml" --json >/dev/null
 
       - name: Frozen transfer compatibility
         shell: bash
@@ -215,12 +215,12 @@ jobs:
           set -euo pipefail
           PACK_FILE="$(find "$PWD/.x-harness/release" -name 'x-harness-*.tgz' -print -quit)"
           TMP_REPO="$(mktemp -d)"
-          (cd "$TMP_REPO" && npm init -y)
-          npm --prefix "$TMP_REPO" install "$PACK_FILE"
-          "$TMP_REPO/node_modules/.bin/xh" export --frozen --root "$PWD" --out "$TMP_REPO/x-harness-frozen.tar.gz" --json
-          "$TMP_REPO/node_modules/.bin/xh" frozen verify "$TMP_REPO/x-harness-frozen.tar.gz" --json
-          "$TMP_REPO/node_modules/.bin/xh" import "$TMP_REPO/x-harness-frozen.tar.gz" --frozen --target "$TMP_REPO/frozen-target" --merge --json
-          "$TMP_REPO/node_modules/.bin/xh" doctor --root "$TMP_REPO/frozen-target"
+          tar -xzf "$PACK_FILE" -C "$TMP_REPO"
+          PACKAGED_CLI="$TMP_REPO/package/bin/x-harness.js"
+          node "$PACKAGED_CLI" export --frozen --root "$PWD" --out "$TMP_REPO/x-harness-frozen.tar.gz" --json
+          node "$PACKAGED_CLI" frozen verify "$TMP_REPO/x-harness-frozen.tar.gz" --json
+          node "$PACKAGED_CLI" import "$TMP_REPO/x-harness-frozen.tar.gz" --frozen --target "$TMP_REPO/frozen-target" --merge --json
+          node "$PACKAGED_CLI" doctor --root "$TMP_REPO/frozen-target"
 
       - name: "TypeScript compatibility: strict verify"
         run: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
