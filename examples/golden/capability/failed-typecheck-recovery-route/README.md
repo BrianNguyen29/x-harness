@@ -16,7 +16,7 @@ An agent implements changes but the verify gate registers type compilation failu
 ## Expected verify outcome
 
 ```bash
-node packages/cli/dist/index.js verify --card examples/golden/failed-typecheck-recovery-route/completion-card.yaml
+xh verify --card examples/golden/capability/failed-typecheck-recovery-route/completion-card.yaml
 # -> WITHHELD
 # Reason: typecheck failed (Suggested recovery owner: implementation-worker)
 ```
@@ -26,5 +26,5 @@ node packages/cli/dist/index.js verify --card examples/golden/failed-typecheck-r
 Run the verification gate:
 
 ```bash
-node packages/cli/dist/index.js verify --card examples/golden/failed-typecheck-recovery-route/completion-card.yaml
+xh verify --card examples/golden/capability/failed-typecheck-recovery-route/completion-card.yaml
 ```

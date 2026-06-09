@@ -100,7 +100,7 @@ xh packet create --card completion-card.yaml
 ```
 
 Core command set includes:
-- Beginner actions: `check` (alias for verify), `prepare` (alias for handoff readiness), `recover` (alias for recovery suggest), `doctor`, `actions`, `status`, `reset`, `init`, `add`
+- Beginner actions: `check` (alias for verify), `prepare` (alias for handoff readiness), `recover` (alias for recovery suggest), `doctor`, `actions`, `status`, `reset`, `init`, `add`, `start`, `learn`, `quick`, `run`, `ci`
 - Advanced commands: `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `recovery`, `packet`, `conformance`, `scan`, `adapters`, `card`, `profile`, `readiness`, `release`, `benchmark`, `contract`, `boundary`
 
 Run `xh --help` for beginner-friendly commands. Use `xh --help-all` for the full command registry.

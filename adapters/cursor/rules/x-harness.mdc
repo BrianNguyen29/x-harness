@@ -37,13 +37,16 @@ Use only `light`, `standard`, `deep`. Do not use `small`, `medium`, `large`.
 
 ```bash
 # Beginner actions (primary interface)
-node packages/cli/dist/index.js check --card completion-card.yaml --strict
-node packages/cli/dist/index.js prepare --json
-node packages/cli/dist/index.js recover --errors "tests failed"
-node packages/cli/dist/index.js doctor --root .
-node packages/cli/dist/index.js actions
-node packages/cli/dist/index.js status
-node packages/cli/dist/index.js reset --confirm
+xh check --card completion-card.yaml --strict
+xh prepare --json
+xh recover --errors "tests failed"
+xh doctor --root .
+xh actions
+xh status
+xh reset --confirm
+
+# Compatibility fallback (source checkout only)
+# node packages/cli/dist/index.js check --card completion-card.yaml --strict
 ```
 
 ## Slash commands
@@ -52,6 +55,9 @@ In agent chat, `/xh:<command>` is the preferred shortcut notation and maps direc
 
 | Namespaced       | Maps to CLI    |
 | :--------------- | :------------- |
+| `/xh:start`      | `xh start`     |
+| `/xh:learn`      | `xh learn`     |
+| `/xh:quick`      | `xh quick`     |
 | `/xh:check`      | `xh check`     |
 | `/xh:prepare`    | `xh prepare`   |
 | `/xh:recover`    | `xh recover`   |
@@ -59,6 +65,10 @@ In agent chat, `/xh:<command>` is the preferred shortcut notation and maps direc
 | `/xh:actions`    | `xh actions`   |
 | `/xh:status`     | `xh status`    |
 | `/xh:reset`      | `xh reset`     |
+| `/xh:init`       | `xh init`      |
+| `/xh:add`        | `xh add`       |
+| `/xh:run`        | `xh run`       |
+| `/xh:ci`         | `xh ci`        |
 | `/xh:verify`     | `xh verify`    |
 | `/xh:intake`     | `xh intake`    |
 | `/xh:handoff`    | `xh handoff`   |

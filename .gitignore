@@ -53,3 +53,6 @@ temp/
 .x-harness/
 !.x-harness/managed-blocks.yaml
 .codegraph/
+
+# Local proposal docs (not for commit)
+de_xuat_cai_thien_x_harness*.md

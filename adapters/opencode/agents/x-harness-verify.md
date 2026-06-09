@@ -27,9 +27,11 @@ Read-only verifier for OpenCode adapter.
 
 ```bash
 # Beginner actions (primary interface)
-node packages/cli/dist/index.js check --card completion-card.yaml --strict --json
-node packages/cli/dist/index.js doctor --root .
-node packages/cli/dist/index.js status
+xh check --card completion-card.yaml --strict --json
+xh doctor --root .
+xh status
+# Compatibility fallback (source checkout only):
+# node packages/cli/dist/index.js check --card completion-card.yaml --strict --json
 ```
 
 ## Output
@@ -44,8 +46,8 @@ node packages/cli/dist/index.js status
 ## Evidence scope checks
 
 - Light: `files_changed` + `command_evidence` or `manual_rationale`.
-- Standard: `files_changed` + `command_evidence`; recommends `verifies`, `does_not_verify`, `untested_regions`; requires `done_checklist` and `prediction`.
-- Deep: `files_changed` + `command_evidence` + scoped `verification_artifacts` + `untested_regions` + `remaining_risks` + `rollback_policy` + `execution_controls` + `state.read_set/write_set` + `done_checklist` + `prediction`.
+- Standard: `files_changed` + `command_evidence`; `evidence_scope_declared` and `untested_regions_declared` are recommended; requires `done_checklist` and `prediction`.
+- Deep: `files_changed` + `command_evidence` + `evidence_scope_declared` + `untested_regions_declared` + `remaining_risks_declared` + `execution_controls_present` + `rollback_policy_present` + `state.read_set` + `state.write_set` + `done_checklist` + `prediction`.
 
 ## Governance
 

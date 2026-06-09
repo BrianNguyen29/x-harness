@@ -19,7 +19,7 @@ The repository includes these public CI workflows:
 
 The verify workflow is the main pull-request gate. See `.github/workflows/x-harness-verify.yml` for the current pinned YAML. At a high level it runs four jobs:
 
-- `quality` — Node 22 matrix for `typecheck`, `build`, `lint`, `format:check`, and `test`.
+- `quality` — Node 22 matrix for `typecheck`, `build`, `lint`, `format`, and `test`.
 - `go-quality` — Go 1.22 matrix for `go test ./...`, `go test -race ./...`, `go vet ./...`, `go build ./cmd/x-harness`, and `npm run parity:check-go`.
 - `go-fuzz-smoke` — bounded fuzz target (`FuzzValidate` in `./internal/schema`).
 - `verify-gates` — builds both CLIs and runs Go-native primary gates plus TypeScript compatibility parity gates.

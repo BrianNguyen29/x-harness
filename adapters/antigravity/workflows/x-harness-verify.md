@@ -15,8 +15,8 @@ Run read-only verification against a completion card and emit an admission outco
 4. **Check evidence**:
    - All tiers require non-empty `evidence.files_changed`.
    - Light requires `command_evidence` or `manual_rationale`.
-   - Standard/deep require `command_evidence`; standard/deep completion cards also require `done_checklist` and `prediction`.
-   - Deep requires scoped `verification_artifacts`, `untested_regions`, `remaining_risks`, `rollback_policy`, `execution_controls`, and `state.read_set/write_set`.
+    - Standard/deep require `command_evidence`; standard/deep completion cards also require `done_checklist` and `prediction`.
+    - Deep requires `evidence_scope_declared`, `untested_regions_declared`, `remaining_risks_declared`, `execution_controls_present`, `rollback_policy_present`, `state.read_set`, `state.write_set`, and scoped `verification_artifacts`.
 5. **Note PGV advice** as advisory-only. Do not let PGV override a passing core admission.
 6. **Emit outcome**:
    - `success` + `accepted` if all checks pass.

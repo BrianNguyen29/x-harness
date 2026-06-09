@@ -37,9 +37,11 @@ handoff:
 ## Integration
 
 ```bash
-node packages/cli/dist/index.js check --card completion-card.yaml --strict
+xh check --card completion-card.yaml --strict
+# Compatibility fallback (source checkout only):
+# node packages/cli/dist/index.js check --card completion-card.yaml --strict
 # If blocked, use this agent to determine recovery path.
-# After recovery, re-run: node packages/cli/dist/index.js recover --errors "..." --outcome blocked
+# After recovery, re-run: xh recover --errors "..." --outcome blocked
 ```
 
 <!-- BEGIN X-HARNESS MANAGED CONTRACT: opencode-recover-agent-contract -->

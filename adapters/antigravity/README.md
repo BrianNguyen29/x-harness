@@ -84,8 +84,10 @@ Use `/xh:<command>` as the preferred shortcut notation in agent chat. The space-
 2. **Execute & Test**: The implementation agent performs changes, tests execution, and writes a `completion-card.yaml`.
 3. **Trigger Verify Gate**: Run the verification utility in read-only mode:
    ```bash
-   node packages/cli/dist/index.js check --card completion-card.yaml --strict
-   # or: node packages/cli/dist/index.js verify --card completion-card.yaml --strict
+   xh check --card completion-card.yaml --strict
+   # or: xh verify --card completion-card.yaml --strict
+   # Compatibility fallback (source checkout only):
+   # node packages/cli/dist/index.js check --card completion-card.yaml --strict
    ```
 4. **Resolution**: If verification succeeds, mark as `accepted`. If it fails, routing guidelines from `x-harness-recover.md` are executed based on the blocking predicates.
 

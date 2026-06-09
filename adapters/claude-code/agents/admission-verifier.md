@@ -20,10 +20,14 @@ Read-only inspector. Validate the completion card and run admission checks.
 
 ```bash
 # Validate a completion card (use check - primary beginner action)
-node packages/cli/dist/index.js check --card completion-card.yaml --strict --json
+xh check --card completion-card.yaml --strict --json
+# Compatibility fallback (source checkout only):
+# node packages/cli/dist/index.js check --card completion-card.yaml --strict --json
 
 # Check repo health
-node packages/cli/dist/index.js doctor --root .
+xh doctor --root .
+# Compatibility fallback (source checkout only):
+# node packages/cli/dist/index.js doctor --root .
 ```
 
 ## Output

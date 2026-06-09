@@ -40,7 +40,7 @@ Review your task's complexity and impact to choose the narrowest tier that guara
 
 - **`light` Tier**: Used for minor, superficial changes (e.g. styling, fixing typos, editing documentation). Requires basic summary claims.
 - **`standard` Tier**: Used for standard features, logical changes, or normal bugfixes. Requires declaring file read/write sets, local unit test runs, and documenting any untested regions.
-- **`deep` Tier**: Used for major structural code modifications, security-sensitive changes, or migrations. Requires independent read-only reviewer validation, cryptographic-grade evidence, and a comprehensive risk assessment.
+- **`deep` Tier**: Used for major structural code modifications, security-sensitive changes, or migrations. Requires scoped evidence, execution controls, rollback policy, and a comprehensive risk assessment.
 
 ### Step 2: Collect Evidence & Artifacts
 
@@ -64,8 +64,10 @@ Ensure the following blocks are populated matching the tier requirements:
 Never propose completion without verifying your work product first! Run the local verification gate using `check`:
 
 ```bash
-node packages/cli/dist/index.js check --card completion-card.yaml --strict
-# or: node packages/cli/dist/index.js verify --card completion-card.yaml --strict
+xh check --card completion-card.yaml --strict
+# or: xh verify --card completion-card.yaml --strict
+# Compatibility fallback (source checkout only):
+# node packages/cli/dist/index.js check --card completion-card.yaml --strict
 ```
 
 - **Outcome - Success**: If it outputs `outcome: success` with `acceptance_status: accepted`, proceed to Step 5.

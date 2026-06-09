@@ -124,13 +124,13 @@ _(The command returns a non-zero exit code `1` because the evidence floor policy
 To integrate `x-harness` into a separate development project, run the `init` command with the target directory:
 
 ```bash
-# Minimal mode (default; installs core agent rules, verify gate config, and handoff templates)
+# Minimal mode (default): AGENTS.md, X_HARNESS.md, verifier/runtime docs, handoff templates, admission policy, schemas
 xh init --minimal ./my-project
 
-# Standard mode (Minimal + schemas, policies, and solo agent examples)
+# Standard mode: minimal assets + examples/01-solo-agent, examples/02-assisted-agent, schemas, policies, docs/ADAPTERS.md
 xh init --standard ./my-project
 
-# Full mode (Standard + multi-agent examples, platform adapters, and GitHub Actions)
+# Full mode: standard assets + all examples, templates, adapters, and GitHub Actions
 xh init --full ./my-project
 ```
 

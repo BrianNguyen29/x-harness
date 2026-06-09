@@ -5,7 +5,7 @@ verify_state: pending
 stale_ground: false
 goal: Add a bounded schema for subagent handoff/task templates and a simple validation hook/test.
 context:
-  repo: /home/uong_guyen/work/x-harness
+  repo: /workspace/x-harness
   refs:
     - templates/SUBAGENT_TASK_light.md
     - templates/SUBAGENT_TASK_standard.md
