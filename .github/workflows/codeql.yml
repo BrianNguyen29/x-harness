@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   analyze:
-    name: Analyze JavaScript/TypeScript
+    name: Analyze Go and JavaScript/TypeScript
     runs-on: ubuntu-latest
     permissions:
       security-events: write

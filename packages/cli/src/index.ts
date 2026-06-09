@@ -79,7 +79,7 @@ const program = new Command();
 program
   .name("xh")
   .description("A lightweight verify-gated harness for AI-agent workflows")
-  .version("0.1.0")
+  .version("0.99.0-rc1")
   .helpOption(false)
   .option("--lang <code>", "Language", "en");
 
@@ -155,7 +155,7 @@ function hideAdvancedCommands() {
 }
 
 function printStartHere(lang: Lang) {
-  console.log("xh 0.1.0");
+  console.log("xh 0.99.0-rc1");
   console.log("");
   console.log("A lightweight verify-gated harness for AI-agent workflows.");
   console.log("");
@@ -198,7 +198,7 @@ function printStartHere(lang: Lang) {
 }
 
 function printHelp(lang: Lang) {
-  console.log("xh 0.1.0");
+  console.log("xh 0.99.0-rc1");
   console.log("");
   console.log("A lightweight verify-gated harness for AI-agent workflows.");
   console.log("");
@@ -248,7 +248,7 @@ function printHelp(lang: Lang) {
 }
 
 function printHelpMaturity() {
-  console.log("xh 0.1.0");
+  console.log("xh 0.99.0-rc1");
   console.log("");
   console.log("A lightweight verify-gated harness for AI-agent workflows.");
   console.log("");

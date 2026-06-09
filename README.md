@@ -216,7 +216,7 @@ These are the actions you'll use most often. The full list is in `xh --help-all`
 > **Terminal**: `xh <action>` (e.g. `xh check`)
 > **Agent chat**: `/xh:<action>` (e.g. `/xh:check`) — see [`docs/ADAPTERS.md`](docs/ADAPTERS.md)
 
-The advanced commands (`handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `benchmark`, `recovery`, `packet`, `intake`, `governance`, `intervention`, `prediction`, `components`, `evidence`, `episode`, `attribution`, `permissions`, `evolve`, `export`, `import`, `frozen`, `federation`, `approval-risk`, `agent-profile`, `cost`, `contract`, `explain`, `conformance`, `release`, `boundary`, `policy`, `scan`, `card`, `readiness`, `adapters`, `repair`, `uninstall`, …) are documented under [`docs/`](docs).
+The advanced commands (`handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `benchmark`, `recovery`, `packet`, `intake`, `governance`, `intervention`, `prediction`, `components`, `evidence`, `episode`, `attribution`, `permissions`, `evolve`, `export`, `import`, `frozen`, `federation`, `approval-risk`, `agent-profile`, `cost`, `contract`, `explain`, `conformance`, `release`, `boundary`, `policy`, `scan`, `card`, `readiness`, `adapters`, `repair`, `uninstall`, `profile`, …) are documented under [`docs/`](docs).
 
 ### Boundary checks (`xh boundary`)
 

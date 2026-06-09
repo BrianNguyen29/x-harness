@@ -1,4 +1,4 @@
-xh 0.1.0
+xh 0.99.0-rc1
 
 A lightweight verify-gated harness for AI-agent workflows.
 

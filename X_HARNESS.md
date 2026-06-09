@@ -19,7 +19,7 @@ Agents may perform work and propose completion. Agents may not self-admit comple
 
 ## Workflow
 
-The v0.1 workflow is intentionally narrow:
+The harness workflow is intentionally narrow:
 
 ```txt
 Task
@@ -101,7 +101,7 @@ xh packet create --card completion-card.yaml
 
 Core command set includes:
 - Beginner actions: `check` (alias for verify), `prepare` (alias for handoff readiness), `recover` (alias for recovery suggest), `doctor`, `actions`, `status`, `reset`, `init`, `add`, `start`, `learn`, `quick`, `run`, `ci`
-- Advanced commands: `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `recovery`, `packet`, `conformance`, `scan`, `adapters`, `card`, `profile`, `readiness`, `release`, `benchmark`, `contract`, `boundary`
+- Advanced commands: `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `benchmark`, `recovery`, `packet`, `intake`, `governance`, `intervention`, `prediction`, `components`, `evidence`, `episode`, `attribution`, `permissions`, `evolve`, `export`, `import`, `frozen`, `federation`, `approval-risk`, `agent-profile`, `cost`, `contract`, `start`, `learn`, `quick`, `run`, `ci`, `actions`, `profile`, plus Go-only `explain`, `conformance`, `release`, `boundary`, `policy`, `scan`, `card`, `readiness`, `adapters`, `repair`, `uninstall`
 
 Run `xh --help` for beginner-friendly commands. Use `xh --help-all` for the full command registry.
 
@@ -167,6 +167,7 @@ policies/
   rollback.yaml
   scanner.yaml
   stale-ground.yaml
+  context-floor.yaml
 
 examples/
   00-minimal/
