@@ -135,6 +135,18 @@ describe("alias registration", () => {
       const { stdout } = await execaNode(["actions", "--help"]);
       expect(stdout).toContain("actions");
     });
+
+    it("actions --lang vi shows Vietnamese output", async () => {
+      const { stdout, exitCode } = await execaNode(["actions", "--lang", "vi"]);
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("Hành động dành cho người mới");
+      expect(stdout).toContain("Bắt đầu");
+      expect(stdout).toContain("Tác vụ hằng ngày");
+      expect(stdout).toContain("Sức khỏe & khôi phục");
+      expect(stdout).toContain("Tự động hóa");
+      expect(stdout).toContain("Hành động");
+      expect(stdout).toContain("Mô tả");
+    });
   });
 
   describe("status command", () => {

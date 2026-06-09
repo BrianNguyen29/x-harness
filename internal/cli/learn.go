@@ -17,7 +17,7 @@ type LearnResult struct {
 	NextSteps []string       `json:"next_steps"`
 }
 
-func handleLearn(args []string, stdout io.Writer, stderr io.Writer) int {
+func handleLearn(args []string, stdout io.Writer, stderr io.Writer, lang Lang) int {
 	jsonMode := false
 	for _, a := range args {
 		switch a {
@@ -66,16 +66,29 @@ deep: adds evidence scope declaration, untested regions, remaining risks, execut
 			return ExitError
 		}
 	} else {
-		WriteLine(stdout, "# xh learn - Concept tour")
+		WriteLine(stdout, "# %s", learnTitle(lang))
 		WriteLine(stdout, "")
-		for _, sec := range sections {
-			WriteLine(stdout, "## %s", sec.Title)
+		for i, sec := range sections {
+			title := sec.Title
+			body := sec.Body
+			switch i {
+			case 0:
+				title = learnOverview(lang)
+				body = learnOverviewBody(lang)
+			case 1:
+				title = learnCoreConcepts(lang)
+				body = learnCoreConceptsBody(lang)
+			case 2:
+				title = learnTiersAndEvidence(lang)
+				body = learnTiersAndEvidenceBody(lang)
+			}
+			WriteLine(stdout, "## %s", title)
 			WriteLine(stdout, "")
-			WriteLine(stdout, "%s", sec.Body)
+			WriteLine(stdout, "%s", body)
 			WriteLine(stdout, "")
 		}
-		WriteLine(stdout, "Next steps:")
-		for _, s := range nextSteps {
+		WriteLine(stdout, "%s", learnNextStepsLabel(lang))
+		for _, s := range learnNextSteps(lang) {
 			WriteLine(stdout, "  - %s", s)
 		}
 	}

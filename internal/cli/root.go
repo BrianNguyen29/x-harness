@@ -96,36 +96,17 @@ func isBeginnerCommand(name string) bool {
 	return false
 }
 
-func beginnerCommandDesc(name string) string {
-	switch name {
-	case "check":
-		return "Run read-only verification against a completion card"
-	case "prepare":
-		return "Check if workspace is ready for agent task handoff"
-	case "recover":
-		return "Get recovery playbook suggestions from errors or trace"
-	case "status":
-		return "Show trace summary"
-	case "reset":
-		return "Clean generated harness state"
-	}
-	for _, c := range commands {
-		if c.Name == name {
-			return c.Description
-		}
-	}
-	return ""
-}
-
 func Run(args []string, stdout io.Writer, stderr io.Writer) int {
-	if len(args) == 0 {
-		printStartHere(stdout)
+	lang, cleanArgs := parseLang(args)
+
+	if len(cleanArgs) == 0 {
+		printStartHere(stdout, lang)
 		return ExitOK
 	}
 
-	switch args[0] {
+	switch cleanArgs[0] {
 	case "-h", "--help", "help":
-		printHelp(stdout)
+		printHelp(stdout, lang)
 		return ExitOK
 	case "--help-all":
 		printHelpAll(stdout)
@@ -137,114 +118,114 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		WriteLine(stdout, "xh %s", Version)
 		return ExitOK
 	case "actions":
-		printActions(stdout)
+		printActions(stdout, lang)
 		return ExitOK
 	case "start":
-		return handleStart(args[1:], stdout, stderr)
+		return handleStart(cleanArgs[1:], stdout, stderr)
 	case "learn":
-		return handleLearn(args[1:], stdout, stderr)
+		return handleLearn(cleanArgs[1:], stdout, stderr, lang)
 	case "quick":
-		return handleQuick(args[1:], stdout, stderr)
+		return handleQuick(cleanArgs[1:], stdout, stderr, lang)
 	case "run":
-		return handleRun(args[1:], stdout, stderr)
+		return handleRun(cleanArgs[1:], stdout, stderr)
 	case "ci":
-		return handleRun(append([]string{"builtin:ci"}, args[1:]...), stdout, stderr)
+		return handleRun(append([]string{"builtin:ci"}, cleanArgs[1:]...), stdout, stderr)
 	case "context":
-		return handleContext(args[1:], stdout, stderr)
+		return handleContext(cleanArgs[1:], stdout, stderr)
 	case "verify", "check":
-		return handleVerify(args[1:], stdout, stderr)
+		return handleVerify(cleanArgs[1:], stdout, stderr)
 	case "doctor":
-		return handleDoctor(args[1:], stdout, stderr)
+		return handleDoctor(cleanArgs[1:], stdout, stderr)
 	case "benchmark":
-		return handleBenchmark(args[1:], stdout, stderr)
+		return handleBenchmark(cleanArgs[1:], stdout, stderr)
 	case "examples":
-		return handleExamples(args[1:], stdout, stderr)
+		return handleExamples(cleanArgs[1:], stdout, stderr)
 	case "handoff":
-		return handleHandoff(args[1:], stdout, stderr)
+		return handleHandoff(cleanArgs[1:], stdout, stderr)
 	case "prepare":
-		return handlePrepare(args[1:], stdout, stderr)
+		return handlePrepare(cleanArgs[1:], stdout, stderr)
 	case "trace":
-		return handleTrace(args[1:], stdout, stderr)
+		return handleTrace(cleanArgs[1:], stdout, stderr)
 	case "report", "status":
-		return handleReport(args[1:], stdout, stderr)
+		return handleReport(cleanArgs[1:], stdout, stderr)
 	case "recover":
-		return handleRecover(args[1:], stdout, stderr)
+		return handleRecover(cleanArgs[1:], stdout, stderr)
 	case "reset":
-		return handleReset(args[1:], stdout, stderr)
+		return handleReset(cleanArgs[1:], stdout, stderr)
 	case "add":
-		return handleAdd(args[1:], stdout, stderr)
+		return handleAdd(cleanArgs[1:], stdout, stderr)
 	case "init":
-		return handleInit(args[1:], stdout, stderr)
+		return handleInit(cleanArgs[1:], stdout, stderr)
 	case "recovery":
-		return handleRecovery(args[1:], stdout, stderr)
+		return handleRecovery(cleanArgs[1:], stdout, stderr)
 	case "packet":
-		return handlePacket(args[1:], stdout, stderr)
+		return handlePacket(cleanArgs[1:], stdout, stderr)
 	case "attribution":
-		return handleAttribution(args[1:], stdout, stderr)
+		return handleAttribution(cleanArgs[1:], stdout, stderr)
 	case "evidence":
-		return handleEvidence(args[1:], stdout, stderr)
+		return handleEvidence(cleanArgs[1:], stdout, stderr)
 	case "episode":
-		return handleEpisode(args[1:], stdout, stderr)
+		return handleEpisode(cleanArgs[1:], stdout, stderr)
 	case "components":
-		return handleComponents(args[1:], stdout, stderr)
+		return handleComponents(cleanArgs[1:], stdout, stderr)
 	case "permissions":
-		return handlePermissions(args[1:], stdout, stderr)
+		return handlePermissions(cleanArgs[1:], stdout, stderr)
 	case "prediction":
-		return handlePrediction(args[1:], stdout, stderr)
+		return handlePrediction(cleanArgs[1:], stdout, stderr)
 	case "approval-risk":
-		return handleApprovalRisk(args[1:], stdout, stderr)
+		return handleApprovalRisk(cleanArgs[1:], stdout, stderr)
 	case "agent-profile":
-		return handleAgentProfile(args[1:], stdout, stderr)
+		return handleAgentProfile(cleanArgs[1:], stdout, stderr)
 	case "cost":
-		return handleCost(args[1:], stdout, stderr)
+		return handleCost(cleanArgs[1:], stdout, stderr)
 	case "evolve":
-		return handleEvolve(args[1:], stdout, stderr)
+		return handleEvolve(cleanArgs[1:], stdout, stderr)
 	case "frozen":
-		return handleFrozen(args[1:], stdout, stderr)
+		return handleFrozen(cleanArgs[1:], stdout, stderr)
 	case "federation":
-		return handleFederation(args[1:], stdout, stderr)
+		return handleFederation(cleanArgs[1:], stdout, stderr)
 	case "governance":
-		return handleGovernance(args[1:], stdout, stderr)
+		return handleGovernance(cleanArgs[1:], stdout, stderr)
 	case "clean":
-		return handleClean(args[1:], stdout, stderr)
+		return handleClean(cleanArgs[1:], stdout, stderr)
 	case "intervention":
-		return handleIntervention(args[1:], stdout, stderr)
+		return handleIntervention(cleanArgs[1:], stdout, stderr)
 	case "intake":
-		return handleIntake(args[1:], stdout, stderr)
+		return handleIntake(cleanArgs[1:], stdout, stderr)
 	case "decision":
-		return handleDecision(args[1:], stdout, stderr)
+		return handleDecision(cleanArgs[1:], stdout, stderr)
 	case "export":
-		return handleFrozenExport(append([]string{"--frozen"}, args[1:]...), stdout, stderr)
+		return handleFrozenExport(append([]string{"--frozen"}, cleanArgs[1:]...), stdout, stderr)
 	case "import":
-		return handleFrozenImport(append([]string{"--frozen"}, args[1:]...), stdout, stderr)
+		return handleFrozenImport(append([]string{"--frozen"}, cleanArgs[1:]...), stdout, stderr)
 	case "card":
-		return handleCard(args[1:], stdout, stderr)
+		return handleCard(cleanArgs[1:], stdout, stderr)
 	case "conformance":
-		return handleConformance(args[1:], stdout, stderr)
+		return handleConformance(cleanArgs[1:], stdout, stderr)
 	case "readiness":
-		return handleReadiness(args[1:], stdout, stderr)
+		return handleReadiness(cleanArgs[1:], stdout, stderr)
 	case "release":
-		return handleRelease(args[1:], stdout, stderr)
+		return handleRelease(cleanArgs[1:], stdout, stderr)
 	case "adapters":
-		return handleAdapters(args[1:], stdout, stderr)
+		return handleAdapters(cleanArgs[1:], stdout, stderr)
 	case "scan":
-		return handleScan(args[1:], stdout, stderr)
+		return handleScan(cleanArgs[1:], stdout, stderr)
 	case "contract":
-		return handleContract(args[1:], stdout, stderr)
+		return handleContract(cleanArgs[1:], stdout, stderr)
 	case "policy":
-		return handlePolicy(args[1:], stdout, stderr)
+		return handlePolicy(cleanArgs[1:], stdout, stderr)
 	case "explain":
-		return handleExplain(args[1:], stdout, stderr)
+		return handleExplain(cleanArgs[1:], stdout, stderr)
 	case "boundary":
-		return handleBoundary(args[1:], stdout, stderr)
+		return handleBoundary(cleanArgs[1:], stdout, stderr)
 	case "profile":
-		return handleProfile(args[1:], stdout, stderr)
+		return handleProfile(cleanArgs[1:], stdout, stderr)
 	case "repair":
-		return handleRepair(args[1:], stdout, stderr)
+		return handleRepair(cleanArgs[1:], stdout, stderr)
 	case "uninstall":
-		return handleUninstall(args[1:], stdout, stderr)
+		return handleUninstall(cleanArgs[1:], stdout, stderr)
 	default:
-		return handleStub(args, stdout, stderr)
+		return handleStub(cleanArgs, stdout, stderr)
 	}
 }
 
@@ -273,85 +254,85 @@ func knownCommand(name string) bool {
 	return false
 }
 
-func printStartHere(w io.Writer) {
+func printStartHere(w io.Writer, lang Lang) {
 	WriteLine(w, "xh %s", Version)
 	WriteLine(w, "")
 	WriteLine(w, "A lightweight verify-gated harness for AI-agent workflows.")
 	WriteLine(w, "")
-	WriteLine(w, "Start here — a few commands to get you going:")
+	WriteLine(w, "%s", startHereTitle(lang))
 	WriteLine(w, "")
-	WriteLine(w, "Getting started")
-	WriteLine(w, "  %-18s %s", "start", beginnerCommandDesc("start"))
-	WriteLine(w, "  %-18s %s", "learn", beginnerCommandDesc("learn"))
-	WriteLine(w, "  %-18s %s", "quick", beginnerCommandDesc("quick"))
-	WriteLine(w, "  %-18s %s", "init", beginnerCommandDesc("init"))
+	WriteLine(w, "%s", categoryGettingStarted(lang))
+	WriteLine(w, "  %-18s %s", "start", beginnerCommandDesc("start", lang))
+	WriteLine(w, "  %-18s %s", "learn", beginnerCommandDesc("learn", lang))
+	WriteLine(w, "  %-18s %s", "quick", beginnerCommandDesc("quick", lang))
+	WriteLine(w, "  %-18s %s", "init", beginnerCommandDesc("init", lang))
 	WriteLine(w, "")
-	WriteLine(w, "Daily tasks")
-	WriteLine(w, "  %-18s %s", "check (verify)", beginnerCommandDesc("check"))
-	WriteLine(w, "  %-18s %s", "actions", beginnerCommandDesc("actions"))
-	WriteLine(w, "  %-18s %s", "status", beginnerCommandDesc("status"))
-	WriteLine(w, "  %-18s %s", "add", beginnerCommandDesc("add"))
+	WriteLine(w, "%s", categoryDailyTasks(lang))
+	WriteLine(w, "  %-18s %s", "check (verify)", beginnerCommandDesc("check", lang))
+	WriteLine(w, "  %-18s %s", "actions", beginnerCommandDesc("actions", lang))
+	WriteLine(w, "  %-18s %s", "status", beginnerCommandDesc("status", lang))
+	WriteLine(w, "  %-18s %s", "add", beginnerCommandDesc("add", lang))
 	WriteLine(w, "")
-	WriteLine(w, "Health & recovery")
-	WriteLine(w, "  %-18s %s", "doctor", beginnerCommandDesc("doctor"))
-	WriteLine(w, "  %-18s %s", "recover", beginnerCommandDesc("recover"))
-	WriteLine(w, "  %-18s %s", "reset", beginnerCommandDesc("reset"))
+	WriteLine(w, "%s", categoryHealthRecovery(lang))
+	WriteLine(w, "  %-18s %s", "doctor", beginnerCommandDesc("doctor", lang))
+	WriteLine(w, "  %-18s %s", "recover", beginnerCommandDesc("recover", lang))
+	WriteLine(w, "  %-18s %s", "reset", beginnerCommandDesc("reset", lang))
 	WriteLine(w, "")
-	WriteLine(w, "Automation")
-	WriteLine(w, "  %-18s %s", "run", beginnerCommandDesc("run"))
-	WriteLine(w, "  %-18s %s", "ci", beginnerCommandDesc("ci"))
-	WriteLine(w, "  %-18s %s", "prepare", beginnerCommandDesc("prepare"))
+	WriteLine(w, "%s", categoryAutomation(lang))
+	WriteLine(w, "  %-18s %s", "run", beginnerCommandDesc("run", lang))
+	WriteLine(w, "  %-18s %s", "ci", beginnerCommandDesc("ci", lang))
+	WriteLine(w, "  %-18s %s", "prepare", beginnerCommandDesc("prepare", lang))
 	WriteLine(w, "")
-	WriteLine(w, "Discover more:")
-	WriteLine(w, "  xh --help            Common commands and usage")
-	WriteLine(w, "  xh --help-all        All commands")
-	WriteLine(w, "  xh --help-maturity   Commands grouped by stability")
+	WriteLine(w, "%s", discoverMore(lang))
+	WriteLine(w, "  xh --help            %s", discoverHelpDesc(lang))
+	WriteLine(w, "  xh --help-all        %s", discoverHelpAllDesc(lang))
+	WriteLine(w, "  xh --help-maturity   %s", discoverHelpMaturityDesc(lang))
 	WriteLine(w, "")
-	WriteLine(w, "New to x-harness? See docs/GETTING_STARTED.md")
+	WriteLine(w, "%s", newToXHarness(lang))
 }
 
-func printHelp(w io.Writer) {
+func printHelp(w io.Writer, lang Lang) {
 	WriteLine(w, "xh %s", Version)
 	WriteLine(w, "")
 	WriteLine(w, "A lightweight verify-gated harness for AI-agent workflows.")
 	WriteLine(w, "")
-	WriteLine(w, "Usage:")
+	WriteLine(w, "%s", usageLabel(lang))
 	WriteLine(w, "  xh <command> [options]")
 	WriteLine(w, "")
-	WriteLine(w, "Getting started")
-	WriteLine(w, "  %-18s %s", "start", beginnerCommandDesc("start"))
-	WriteLine(w, "  %-18s %s", "learn", beginnerCommandDesc("learn"))
-	WriteLine(w, "  %-18s %s", "quick", beginnerCommandDesc("quick"))
-	WriteLine(w, "  %-18s %s", "init", beginnerCommandDesc("init"))
+	WriteLine(w, "%s", categoryGettingStarted(lang))
+	WriteLine(w, "  %-18s %s", "start", beginnerCommandDesc("start", lang))
+	WriteLine(w, "  %-18s %s", "learn", beginnerCommandDesc("learn", lang))
+	WriteLine(w, "  %-18s %s", "quick", beginnerCommandDesc("quick", lang))
+	WriteLine(w, "  %-18s %s", "init", beginnerCommandDesc("init", lang))
 	WriteLine(w, "")
-	WriteLine(w, "Daily tasks")
-	WriteLine(w, "  %-18s %s", "check (verify)", beginnerCommandDesc("check"))
-	WriteLine(w, "  %-18s %s", "actions", beginnerCommandDesc("actions"))
-	WriteLine(w, "  %-18s %s", "status", beginnerCommandDesc("status"))
-	WriteLine(w, "  %-18s %s", "add", beginnerCommandDesc("add"))
+	WriteLine(w, "%s", categoryDailyTasks(lang))
+	WriteLine(w, "  %-18s %s", "check (verify)", beginnerCommandDesc("check", lang))
+	WriteLine(w, "  %-18s %s", "actions", beginnerCommandDesc("actions", lang))
+	WriteLine(w, "  %-18s %s", "status", beginnerCommandDesc("status", lang))
+	WriteLine(w, "  %-18s %s", "add", beginnerCommandDesc("add", lang))
 	WriteLine(w, "")
-	WriteLine(w, "Health & recovery")
-	WriteLine(w, "  %-18s %s", "doctor", beginnerCommandDesc("doctor"))
-	WriteLine(w, "  %-18s %s", "recover", beginnerCommandDesc("recover"))
-	WriteLine(w, "  %-18s %s", "reset", beginnerCommandDesc("reset"))
+	WriteLine(w, "%s", categoryHealthRecovery(lang))
+	WriteLine(w, "  %-18s %s", "doctor", beginnerCommandDesc("doctor", lang))
+	WriteLine(w, "  %-18s %s", "recover", beginnerCommandDesc("recover", lang))
+	WriteLine(w, "  %-18s %s", "reset", beginnerCommandDesc("reset", lang))
 	WriteLine(w, "")
-	WriteLine(w, "Automation")
-	WriteLine(w, "  %-18s %s", "run", beginnerCommandDesc("run"))
-	WriteLine(w, "  %-18s %s", "ci", beginnerCommandDesc("ci"))
-	WriteLine(w, "  %-18s %s", "prepare", beginnerCommandDesc("prepare"))
+	WriteLine(w, "%s", categoryAutomation(lang))
+	WriteLine(w, "  %-18s %s", "run", beginnerCommandDesc("run", lang))
+	WriteLine(w, "  %-18s %s", "ci", beginnerCommandDesc("ci", lang))
+	WriteLine(w, "  %-18s %s", "prepare", beginnerCommandDesc("prepare", lang))
 	WriteLine(w, "")
-	WriteLine(w, "For command-specific help:")
+	WriteLine(w, "%s", forCommandSpecificHelp(lang))
 	WriteLine(w, "  xh <command> --help")
 	WriteLine(w, "")
-	WriteLine(w, "Advanced:")
-	WriteLine(w, "  xh --help-all          Show all commands")
-	WriteLine(w, "  xh --help-maturity     Show commands grouped by maturity")
+	WriteLine(w, "%s", advancedLabel(lang))
+	WriteLine(w, "  xh --help-all          %s", showAllCommandsText(lang))
+	WriteLine(w, "  xh --help-maturity     %s", showMaturityLabelsText(lang))
 	WriteLine(w, "")
-	WriteLine(w, "Global options:")
-	WriteLine(w, "  -h, --help          Show help")
-	WriteLine(w, "  --help-all          Show all commands")
-	WriteLine(w, "  --help-maturity     Show help with maturity labels for all commands")
-	WriteLine(w, "  -v, --version       Show version")
+	WriteLine(w, "%s", globalOptionsLabel(lang))
+	WriteLine(w, "  -h, --help          %s", showHelpText(lang))
+	WriteLine(w, "  --help-all          %s", showAllCommandsText(lang))
+	WriteLine(w, "  --help-maturity     %s", showMaturityLabelsText(lang))
+	WriteLine(w, "  -v, --version       %s", showVersionText(lang))
 }
 
 func printHelpAll(w io.Writer) {
@@ -418,44 +399,44 @@ func printHelpMaturity(w io.Writer) {
 	WriteLine(w, "  -v, --version       Show version")
 }
 
-func printActions(w io.Writer) {
-	WriteLine(w, "# xh Beginner Actions")
+func printActions(w io.Writer, lang Lang) {
+	WriteLine(w, "%s", beginnerActionsTitle(lang))
 	WriteLine(w, "")
-	WriteLine(w, "Invoke using either:")
-	WriteLine(w, "  - Installed CLI:  xh <action>")
-	WriteLine(w, "  - Local source:   go run ./cmd/x-harness <action>")
+	WriteLine(w, "%s", invokeUsingEither(lang))
+	WriteLine(w, "  - %s  xh <action>", installedCLIText(lang))
+	WriteLine(w, "  - %s  go run ./cmd/x-harness <action>", localSourceText(lang))
 	WriteLine(w, "")
-	WriteLine(w, "## Getting started")
-	WriteLine(w, "| Action | Description |")
+	WriteLine(w, "## %s", categoryGettingStarted(lang))
+	WriteLine(w, "| %s | %s |", actionHeader(lang), descriptionHeader(lang))
 	WriteLine(w, "| :-- | :-- |")
-	WriteLine(w, "| **start** | %s |", beginnerCommandDesc("start"))
-	WriteLine(w, "| **learn** | %s |", beginnerCommandDesc("learn"))
-	WriteLine(w, "| **quick** | %s |", beginnerCommandDesc("quick"))
-	WriteLine(w, "| **init** | %s |", beginnerCommandDesc("init"))
+	WriteLine(w, "| **start** | %s |", beginnerCommandDesc("start", lang))
+	WriteLine(w, "| **learn** | %s |", beginnerCommandDesc("learn", lang))
+	WriteLine(w, "| **quick** | %s |", beginnerCommandDesc("quick", lang))
+	WriteLine(w, "| **init** | %s |", beginnerCommandDesc("init", lang))
 	WriteLine(w, "")
-	WriteLine(w, "## Daily tasks")
-	WriteLine(w, "| Action | Description |")
+	WriteLine(w, "## %s", categoryDailyTasks(lang))
+	WriteLine(w, "| %s | %s |", actionHeader(lang), descriptionHeader(lang))
 	WriteLine(w, "| :-- | :-- |")
-	WriteLine(w, "| **check** | %s |", beginnerCommandDesc("check"))
-	WriteLine(w, "| **actions** | %s |", beginnerCommandDesc("actions"))
-	WriteLine(w, "| **status** | %s |", beginnerCommandDesc("status"))
-	WriteLine(w, "| **add** | %s |", beginnerCommandDesc("add"))
+	WriteLine(w, "| **check** | %s |", beginnerCommandDesc("check", lang))
+	WriteLine(w, "| **actions** | %s |", beginnerCommandDesc("actions", lang))
+	WriteLine(w, "| **status** | %s |", beginnerCommandDesc("status", lang))
+	WriteLine(w, "| **add** | %s |", beginnerCommandDesc("add", lang))
 	WriteLine(w, "")
-	WriteLine(w, "## Health & recovery")
-	WriteLine(w, "| Action | Description |")
+	WriteLine(w, "## %s", categoryHealthRecovery(lang))
+	WriteLine(w, "| %s | %s |", actionHeader(lang), descriptionHeader(lang))
 	WriteLine(w, "| :-- | :-- |")
-	WriteLine(w, "| **doctor** | %s |", beginnerCommandDesc("doctor"))
-	WriteLine(w, "| **recover** | %s |", beginnerCommandDesc("recover"))
-	WriteLine(w, "| **reset** | %s |", beginnerCommandDesc("reset"))
+	WriteLine(w, "| **doctor** | %s |", beginnerCommandDesc("doctor", lang))
+	WriteLine(w, "| **recover** | %s |", beginnerCommandDesc("recover", lang))
+	WriteLine(w, "| **reset** | %s |", beginnerCommandDesc("reset", lang))
 	WriteLine(w, "")
-	WriteLine(w, "## Automation")
-	WriteLine(w, "| Action | Description |")
+	WriteLine(w, "## %s", categoryAutomation(lang))
+	WriteLine(w, "| %s | %s |", actionHeader(lang), descriptionHeader(lang))
 	WriteLine(w, "| :-- | :-- |")
-	WriteLine(w, "| **run** | %s |", beginnerCommandDesc("run"))
-	WriteLine(w, "| **ci** | %s |", beginnerCommandDesc("ci"))
-	WriteLine(w, "| **prepare** | %s |", beginnerCommandDesc("prepare"))
+	WriteLine(w, "| **run** | %s |", beginnerCommandDesc("run", lang))
+	WriteLine(w, "| **ci** | %s |", beginnerCommandDesc("ci", lang))
+	WriteLine(w, "| **prepare** | %s |", beginnerCommandDesc("prepare", lang))
 	WriteLine(w, "")
-	WriteLine(w, "For more info: xh <command> --help")
+	WriteLine(w, "%s", forMoreInfoText(lang))
 }
 
 func PrimaryCommandNames() []string {
@@ -470,7 +451,7 @@ func PrimaryCommandNames() []string {
 
 func HelpText() string {
 	var builder strings.Builder
-	printHelp(&builder)
+	printHelp(&builder, LangEN)
 	return builder.String()
 }
 
