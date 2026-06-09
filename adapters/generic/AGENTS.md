@@ -30,8 +30,8 @@ All other outcomes are withheld: `failed`, `blocked`, `skipped`, `timeout`, and 
 ## Evidence scope (light/standard/deep)
 
 - **light**: `files_changed` + (`command_evidence` or `manual_rationale`).
-- **standard**: `files_changed` + `command_evidence`; `verification_artifacts`, `verifies`, `does_not_verify`, and `untested_regions` are recommended. `done_checklist` and `prediction` are required for admission.
-- **deep**: `files_changed` + `command_evidence` + scoped `verification_artifacts` + `untested_regions` + `remaining_risks` + `rollback_policy` + `execution_controls` + `state.read_set/write_set`. `done_checklist` and `prediction` are required. Governance is required when high-risk or when human approval is declared.
+- **standard**: `files_changed` + `command_evidence`; `evidence_scope_declared` and `untested_regions_declared` are recommended. `done_checklist` and `prediction` are required for admission.
+- **deep**: `files_changed` + `command_evidence` + `evidence_scope_declared` + `untested_regions_declared` + `remaining_risks_declared` + `execution_controls_present` + `rollback_policy_present` + `state.read_set` + `state.write_set`. `done_checklist` and `prediction` are required. Governance is required when high-risk or when human approval is declared.
 
 ## Authoritative hierarchy
 

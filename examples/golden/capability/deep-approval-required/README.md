@@ -18,7 +18,7 @@ An agent completes a deep-tier task and provides passing tests. The candidate cl
 ## Expected verify outcome
 
 ```bash
-node packages/cli/dist/index.js verify --card examples/golden/deep-approval-required/completion-card.yaml
+xh verify --card examples/golden/capability/deep-approval-required/completion-card.yaml
 # -> WITHHELD
 # Reason: tier "deep" requires human approval
 ```
@@ -28,5 +28,5 @@ node packages/cli/dist/index.js verify --card examples/golden/deep-approval-requ
 Run the verification gate:
 
 ```bash
-node packages/cli/dist/index.js verify --card examples/golden/deep-approval-required/completion-card.yaml
+xh verify --card examples/golden/capability/deep-approval-required/completion-card.yaml
 ```

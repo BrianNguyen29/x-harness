@@ -16,7 +16,7 @@ An agent completes part of a task but cannot fully resolve it. The completion ca
 ## Expected verify outcome
 
 ```bash
-node packages/cli/dist/index.js verify --card examples/golden/withheld-partial-fix/completion-card.yaml
+xh verify --card examples/golden/capability/withheld-partial-fix/completion-card.yaml
 # -> WITHHELD
 # Admission outcome: failed
 ```

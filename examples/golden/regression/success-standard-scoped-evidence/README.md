@@ -10,10 +10,10 @@ Because the card is well-formed, contains no contradictions, and lists valid evi
 
 ## Files
 
-- [input-task.md](file:///\wsl.localhost\Ubuntu\home\uong_guyen.config\opencode\x-harness\examples\golden\success-standard-scoped-evidence\input-task.md) — The original task description requesting form validation.
-- [completion-card.yaml](file:///\wsl.localhost\Ubuntu\home\uong_guyen.config\opencode\x-harness\examples\golden\success-standard-scoped-evidence\completion-card.yaml) — The agent's completion claim containing the scoped evidence, test runs, and untested regions list.
-- [expected-verify-output.txt](file:///\wsl.localhost\Ubuntu\home\uong_guyen.config\opencode\x-harness\examples\golden\success-standard-scoped-evidence\expected-verify-output.txt) — Expected quiet output from `x-harness verify`.
-- [expected-final-response.md](file:///\wsl.localhost\Ubuntu\home\uong_guyen.config\opencode\x-harness\examples\golden\success-standard-scoped-evidence\expected-final-response.md) — Expected agent final response referencing the card.
+- [input-task.md](./input-task.md) — The original task description requesting form validation.
+- [completion-card.yaml](./completion-card.yaml) — The agent's completion claim containing the scoped evidence, test runs, and untested regions list.
+- [expected-verify-output.txt](./expected-verify-output.txt) — Expected quiet output from `x-harness verify`.
+- [expected-final-response.md](./expected-final-response.md) — Expected agent final response referencing the card.
 
 ## Expected Outcome
 
@@ -29,7 +29,7 @@ acceptance_status: accepted
 Run the verification gate locally:
 
 ```bash
-node packages/cli/dist/index.js verify --card examples/golden/success-standard-scoped-evidence/completion-card.yaml
+xh verify --card examples/golden/regression/success-standard-scoped-evidence/completion-card.yaml
 ```
 
 ## Why It Matters

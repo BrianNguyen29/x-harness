@@ -53,26 +53,26 @@ go build ./cmd/x-harness
 ./x-harness examples verify --suite=regression --json
 
 # 2. Reproduce the recovery flow in a scratch directory.
-mkdir -p /tmp/p2-s4-recovered-flow
+mkdir -p /tmp/xh-recovered-flow-example
 cp examples/golden/regression/success-recovered-flow/initial-withheld-card.yaml \
-   /tmp/p2-s4-recovered-flow/card.yaml
+   /tmp/xh-recovered-flow-example/card.yaml
 
 # 2a. Initial verify: WITHHELD.
-./x-harness verify --card /tmp/p2-s4-recovered-flow/card.yaml
+./x-harness verify --card /tmp/xh-recovered-flow-example/card.yaml
 # -> outcome: failed, acceptance_status: withheld
 
 # 2b. Explain what is blocking admission.
-./x-harness explain --card /tmp/p2-s4-recovered-flow/card.yaml
+./x-harness explain --card /tmp/xh-recovered-flow-example/card.yaml
 # -> blocking_predicates: [schema_invalid], etc.
 
 # 2c. Preview the conservative patch (no file mutation by default).
-./x-harness recover --patch-card /tmp/p2-s4-recovered-flow/card.yaml
+./x-harness recover --patch-card /tmp/xh-recovered-flow-example/card.yaml
 # -> ops: would_set handoff.next_action, would_set handoff.owner
 
 # 2d. Apply the patch with an explicit --confirm and add evidence in
 #     the same pass. The patcher creates a sibling .bak.<unix-ms>
 #     file before writing.
-./x-harness recover --patch-card /tmp/p2-s4-recovered-flow/card.yaml \
+./x-harness recover --patch-card /tmp/xh-recovered-flow-example/card.yaml \
   --confirm --evidence src/utils/formatSlug.go
 
 # 2e. Re-verify. The deterministic patcher filled the handoff block
@@ -80,7 +80,7 @@ cp examples/golden/regression/success-recovered-flow/initial-withheld-card.yaml 
 #     evidence.files_changed. The remaining evidence floor
 #     (manual_rationale or command_evidence) is still the agent's
 #     responsibility; this example mirrors that hand-off explicitly.
-./x-harness verify --card /tmp/p2-s4-recovered-flow/card.yaml
+./x-harness verify --card /tmp/xh-recovered-flow-example/card.yaml
 # -> outcome: success, acceptance_status: accepted (after the agent
 #    fills evidence.manual_rationale, see completion-card.yaml).
 ```
@@ -108,9 +108,8 @@ node packages/cli/dist/index.js examples verify
   `evidence.manual_rationale` (or running `xh evidence run` to
   produce `evidence.command_evidence`). The patcher cannot fabricate
   a rationale; doing so would forge evidence, which the contract
-  forbids. See `internal/cli/recover_patch.go` for the full
-  patch-category list and the deferred-risks section of
-  `de_xuat_cai_thien_x_harness-2.md` § P2-S3.
+   forbids. See `internal/cli/recover_patch.go` for the full
+   patch-category list.
 - Next.js/TypeScript and monorepo real-world examples are deferred
   to a follow-up slice. This example focuses on a single Go CLI
   file to keep the diff surgical and the verifier scope unchanged.

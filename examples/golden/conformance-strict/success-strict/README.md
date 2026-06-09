@@ -26,7 +26,7 @@ real successful run (`x-harness conformance run --profile strict --json`).
     {"name": "adapter_doctor_no_drift",      "status": "passed", "note": "21 adapter file(s) checked"},
     {"name": "context_gc_no_stale_drift",    "status": "passed", "note": "AGENTS.md managed context block is fresh; no dead internal doc links"},
     {"name": "approval_receipt_for_high_risk", "status": "passed", "note": "3 approval fixture(s) validated"},
-    {"name": "regression_suite_passed",      "status": "passed", "note": "7 fixture(s) matched"},
+    {"name": "regression_suite_passed",      "status": "passed", "note": "19 fixture(s) matched"},
     {"name": "adversarial_suite_passed",     "status": "passed", "note": "3 fixture(s) matched"}
   ]
 }

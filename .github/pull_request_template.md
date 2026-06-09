@@ -16,8 +16,8 @@
 - [ ] `npm run build`
 - [ ] `npm test`
 - [ ] `npm run verify`
-- [ ] `node packages/cli/dist/index.js doctor --root .`
-- [ ] `node packages/cli/dist/index.js examples verify`
+- [ ] `xh doctor --root .`
+- [ ] `xh examples verify`
 
 ## Harness invariants
 

@@ -22,6 +22,6 @@ The completion card includes evidence from all contributors and passes admission
 ## Expected verify outcome
 
 ```bash
-node packages/cli/dist/index.js verify --card examples/golden/multi-agent-success/completion-card.yaml
+xh verify --card examples/golden/capability/multi-agent-success/completion-card.yaml
 # -> ACCEPTED
 ```

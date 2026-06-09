@@ -16,7 +16,7 @@ x-harness adapters are thin conventions that make the harness usable inside spec
 | **`actions`** | (standalone)            | List all beginner-friendly actions                     |
 | **`status`**  | `report` (no --metrics) | Show trace summary or card metrics                     |
 | **`reset`**   | `clean --tmp --force`   | Clean generated harness state (requires --confirm)     |
-| **`init`**    | (standalone)            | Install core harness assets, schemas, policies, and adapters |
+| **`init`**    | (standalone)            | Install core harness assets, schemas, and policies. Adapters require `--full` or `--adapters` |
 | **`add`**     | (standalone)            | Add a metadata helper file for compatibility modes     |
 | **`run`**     | (standalone)            | Run a built-in workflow recipe                         |
 | **`ci`**      | (standalone)            | Run the built-in CI workflow                           |

@@ -41,3 +41,9 @@ PRs that modify admission policy, schemas, templates, CLI verify, adapters, or s
 - Update docs/templates/examples when contracts change.
 - Do not include secrets or real customer/user data.
 - Mark roadmap/preview functionality as optional; do not make it a default requirement.
+
+## Repository hygiene
+
+- **Package assets are mirrored.** Repository root assets (`schemas/`, `policies/`, `templates/`, `adapters/`, `docs/`, `examples/`, etc.) are the source of truth. `packages/cli/scripts/sync-package-assets.mjs` copies them into `packages/cli/` during packaging. Do not edit the mirrored copies under `packages/cli/` directly; edit the root assets and re-run the sync script.
+- **Clean local artifacts.** Generated local directories such as `.x-harness/release/`, `.x-harness/tmp/`, and `.codegraph/` are ignored by `.gitignore` and must not be committed. Remove them before opening a pull request if they appear in your working tree.
+- **Synthetic secrets only.** Test fixtures that contain secrets are intentionally fake (synthetic) values used for redaction and security tests. Never use real credentials, tokens, or customer data in tests or fixtures.

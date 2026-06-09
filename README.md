@@ -175,7 +175,7 @@ The task is **withheld**, not silently marked as done. This is the *fail-closed*
 To start using `x-harness` in another project, run `init` at its root:
 
 ```bash
-xh init --minimal        # default: contracts, templates, policies
+xh init --minimal        # default: contracts, templates, policies, schemas
 # xh init --standard     # adds schemas and example solo-agent scenarios
 # xh init --full         # adds multi-agent examples, adapters, and a GitHub Action
 ```

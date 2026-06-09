@@ -16,7 +16,7 @@ An agent incorrectly marks the task as `accepted` while the admission outcome is
 ## Expected verify outcome
 
 ```bash
-node packages/cli/dist/index.js verify --card examples/golden/failed-invalid-status/completion-card.yaml
+xh verify --card examples/golden/regression/failed-invalid-status/completion-card.yaml
 # -> WITHHELD
 # Reason: canonical contradiction
 ```
