@@ -33,6 +33,23 @@ x-harness cleanup is conservative by design. Evidence and audit artifacts are pr
 - `.x-harness/tmp/`
 - `.x-harness/cache/`
 
+## Local generated artifacts
+
+The following directories are created during local development or release builds and are safe to remove manually. They are ignored by `.gitignore` and must not be committed.
+
+- `.x-harness/release/` — Release build artifacts, packed tarballs, Go binaries, and checksums. Safe to delete manually when not actively cutting a release:
+  ```bash
+  rm -rf .x-harness/release/
+  ```
+- `.x-harness/tmp/` — Temporary and cache files. Prefer the CLI command when available:
+  ```bash
+  ./x-harness clean --tmp --force
+  ```
+- `.codegraph/` — IDE or tooling index files. Safe to delete manually:
+  ```bash
+  rm -rf .codegraph/
+  ```
+
 ## Never deleted by default
 
 - `completion-card.yaml`
