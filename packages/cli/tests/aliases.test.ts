@@ -106,15 +106,29 @@ describe("alias registration", () => {
   });
 
   describe("actions command", () => {
-    it("actions output includes all 7 actions", async () => {
+    it("actions output includes all beginner actions", async () => {
       const { stdout } = await execaNode(["actions"]);
-      expect(stdout).toContain("prepare");
-      expect(stdout).toContain("check");
-      expect(stdout).toContain("recover");
-      expect(stdout).toContain("doctor");
-      expect(stdout).toContain("actions");
-      expect(stdout).toContain("status");
-      expect(stdout).toContain("reset");
+      const actions = [
+        "start",
+        "learn",
+        "init",
+        "check",
+        "actions",
+        "status",
+        "add",
+        "doctor",
+        "recover",
+        "reset",
+        "run",
+        "prepare",
+      ];
+      for (const action of actions) {
+        expect(stdout).toContain(action);
+      }
+      expect(stdout).toContain("Getting started");
+      expect(stdout).toContain("Daily tasks");
+      expect(stdout).toContain("Health & recovery");
+      expect(stdout).toContain("Automation");
     });
 
     it("actions --help shows actions description", async () => {

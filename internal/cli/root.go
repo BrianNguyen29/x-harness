@@ -94,6 +94,27 @@ func isBeginnerCommand(name string) bool {
 	return false
 }
 
+func beginnerCommandDesc(name string) string {
+	switch name {
+	case "check":
+		return "Run read-only verification against a completion card"
+	case "prepare":
+		return "Check if workspace is ready for agent task handoff"
+	case "recover":
+		return "Get recovery playbook suggestions from errors or trace"
+	case "status":
+		return "Show trace summary"
+	case "reset":
+		return "Clean generated harness state"
+	}
+	for _, c := range commands {
+		if c.Name == name {
+			return c.Description
+		}
+	}
+	return ""
+}
+
 func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 0 {
 		printStartHere(stdout)
@@ -253,16 +274,25 @@ func printStartHere(w io.Writer) {
 	WriteLine(w, "")
 	WriteLine(w, "Start here — a few commands to get you going:")
 	WriteLine(w, "")
-	WriteLine(w, "  xh start           Guided onboarding: doctor, examples verify, init wizard, next steps")
-	WriteLine(w, "  xh learn           Read-only concept tour for beginners")
-	WriteLine(w, "  xh run             Run a built-in workflow recipe")
-	WriteLine(w, "  xh check (verify)  Run read-only verification against a completion card")
-	WriteLine(w, "  xh prepare         Check if workspace is ready for agent task handoff")
-	WriteLine(w, "  xh recover         Get recovery playbook suggestions from errors or trace")
-	WriteLine(w, "  xh doctor          Validate workspace health and configuration")
-	WriteLine(w, "  xh actions         Show this list of actions")
-	WriteLine(w, "  xh status          Show trace summary")
-	WriteLine(w, "  xh reset           Clean generated harness state")
+	WriteLine(w, "Getting started")
+	WriteLine(w, "  %-18s %s", "start", beginnerCommandDesc("start"))
+	WriteLine(w, "  %-18s %s", "learn", beginnerCommandDesc("learn"))
+	WriteLine(w, "  %-18s %s", "init", beginnerCommandDesc("init"))
+	WriteLine(w, "")
+	WriteLine(w, "Daily tasks")
+	WriteLine(w, "  %-18s %s", "check (verify)", beginnerCommandDesc("check"))
+	WriteLine(w, "  %-18s %s", "actions", beginnerCommandDesc("actions"))
+	WriteLine(w, "  %-18s %s", "status", beginnerCommandDesc("status"))
+	WriteLine(w, "  %-18s %s", "add", beginnerCommandDesc("add"))
+	WriteLine(w, "")
+	WriteLine(w, "Health & recovery")
+	WriteLine(w, "  %-18s %s", "doctor", beginnerCommandDesc("doctor"))
+	WriteLine(w, "  %-18s %s", "recover", beginnerCommandDesc("recover"))
+	WriteLine(w, "  %-18s %s", "reset", beginnerCommandDesc("reset"))
+	WriteLine(w, "")
+	WriteLine(w, "Automation")
+	WriteLine(w, "  %-18s %s", "run", beginnerCommandDesc("run"))
+	WriteLine(w, "  %-18s %s", "prepare", beginnerCommandDesc("prepare"))
 	WriteLine(w, "")
 	WriteLine(w, "Discover more:")
 	WriteLine(w, "  xh --help            Common commands and usage")
@@ -280,27 +310,25 @@ func printHelp(w io.Writer) {
 	WriteLine(w, "Usage:")
 	WriteLine(w, "  xh <command> [options]")
 	WriteLine(w, "")
-	WriteLine(w, "Common commands (beginner-friendly):")
-	for _, command := range commands {
-		if isBeginnerCommand(command.Name) {
-			name := command.Name
-			desc := command.Description
-			switch name {
-			case "check":
-				name = "check (verify)"
-				desc = "Run read-only verification against a completion card"
-			case "prepare":
-				desc = "Check if workspace is ready for agent task handoff"
-			case "recover":
-				desc = "Get recovery playbook suggestions from errors or trace"
-			case "status":
-				desc = "Show trace summary"
-			case "reset":
-				desc = "Clean generated harness state"
-			}
-			WriteLine(w, "  %-18s %s", name, desc)
-		}
-	}
+	WriteLine(w, "Getting started")
+	WriteLine(w, "  %-18s %s", "start", beginnerCommandDesc("start"))
+	WriteLine(w, "  %-18s %s", "learn", beginnerCommandDesc("learn"))
+	WriteLine(w, "  %-18s %s", "init", beginnerCommandDesc("init"))
+	WriteLine(w, "")
+	WriteLine(w, "Daily tasks")
+	WriteLine(w, "  %-18s %s", "check (verify)", beginnerCommandDesc("check"))
+	WriteLine(w, "  %-18s %s", "actions", beginnerCommandDesc("actions"))
+	WriteLine(w, "  %-18s %s", "status", beginnerCommandDesc("status"))
+	WriteLine(w, "  %-18s %s", "add", beginnerCommandDesc("add"))
+	WriteLine(w, "")
+	WriteLine(w, "Health & recovery")
+	WriteLine(w, "  %-18s %s", "doctor", beginnerCommandDesc("doctor"))
+	WriteLine(w, "  %-18s %s", "recover", beginnerCommandDesc("recover"))
+	WriteLine(w, "  %-18s %s", "reset", beginnerCommandDesc("reset"))
+	WriteLine(w, "")
+	WriteLine(w, "Automation")
+	WriteLine(w, "  %-18s %s", "run", beginnerCommandDesc("run"))
+	WriteLine(w, "  %-18s %s", "prepare", beginnerCommandDesc("prepare"))
 	WriteLine(w, "")
 	WriteLine(w, "For command-specific help:")
 	WriteLine(w, "  xh <command> --help")
@@ -383,13 +411,39 @@ func printHelpMaturity(w io.Writer) {
 func printActions(w io.Writer) {
 	WriteLine(w, "# xh Beginner Actions")
 	WriteLine(w, "")
-	WriteLine(w, "| Action | Maturity | Description |")
-	WriteLine(w, "| :-- | :-- | :-- |")
-	for _, command := range commands {
-		if isBeginnerCommand(command.Name) {
-			WriteLine(w, "| %s | %s | %s |", command.Name, command.Maturity, command.Description)
-		}
-	}
+	WriteLine(w, "Invoke using either:")
+	WriteLine(w, "  - Installed CLI:  xh <action>")
+	WriteLine(w, "  - Local source:   go run ./cmd/x-harness <action>")
+	WriteLine(w, "")
+	WriteLine(w, "## Getting started")
+	WriteLine(w, "| Action | Description |")
+	WriteLine(w, "| :-- | :-- |")
+	WriteLine(w, "| **start** | %s |", beginnerCommandDesc("start"))
+	WriteLine(w, "| **learn** | %s |", beginnerCommandDesc("learn"))
+	WriteLine(w, "| **init** | %s |", beginnerCommandDesc("init"))
+	WriteLine(w, "")
+	WriteLine(w, "## Daily tasks")
+	WriteLine(w, "| Action | Description |")
+	WriteLine(w, "| :-- | :-- |")
+	WriteLine(w, "| **check** | %s |", beginnerCommandDesc("check"))
+	WriteLine(w, "| **actions** | %s |", beginnerCommandDesc("actions"))
+	WriteLine(w, "| **status** | %s |", beginnerCommandDesc("status"))
+	WriteLine(w, "| **add** | %s |", beginnerCommandDesc("add"))
+	WriteLine(w, "")
+	WriteLine(w, "## Health & recovery")
+	WriteLine(w, "| Action | Description |")
+	WriteLine(w, "| :-- | :-- |")
+	WriteLine(w, "| **doctor** | %s |", beginnerCommandDesc("doctor"))
+	WriteLine(w, "| **recover** | %s |", beginnerCommandDesc("recover"))
+	WriteLine(w, "| **reset** | %s |", beginnerCommandDesc("reset"))
+	WriteLine(w, "")
+	WriteLine(w, "## Automation")
+	WriteLine(w, "| Action | Description |")
+	WriteLine(w, "| :-- | :-- |")
+	WriteLine(w, "| **run** | %s |", beginnerCommandDesc("run"))
+	WriteLine(w, "| **prepare** | %s |", beginnerCommandDesc("prepare"))
+	WriteLine(w, "")
+	WriteLine(w, "For more info: xh <command> --help")
 }
 
 func PrimaryCommandNames() []string {

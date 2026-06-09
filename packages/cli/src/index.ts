@@ -45,7 +45,8 @@ const program = new Command();
 program
   .name("xh")
   .description("A lightweight verify-gated harness for AI-agent workflows")
-  .version("0.1.0");
+  .version("0.1.0")
+  .helpOption(false);
 
 const beginnerCommands = new Set([
   "check",
@@ -121,26 +122,37 @@ function printStartHere() {
   console.log("");
   console.log("Start here — a few commands to get you going:");
   console.log("");
+  console.log("Getting started");
   console.log(
     "  xh start           Guided onboarding: doctor, examples verify, init wizard, next steps"
   );
   console.log("  xh learn           Read-only concept tour for beginners");
-  console.log("  xh run             Run a built-in workflow recipe");
+  console.log("  xh init            Install harness assets into a workspace");
+  console.log("");
+  console.log("Daily tasks");
   console.log(
     "  xh check (verify)  Run read-only verification against a completion card"
   );
+  console.log("  xh actions         List beginner-friendly actions");
+  console.log("  xh status          Show trace summary");
   console.log(
-    "  xh prepare         Check if workspace is ready for agent task handoff"
+    "  xh add             Add claim, evidence, or completion card helpers"
+  );
+  console.log("");
+  console.log("Health & recovery");
+  console.log(
+    "  xh doctor          Validate workspace health and configuration"
   );
   console.log(
     "  xh recover         Get recovery playbook suggestions from errors or trace"
   );
-  console.log(
-    "  xh doctor          Validate workspace health and configuration"
-  );
-  console.log("  xh actions         Show this list of actions");
-  console.log("  xh status          Show trace summary");
   console.log("  xh reset           Clean generated harness state");
+  console.log("");
+  console.log("Automation");
+  console.log("  xh run             Run a built-in workflow recipe");
+  console.log(
+    "  xh prepare         Check if workspace is ready for agent task handoff"
+  );
   console.log("");
   console.log("Discover more:");
   console.log("  xh --help            Common commands and usage");
@@ -148,6 +160,62 @@ function printStartHere() {
   console.log("  xh --help-maturity   Commands grouped by stability");
   console.log("");
   console.log("New to x-harness? See docs/GETTING_STARTED.md");
+}
+
+function printHelp() {
+  console.log("xh 0.1.0");
+  console.log("");
+  console.log("A lightweight verify-gated harness for AI-agent workflows.");
+  console.log("");
+  console.log("Usage:");
+  console.log("  xh <command> [options]");
+  console.log("");
+  console.log("Getting started");
+  console.log(
+    "  xh start           Guided onboarding: doctor, examples verify, init wizard, next steps"
+  );
+  console.log("  xh learn           Read-only concept tour for beginners");
+  console.log("  xh init            Install harness assets into a workspace");
+  console.log("");
+  console.log("Daily tasks");
+  console.log(
+    "  xh check (verify)  Run read-only verification against a completion card"
+  );
+  console.log("  xh actions         List beginner-friendly actions");
+  console.log("  xh status          Show trace summary");
+  console.log(
+    "  xh add             Add claim, evidence, or completion card helpers"
+  );
+  console.log("");
+  console.log("Health & recovery");
+  console.log(
+    "  xh doctor          Validate workspace health and configuration"
+  );
+  console.log(
+    "  xh recover         Get recovery playbook suggestions from errors or trace"
+  );
+  console.log("  xh reset           Clean generated harness state");
+  console.log("");
+  console.log("Automation");
+  console.log("  xh run             Run a built-in workflow recipe");
+  console.log(
+    "  xh prepare         Check if workspace is ready for agent task handoff"
+  );
+  console.log("");
+  console.log("For command-specific help:");
+  console.log("  xh <command> --help");
+  console.log("");
+  console.log("Advanced:");
+  console.log("  xh --help-all          Show all commands");
+  console.log("  xh --help-maturity     Show commands grouped by maturity");
+  console.log("");
+  console.log("Global options:");
+  console.log("  -h, --help          Show help");
+  console.log("  --help-all          Show all commands");
+  console.log(
+    "  --help-maturity     Show help with maturity labels for all commands"
+  );
+  console.log("  -v, --version       Show version");
 }
 
 function printHelpMaturity() {
@@ -293,7 +361,7 @@ program.addCommand(report);
 
 // actions lists all beginner-friendly actions
 const actions = new Command("actions");
-actions.description("List all beginner-friendly actions");
+actions.description("List beginner-friendly actions");
 actions.action(() => {
   console.log("# xh Beginner Actions");
   console.log("");
@@ -301,41 +369,40 @@ actions.action(() => {
   console.log("  - Installed CLI:  xh <action>");
   console.log("  - Local source:   node packages/cli/dist/index.js <action>");
   console.log("");
+  console.log("## Getting started");
+  console.log("| Action | Description |");
+  console.log("| :-- | :-- |");
   console.log(
-    "| Action       | Description                                              |"
+    "| **start** | Guided onboarding: doctor, examples verify, init wizard, next steps |"
   );
+  console.log("| **learn** | Read-only concept tour for beginners |");
+  console.log("| **init** | Install harness assets into a workspace |");
+  console.log("");
+  console.log("## Daily tasks");
+  console.log("| Action | Description |");
+  console.log("| :-- | :-- |");
   console.log(
-    "| :----------- | :------------------------------------------------------- |"
+    "| **check** | Run read-only verification against a completion card |"
   );
+  console.log("| **actions** | List beginner-friendly actions |");
+  console.log("| **status** | Show trace summary |");
+  console.log("| **add** | Add claim, evidence, or completion card helpers |");
+  console.log("");
+  console.log("## Health & recovery");
+  console.log("| Action | Description |");
+  console.log("| :-- | :-- |");
+  console.log("| **doctor** | Validate workspace health and configuration |");
   console.log(
-    "| **start**    | Guided onboarding: doctor, examples verify, init wizard, next steps |"
+    "| **recover** | Get recovery playbook suggestions from errors or trace |"
   );
+  console.log("| **reset** | Clean generated harness state |");
+  console.log("");
+  console.log("## Automation");
+  console.log("| Action | Description |");
+  console.log("| :-- | :-- |");
+  console.log("| **run** | Run a built-in workflow recipe |");
   console.log(
-    "| **learn**    | Read-only concept tour for beginners                     |"
-  );
-  console.log(
-    "| **run**      | Run a built-in workflow recipe                           |"
-  );
-  console.log(
-    "| **prepare**  | Check if workspace is ready for agent task handoff        |"
-  );
-  console.log(
-    "| **check**    | Run read-only verification against a completion card       |"
-  );
-  console.log(
-    "| **recover**  | Get recovery playbook suggestions from errors or trace     |"
-  );
-  console.log(
-    "| **doctor**   | Validate workspace health and configuration               |"
-  );
-  console.log(
-    "| **actions** | Show this list of actions                                |"
-  );
-  console.log(
-    "| **status**  | Show trace summary (alias for report without --metrics)  |"
-  );
-  console.log(
-    "| **reset**    | Clean generated harness state (requires --confirm)       |"
+    "| **prepare** | Check if workspace is ready for agent task handoff |"
   );
   console.log("");
   console.log("For more info: xh <command> --help");
@@ -388,6 +455,11 @@ const args = process.argv.slice(2);
 
 if (args.length === 0) {
   printStartHere();
+  process.exit(0);
+}
+
+if (args.length === 1 && (args[0] === "--help" || args[0] === "-h")) {
+  printHelp();
   process.exit(0);
 }
 
