@@ -121,7 +121,7 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		printActions(stdout, lang)
 		return ExitOK
 	case "start":
-		return handleStart(cleanArgs[1:], stdout, stderr)
+		return handleStart(cleanArgs[1:], stdout, stderr, lang)
 	case "learn":
 		return handleLearn(cleanArgs[1:], stdout, stderr, lang)
 	case "quick":

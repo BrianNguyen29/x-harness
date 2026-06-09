@@ -206,12 +206,12 @@ func Run(doc map[string]any, strict bool, contextFloor bool) Result {
 	}
 
 	// Done checklist + prediction for standard/deep
-	if tier == "standard" || tier == "deep" {
-		if doc["done_checklist"] == nil {
-			applyFinding("done_checklist is required for standard/deep tier", "admission_failed", false)
-		}
-		if doc["prediction"] == nil {
-			applyFinding("prediction is required for standard/deep tier", "admission_failed", false)
+	cpResult := evaluateDoneChecklistAndPrediction(doc, strict, tier)
+	for _, e := range cpResult.errors {
+		if e.predicate == "done_checklist_prediction_mismatch" {
+			applyFinding(e.message, e.predicate, true)
+		} else {
+			applyFinding(e.message, e.predicate, false)
 		}
 	}
 

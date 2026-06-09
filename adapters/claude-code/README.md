@@ -27,13 +27,20 @@ This copies the `CLAUDE.md` instructions, the `agents/` role definitions, and th
 
 | Action        | Alias for               | Description                                            |
 | :------------ | :---------------------- | :----------------------------------------------------- |
-| **`prepare`** | `handoff readiness`     | Check if workspace is ready for agent task handoff     |
+| **`start`**   | (standalone)            | Guided onboarding: doctor, examples verify, init wizard, next steps |
+| **`learn`**   | (standalone)            | Read-only concept tour for beginners                   |
+| **`quick`**   | (standalone)            | Read-only next-action recommender for newcomers        |
 | **`check`**   | `verify`                | Run read-only verification against a completion card   |
+| **`prepare`** | `handoff readiness`     | Check if workspace is ready for agent task handoff     |
 | **`recover`** | `recovery suggest`      | Get recovery playbook suggestions from errors or trace |
 | **`doctor`**  | (standalone)            | Validate workspace health and configuration            |
 | **`actions`** | (standalone)            | List all beginner-friendly actions                     |
 | **`status`**  | `report` (no --metrics) | Show trace summary or card metrics                     |
 | **`reset`**   | `clean --tmp --force`   | Clean generated harness state (requires --confirm)     |
+| **`init`**    | (standalone)            | Install core harness assets, schemas, policies, and adapters |
+| **`add`**     | (standalone)            | Add a metadata helper file for compatibility modes     |
+| **`run`**     | (standalone)            | Run a built-in workflow recipe                         |
+| **`ci`**      | (standalone)            | Run the built-in CI workflow                           |
 
 **Slash commands for agent adapters:**
 
@@ -41,6 +48,9 @@ This copies the `CLAUDE.md` instructions, the `agents/` role definitions, and th
 
 | Namespaced       | Maps to CLI    |
 | :--------------- | :------------- |
+| `/xh:start`      | `xh start`     |
+| `/xh:learn`      | `xh learn`     |
+| `/xh:quick`      | `xh quick`     |
 | `/xh:check`      | `xh check`     |
 | `/xh:prepare`    | `xh prepare`   |
 | `/xh:recover`    | `xh recover`   |
@@ -48,6 +58,10 @@ This copies the `CLAUDE.md` instructions, the `agents/` role definitions, and th
 | `/xh:actions`    | `xh actions`   |
 | `/xh:status`     | `xh status`    |
 | `/xh:reset`      | `xh reset`     |
+| `/xh:init`       | `xh init`      |
+| `/xh:add`        | `xh add`       |
+| `/xh:run`        | `xh run`       |
+| `/xh:ci`         | `xh ci`        |
 | `/xh:verify`     | `xh verify`    |
 | `/xh:intake`     | `xh intake`    |
 | `/xh:handoff`    | `xh handoff`   |
@@ -72,8 +86,8 @@ Use `/xh:<command>` as the preferred shortcut notation in agent chat. The space-
 2. **Implementation Worker** (Claude Code) performs edits, tests the changes, and generates the `completion-card.yaml`.
 3. **Admission Verifier** (Claude Code) runs read-only verification. In this repository, use:
    ```bash
-   node packages/cli/dist/index.js check --card completion-card.yaml --strict
-   # or: node packages/cli/dist/index.js verify --card completion-card.yaml --strict
+   xh check --card completion-card.yaml --strict
+   # or: node packages/cli/dist/index.js check --card completion-card.yaml --strict
    ```
 4. **Outcome**: Accepted (status code `0`) or Withheld (status code `1`). If withheld, the next actions are routed based on recovery rules.
 

@@ -315,3 +315,45 @@ export function quickNoneLabel(lang: Lang): string {
 export function quickNextStepsLabel(lang: Lang): string {
   return lang === "vi" ? "Bước tiếp theo:" : "Next steps:";
 }
+
+export function startTitle(lang: Lang): string {
+  return lang === "vi"
+    ? "xh start - Hướng dẫn bắt đầu"
+    : "xh start - Guided onboarding";
+}
+
+export function startStepLabel(name: string, lang: Lang): string {
+  if (lang === "vi") {
+    switch (name) {
+      case "doctor":
+        return "doctor";
+      case "examples_verify":
+        return "xác minh examples";
+      case "init_wizard":
+        return "init wizard";
+    }
+  }
+  switch (name) {
+    case "examples_verify":
+      return "examples verify";
+    case "init_wizard":
+      return "init wizard";
+  }
+  return name;
+}
+
+export function startNextStepsTitle(lang: Lang): string {
+  return lang === "vi" ? "Bước tiếp theo:" : "Next steps:";
+}
+
+export function startFirstVerification(lang: Lang): string {
+  return lang === "vi"
+    ? "Chạy xác minh đầu tiên: xh check --card completion-card.yaml"
+    : "Run your first verification: xh check --card completion-card.yaml";
+}
+
+export function startReadDocs(lang: Lang): string {
+  return lang === "vi"
+    ? "Đọc tài liệu: docs/GETTING_STARTED.md"
+    : "Read the docs: docs/GETTING_STARTED.md";
+}

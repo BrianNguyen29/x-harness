@@ -4,19 +4,24 @@ x-harness adapters are thin conventions that make the harness usable inside spec
 
 ## Beginner-friendly actions (primary interface)
 
-| Action       | Alias for              | Description                                              |
-| :----------- | :--------------------- | :------------------------------------------------------- |
-| **`prepare`** | `handoff readiness`   | Check if workspace is ready for agent task handoff        |
-| **`check`**  | `verify`               | Run read-only verification against a completion card        |
-| **`recover`** | `recovery suggest`     | Get recovery playbook suggestions from errors or trace     |
-| **`doctor`** | (standalone)           | Validate workspace health and configuration                |
-| **`actions`** | (standalone)           | List all beginner-friendly actions                        |
-| **`status`** | `report` (no --metrics)| Show trace summary or card metrics                       |
-| **`reset`**  | `clean --tmp --force`   | Clean generated harness state (requires --confirm)        |
-| **`init`**   | (standalone)           | Install core harness assets, schemas, policies, and adapters (default `--minimal`) |
-| **`add`**    | (standalone)           | Add a metadata helper file for compatibility modes        |
+| Action        | Alias for               | Description                                            |
+| :------------ | :---------------------- | :----------------------------------------------------- |
+| **`start`**   | (standalone)            | Guided onboarding: doctor, examples verify, init wizard, next steps |
+| **`learn`**   | (standalone)            | Read-only concept tour for beginners                   |
+| **`quick`**   | (standalone)            | Read-only next-action recommender for newcomers        |
+| **`check`**   | `verify`                | Run read-only verification against a completion card   |
+| **`prepare`** | `handoff readiness`     | Check if workspace is ready for agent task handoff     |
+| **`recover`** | `recovery suggest`      | Get recovery playbook suggestions from errors or trace |
+| **`doctor`**  | (standalone)            | Validate workspace health and configuration            |
+| **`actions`** | (standalone)            | List all beginner-friendly actions                     |
+| **`status`**  | `report` (no --metrics) | Show trace summary or card metrics                     |
+| **`reset`**   | `clean --tmp --force`   | Clean generated harness state (requires --confirm)     |
+| **`init`**    | (standalone)            | Install core harness assets, schemas, policies, and adapters |
+| **`add`**     | (standalone)            | Add a metadata helper file for compatibility modes     |
+| **`run`**     | (standalone)            | Run a built-in workflow recipe                         |
+| **`ci`**      | (standalone)            | Run the built-in CI workflow                           |
 
-**Slash commands for agent adapters:** Use `/xh <action>` in agent chat (for example, `/xh check`, `/xh doctor`). The legacy `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset` style remains supported for compatibility. Beta commands such as `packet` are available via the CLI but are not part of the beginner stable adapter interface.
+**Slash commands for agent adapters:** Use `/xh:<command>` in agent chat (for example, `/xh:check`, `/xh:doctor`). The space-delimited `/xh <action>` and legacy `/xh-check`, `/xh-prepare`, `/xh-recover`, `/xh-doctor`, `/xh-actions`, `/xh-status`, `/xh-reset` styles remain supported for compatibility. Beta commands such as `packet` are available via the CLI but are not part of the beginner stable adapter interface.
 
 ## Default constraints (all adapters)
 

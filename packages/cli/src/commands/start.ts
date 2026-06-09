@@ -1,5 +1,14 @@
 import { Command } from "commander";
 import * as path from "node:path";
+import {
+  type Lang,
+  resolveLang,
+  startTitle,
+  startStepLabel,
+  startNextStepsTitle,
+  startFirstVerification,
+  startReadDocs,
+} from "../i18n.js";
 
 interface StartStep {
   name: string;
@@ -36,16 +45,21 @@ export function startCommand(): Command {
       "--wizard-with-card <task_id>",
       "Scaffold a completion card on apply"
     )
+    .option("--lang <code>", "Language", "en")
     .action(
-      async (opts: {
-        root: string;
-        profile: string;
-        apply: boolean;
-        skipDoctor: boolean;
-        skipExamples: boolean;
-        json: boolean;
-        wizardWithCard?: string;
-      }) => {
+      async (
+        opts: {
+          root: string;
+          profile: string;
+          apply: boolean;
+          skipDoctor: boolean;
+          skipExamples: boolean;
+          json: boolean;
+          wizardWithCard?: string;
+          lang?: string;
+        },
+        cmd: Command
+      ) => {
         const validProfiles = ["minimal", "standard", "full", "deep"];
         if (!validProfiles.includes(opts.profile)) {
           console.error(
@@ -54,6 +68,8 @@ export function startCommand(): Command {
           console.error(`invalid profile: ${opts.profile}`);
           process.exit(2);
         }
+
+        const lang: Lang = resolveLang(opts, cmd.parent?.opts() ?? {});
 
         const steps: StartStep[] = [];
 
@@ -86,7 +102,11 @@ export function startCommand(): Command {
           note: initNote,
         });
 
-        const nextSteps = [
+        const nextStepsText = [
+          startFirstVerification(lang),
+          startReadDocs(lang),
+        ];
+        const nextStepsJSON = [
           "Run your first verification: xh check --card completion-card.yaml",
           "Read the docs: docs/GETTING_STARTED.md",
         ];
@@ -95,29 +115,33 @@ export function startCommand(): Command {
           const result: StartResult = {
             ok: true,
             steps,
-            next_steps: nextSteps,
+            next_steps: nextStepsJSON,
           };
           console.log(JSON.stringify(result, null, 2));
         } else {
-          console.log("# xh start - Guided onboarding");
+          console.log(`# ${startTitle(lang)}`);
           console.log("");
           if (!opts.skipDoctor) {
-            console.log("Step 1/4: doctor");
+            console.log(`Step 1/4: ${startStepLabel("doctor", lang)}`);
             console.log(`  -> ${steps[0].note}`);
             console.log("");
           }
           if (!opts.skipExamples) {
             const idx = opts.skipDoctor ? 0 : 1;
-            console.log(`Step ${idx + 1}/4: examples verify`);
+            console.log(
+              `Step ${idx + 1}/4: ${startStepLabel("examples_verify", lang)}`
+            );
             console.log(`  -> ${steps[idx].note}`);
             console.log("");
           }
           const initIdx = steps.findIndex((s) => s.name === "init_wizard");
-          console.log(`Step ${initIdx + 1}/4: init wizard (${mode})`);
+          console.log(
+            `Step ${initIdx + 1}/4: ${startStepLabel("init_wizard", lang)} (${mode})`
+          );
           console.log(`  -> ${steps[initIdx].note}`);
           console.log("");
-          console.log("Next steps:");
-          for (const s of nextSteps) {
+          console.log(startNextStepsTitle(lang));
+          for (const s of nextStepsText) {
             console.log(`  - ${s}`);
           }
         }

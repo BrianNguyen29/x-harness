@@ -372,3 +372,51 @@ func quickNextStepsLabel(l Lang) string {
 	}
 	return "Next steps:"
 }
+
+func startTitle(l Lang) string {
+	if l == LangVI {
+		return "xh start - Hướng dẫn bắt đầu"
+	}
+	return "xh start - Guided onboarding"
+}
+
+func startStepLabel(name string, l Lang) string {
+	if l == LangVI {
+		switch name {
+		case "doctor":
+			return "doctor"
+		case "examples_verify":
+			return "xác minh examples"
+		case "init_wizard":
+			return "init wizard"
+		}
+	}
+	switch name {
+	case "examples_verify":
+		return "examples verify"
+	case "init_wizard":
+		return "init wizard"
+	}
+	return name
+}
+
+func startNextStepsTitle(l Lang) string {
+	if l == LangVI {
+		return "Bước tiếp theo:"
+	}
+	return "Next steps:"
+}
+
+func startFirstVerification(l Lang) string {
+	if l == LangVI {
+		return "Chạy xác minh đầu tiên: xh check --card completion-card.yaml"
+	}
+	return "Run your first verification: xh check --card completion-card.yaml"
+}
+
+func startReadDocs(l Lang) string {
+	if l == LangVI {
+		return "Đọc tài liệu: docs/GETTING_STARTED.md"
+	}
+	return "Read the docs: docs/GETTING_STARTED.md"
+}

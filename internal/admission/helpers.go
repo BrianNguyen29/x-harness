@@ -97,6 +97,18 @@ func boolInMap(m map[string]any, key string) bool {
 	return false
 }
 
+func boolExplicitlyFalse(m map[string]any, key string) bool {
+	if m == nil {
+		return false
+	}
+	if v, ok := m[key]; ok {
+		if b, ok := v.(bool); ok {
+			return !b
+		}
+	}
+	return false
+}
+
 func stringInMap(m map[string]any, key string) string {
 	if m == nil {
 		return ""
@@ -173,4 +185,14 @@ func shellMetacharacter(command string) string {
 		}
 	}
 	return ""
+}
+
+func evidenceRecord(doc map[string]any) map[string]any {
+	if ev := mapValue(doc, "evidence"); ev != nil {
+		return ev
+	}
+	if sr := mapValue(doc, "subagent_return"); sr != nil {
+		return mapValue(sr, "evidence")
+	}
+	return nil
 }

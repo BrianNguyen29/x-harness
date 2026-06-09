@@ -37,7 +37,7 @@
     },
     {
       "name": "agents_size",
-      "note": "AGENTS.md is 137 lines (<= 150)",
+      "note": "AGENTS.md is 136 lines (<= 150)",
       "status": "pass"
     },
     {
