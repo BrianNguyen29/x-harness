@@ -397,6 +397,24 @@ func TestTraceCLITimeline(t *testing.T) {
 	}
 }
 
+func TestTraceCLITimelineTaskIDFlag(t *testing.T) {
+	tmpDir := t.TempDir()
+	_, _ = AppendTrace(TraceEvent{
+		"event_id": "E1", "event_type": "verify_completed", "outcome": "success",
+		"task_id": "TASK-1",
+	}, tmpDir)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"trace", "timeline", "--task-id", "TASK-1", "--trace-dir", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "TASK-1") {
+		t.Fatalf("expected TASK-1 header, got:\n%s", stdout.String())
+	}
+}
+
 func TestTraceCLITimelineMissingTask(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -473,6 +491,24 @@ func TestTraceCLIExplainNoBlocking(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "no blocking events found") {
 		t.Fatalf("expected no blocking events message, got:\n%s", stdout.String())
+	}
+}
+
+func TestTraceCLIExplainTaskIDFlag(t *testing.T) {
+	tmpDir := t.TempDir()
+	_, _ = AppendTrace(TraceEvent{
+		"event_id": "E1", "event_type": "verify_completed", "outcome": "success",
+		"task_id": "TASK-1",
+	}, tmpDir)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"trace", "explain", "--task-id", "TASK-1", "--trace-dir", tmpDir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "TASK-1 explain") {
+		t.Fatalf("expected explain header, got:\n%s", stdout.String())
 	}
 }
 

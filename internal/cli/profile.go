@@ -128,8 +128,12 @@ func handleProfile(args []string, stdout, stderr io.Writer) int {
 	switch args[0] {
 	case "recommend":
 		return handleProfileRecommend(args[1:], stdout, stderr)
+	case "-h", "--help", "help":
+		fmt.Fprintln(stderr, "usage: x-harness profile <recommend> [options]")
+		return ExitUsage
 	default:
 		fmt.Fprintf(stderr, "unknown profile subcommand: %s\n", args[0])
+		fmt.Fprintln(stderr, "usage: x-harness profile <recommend> [options]")
 		return ExitUsage
 	}
 }

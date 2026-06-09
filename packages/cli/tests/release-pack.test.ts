@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { execFile } from "node:child_process";
 import * as path from "node:path";
 import * as fs from "node:fs";
+import { tmpdir } from "node:os";
 import { resolveAssetPath, resolveAssetRoot } from "../src/core/assets.js";
 
 const packageRoot = path.resolve(path.join(__dirname, ".."));
@@ -1156,5 +1157,66 @@ describe("release packaging", () => {
     ).toThrow(
       /Step "Renamed step" not found in \.github\/workflows\/release\.yml/
     );
+  });
+
+  it("wrapper prefers go-binary over Node fallback when go-binaries/ has a candidate", async () => {
+    // Creating a fake PE executable on Windows is impractical in a test,
+    // so this test validates the wrapper Go-primary path on Unix-like
+    // platforms where a shell script can serve as the fake binary.
+    if (process.platform === "win32") {
+      return;
+    }
+
+    const tmpDir = fs.mkdtempSync(path.join(tmpdir(), "xh-wrapper-test-"));
+    try {
+      const fakePackageRoot = path.join(tmpDir, "pkg");
+      const fakeBinDir = path.join(fakePackageRoot, "bin");
+      const fakeGoBinariesDir = path.join(fakePackageRoot, "go-binaries");
+      fs.mkdirSync(fakeBinDir, { recursive: true });
+      fs.mkdirSync(fakeGoBinariesDir, { recursive: true });
+
+      // Copy the real wrapper so it resolves packageRoot from the temp tree.
+      const wrapperSrc = path.join(packageRoot, "bin", "x-harness.js");
+      const wrapperDest = path.join(fakeBinDir, "x-harness.js");
+      fs.copyFileSync(wrapperSrc, wrapperDest);
+
+      // Write a fake package.json so the wrapper can resolve version.
+      const version = "0.0.0-test";
+      fs.writeFileSync(
+        path.join(fakePackageRoot, "package.json"),
+        JSON.stringify({ name: "x-harness-test", version })
+      );
+
+      // Determine the binary name the wrapper will look for first.
+      const platformMap: Record<string, string> = {
+        linux: "linux",
+        darwin: "darwin",
+        win32: "windows",
+      };
+      const archMap: Record<string, string> = {
+        x64: "amd64",
+        arm64: "arm64",
+      };
+      const goos = platformMap[process.platform] ?? process.platform;
+      const goarch = archMap[process.arch] ?? process.arch;
+      const ext = goos === "windows" ? ".exe" : "";
+      const binaryName = `x-harness-v${version}-${goos}-${goarch}${ext}`;
+      const binaryPath = path.join(fakeGoBinariesDir, binaryName);
+
+      // Create a fake executable that prints a sentinel and exits 0.
+      fs.writeFileSync(binaryPath, '#!/bin/sh\necho "GO_PRIMARY_WRAPPER_OK"\n');
+      fs.chmodSync(binaryPath, 0o755);
+
+      // Run the wrapper. It must pick the fake Go binary, not fall back to Node.
+      const result = await execFileAsync(
+        process.execPath,
+        [wrapperDest, "--version"],
+        tmpDir
+      );
+      expect(result.stdout).toContain("GO_PRIMARY_WRAPPER_OK");
+      expect(result.exitCode).toBe(0);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 });

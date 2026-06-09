@@ -287,3 +287,72 @@ func TestAdaptersDoctorMissingHash(t *testing.T) {
 		t.Fatalf("expected result for test README.md")
 	}
 }
+
+func TestAdaptersEvalWithRoot(t *testing.T) {
+	tmpDir := t.TempDir()
+	adaptersDir := filepath.Join(tmpDir, "adapters", "generic")
+	if err := os.MkdirAll(adaptersDir, 0755); err != nil {
+		t.Fatalf("failed to create temp adapters dir: %v", err)
+	}
+	readmePath := filepath.Join(adaptersDir, "README.md")
+	if err := os.WriteFile(readmePath, []byte("# Generic Adapter\n"), 0644); err != nil {
+		t.Fatalf("failed to write temp readme: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"adapters", "eval", "--root", tmpDir, "generic", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result struct {
+		Adapters  []adapterEvalResult `json:"adapters"`
+		PassCount int                 `json:"pass_count"`
+		Total     int                 `json:"total"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.PassCount != 1 {
+		t.Fatalf("expected pass_count 1, got %d", result.PassCount)
+	}
+	if len(result.Adapters) != 1 {
+		t.Fatalf("expected 1 adapter, got %d", len(result.Adapters))
+	}
+	if result.Adapters[0].Name != "generic" {
+		t.Fatalf("expected generic adapter, got %s", result.Adapters[0].Name)
+	}
+}
+
+func TestAdaptersDoctorWithRoot(t *testing.T) {
+	tmpDir := t.TempDir()
+	adaptersDir := filepath.Join(tmpDir, "adapters", "generic")
+	if err := os.MkdirAll(adaptersDir, 0755); err != nil {
+		t.Fatalf("failed to create temp adapters dir: %v", err)
+	}
+	readmePath := filepath.Join(adaptersDir, "README.md")
+	if err := os.WriteFile(readmePath, []byte("# Generic Adapter\n"), 0644); err != nil {
+		t.Fatalf("failed to write temp readme: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"adapters", "doctor", "--root", tmpDir, "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result struct {
+		Adapters   []adapterDoctorResult `json:"adapters"`
+		PassCount  int                   `json:"pass_count"`
+		TotalFiles int                   `json:"total_files"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	// No managed blocks in temp readme, so 0 files is valid; command should succeed
+	if result.PassCount != result.TotalFiles {
+		t.Fatalf("expected pass_count == total_files, got pass_count=%d total_files=%d", result.PassCount, result.TotalFiles)
+	}
+}

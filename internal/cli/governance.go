@@ -24,8 +24,12 @@ func handleGovernance(args []string, stdout, stderr io.Writer) int {
 		return handleGovernanceExplain(args[1:], stdout, stderr)
 	case "list-protected":
 		return handleGovernanceListProtected(args[1:], stdout, stderr)
+	case "-h", "--help", "help":
+		fmt.Fprintln(stderr, "usage: x-harness governance <check|explain|list-protected> [options]")
+		return ExitUsage
 	default:
 		fmt.Fprintf(stderr, "unknown governance subcommand: %s\n", args[0])
+		fmt.Fprintln(stderr, "usage: x-harness governance <check|explain|list-protected> [options]")
 		return ExitUsage
 	}
 }

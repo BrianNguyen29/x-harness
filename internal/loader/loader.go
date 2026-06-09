@@ -2,7 +2,7 @@ package loader
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -61,12 +61,14 @@ func LoadDocument(path string, v any) error {
 	case FormatYAML:
 		return LoadYAML(path, v)
 	default:
-		if err := LoadJSON(path, v); err == nil {
+		jsonErr := LoadJSON(path, v)
+		if jsonErr == nil {
 			return nil
 		}
-		if err := LoadYAML(path, v); err == nil {
+		yamlErr := LoadYAML(path, v)
+		if yamlErr == nil {
 			return nil
 		}
-		return errors.New("unsupported file format: " + string(format))
+		return fmt.Errorf("unsupported file format for %q: %s (json: %v, yaml: %v)", path, format, jsonErr, yamlErr)
 	}
 }

@@ -19,6 +19,9 @@ func handleHandoff(args []string, stdout io.Writer, stderr io.Writer) int {
 		return runHandoffTier(args[0], args[1:], stdout, stderr)
 	case "readiness":
 		return runHandoffReadiness(args[1:], stdout, stderr)
+	case "-h", "--help", "help":
+		fmt.Fprintln(stderr, "usage: x-harness handoff <light|standard|deep|readiness> [options]")
+		return ExitUsage
 	default:
 		fmt.Fprintf(stderr, "unknown handoff subcommand: %s\n", args[0])
 		fmt.Fprintln(stderr, "usage: x-harness handoff <light|standard|deep|readiness> [options]")

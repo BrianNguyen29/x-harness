@@ -45,6 +45,31 @@ describe("init command", () => {
       expect(await fs.pathExists(path.join(tmpDir, "02-assisted-agent"))).toBe(
         true
       );
+      expect(
+        await fs.pathExists(path.join(tmpDir, "docs", "ADAPTERS.md"))
+      ).toBe(true);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("--adapters copies adapter assets and docs/ADAPTERS.md", async () => {
+    const tmpDir = mkdtempSync(path.join(tmpdir(), "x-harness-init-"));
+    try {
+      const { stdout, exitCode } = await execaNode([
+        "init",
+        tmpDir,
+        "--adapters",
+        "opencode",
+      ]);
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("init (minimal) complete");
+      expect(
+        await fs.pathExists(path.join(tmpDir, "adapters", "opencode"))
+      ).toBe(true);
+      expect(
+        await fs.pathExists(path.join(tmpDir, "docs", "ADAPTERS.md"))
+      ).toBe(true);
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }
@@ -160,6 +185,9 @@ describe("init command", () => {
       expect(await fs.pathExists(path.join(tmpDir, "01-solo-agent"))).toBe(
         true
       );
+      expect(
+        await fs.pathExists(path.join(tmpDir, "docs", "ADAPTERS.md"))
+      ).toBe(true);
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }

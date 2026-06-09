@@ -217,3 +217,15 @@ func TestIntakeHandoffUnknownFlag(t *testing.T) {
 		t.Fatalf("expected unknown flag error, got: %s", stderr.String())
 	}
 }
+
+func TestIntakeHelp(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"intake", "--help"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "usage:") {
+		t.Fatalf("expected usage message, got: %s", stderr.String())
+	}
+}

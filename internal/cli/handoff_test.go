@@ -308,3 +308,15 @@ func TestReadinessPartialFiles(t *testing.T) {
 		t.Fatal("expected completion_card_template_present to fail")
 	}
 }
+
+func TestHandoffHelp(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"handoff", "--help"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "usage:") {
+		t.Fatalf("expected usage message, got: %s", stderr.String())
+	}
+}

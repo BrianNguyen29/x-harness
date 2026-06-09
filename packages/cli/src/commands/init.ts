@@ -113,6 +113,17 @@ export function initCommand(): Command {
           const dest = path.join(targetDir, path.basename(asset));
           plan.push({ src, dest });
         }
+
+        // Include adapter guidance in standard mode
+        if (mode === "standard") {
+          const adaptersDocSrc = path.join(assetRoot, "docs/ADAPTERS.md");
+          if (await fs.pathExists(adaptersDocSrc)) {
+            plan.push({
+              src: adaptersDocSrc,
+              dest: path.join(targetDir, "docs/ADAPTERS.md"),
+            });
+          }
+        }
       }
 
       // Copy adapter-specific files if requested
@@ -121,6 +132,16 @@ export function initCommand(): Command {
           const src = path.join(assetRoot, "adapters", adapter);
           if (await fs.pathExists(src)) {
             plan.push({ src, dest: path.join(targetDir, "adapters", adapter) });
+          }
+        }
+
+        // Include adapter guidance when adapters are requested
+        const adaptersDocSrc = path.join(assetRoot, "docs/ADAPTERS.md");
+        const adaptersDocDest = path.join(targetDir, "docs/ADAPTERS.md");
+        if (await fs.pathExists(adaptersDocSrc)) {
+          const alreadyPlanned = plan.some((p) => p.dest === adaptersDocDest);
+          if (!alreadyPlanned) {
+            plan.push({ src: adaptersDocSrc, dest: adaptersDocDest });
           }
         }
       }

@@ -360,6 +360,19 @@ func buildInitPlan(mode, assetRoot, targetDir, adapters string, stderr io.Writer
 			dest := filepath.Join(targetDir, filepath.Base(asset))
 			plan = append(plan, initPlanItem{src: src, dest: dest})
 		}
+
+		// Include adapter guidance in standard mode
+		if mode == "standard" {
+			adaptersDocSrc := filepath.Join(assetRoot, "docs/ADAPTERS.md")
+			if pathExistsBool(adaptersDocSrc) {
+				plan = append(plan, initPlanItem{
+					src:  adaptersDocSrc,
+					dest: filepath.Join(targetDir, "docs/ADAPTERS.md"),
+				})
+			} else {
+				fmt.Fprintf(stderr, "warning: source not found, skipping: %s\n", adaptersDocSrc)
+			}
+		}
 	}
 
 	if adapters != "" {
@@ -377,6 +390,27 @@ func buildInitPlan(mode, assetRoot, targetDir, adapters string, stderr io.Writer
 			} else {
 				fmt.Fprintf(stderr, "warning: source not found, skipping: %s\n", src)
 			}
+		}
+
+		// Include adapter guidance when adapters are requested
+		adaptersDocSrc := filepath.Join(assetRoot, "docs/ADAPTERS.md")
+		adaptersDocDest := filepath.Join(targetDir, "docs/ADAPTERS.md")
+		if pathExistsBool(adaptersDocSrc) {
+			alreadyPlanned := false
+			for _, p := range plan {
+				if p.dest == adaptersDocDest {
+					alreadyPlanned = true
+					break
+				}
+			}
+			if !alreadyPlanned {
+				plan = append(plan, initPlanItem{
+					src:  adaptersDocSrc,
+					dest: adaptersDocDest,
+				})
+			}
+		} else {
+			fmt.Fprintf(stderr, "warning: source not found, skipping: %s\n", adaptersDocSrc)
 		}
 	}
 
