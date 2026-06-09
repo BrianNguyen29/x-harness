@@ -74,6 +74,7 @@ var commands = []CommandInfo{
 	{Name: "learn", Description: "Read-only concept tour for beginners", Primary: true, Maturity: MaturityBeta},
 	{Name: "quick", Description: "Read-only next-action recommender for newcomers", Primary: true, Maturity: MaturityBeta},
 	{Name: "run", Description: "Run a built-in workflow recipe", Primary: true, Maturity: MaturityBeta},
+	{Name: "ci", Description: "Run the built-in CI workflow", Primary: true, Maturity: MaturityBeta},
 	{Name: "actions", Description: "List beginner-friendly actions", Maturity: MaturityBeta},
 	{Name: "card", Description: "Generate or verify admission cards", Maturity: MaturityBeta},
 	{Name: "conformance", Description: "Run conformance checks", Maturity: MaturityBeta},
@@ -89,7 +90,7 @@ var commands = []CommandInfo{
 
 func isBeginnerCommand(name string) bool {
 	switch name {
-	case "check", "prepare", "recover", "doctor", "actions", "status", "reset", "init", "add", "start", "learn", "quick", "run":
+	case "check", "prepare", "recover", "doctor", "actions", "status", "reset", "init", "add", "start", "learn", "quick", "run", "ci":
 		return true
 	}
 	return false
@@ -146,6 +147,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleQuick(args[1:], stdout, stderr)
 	case "run":
 		return handleRun(args[1:], stdout, stderr)
+	case "ci":
+		return handleRun(append([]string{"builtin:ci"}, args[1:]...), stdout, stderr)
 	case "context":
 		return handleContext(args[1:], stdout, stderr)
 	case "verify", "check":
@@ -296,6 +299,7 @@ func printStartHere(w io.Writer) {
 	WriteLine(w, "")
 	WriteLine(w, "Automation")
 	WriteLine(w, "  %-18s %s", "run", beginnerCommandDesc("run"))
+	WriteLine(w, "  %-18s %s", "ci", beginnerCommandDesc("ci"))
 	WriteLine(w, "  %-18s %s", "prepare", beginnerCommandDesc("prepare"))
 	WriteLine(w, "")
 	WriteLine(w, "Discover more:")
@@ -333,6 +337,7 @@ func printHelp(w io.Writer) {
 	WriteLine(w, "")
 	WriteLine(w, "Automation")
 	WriteLine(w, "  %-18s %s", "run", beginnerCommandDesc("run"))
+	WriteLine(w, "  %-18s %s", "ci", beginnerCommandDesc("ci"))
 	WriteLine(w, "  %-18s %s", "prepare", beginnerCommandDesc("prepare"))
 	WriteLine(w, "")
 	WriteLine(w, "For command-specific help:")
@@ -447,6 +452,7 @@ func printActions(w io.Writer) {
 	WriteLine(w, "| Action | Description |")
 	WriteLine(w, "| :-- | :-- |")
 	WriteLine(w, "| **run** | %s |", beginnerCommandDesc("run"))
+	WriteLine(w, "| **ci** | %s |", beginnerCommandDesc("ci"))
 	WriteLine(w, "| **prepare** | %s |", beginnerCommandDesc("prepare"))
 	WriteLine(w, "")
 	WriteLine(w, "For more info: xh <command> --help")

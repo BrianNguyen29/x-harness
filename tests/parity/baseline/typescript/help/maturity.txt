@@ -32,6 +32,7 @@ stable:
 
 beta:
   actions
+  ci
   learn
   packet
   profile
