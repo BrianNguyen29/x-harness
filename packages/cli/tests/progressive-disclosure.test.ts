@@ -65,6 +65,25 @@ describe("progressive disclosure", () => {
     expect(stdout).toContain("intake");
   });
 
+  it("no args --lang vi shows Vietnamese start-here guide", async () => {
+    const { stdout, exitCode } = await execaNode(["--lang", "vi"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("Bắt đầu");
+    expect(stdout).toContain("Tác vụ hằng ngày");
+    expect(stdout).toContain("Sức khỏe & khôi phục");
+    expect(stdout).toContain("Tự động hóa");
+    expect(stdout).toContain("Các lệnh thường dùng và cách sử dụng");
+    expect(stdout).toContain("Tất cả lệnh");
+    expect(stdout).toContain("Các lệnh theo nhóm độ ổn định");
+  });
+
+  it("--help --lang vi shows Vietnamese help", async () => {
+    const { stdout, exitCode } = await execaNode(["--help", "--lang", "vi"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("Bắt đầu");
+    expect(stdout).toContain("Cách dùng:");
+  });
+
   it("advanced commands still execute when called directly", async () => {
     const { stdout, exitCode } = await execaNode(["doctor"]);
     expect(exitCode).toBe(0);

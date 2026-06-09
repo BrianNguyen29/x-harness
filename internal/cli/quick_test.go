@@ -204,3 +204,64 @@ func TestQuickWithHarnessNoCardRecommendsDoctor(t *testing.T) {
 		t.Fatalf("expected doctor recommendation when harness exists without card, got: %s", result.Recommendation)
 	}
 }
+
+func TestQuickVietnamese(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"quick", "--lang", "vi"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "Gợi ý hành động tiếp theo") {
+		t.Fatalf("expected Vietnamese 'Gợi ý hành động tiếp theo', got: %s", out)
+	}
+	if !strings.Contains(out, "thư mục gốc:") {
+		t.Fatalf("expected Vietnamese 'thư mục gốc:', got: %s", out)
+	}
+	if !strings.Contains(out, "gợi ý:") {
+		t.Fatalf("expected Vietnamese 'gợi ý:', got: %s", out)
+	}
+	if !strings.Contains(out, "lý do:") {
+		t.Fatalf("expected Vietnamese 'lý do:', got: %s", out)
+	}
+	if !strings.Contains(out, "Tín hiệu phát hiện:") {
+		t.Fatalf("expected Vietnamese 'Tín hiệu phát hiện:', got: %s", out)
+	}
+	if !strings.Contains(out, "Bước tiếp theo:") {
+		t.Fatalf("expected Vietnamese 'Bước tiếp theo:', got: %s", out)
+	}
+}
+
+func TestQuickVietnameseOrderIndependent(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"--lang", "vi", "quick"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "Gợi ý hành động tiếp theo") {
+		t.Fatalf("expected Vietnamese title, got: %s", out)
+	}
+}
+
+func TestQuickJSONRemainsEnglish(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"quick", "--lang", "vi", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	var result QuickResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.Recommendation == "" {
+		t.Fatalf("expected non-empty recommendation, got: %+v", result)
+	}
+	// JSON values should remain English
+	if strings.Contains(result.Recommendation, "thư mục gốc") {
+		t.Fatalf("expected English JSON recommendation, got: %s", result.Recommendation)
+	}
+}

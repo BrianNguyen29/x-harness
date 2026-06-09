@@ -18,7 +18,7 @@ type QuickResult struct {
 	DetectedSignals []string `json:"detected_signals"`
 }
 
-func handleQuick(args []string, stdout io.Writer, stderr io.Writer) int {
+func handleQuick(args []string, stdout io.Writer, stderr io.Writer, lang Lang) int {
 	root := ""
 	jsonMode := false
 
@@ -73,22 +73,22 @@ func handleQuick(args []string, stdout io.Writer, stderr io.Writer) int {
 			return ExitError
 		}
 	} else {
-		WriteLine(stdout, "# xh quick - Next-action recommender")
+		WriteLine(stdout, "# %s", quickTitle(lang))
 		WriteLine(stdout, "")
-		WriteLine(stdout, "root: %s", result.Root)
-		WriteLine(stdout, "recommendation: %s", result.Recommendation)
-		WriteLine(stdout, "reason: %s", result.Reason)
+		WriteLine(stdout, "%s: %s", quickRootLabel(lang), result.Root)
+		WriteLine(stdout, "%s: %s", quickRecommendationLabel(lang), result.Recommendation)
+		WriteLine(stdout, "%s: %s", quickReasonLabel(lang), result.Reason)
 		WriteLine(stdout, "")
-		WriteLine(stdout, "Detected signals:")
+		WriteLine(stdout, "%s", quickDetectedSignalsLabel(lang))
 		if len(result.DetectedSignals) == 0 {
-			WriteLine(stdout, "  (none)")
+			WriteLine(stdout, "%s", quickNoneLabel(lang))
 		} else {
 			for _, s := range result.DetectedSignals {
 				WriteLine(stdout, "  - %s", s)
 			}
 		}
 		WriteLine(stdout, "")
-		WriteLine(stdout, "Next steps:")
+		WriteLine(stdout, "%s", quickNextStepsLabel(lang))
 		for _, s := range result.NextSteps {
 			WriteLine(stdout, "  - %s", s)
 		}

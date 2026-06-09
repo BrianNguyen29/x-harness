@@ -42,13 +42,46 @@ import { quickCommand } from "./commands/quick.js";
 import { runCommand } from "./commands/run.js";
 import { ciCommand } from "./commands/ci.js";
 import { CliError, handleCliError } from "./core/exit.js";
+import {
+  type Lang,
+  getLang,
+  withoutLang,
+  resolveLang,
+  startHereTitle,
+  categoryGettingStarted,
+  categoryDailyTasks,
+  categoryHealthRecovery,
+  categoryAutomation,
+  discoverMore,
+  newToXHarness,
+  usageLabel,
+  forCommandSpecificHelp,
+  advancedLabel,
+  globalOptionsLabel,
+  showHelpText,
+  showAllCommandsText,
+  showMaturityLabelsText,
+  showVersionText,
+  beginnerActionsTitle,
+  invokeUsingEither,
+  installedCLIText,
+  localSourceText,
+  forMoreInfo,
+  getBeginnerCommandDesc,
+  discoverHelpDesc,
+  discoverHelpAllDesc,
+  discoverHelpMaturityDesc,
+  actionHeader,
+  descriptionHeader,
+} from "./i18n.js";
 
 const program = new Command();
 program
   .name("xh")
   .description("A lightweight verify-gated harness for AI-agent workflows")
   .version("0.1.0")
-  .helpOption(false);
+  .helpOption(false)
+  .option("--lang <code>", "Language", "en");
 
 const beginnerCommands = new Set([
   "check",
@@ -121,115 +154,97 @@ function hideAdvancedCommands() {
   }
 }
 
-function printStartHere() {
+function printStartHere(lang: Lang) {
   console.log("xh 0.1.0");
   console.log("");
   console.log("A lightweight verify-gated harness for AI-agent workflows.");
   console.log("");
-  console.log("Start here — a few commands to get you going:");
+  console.log(startHereTitle(lang));
   console.log("");
-  console.log("Getting started");
-  console.log(
-    "  xh start           Guided onboarding: doctor, examples verify, init wizard, next steps"
-  );
-  console.log("  xh learn           Read-only concept tour for beginners");
-  console.log(
-    "  xh quick           Read-only next-action recommender for newcomers"
-  );
-  console.log("  xh init            Install harness assets into a workspace");
+  console.log(categoryGettingStarted(lang));
+  console.log(`  xh start           ${getBeginnerCommandDesc("start", lang)}`);
+  console.log(`  xh learn           ${getBeginnerCommandDesc("learn", lang)}`);
+  console.log(`  xh quick           ${getBeginnerCommandDesc("quick", lang)}`);
+  console.log(`  xh init            ${getBeginnerCommandDesc("init", lang)}`);
   console.log("");
-  console.log("Daily tasks");
+  console.log(categoryDailyTasks(lang));
+  console.log(`  xh check (verify)  ${getBeginnerCommandDesc("check", lang)}`);
   console.log(
-    "  xh check (verify)  Run read-only verification against a completion card"
+    `  xh actions         ${getBeginnerCommandDesc("actions", lang)}`
   );
-  console.log("  xh actions         List beginner-friendly actions");
-  console.log("  xh status          Show trace summary");
-  console.log(
-    "  xh add             Add claim, evidence, or completion card helpers"
-  );
+  console.log(`  xh status          ${getBeginnerCommandDesc("status", lang)}`);
+  console.log(`  xh add             ${getBeginnerCommandDesc("add", lang)}`);
   console.log("");
-  console.log("Health & recovery");
+  console.log(categoryHealthRecovery(lang));
+  console.log(`  xh doctor          ${getBeginnerCommandDesc("doctor", lang)}`);
   console.log(
-    "  xh doctor          Validate workspace health and configuration"
+    `  xh recover         ${getBeginnerCommandDesc("recover", lang)}`
   );
-  console.log(
-    "  xh recover         Get recovery playbook suggestions from errors or trace"
-  );
-  console.log("  xh reset           Clean generated harness state");
+  console.log(`  xh reset           ${getBeginnerCommandDesc("reset", lang)}`);
   console.log("");
-  console.log("Automation");
-  console.log("  xh run             Run a built-in workflow recipe");
-  console.log("  xh ci              Run the built-in CI workflow");
+  console.log(categoryAutomation(lang));
+  console.log(`  xh run             ${getBeginnerCommandDesc("run", lang)}`);
+  console.log(`  xh ci              ${getBeginnerCommandDesc("ci", lang)}`);
   console.log(
-    "  xh prepare         Check if workspace is ready for agent task handoff"
+    `  xh prepare         ${getBeginnerCommandDesc("prepare", lang)}`
   );
   console.log("");
-  console.log("Discover more:");
-  console.log("  xh --help            Common commands and usage");
-  console.log("  xh --help-all        All commands");
-  console.log("  xh --help-maturity   Commands grouped by stability");
+  console.log(discoverMore(lang));
+  console.log(`  xh --help            ${discoverHelpDesc(lang)}`);
+  console.log(`  xh --help-all        ${discoverHelpAllDesc(lang)}`);
+  console.log(`  xh --help-maturity   ${discoverHelpMaturityDesc(lang)}`);
   console.log("");
-  console.log("New to x-harness? See docs/GETTING_STARTED.md");
+  console.log(newToXHarness(lang));
 }
 
-function printHelp() {
+function printHelp(lang: Lang) {
   console.log("xh 0.1.0");
   console.log("");
   console.log("A lightweight verify-gated harness for AI-agent workflows.");
   console.log("");
-  console.log("Usage:");
+  console.log(usageLabel(lang));
   console.log("  xh <command> [options]");
   console.log("");
-  console.log("Getting started");
-  console.log(
-    "  xh start           Guided onboarding: doctor, examples verify, init wizard, next steps"
-  );
-  console.log("  xh learn           Read-only concept tour for beginners");
-  console.log(
-    "  xh quick           Read-only next-action recommender for newcomers"
-  );
-  console.log("  xh init            Install harness assets into a workspace");
+  console.log(categoryGettingStarted(lang));
+  console.log(`  xh start           ${getBeginnerCommandDesc("start", lang)}`);
+  console.log(`  xh learn           ${getBeginnerCommandDesc("learn", lang)}`);
+  console.log(`  xh quick           ${getBeginnerCommandDesc("quick", lang)}`);
+  console.log(`  xh init            ${getBeginnerCommandDesc("init", lang)}`);
   console.log("");
-  console.log("Daily tasks");
+  console.log(categoryDailyTasks(lang));
+  console.log(`  xh check (verify)  ${getBeginnerCommandDesc("check", lang)}`);
   console.log(
-    "  xh check (verify)  Run read-only verification against a completion card"
+    `  xh actions         ${getBeginnerCommandDesc("actions", lang)}`
   );
-  console.log("  xh actions         List beginner-friendly actions");
-  console.log("  xh status          Show trace summary");
-  console.log(
-    "  xh add             Add claim, evidence, or completion card helpers"
-  );
+  console.log(`  xh status          ${getBeginnerCommandDesc("status", lang)}`);
+  console.log(`  xh add             ${getBeginnerCommandDesc("add", lang)}`);
   console.log("");
-  console.log("Health & recovery");
+  console.log(categoryHealthRecovery(lang));
+  console.log(`  xh doctor          ${getBeginnerCommandDesc("doctor", lang)}`);
   console.log(
-    "  xh doctor          Validate workspace health and configuration"
+    `  xh recover         ${getBeginnerCommandDesc("recover", lang)}`
   );
-  console.log(
-    "  xh recover         Get recovery playbook suggestions from errors or trace"
-  );
-  console.log("  xh reset           Clean generated harness state");
+  console.log(`  xh reset           ${getBeginnerCommandDesc("reset", lang)}`);
   console.log("");
-  console.log("Automation");
-  console.log("  xh run             Run a built-in workflow recipe");
-  console.log("  xh ci              Run the built-in CI workflow");
+  console.log(categoryAutomation(lang));
+  console.log(`  xh run             ${getBeginnerCommandDesc("run", lang)}`);
+  console.log(`  xh ci              ${getBeginnerCommandDesc("ci", lang)}`);
   console.log(
-    "  xh prepare         Check if workspace is ready for agent task handoff"
+    `  xh prepare         ${getBeginnerCommandDesc("prepare", lang)}`
   );
   console.log("");
-  console.log("For command-specific help:");
+  console.log(forCommandSpecificHelp(lang));
   console.log("  xh <command> --help");
   console.log("");
-  console.log("Advanced:");
-  console.log("  xh --help-all          Show all commands");
-  console.log("  xh --help-maturity     Show commands grouped by maturity");
+  console.log(advancedLabel(lang));
+  console.log(`  xh --help-all          ${showAllCommandsText(lang)}`);
+  console.log(`  xh --help-maturity     ${showMaturityLabelsText(lang)}`);
   console.log("");
-  console.log("Global options:");
-  console.log("  -h, --help          Show help");
-  console.log("  --help-all          Show all commands");
-  console.log(
-    "  --help-maturity     Show help with maturity labels for all commands"
-  );
-  console.log("  -v, --version       Show version");
+  console.log(globalOptionsLabel(lang));
+  console.log(`  -h, --help          ${showHelpText(lang)}`);
+  console.log(`  --help-all          ${showAllCommandsText(lang)}`);
+  console.log(`  --help-maturity     ${showMaturityLabelsText(lang)}`);
+  console.log(`  -v, --version       ${showVersionText(lang)}`);
 }
 
 function printHelpMaturity() {
@@ -378,54 +393,48 @@ program.addCommand(report);
 // actions lists all beginner-friendly actions
 const actions = new Command("actions");
 actions.description("List beginner-friendly actions");
-actions.action(() => {
-  console.log("# xh Beginner Actions");
+actions.option("--lang <code>", "Language", "en");
+actions.action((opts: { lang: string }) => {
+  const lang: Lang = resolveLang(opts, program.opts());
+  console.log(beginnerActionsTitle(lang));
   console.log("");
-  console.log("Invoke using either:");
-  console.log("  - Installed CLI:  xh <action>");
-  console.log("  - Local source:   node packages/cli/dist/index.js <action>");
+  console.log(invokeUsingEither(lang));
+  console.log(`  - ${installedCLIText(lang)}  xh <action>`);
+  console.log(
+    `  - ${localSourceText(lang)}   node packages/cli/dist/index.js <action>`
+  );
   console.log("");
-  console.log("## Getting started");
-  console.log("| Action | Description |");
+  console.log(`## ${categoryGettingStarted(lang)}`);
+  console.log(`| ${actionHeader(lang)} | ${descriptionHeader(lang)} |`);
   console.log("| :-- | :-- |");
-  console.log(
-    "| **start** | Guided onboarding: doctor, examples verify, init wizard, next steps |"
-  );
-  console.log("| **learn** | Read-only concept tour for beginners |");
-  console.log(
-    "| **quick** | Read-only next-action recommender for newcomers |"
-  );
-  console.log("| **init** | Install harness assets into a workspace |");
+  console.log(`| **start** | ${getBeginnerCommandDesc("start", lang)} |`);
+  console.log(`| **learn** | ${getBeginnerCommandDesc("learn", lang)} |`);
+  console.log(`| **quick** | ${getBeginnerCommandDesc("quick", lang)} |`);
+  console.log(`| **init** | ${getBeginnerCommandDesc("init", lang)} |`);
   console.log("");
-  console.log("## Daily tasks");
-  console.log("| Action | Description |");
+  console.log(`## ${categoryDailyTasks(lang)}`);
+  console.log(`| ${actionHeader(lang)} | ${descriptionHeader(lang)} |`);
   console.log("| :-- | :-- |");
-  console.log(
-    "| **check** | Run read-only verification against a completion card |"
-  );
-  console.log("| **actions** | List beginner-friendly actions |");
-  console.log("| **status** | Show trace summary |");
-  console.log("| **add** | Add claim, evidence, or completion card helpers |");
+  console.log(`| **check** | ${getBeginnerCommandDesc("check", lang)} |`);
+  console.log(`| **actions** | ${getBeginnerCommandDesc("actions", lang)} |`);
+  console.log(`| **status** | ${getBeginnerCommandDesc("status", lang)} |`);
+  console.log(`| **add** | ${getBeginnerCommandDesc("add", lang)} |`);
   console.log("");
-  console.log("## Health & recovery");
-  console.log("| Action | Description |");
+  console.log(`## ${categoryHealthRecovery(lang)}`);
+  console.log(`| ${actionHeader(lang)} | ${descriptionHeader(lang)} |`);
   console.log("| :-- | :-- |");
-  console.log("| **doctor** | Validate workspace health and configuration |");
-  console.log(
-    "| **recover** | Get recovery playbook suggestions from errors or trace |"
-  );
-  console.log("| **reset** | Clean generated harness state |");
+  console.log(`| **doctor** | ${getBeginnerCommandDesc("doctor", lang)} |`);
+  console.log(`| **recover** | ${getBeginnerCommandDesc("recover", lang)} |`);
+  console.log(`| **reset** | ${getBeginnerCommandDesc("reset", lang)} |`);
   console.log("");
-  console.log("## Automation");
-  console.log("| Action | Description |");
+  console.log(`## ${categoryAutomation(lang)}`);
+  console.log(`| ${actionHeader(lang)} | ${descriptionHeader(lang)} |`);
   console.log("| :-- | :-- |");
-  console.log("| **run** | Run a built-in workflow recipe |");
-  console.log("| **ci** | Run the built-in CI workflow |");
-  console.log(
-    "| **prepare** | Check if workspace is ready for agent task handoff |"
-  );
+  console.log(`| **run** | ${getBeginnerCommandDesc("run", lang)} |`);
+  console.log(`| **ci** | ${getBeginnerCommandDesc("ci", lang)} |`);
+  console.log(`| **prepare** | ${getBeginnerCommandDesc("prepare", lang)} |`);
   console.log("");
-  console.log("For more info: xh <command> --help");
+  console.log(forMoreInfo(lang));
 });
 program.addCommand(actions);
 
@@ -472,25 +481,30 @@ For command-specific help: xh <command> --help
 );
 
 const args = process.argv.slice(2);
+const lang = getLang(args);
+const cleanArgs = withoutLang(args);
 
-if (args.length === 0) {
-  printStartHere();
+if (cleanArgs.length === 0) {
+  printStartHere(lang);
   process.exit(0);
 }
 
-if (args.length === 1 && (args[0] === "--help" || args[0] === "-h")) {
-  printHelp();
+if (
+  cleanArgs.length === 1 &&
+  (cleanArgs[0] === "--help" || cleanArgs[0] === "-h")
+) {
+  printHelp(lang);
   process.exit(0);
 }
 
-if (args.includes("--help-all")) {
+if (cleanArgs.includes("--help-all")) {
   program.commands.forEach(
     (cmd) => ((cmd as unknown as { _hidden: boolean })._hidden = false)
   );
   program.help();
 }
 
-if (args.includes("--help-maturity")) {
+if (cleanArgs.includes("--help-maturity")) {
   printHelpMaturity();
   process.exit(0);
 }

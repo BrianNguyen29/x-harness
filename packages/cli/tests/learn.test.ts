@@ -40,4 +40,24 @@ describe("learn command", () => {
     expect(exitCode).toBe(0);
     expect(stdout).toContain("learn");
   });
+
+  it("learn --lang vi shows Vietnamese output", async () => {
+    const { stdout, exitCode } = await execaNode(["learn", "--lang", "vi"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("Khái niệm cơ bản");
+    expect(stdout).toContain("Tổng quan");
+    expect(stdout).toContain("Bước tiếp theo:");
+  });
+
+  it("learn --lang vi --json keeps English JSON", async () => {
+    const { stdout, exitCode } = await execaNode([
+      "learn",
+      "--lang",
+      "vi",
+      "--json",
+    ]);
+    expect(exitCode).toBe(0);
+    const result = JSON.parse(stdout);
+    expect(result.sections[0].title).toBe("Overview");
+  });
 });

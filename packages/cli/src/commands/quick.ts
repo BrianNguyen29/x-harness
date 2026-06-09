@@ -1,6 +1,17 @@
 import { Command } from "commander";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import {
+  type Lang,
+  resolveLang,
+  quickTitle,
+  quickRootLabel,
+  quickRecommendationLabel,
+  quickReasonLabel,
+  quickDetectedSignalsLabel,
+  quickNoneLabel,
+  quickNextStepsLabel,
+} from "../i18n.js";
 
 interface QuickResult {
   root: string;
@@ -115,44 +126,53 @@ export function quickCommand(): Command {
     .description("Read-only next-action recommender for newcomers")
     .option("--root <path>", "Repository root", process.cwd())
     .option("--json", "Output JSON instead of text", false)
-    .action(async (opts: { root: string; json: boolean }) => {
-      const root = path.resolve(opts.root);
-      const signals = detectSignals(root);
-      const { recommendation, reason, nextSteps } = buildRecommendation(
-        root,
-        signals
-      );
+    .option("--lang <code>", "Language", "en")
+    .action(
+      async (
+        opts: { root: string; json: boolean; lang: string },
+        cmd: Command
+      ) => {
+        const lang: Lang = resolveLang(opts, cmd.parent?.opts() ?? {});
+        const root = path.resolve(opts.root);
+        const signals = detectSignals(root);
+        const { recommendation, reason, nextSteps } = buildRecommendation(
+          root,
+          signals
+        );
 
-      const result: QuickResult = {
-        root,
-        recommendation,
-        reason,
-        next_steps: nextSteps,
-        detected_signals: signals,
-      };
+        const result: QuickResult = {
+          root,
+          recommendation,
+          reason,
+          next_steps: nextSteps,
+          detected_signals: signals,
+        };
 
-      if (opts.json) {
-        console.log(JSON.stringify(result, null, 2));
-      } else {
-        console.log("# xh quick - Next-action recommender");
-        console.log("");
-        console.log(`root: ${result.root}`);
-        console.log(`recommendation: ${result.recommendation}`);
-        console.log(`reason: ${result.reason}`);
-        console.log("");
-        console.log("Detected signals:");
-        if (result.detected_signals.length === 0) {
-          console.log("  (none)");
+        if (opts.json) {
+          console.log(JSON.stringify(result, null, 2));
         } else {
-          for (const s of result.detected_signals) {
+          console.log(`# ${quickTitle(lang)}`);
+          console.log("");
+          console.log(`${quickRootLabel(lang)}: ${result.root}`);
+          console.log(
+            `${quickRecommendationLabel(lang)}: ${result.recommendation}`
+          );
+          console.log(`${quickReasonLabel(lang)}: ${result.reason}`);
+          console.log("");
+          console.log(quickDetectedSignalsLabel(lang));
+          if (result.detected_signals.length === 0) {
+            console.log(quickNoneLabel(lang));
+          } else {
+            for (const s of result.detected_signals) {
+              console.log(`  - ${s}`);
+            }
+          }
+          console.log("");
+          console.log(quickNextStepsLabel(lang));
+          for (const s of result.next_steps) {
             console.log(`  - ${s}`);
           }
         }
-        console.log("");
-        console.log("Next steps:");
-        for (const s of result.next_steps) {
-          console.log(`  - ${s}`);
-        }
       }
-    });
+    );
 }

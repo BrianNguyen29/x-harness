@@ -1,4 +1,17 @@
 import { Command } from "commander";
+import {
+  type Lang,
+  resolveLang,
+  learnTitle,
+  learnOverview,
+  learnCoreConcepts,
+  learnTiersAndEvidence,
+  learnNextStepsLabel,
+  learnOverviewBody,
+  learnCoreConceptsBody,
+  learnTiersAndEvidenceBody,
+  learnNextSteps,
+} from "../i18n.js";
 
 interface LearnSection {
   title: string;
@@ -14,7 +27,10 @@ export function learnCommand(): Command {
   return new Command("learn")
     .description("Read-only concept tour for beginners")
     .option("--json", "Output JSON instead of text", false)
-    .action(async (opts: { json: boolean }) => {
+    .option("--lang <code>", "Language", "en")
+    .action(async (opts: { json: boolean; lang: string }, cmd: Command) => {
+      const lang: Lang = resolveLang(opts, cmd.parent?.opts() ?? {});
+
       const sections: LearnSection[] = [
         {
           title: "Overview",
@@ -50,16 +66,31 @@ deep: adds evidence scope declaration, untested regions, remaining risks, execut
         };
         console.log(JSON.stringify(result, null, 2));
       } else {
-        console.log("# xh learn - Concept tour");
+        console.log(`# ${learnTitle(lang)}`);
         console.log("");
-        for (const sec of sections) {
-          console.log(`## ${sec.title}`);
+        for (let i = 0; i < sections.length; i++) {
+          const sec = sections[i];
+          let title = sec.title;
+          let body = sec.body;
+          if (lang === "vi") {
+            if (i === 0) {
+              title = learnOverview(lang);
+              body = learnOverviewBody(lang);
+            } else if (i === 1) {
+              title = learnCoreConcepts(lang);
+              body = learnCoreConceptsBody(lang);
+            } else if (i === 2) {
+              title = learnTiersAndEvidence(lang);
+              body = learnTiersAndEvidenceBody(lang);
+            }
+          }
+          console.log(`## ${title}`);
           console.log("");
-          console.log(sec.body);
+          console.log(body);
           console.log("");
         }
-        console.log("Next steps:");
-        for (const s of nextSteps) {
+        console.log(learnNextStepsLabel(lang));
+        for (const s of learnNextSteps(lang)) {
           console.log(`  - ${s}`);
         }
       }

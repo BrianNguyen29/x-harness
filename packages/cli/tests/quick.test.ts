@@ -99,4 +99,29 @@ describe("quick command", () => {
     expect(cards).toEqual(["completion_card:completion-card.yaml"]);
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
+
+  it("quick --lang vi shows Vietnamese output", async () => {
+    const { stdout, exitCode } = await execaNode(["quick", "--lang", "vi"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("Gợi ý hành động tiếp theo");
+    expect(stdout).toContain("thư mục gốc:");
+    expect(stdout).toContain("gợi ý:");
+    expect(stdout).toContain("lý do:");
+    expect(stdout).toContain("Tín hiệu phát hiện:");
+    expect(stdout).toContain("Bước tiếp theo:");
+  });
+
+  it("quick --lang vi --json keeps English JSON", async () => {
+    const { stdout, exitCode } = await execaNode([
+      "quick",
+      "--lang",
+      "vi",
+      "--json",
+    ]);
+    expect(exitCode).toBe(0);
+    const result = JSON.parse(stdout);
+    expect(typeof result.root).toBe("string");
+    expect(typeof result.recommendation).toBe("string");
+    expect(result.recommendation).not.toContain("thư mục gốc");
+  });
 });

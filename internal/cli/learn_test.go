@@ -96,3 +96,60 @@ func TestLearnMaturityBeta(t *testing.T) {
 		t.Fatalf("expected learn to appear under beta section")
 	}
 }
+
+func TestLearnVietnamese(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"learn", "--lang", "vi"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "Khái niệm cơ bản") {
+		t.Fatalf("expected Vietnamese 'Khái niệm cơ bản', got: %s", out)
+	}
+	if !strings.Contains(out, "Tổng quan") {
+		t.Fatalf("expected Vietnamese 'Tổng quan', got: %s", out)
+	}
+	if !strings.Contains(out, "Khái niệm cốt lõi") {
+		t.Fatalf("expected Vietnamese 'Khái niệm cốt lõi', got: %s", out)
+	}
+	if !strings.Contains(out, "Cấp độ và bằng chứng") {
+		t.Fatalf("expected Vietnamese 'Cấp độ và bằng chứng', got: %s", out)
+	}
+	if !strings.Contains(out, "Bước tiếp theo:") {
+		t.Fatalf("expected Vietnamese 'Bước tiếp theo:', got: %s", out)
+	}
+}
+
+func TestLearnVietnameseOrderIndependent(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"--lang", "vi", "learn"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "Tổng quan") {
+		t.Fatalf("expected Vietnamese 'Tổng quan', got: %s", out)
+	}
+}
+
+func TestLearnJSONRemainsEnglish(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"learn", "--lang", "vi", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	var result LearnResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if len(result.Sections) == 0 {
+		t.Fatalf("expected sections, got: %+v", result)
+	}
+	if result.Sections[0].Title != "Overview" {
+		t.Fatalf("expected English JSON title, got: %s", result.Sections[0].Title)
+	}
+}

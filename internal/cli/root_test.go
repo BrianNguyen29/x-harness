@@ -381,6 +381,78 @@ func TestHelpMaturityOutput(t *testing.T) {
 	}
 }
 
+func TestNoArgsVietnamese(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"--lang", "vi"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "Bắt đầu") {
+		t.Fatalf("expected Vietnamese 'Bắt đầu', got:\n%s", out)
+	}
+	if !strings.Contains(out, "Tác vụ hằng ngày") {
+		t.Fatalf("expected Vietnamese 'Tác vụ hằng ngày', got:\n%s", out)
+	}
+	if !strings.Contains(out, "Sức khỏe & khôi phục") {
+		t.Fatalf("expected Vietnamese 'Sức khỏe & khôi phục', got:\n%s", out)
+	}
+	if !strings.Contains(out, "Tự động hóa") {
+		t.Fatalf("expected Vietnamese 'Tự động hóa', got:\n%s", out)
+	}
+	if !strings.Contains(out, "Các lệnh thường dùng và cách sử dụng") {
+		t.Fatalf("expected Vietnamese 'Các lệnh thường dùng và cách sử dụng', got:\n%s", out)
+	}
+	if !strings.Contains(out, "Tất cả lệnh") {
+		t.Fatalf("expected Vietnamese 'Tất cả lệnh', got:\n%s", out)
+	}
+	if !strings.Contains(out, "Các lệnh theo nhóm độ ổn định") {
+		t.Fatalf("expected Vietnamese 'Các lệnh theo nhóm độ ổn định', got:\n%s", out)
+	}
+}
+
+func TestHelpVietnamese(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"--help", "--lang", "vi"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "Bắt đầu") {
+		t.Fatalf("expected Vietnamese 'Bắt đầu', got:\n%s", out)
+	}
+	if !strings.Contains(out, "Cách dùng:") {
+		t.Fatalf("expected Vietnamese 'Cách dùng:', got:\n%s", out)
+	}
+}
+
+func TestActionsVietnamese(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"actions", "--lang", "vi"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "Hành động dành cho người mới") {
+		t.Fatalf("expected Vietnamese actions title, got:\n%s", out)
+	}
+	if !strings.Contains(out, "Bắt đầu") {
+		t.Fatalf("expected Vietnamese 'Bắt đầu', got:\n%s", out)
+	}
+	if !strings.Contains(out, "Tác vụ hằng ngày") {
+		t.Fatalf("expected Vietnamese 'Tác vụ hằng ngày', got:\n%s", out)
+	}
+	if !strings.Contains(out, "Hành động") {
+		t.Fatalf("expected Vietnamese 'Hành động', got:\n%s", out)
+	}
+	if !strings.Contains(out, "Mô tả") {
+		t.Fatalf("expected Vietnamese 'Mô tả', got:\n%s", out)
+	}
+}
+
 func TestUnknownCommandReturnsUsage(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
