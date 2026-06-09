@@ -146,3 +146,81 @@ func TestRunMaturityBeta(t *testing.T) {
 		t.Fatalf("expected run to appear under beta section")
 	}
 }
+
+func TestCIDryRun(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"ci", "--dry-run"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "doctor") {
+		t.Fatalf("expected doctor step, got: %s", out)
+	}
+	if !strings.Contains(out, "examples_verify") {
+		t.Fatalf("expected examples_verify step, got: %s", out)
+	}
+	if !strings.Contains(out, "verify_ci_standard") {
+		t.Fatalf("expected verify_ci_standard step, got: %s", out)
+	}
+	if !strings.Contains(out, "builtin:ci") {
+		t.Fatalf("expected recipe builtin:ci in output, got: %s", out)
+	}
+}
+
+func TestCIDryRunJSON(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"ci", "--dry-run", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	var result RunResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.Recipe != "builtin:ci" {
+		t.Fatalf("expected recipe builtin:ci, got: %s", result.Recipe)
+	}
+	if !result.OK {
+		t.Fatalf("expected ok=true, got: %+v", result)
+	}
+	if len(result.Steps) == 0 {
+		t.Fatalf("expected steps, got: %+v", result)
+	}
+}
+
+func TestCiInHelpListing(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"--help"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
+	}
+	if !strings.Contains(stdout.String(), "ci") {
+		t.Fatalf("expected help to include ci, got: %s", stdout.String())
+	}
+}
+
+func TestCiMaturityBeta(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"--help-maturity"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "ci") {
+		t.Fatalf("expected --help-maturity to include ci, got: %s", out)
+	}
+	betaIdx := strings.Index(out, "beta:")
+	expIdx := strings.Index(out, "experimental:")
+	ciIdx := strings.Index(out, "\n  ci")
+	if betaIdx == -1 || expIdx == -1 || ciIdx == -1 {
+		t.Fatalf("missing expected sections")
+	}
+	if ciIdx < betaIdx || ciIdx > expIdx {
+		t.Fatalf("expected ci to appear under beta section")
+	}
+}

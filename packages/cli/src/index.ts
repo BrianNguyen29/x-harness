@@ -40,6 +40,7 @@ import { startCommand } from "./commands/start.js";
 import { learnCommand } from "./commands/learn.js";
 import { quickCommand } from "./commands/quick.js";
 import { runCommand } from "./commands/run.js";
+import { ciCommand } from "./commands/ci.js";
 import { CliError, handleCliError } from "./core/exit.js";
 
 const program = new Command();
@@ -63,6 +64,7 @@ const beginnerCommands = new Set([
   "learn",
   "quick",
   "run",
+  "ci",
 ]);
 
 const commandMaturity: Record<string, string> = {
@@ -79,6 +81,7 @@ const commandMaturity: Record<string, string> = {
   learn: "beta",
   quick: "beta",
   run: "beta",
+  ci: "beta",
   verify: "stable",
   handoff: "stable",
   report: "stable",
@@ -156,6 +159,7 @@ function printStartHere() {
   console.log("");
   console.log("Automation");
   console.log("  xh run             Run a built-in workflow recipe");
+  console.log("  xh ci              Run the built-in CI workflow");
   console.log(
     "  xh prepare         Check if workspace is ready for agent task handoff"
   );
@@ -207,6 +211,7 @@ function printHelp() {
   console.log("");
   console.log("Automation");
   console.log("  xh run             Run a built-in workflow recipe");
+  console.log("  xh ci              Run the built-in CI workflow");
   console.log(
     "  xh prepare         Check if workspace is ready for agent task handoff"
   );
@@ -312,6 +317,7 @@ program.addCommand(startCommand());
 program.addCommand(learnCommand());
 program.addCommand(quickCommand());
 program.addCommand(runCommand());
+program.addCommand(ciCommand());
 
 // Commands with beginner-friendly aliases
 const verify = verifyCommand();
@@ -414,6 +420,7 @@ actions.action(() => {
   console.log("| Action | Description |");
   console.log("| :-- | :-- |");
   console.log("| **run** | Run a built-in workflow recipe |");
+  console.log("| **ci** | Run the built-in CI workflow |");
   console.log(
     "| **prepare** | Check if workspace is ready for agent task handoff |"
   );
