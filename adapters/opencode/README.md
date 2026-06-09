@@ -25,13 +25,20 @@ This copies the verify agent instructions, orchestrator snippets, and OpenCode J
 
 | Action        | Alias for               | Description                                            |
 | :------------ | :---------------------- | :----------------------------------------------------- |
-| **`prepare`** | `handoff readiness`     | Check if workspace is ready for agent task handoff     |
+| **`start`**   | (standalone)            | Guided onboarding: doctor, examples verify, init wizard, next steps |
+| **`learn`**   | (standalone)            | Read-only concept tour for beginners                   |
+| **`quick`**   | (standalone)            | Read-only next-action recommender for newcomers        |
 | **`check`**   | `verify`                | Run read-only verification against a completion card   |
+| **`prepare`** | `handoff readiness`     | Check if workspace is ready for agent task handoff     |
 | **`recover`** | `recovery suggest`      | Get recovery playbook suggestions from errors or trace |
 | **`doctor`**  | (standalone)            | Validate workspace health and configuration            |
 | **`actions`** | (standalone)            | List all beginner-friendly actions                     |
 | **`status`**  | `report` (no --metrics) | Show trace summary or card metrics                     |
 | **`reset`**   | `clean --tmp --force`   | Clean generated harness state (requires --confirm)     |
+| **`init`**    | (standalone)            | Install core harness assets, schemas, policies, and adapters |
+| **`add`**     | (standalone)            | Add a metadata helper file for compatibility modes     |
+| **`run`**     | (standalone)            | Run a built-in workflow recipe                         |
+| **`ci`**      | (standalone)            | Run the built-in CI workflow                           |
 
 **Slash commands for agent adapters:**
 
@@ -39,6 +46,9 @@ This copies the verify agent instructions, orchestrator snippets, and OpenCode J
 
 | Namespaced       | Maps to CLI    |
 | :--------------- | :------------- |
+| `/xh:start`      | `xh start`     |
+| `/xh:learn`      | `xh learn`     |
+| `/xh:quick`      | `xh quick`     |
 | `/xh:check`      | `xh check`     |
 | `/xh:prepare`    | `xh prepare`   |
 | `/xh:recover`    | `xh recover`   |
@@ -46,6 +56,10 @@ This copies the verify agent instructions, orchestrator snippets, and OpenCode J
 | `/xh:actions`    | `xh actions`   |
 | `/xh:status`     | `xh status`    |
 | `/xh:reset`      | `xh reset`     |
+| `/xh:init`       | `xh init`      |
+| `/xh:add`        | `xh add`       |
+| `/xh:run`        | `xh run`       |
+| `/xh:ci`         | `xh ci`        |
 | `/xh:verify`     | `xh verify`    |
 | `/xh:intake`     | `xh intake`    |
 | `/xh:handoff`    | `xh handoff`   |
@@ -74,8 +88,8 @@ You can use `opencode.example.json` and `opencode.verify.example.json` as guides
 - The worker executes standard instructions, writes changes to the source files, and exports `completion-card.yaml`.
 - The verifier loads `verify-agent.md`, mounts the workspace, and runs the read-only check command:
   ```bash
-  node packages/cli/dist/index.js check --card completion-card.yaml --strict
-  # or: node packages/cli/dist/index.js verify --card completion-card.yaml --strict
+  xh check --card completion-card.yaml --strict
+  # or: node packages/cli/dist/index.js check --card completion-card.yaml --strict
   ```
 
 ### 2. Output Analysis

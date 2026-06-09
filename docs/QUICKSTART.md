@@ -8,7 +8,7 @@ Welcome to `x-harness`! Follow this guide to set up the CLI, run local verificat
 > **Command syntax**:
 >
 > - **Terminal / shell:** `xh <command>` (e.g., `xh check`)
-> - **Agent chat:** `/xh <command>` (e.g., `/xh check`)
+> - **Agent chat:** `/xh:<command>` (e.g., `/xh:check`). Legacy `/xh <command>` and `/xh-check` are also accepted where the adapter supports them.
 
 ---
 
@@ -52,7 +52,7 @@ You should see a JSON report detailing passing validations with `"healthy": true
 
 ### 3. Beginner Actions
 
-`x-harness` provides ten beginner-friendly actions:
+`x-harness` provides 14 beginner-friendly actions:
 
 | Action        | Description                                                                        |
 | :------------ | :--------------------------------------------------------------------------------- |
@@ -66,6 +66,10 @@ You should see a JSON report detailing passing validations with `"healthy": true
 | **`reset`**   | Clean generated harness state (requires --confirm)                                 |
 | **`init`**    | Install core harness assets, schemas, policies, and adapters (default `--minimal`) |
 | **`add`**     | Add a metadata helper file for compatibility modes                                 |
+| **`learn`**   | Read-only concept tour for beginners                                               |
+| **`quick`**   | Read-only next-action recommender for newcomers                                    |
+| **`run`**     | Run a built-in workflow recipe                                                     |
+| **`ci`**      | Run the built-in CI workflow                                                       |
 
 ### 4. Run Contract Oracle Checks (Optional)
 

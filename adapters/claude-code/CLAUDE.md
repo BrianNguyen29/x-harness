@@ -24,19 +24,25 @@ This adapter integrates x-harness with Claude Code.
 
 ```bash
 # Verify a completion card (use check or verify)
-node packages/cli/dist/index.js check --card completion-card.yaml --strict
+xh check --card completion-card.yaml --strict
+# Source-checkout fallback:
+# node packages/cli/dist/index.js check --card completion-card.yaml --strict
 
 # Prepare workspace for handoff
-node packages/cli/dist/index.js prepare --json
+xh prepare --json
+# node packages/cli/dist/index.js prepare --json
 
 # Recover from errors
-node packages/cli/dist/index.js recover --errors "test failed"
+xh recover --errors "test failed"
+# node packages/cli/dist/index.js recover --errors "test failed"
 
 # Check repo health
-node packages/cli/dist/index.js doctor --root .
+xh doctor --root .
+# node packages/cli/dist/index.js doctor --root .
 
 # View trace summary
-node packages/cli/dist/index.js report
+xh report
+# node packages/cli/dist/index.js report
 ```
 
 ## Constraints
@@ -50,7 +56,7 @@ node packages/cli/dist/index.js report
 
 ## Authoritative hierarchy
 
-Chat summaries are non-authoritative. `completion-card.yaml` and `node packages/cli/dist/index.js verify` output are authoritative for completion state in this repository.
+Chat summaries are non-authoritative. `completion-card.yaml` and `xh verify` output (or `node packages/cli/dist/index.js verify` as source-checkout fallback) are authoritative for completion state in this repository.
 
 <!-- BEGIN X-HARNESS MANAGED CONTEXT -->
 <!-- generated-by: x-harness -->

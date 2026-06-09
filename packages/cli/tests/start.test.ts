@@ -51,4 +51,33 @@ describe("start command", () => {
     expect(exitCode).toBe(2);
     expect(stderr).toContain("invalid profile");
   });
+
+  it("start --lang vi outputs Vietnamese text", async () => {
+    const { stdout, exitCode } = await execaNode([
+      "start",
+      "--skip-doctor",
+      "--skip-examples",
+      "--lang",
+      "vi",
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("Hướng dẫn bắt đầu");
+    expect(stdout).toContain("Bước tiếp theo:");
+  });
+
+  it("start --lang vi --json keeps English/machine-readable output", async () => {
+    const { stdout, exitCode } = await execaNode([
+      "start",
+      "--skip-doctor",
+      "--skip-examples",
+      "--lang",
+      "vi",
+      "--json",
+    ]);
+    expect(exitCode).toBe(0);
+    const result = JSON.parse(stdout);
+    expect(result.ok).toBe(true);
+    expect(result.next_steps.length).toBeGreaterThan(0);
+    expect(result.next_steps[0]).toContain("verification");
+  });
 });

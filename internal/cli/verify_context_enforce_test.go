@@ -37,7 +37,12 @@ task_id: TASK-CONTEXT-ENFORCE-001
 tier: standard
 owner: alice
 accountable: bob
-` + refsBlock + manifestLine + `done_checklist:
+` + refsBlock + manifestLine + `state:
+  read_set:
+    - src/main.go
+  write_set:
+    - src/main.go
+done_checklist:
   source_of_truth_read: true
   scope_explained: true
   read_write_sets_declared: true

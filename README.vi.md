@@ -139,7 +139,7 @@ Lệnh này xác nhận rằng schema, policy, template, và liên kết adapter
 
 ### 2. Chạy lần xác minh đầu tiên
 
-Repo có sẵn **26 golden example** — các kịch bản tham chiếu đã được xác thực trước, bao gồm regression, capability, adversarial, conformance-strict, và recovery. Thử một kịch bản biết chắc là đạt:
+Repo có sẵn **28 thư mục kịch bản golden** — bao gồm **26 fixture có completion card** cộng **2 kịch bản tham chiếu conformance-strict** (chỉ có README, không có completion card), trải dài các suite regression, capability, adversarial, conformance-strict, và recovery. Thử một kịch bản biết chắc là đạt:
 
 ```bash
 xh verify --card examples/golden/regression/success-light/completion-card.yaml
@@ -199,24 +199,24 @@ Lệnh này sinh một tệp Markdown có cấu trúc, kèm tập tệp tường
 | Hành động      | Mô tả                                                                   |
 | :------------- | :---------------------------------------------------------------------- |
 | **`start`**    | Hướng dẫn onboarding: doctor, examples verify, init wizard, next steps. |
-| **`verify`**   | Chạy read-only verification gate trên một completion card.              |
+| **`learn`**    | Tour khái niệm chỉ đọc dành cho người mới.                              |
+| **`quick`**    | Gợi ý hành động tiếp theo cho người dùng mới.                           |
 | **`check`**    | Alias của `verify`.                                                     |
-| **`doctor`**   | Xác nhận sức khỏe workspace (schema, policy, liên kết, độ tươi).        |
-| **`examples`** | Xác minh các golden example và real-world example có sẵn.               |
-| **`context`**  | Hiển thị context chuẩn và runtime contract.                             |
-| **`explain`**  | Giải thích trạng thái admission hoặc withheld của một completion card.  |
 | **`prepare`**  | Kiểm tra workspace đã sẵn sàng cho một handoff agent hay chưa.          |
 | **`recover`**  | Sinh recovery playbook từ một thông báo lỗi hoặc trace.                 |
+| **`doctor`**   | Xác nhận sức khỏe workspace (schema, policy, liên kết, độ tươi).        |
 | **`actions`**  | Liệt kê các hành động cho người mới (danh sách này).                    |
 | **`status`**   | Hiển thị tóm tắt trace hoặc metrics của card.                           |
 | **`reset`**    | Dọn trạng thái harness đã sinh (cần `--confirm`).                       |
 | **`init`**     | Cài đặt tài sản harness vào một workspace mục tiêu.                     |
 | **`add`**      | Thêm tệp trợ giúp metadata (claim, evidence, hoặc completion card).     |
+| **`run`**      | Chạy một task file hoặc episode.                                        |
+| **`ci`**       | Chạy verification và báo cáo hướng CI.                                  |
 
-> **Terminal**: `xh <action>` (ví dụ `xh verify`)
-> **Chat với agent**: `/xh:<action>` (ví dụ `/xh:verify`) — xem [`docs/ADAPTERS.md`](docs/ADAPTERS.md)
+> **Terminal**: `xh <action>` (ví dụ `xh check`)
+> **Chat với agent**: `/xh:<action>` (ví dụ `/xh:check`) — xem [`docs/ADAPTERS.md`](docs/ADAPTERS.md)
 
-Các lệnh nâng cao (`handoff`, `report`, `packet`, `conformance`, `benchmark`, `contract`, `release`, `boundary`, `intake`, `decision`, …) được mô tả trong [`docs/`](docs).
+Các lệnh nâng cao (`handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `benchmark`, `recovery`, `packet`, `intake`, `governance`, `intervention`, `prediction`, `components`, `evidence`, `episode`, `attribution`, `permissions`, `evolve`, `export`, `import`, `frozen`, `federation`, `approval-risk`, `agent-profile`, `cost`, `contract`, `explain`, `conformance`, `release`, `boundary`, `policy`, `scan`, `card`, `readiness`, `adapters`, `repair`, `uninstall`, …) được mô tả trong [`docs/`](docs).
 
 ### Kiểm tra boundary (`xh boundary`)
 
@@ -327,7 +327,7 @@ Hợp đồng có thẩm quyền nằm ở [`X_HARNESS.md`](X_HARNESS.md).
 
 ## Ví dụ tổng quan
 
-- **26 golden example** — các kịch bản tham chiếu đã xác thực trước, bao gồm regression, capability, adversarial, conformance-strict, và recovery, nằm trong [`examples/golden/`](examples/golden/).
+- **28 thư mục kịch bản golden** — 26 fixture có completion card cộng 2 kịch bản tham chiếu conformance-strict chỉ có README, nằm trong [`examples/golden/`](examples/golden/).
 - **Real-world example** — thiết lập Next.js app và monorepo boundary trong [`examples/real-world/`](examples/real-world/).
 
 ## Tình trạng dự án

@@ -416,7 +416,7 @@ func TestStrictStandardMissingFieldsFails(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim":                "p",
 			"expected_effect":      "e",
@@ -487,7 +487,7 @@ func TestStrictStandardFullFieldsPasses(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim":                "p",
 			"expected_effect":      "e",
@@ -596,7 +596,7 @@ func TestStandardHighRiskMissingReceipt(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim":                "p",
 			"expected_effect":      "e",
@@ -663,7 +663,7 @@ func TestStandardHighRiskWithReceipt(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim":                "p",
 			"expected_effect":      "e",
@@ -731,7 +731,7 @@ func TestDeepMediumRiskMissingReceipt(t *testing.T) {
 		"tier":           "deep",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim":                "p",
 			"expected_effect":      "e",
@@ -808,7 +808,7 @@ func TestDeepMediumRiskWithReceipt(t *testing.T) {
 		"tier":           "deep",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim":                "p",
 			"expected_effect":      "e",
@@ -941,7 +941,7 @@ func TestApprovalReceiptTaxonomy(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim":                "p",
 			"expected_effect":      "e",
@@ -1001,7 +1001,7 @@ func TestApprovalReceiptInvalidDecision(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim":                "p",
 			"expected_effect":      "e",
@@ -1070,7 +1070,7 @@ func TestApprovalReceiptInsufficientAggregateRisk(t *testing.T) {
 		"tier":           "deep",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim":                "p",
 			"expected_effect":      "e",
@@ -1155,7 +1155,7 @@ func TestApprovalReceiptMissingCommandCoverage(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim":                "p",
 			"expected_effect":      "e",
@@ -1224,7 +1224,7 @@ func TestStrictDeepMissingArtifactsProvenanceFails(t *testing.T) {
 		"tier":           "deep",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim":                "p",
 			"expected_effect":      "e",
@@ -1361,8 +1361,8 @@ func TestEvidenceFloorDriftGuard(t *testing.T) {
 				},
 			}
 		case "standard":
-			card["done_checklist"] = map[string]any{"item": true}
-			card["prediction"] = map[string]any{"claim": "p"}
+			card["done_checklist"] = map[string]any{"item": true, "prediction_declared": true}
+			card["prediction"] = map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "horizon": "same_verify"}
 			card["evidence"] = map[string]any{
 				"files_changed": []any{"f.go"},
 				"command_evidence": []any{
@@ -1370,8 +1370,8 @@ func TestEvidenceFloorDriftGuard(t *testing.T) {
 				},
 			}
 		case "deep":
-			card["done_checklist"] = map[string]any{"item": true}
-			card["prediction"] = map[string]any{"claim": "p"}
+			card["done_checklist"] = map[string]any{"item": true, "prediction_declared": true}
+			card["prediction"] = map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "horizon": "same_verify"}
 			card["state"] = map[string]any{
 				"read_set":  []any{"r"},
 				"write_set": []any{"w"},
@@ -1699,7 +1699,7 @@ func TestTierGuardWarnsStandardWithBoth(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim":                "p",
 			"expected_effect":      "e",
@@ -1821,7 +1821,7 @@ func TestEscalationBlocksStandardWithAuthPath(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
 		"evidence": map[string]any{
 			"files_changed":    []any{"src/auth/session.ts"},
@@ -1856,7 +1856,7 @@ func TestEscalationAllowsDeepWithSchemaPath(t *testing.T) {
 		"tier":           "deep",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
 		"state":          map[string]any{"read_set": []any{"schemas/x.json"}, "write_set": []any{"schemas/x.json"}},
 		"evidence": map[string]any{
@@ -1932,7 +1932,7 @@ func TestEscalationBypassedByApprovedGovernance(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
 		"evidence": map[string]any{
 			"files_changed":    []any{"policies/admission.yaml"},
@@ -1979,7 +1979,7 @@ func TestEscalationBlocksStandardWithWorkflowPath(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
 		"evidence": map[string]any{
 			"files_changed":    []any{".github/workflows/x-harness-verify.yml"},
@@ -2061,7 +2061,7 @@ func TestContextFloorStandardMissingContextAlignment(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"item": true},
+		"done_checklist": map[string]any{"item": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
 		},
@@ -2112,7 +2112,7 @@ func TestContextFloorStandardMissingStaleGroundChecked(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"item": true},
+		"done_checklist": map[string]any{"item": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
 		},
@@ -2166,7 +2166,7 @@ func TestContextFloorStandardMissingRefs(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"item": true},
+		"done_checklist": map[string]any{"item": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
 		},
@@ -2223,7 +2223,7 @@ func TestContextFloorDeepMissingContextPackID(t *testing.T) {
 		"tier":           "deep",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"item": true},
+		"done_checklist": map[string]any{"item": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
 		},
@@ -2289,7 +2289,7 @@ func TestContextFloorDeepUnresolvedQuestions(t *testing.T) {
 		"tier":           "deep",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"item": true},
+		"done_checklist": map[string]any{"item": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
 		},
@@ -2402,7 +2402,7 @@ func TestContextFloorNoFlagNoBlock(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"item": true},
+		"done_checklist": map[string]any{"item": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
 		},
@@ -2458,7 +2458,7 @@ func TestContextFloorManifestFreshNoAdvisory(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"item": true},
+		"done_checklist": map[string]any{"item": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
 		},
@@ -2525,7 +2525,7 @@ func TestContextFloorManifestStaleEmitsAdvisory(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"item": true},
+		"done_checklist": map[string]any{"item": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
 		},
@@ -2592,7 +2592,7 @@ func TestContextFloorManifestObjectPath(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"item": true},
+		"done_checklist": map[string]any{"item": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
 		},
@@ -2645,7 +2645,7 @@ func TestContextFloorManifestMissingNoEffect(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"item": true},
+		"done_checklist": map[string]any{"item": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
 		},
@@ -2691,7 +2691,7 @@ func TestContextFloorMissingReferencedFile(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"item": true},
+		"done_checklist": map[string]any{"item": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
 		},
@@ -2745,7 +2745,7 @@ func TestContextFloorTaxonomy(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"item": true},
+		"done_checklist": map[string]any{"item": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
 		},
@@ -2840,7 +2840,7 @@ func TestTierGuardWarnsStandardWithAuthorityPathAndHighRiskCommand(t *testing.T)
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
 		},
@@ -2918,7 +2918,7 @@ func standardProductIntentFixture(intent map[string]any) map[string]any {
 		"admission":         map[string]any{"outcome": "success"},
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "none", "owner": "alice"},
-		"done_checklist":    map[string]any{"source_of_truth_read": true},
+		"done_checklist":    map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction": map[string]any{
 			"claim":                "p",
 			"expected_effect":      "e",
@@ -3915,7 +3915,7 @@ func TestOperationEscalationBlocksStandardWithGitMutation(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
 		"evidence": map[string]any{
 			"files_changed": []any{"src/x.ts"},
@@ -3945,7 +3945,7 @@ func TestOperationEscalationBlocksStandardWithUnknownCommand(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
 		"evidence": map[string]any{
 			"files_changed": []any{"src/x.ts"},
@@ -4011,7 +4011,7 @@ func TestOperationEscalationAllowsDeepWithBlockedCommand(t *testing.T) {
 		"tier":           "deep",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
 		"state":          map[string]any{"read_set": []any{"r"}, "write_set": []any{"w"}},
 		"evidence": map[string]any{
@@ -4090,7 +4090,7 @@ func TestOperationEscalationBypassedByApprovedGovernance(t *testing.T) {
 		"tier":           "standard",
 		"owner":          "a",
 		"accountable":    "b",
-		"done_checklist": map[string]any{"source_of_truth_read": true},
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
 		"prediction":     map[string]any{"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify"},
 		"governance": map[string]any{
 			"approval_status": "approved",

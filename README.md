@@ -139,7 +139,7 @@ This validates that schemas, policies, templates, and adapter links are present 
 
 ### 2. Run your first verification
 
-The repo ships with **26 golden examples** — pre-validated reference scenarios spanning regression, capability, adversarial, conformance-strict, and recovery suites. Try a known-good one:
+The repo ships with **28 golden scenario directories** across regression, capability, adversarial, conformance-strict, and recovery suites — **26 card-backed fixtures** plus **2 conformance-strict reference scenarios** (README-only, no completion card). Try a known-good one:
 
 ```bash
 xh verify --card examples/golden/regression/success-light/completion-card.yaml
@@ -199,24 +199,24 @@ These are the actions you'll use most often. The full list is in `xh --help-all`
 | Action | What it does |
 | :-- | :-- |
 | **`start`** | Guided onboarding: doctor, examples verify, init wizard, next steps. |
-| **`verify`** | Run the read-only verification gate on a completion card. |
+| **`learn`** | Read-only concept tour for beginners. |
+| **`quick`** | Next-action recommender for newcomers. |
 | **`check`** | Alias for `verify`. |
-| **`doctor`** | Validate workspace health (schemas, policies, links, freshness). |
-| **`examples`** | Verify bundled golden and real-world examples. |
-| **`context`** | Show canonical context and runtime contract. |
-| **`explain`** | Explain a completion card's admission or withheld state. |
 | **`prepare`** | Check whether your workspace is ready for an agent handoff. |
 | **`recover`** | Generate a recovery playbook from an error message or trace. |
+| **`doctor`** | Validate workspace health (schemas, policies, links, freshness). |
 | **`actions`** | List all beginner-friendly actions (this list). |
 | **`status`** | Show a trace summary or card metrics. |
 | **`reset`** | Clean generated harness state (requires `--confirm`). |
 | **`init`** | Install harness assets into a target workspace. |
 | **`add`** | Add a metadata helper file (claim, evidence, or completion card). |
+| **`run`** | Run a task file or episode. |
+| **`ci`** | Run CI-oriented verification and reporting. |
 
-> **Terminal**: `xh <action>` (e.g. `xh verify`)
-> **Agent chat**: `/xh:<action>` (e.g. `/xh:verify`) — see [`docs/ADAPTERS.md`](docs/ADAPTERS.md)
+> **Terminal**: `xh <action>` (e.g. `xh check`)
+> **Agent chat**: `/xh:<action>` (e.g. `/xh:check`) — see [`docs/ADAPTERS.md`](docs/ADAPTERS.md)
 
-The advanced commands (`handoff`, `report`, `packet`, `conformance`, `benchmark`, `contract`, `release`, `boundary`, `intake`, `decision`, …) are documented under [`docs/`](docs).
+The advanced commands (`handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `benchmark`, `recovery`, `packet`, `intake`, `governance`, `intervention`, `prediction`, `components`, `evidence`, `episode`, `attribution`, `permissions`, `evolve`, `export`, `import`, `frozen`, `federation`, `approval-risk`, `agent-profile`, `cost`, `contract`, `explain`, `conformance`, `release`, `boundary`, `policy`, `scan`, `card`, `readiness`, `adapters`, `repair`, `uninstall`, …) are documented under [`docs/`](docs).
 
 ### Boundary checks (`xh boundary`)
 
@@ -327,7 +327,7 @@ The authoritative contract is [`X_HARNESS.md`](X_HARNESS.md).
 
 ## Examples at a glance
 
-- **26 golden examples** — pre-validated reference scenarios across regression, capability, adversarial, conformance-strict, and recovery suites under [`examples/golden/`](examples/golden/).
+- **28 golden scenario directories** — 26 card-backed fixtures plus 2 conformance-strict reference scenarios (README-only) across regression, capability, adversarial, conformance-strict, and recovery suites under [`examples/golden/`](examples/golden/).
 - **Real-world examples** — Next.js app and monorepo boundary setups under [`examples/real-world/`](examples/real-world/).
 
 ## Project status

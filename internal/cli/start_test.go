@@ -177,3 +177,39 @@ func TestStartMaturityBeta(t *testing.T) {
 		t.Fatalf("expected start to appear under beta section")
 	}
 }
+
+func TestStartLangVI(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"start", "--root", "../..", "--skip-doctor", "--skip-examples", "--lang", "vi"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "Hướng dẫn bắt đầu") {
+		t.Fatalf("expected Vietnamese title, got: %s", out)
+	}
+	if !strings.Contains(out, "Bước tiếp theo:") {
+		t.Fatalf("expected Vietnamese next steps label, got: %s", out)
+	}
+}
+
+func TestStartLangVIJSONRemainsEnglish(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"start", "--root", "../..", "--skip-doctor", "--skip-examples", "--lang", "vi", "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+	var result StartResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if len(result.NextSteps) == 0 {
+		t.Fatalf("expected next steps, got: %+v", result)
+	}
+	// JSON next_steps use English keys/values by design
+	if !strings.Contains(result.NextSteps[0], "verification") {
+		t.Fatalf("expected English JSON next_steps, got: %+v", result.NextSteps)
+	}
+}

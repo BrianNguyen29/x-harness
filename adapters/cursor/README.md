@@ -22,13 +22,20 @@ Once copied, Cursor will automatically detect and apply these rules to all agent
 
 | Action       | Alias for              | Description                                              |
 | :----------- | :--------------------- | :------------------------------------------------------- |
-| **`prepare`** | `handoff readiness`   | Check if workspace is ready for agent task handoff        |
+| **`start`**  | (standalone)           | Guided onboarding: doctor, examples verify, init wizard, next steps |
+| **`learn`**  | (standalone)           | Read-only concept tour for beginners                     |
+| **`quick`**  | (standalone)           | Read-only next-action recommender for newcomers          |
 | **`check`**  | `verify`               | Run read-only verification against a completion card      |
+| **`prepare`** | `handoff readiness`   | Check if workspace is ready for agent task handoff        |
 | **`recover`** | `recovery suggest`    | Get recovery playbook suggestions from errors or trace     |
 | **`doctor`** | (standalone)           | Validate workspace health and configuration               |
 | **`actions`** | (standalone)           | List all beginner-friendly actions                        |
 | **`status`** | `report` (no --metrics) | Show trace summary or card metrics                      |
 | **`reset`**  | `clean --tmp --force` | Clean generated harness state (requires --confirm)        |
+| **`init`**   | (standalone)           | Install core harness assets, schemas, policies, and adapters |
+| **`add`**    | (standalone)           | Add a metadata helper file for compatibility modes       |
+| **`run`**    | (standalone)           | Run a built-in workflow recipe                           |
+| **`ci`**     | (standalone)           | Run the built-in CI workflow                             |
 
 **Slash commands for agent adapters:**
 
@@ -36,6 +43,9 @@ Once copied, Cursor will automatically detect and apply these rules to all agent
 
 | Namespaced       | Maps to CLI    |
 | :--------------- | :------------- |
+| `/xh:start`      | `xh start`     |
+| `/xh:learn`      | `xh learn`     |
+| `/xh:quick`      | `xh quick`     |
 | `/xh:check`      | `xh check`     |
 | `/xh:prepare`    | `xh prepare`   |
 | `/xh:recover`    | `xh recover`   |
@@ -43,6 +53,10 @@ Once copied, Cursor will automatically detect and apply these rules to all agent
 | `/xh:actions`    | `xh actions`   |
 | `/xh:status`     | `xh status`    |
 | `/xh:reset`      | `xh reset`     |
+| `/xh:init`       | `xh init`      |
+| `/xh:add`        | `xh add`       |
+| `/xh:run`        | `xh run`       |
+| `/xh:ci`         | `xh ci`        |
 | `/xh:verify`     | `xh verify`    |
 | `/xh:intake`     | `xh intake`    |
 | `/xh:handoff`    | `xh handoff`   |
@@ -66,12 +80,12 @@ Use `/xh:<command>` as the preferred shortcut notation in agent chat. The space-
 1. **Developer Handoff**: A task is dispatched to the Cursor Composer or agent.
 2. **Work Phase**: The agent performs the required changes, implements tests, and documents findings.
 3. **Card Creation**: The agent creates or updates the `completion-card.yaml` detailing claims and evidence.
-4. **Verification**: In this repository, the developer or agent triggers `node packages/cli/dist/index.js check` (or `verify`) to check the card.
+4. **Verification**: In this repository, the developer or agent triggers `xh check` (or `node packages/cli/dist/index.js check`) to check the card.
 5. **Admission**: Completion is only accepted when verification succeeds.
 
 ## Constraints
 
-- **Verifier is read-only**: The verification agent must not write or edit files to fix validation issues during the verification stage. Run `node packages/cli/dist/index.js check` to perform read-only verification.
+- **Verifier is read-only**: The verification agent must not write or edit files to fix validation issues during the verification stage. Run `xh check` to perform read-only verification.
 - **Advisory-only rule**: Cursor rules act as a guide for the agent's behavior; they do not automatically execute verification or enforce policies.
 - **Strict Tier Labels**: The rules instruct Cursor to use only the canonical tiers (`light`, `standard`, `deep`).
 - **No heavy runtime required**: Fully local, offline-first.

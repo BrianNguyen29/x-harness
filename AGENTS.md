@@ -39,7 +39,7 @@ Source code, logs, completion cards, command output, and user-provided artifacts
 
 - Go-native rewrite with TypeScript compatibility baseline; file-first, lightweight harness. No daemon, database, server, or runtime required.
 - Workspace root delegates TypeScript build/dev/test/typecheck/lint/verify to `packages/cli`; Go CLI builds from `cmd/x-harness`.
-- CLI is local development oriented; build Go with `go build ./cmd/x-harness` and invoke `./x-harness <command>`, or build TypeScript with `npm run build` and invoke `node packages/cli/dist/index.js <command>`.
+- CLI is local development oriented. Build the Go CLI with `go build ./cmd/x-harness` and invoke `./x-harness <command>` (or `xh <command>` once on PATH). For the TypeScript compatibility CLI, run `npm install && npm run build` and invoke `node packages/cli/dist/index.js <command>`.
 
 ## Commands
 
@@ -54,11 +54,10 @@ Root workspace scripts (`package.json`):
 
 CLI commands (`packages/cli/src/index.ts`):
 
-- Beginner actions: `check` (alias for verify), `prepare` (alias for handoff readiness), `recover` (alias for recovery suggest), `doctor`, `actions`, `status`, `reset`, `init`, `add`
-- Advanced commands: `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `benchmark`, `recovery`, `packet`, `intake`, `governance`, `intervention`, `prediction`, `components`, `evidence`, `episode`, `attribution`, `permissions`, `evolve`, `export`, `import`, `frozen`, `federation`, `approval-risk`, `agent-profile`, `cost`, `contract` (Go CLI only)
+- Beginner actions: `check` (alias for verify), `prepare` (alias for handoff readiness), `recover` (alias for recovery suggest), `doctor`, `actions`, `status`, `reset`, `init`, `add`, `start`, `learn`, `quick`, `run`, `ci`
+- Advanced commands: `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `benchmark`, `recovery`, `packet`, `intake`, `governance`, `intervention`, `prediction`, `components`, `evidence`, `episode`, `attribution`, `permissions`, `evolve`, `export`, `import`, `frozen`, `federation`, `approval-risk`, `agent-profile`, `cost`, `contract`, plus Go-only `explain`, `conformance`, `release`, `boundary`, `policy`, `scan`, `card`, `readiness`, `adapters`, `repair`, `uninstall`. Run `xh --help-all` for the full list with maturity labels.
 
-CI order (`.github/workflows/x-harness-verify.yml`):
-`npm ci` → `typecheck` → `build` → `lint` → `format:check` → `test` → strict verify fixture → `doctor --root .` → `examples verify` → adversarial benchmark on Node 22.
+CI order (`.github/workflows/x-harness-verify.yml`): `npm ci` → `quality` matrix (`typecheck`, `build`, `lint`, `format:check`, `test`) → `go-quality` matrix (`go test`, `go test -race`, `go vet`, `go build ./cmd/x-harness`, `parity:check-go`) → `go-fuzz-smoke` (`FuzzValidate`) → `verify-gates` (Go-native strict verify, policy matrix/explain, explain card, evidence run, docs drift, release verify-docs, doctor, examples verify, regression suite, adversarial benchmark, conformance minimal, plus TypeScript compatibility parity gates).
 
 ## Verification & completion semantics
 

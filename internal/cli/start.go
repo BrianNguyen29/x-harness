@@ -21,7 +21,7 @@ type StartStep struct {
 	Note   string `json:"note,omitempty"`
 }
 
-func handleStart(args []string, stdout io.Writer, stderr io.Writer) int {
+func handleStart(args []string, stdout io.Writer, stderr io.Writer, lang Lang) int {
 	root := "."
 	profile := "minimal"
 	apply := false
@@ -148,7 +148,11 @@ func handleStart(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 	}
 
-	nextSteps := []string{
+	nextStepsText := []string{
+		startFirstVerification(lang),
+		startReadDocs(lang),
+	}
+	nextStepsJSON := []string{
 		"Run your first verification: xh check --card completion-card.yaml",
 		"Read the docs: docs/GETTING_STARTED.md",
 	}
@@ -157,17 +161,17 @@ func handleStart(args []string, stdout io.Writer, stderr io.Writer) int {
 		result := StartResult{
 			OK:        ok,
 			Steps:     steps,
-			NextSteps: nextSteps,
+			NextSteps: nextStepsJSON,
 		}
 		if err := WriteJSON(stdout, result); err != nil {
 			return ExitError
 		}
 	} else {
-		WriteLine(stdout, "# xh start - Guided onboarding")
+		WriteLine(stdout, "# %s", startTitle(lang))
 		WriteLine(stdout, "")
 		stepNum := 1
 		if !skipDoctor {
-			WriteLine(stdout, "Step %d/4: doctor", stepNum)
+			WriteLine(stdout, "Step %d/4: %s", stepNum, startStepLabel("doctor", lang))
 			WriteLine(stdout, "  status: %s", steps[stepNum-1].Status)
 			if steps[stepNum-1].Note != "" {
 				WriteLine(stdout, "  note: %s", steps[stepNum-1].Note)
@@ -176,7 +180,7 @@ func handleStart(args []string, stdout io.Writer, stderr io.Writer) int {
 			stepNum++
 		}
 		if !skipExamples {
-			WriteLine(stdout, "Step %d/4: examples verify", stepNum)
+			WriteLine(stdout, "Step %d/4: %s", stepNum, startStepLabel("examples_verify", lang))
 			WriteLine(stdout, "  status: %s", steps[stepNum-1].Status)
 			if steps[stepNum-1].Note != "" {
 				WriteLine(stdout, "  note: %s", steps[stepNum-1].Note)
@@ -184,7 +188,7 @@ func handleStart(args []string, stdout io.Writer, stderr io.Writer) int {
 			WriteLine(stdout, "")
 			stepNum++
 		}
-		WriteLine(stdout, "Step %d/4: init wizard", stepNum)
+		WriteLine(stdout, "Step %d/4: %s", stepNum, startStepLabel("init_wizard", lang))
 		// init wizard is always the last step in steps slice
 		last := steps[len(steps)-1]
 		WriteLine(stdout, "  status: %s", last.Status)
@@ -192,8 +196,8 @@ func handleStart(args []string, stdout io.Writer, stderr io.Writer) int {
 			WriteLine(stdout, "  note: %s", last.Note)
 		}
 		WriteLine(stdout, "")
-		WriteLine(stdout, "Next steps:")
-		for _, s := range nextSteps {
+		WriteLine(stdout, "%s", startNextStepsTitle(lang))
+		for _, s := range nextStepsText {
 			WriteLine(stdout, "  - %s", s)
 		}
 	}
