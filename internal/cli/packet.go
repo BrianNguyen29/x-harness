@@ -363,8 +363,12 @@ func handlePacket(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handlePacketCreate(remaining, stdout, stderr)
 	case "verify-chain":
 		return handlePacketVerifyChain(remaining, stdout, stderr)
+	case "-h", "--help", "help":
+		fmt.Fprintln(stderr, "usage: x-harness packet <create|verify-chain> [options]")
+		return ExitUsage
 	default:
 		fmt.Fprintf(stderr, "unknown packet subcommand: %s\n", subcommand)
+		fmt.Fprintln(stderr, "usage: x-harness packet <create|verify-chain> [options]")
 		return ExitUsage
 	}
 }

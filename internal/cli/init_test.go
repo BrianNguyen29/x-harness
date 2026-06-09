@@ -52,10 +52,10 @@ func TestInitStandardMode(t *testing.T) {
 		t.Fatalf("expected standard complete, got: %s", stdout.String())
 	}
 
-	for _, dir := range []string{"schemas", "policies", "01-solo-agent", "02-assisted-agent"} {
-		path := filepath.Join(tmpDir, dir)
+	for _, item := range []string{"schemas", "policies", "01-solo-agent", "02-assisted-agent", "docs/ADAPTERS.md"} {
+		path := filepath.Join(tmpDir, item)
 		if _, err := os.Stat(path); err != nil {
-			t.Fatalf("expected %s to exist: %v", dir, err)
+			t.Fatalf("expected %s to exist: %v", item, err)
 		}
 	}
 }
@@ -183,6 +183,9 @@ func TestInitAdapters(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(tmpDir, "adapters", "opencode")); err != nil {
 		t.Fatalf("expected adapters/opencode to exist: %v", err)
 	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "docs", "ADAPTERS.md")); err != nil {
+		t.Fatalf("expected docs/ADAPTERS.md to exist: %v", err)
+	}
 }
 
 func TestInitUnknownFlag(t *testing.T) {
@@ -228,6 +231,9 @@ func TestInitDryRunAdapters(t *testing.T) {
 	if !strings.Contains(out, "adapters/cursor") {
 		t.Fatalf("expected adapters/cursor in plan, got: %s", out)
 	}
+	if !strings.Contains(out, "docs/ADAPTERS.md") {
+		t.Fatalf("expected docs/ADAPTERS.md in plan, got: %s", out)
+	}
 }
 
 func TestInitProfileMinimal(t *testing.T) {
@@ -262,10 +268,10 @@ func TestInitProfileStandard(t *testing.T) {
 	if !strings.Contains(stdout.String(), "init (standard) complete") {
 		t.Fatalf("expected standard complete, got: %s", stdout.String())
 	}
-	for _, dir := range []string{"schemas", "policies", "01-solo-agent", "02-assisted-agent"} {
-		path := filepath.Join(tmpDir, dir)
+	for _, item := range []string{"schemas", "policies", "01-solo-agent", "02-assisted-agent", "docs/ADAPTERS.md"} {
+		path := filepath.Join(tmpDir, item)
 		if _, err := os.Stat(path); err != nil {
-			t.Fatalf("expected %s to exist: %v", dir, err)
+			t.Fatalf("expected %s to exist: %v", item, err)
 		}
 	}
 }

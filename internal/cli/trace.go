@@ -419,7 +419,7 @@ func handleTraceTimeline(args []string, stdout io.Writer, stderr io.Writer) int 
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
-		case "--task":
+		case "--task", "--task-id":
 			if i+1 < len(args) {
 				taskID = args[i+1]
 				i++
@@ -438,7 +438,7 @@ func handleTraceTimeline(args []string, stdout io.Writer, stderr io.Writer) int 
 	}
 
 	if taskID == "" {
-		fmt.Fprintln(stderr, "usage: x-harness trace timeline --task <task_id> [--trace-dir <dir>]")
+		fmt.Fprintln(stderr, "usage: x-harness trace timeline --task-id <task_id> [--trace-dir <dir>]")
 		return ExitUsage
 	}
 
@@ -497,7 +497,7 @@ func handleTraceExplain(args []string, stdout io.Writer, stderr io.Writer) int {
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
-		case "--task":
+		case "--task", "--task-id":
 			if i+1 < len(args) {
 				taskID = args[i+1]
 				i++
@@ -516,7 +516,7 @@ func handleTraceExplain(args []string, stdout io.Writer, stderr io.Writer) int {
 	}
 
 	if taskID == "" {
-		fmt.Fprintln(stderr, "usage: x-harness trace explain --task <task_id> [--trace-dir <dir>]")
+		fmt.Fprintln(stderr, "usage: x-harness trace explain --task-id <task_id> [--trace-dir <dir>]")
 		return ExitUsage
 	}
 

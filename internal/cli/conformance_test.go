@@ -174,3 +174,15 @@ func TestConformanceUnknownSubcommand(t *testing.T) {
 		t.Fatalf("expected unknown subcommand error, got: %s", stderr.String())
 	}
 }
+
+func TestConformanceHelp(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"conformance", "--help"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "usage:") {
+		t.Fatalf("expected usage message, got: %s", stderr.String())
+	}
+}

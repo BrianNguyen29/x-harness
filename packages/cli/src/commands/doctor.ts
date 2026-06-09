@@ -108,6 +108,29 @@ const CRITICAL_ASSETS = [
   "tools/experimental/evolve/evolution-budget.yaml",
 ];
 
+const MINIMAL_CRITICAL_ASSETS = [
+  "AGENTS.md",
+  "X_HARNESS.md",
+  "docs/VERIFY_GATE.md",
+  "docs/RUNTIME_CONTRACT.md",
+  "templates/COMPLETION_CARD.md",
+  "templates/SUBAGENT_TASK_light.md",
+  "templates/SUBAGENT_TASK_standard.md",
+  "templates/SUBAGENT_TASK_deep.md",
+  "policies/admission.yaml",
+];
+
+async function detectInstalledProfile(root: string): Promise<string> {
+  try {
+    const manifestPath = path.join(root, ".x-harness", "manifest.yaml");
+    const content = await fs.readFile(manifestPath, "utf-8");
+    const match = content.match(/^profile:\s*(.+)$/m);
+    return match ? match[1].trim() : "";
+  } catch {
+    return "";
+  }
+}
+
 const CORE_SCHEMAS = [
   "attribution",
   "agent-profile",
@@ -888,6 +911,8 @@ export function doctorCommand(): Command {
           process.exit(2);
         }
         const root = path.resolve(opts.root);
+        const profile = await detectInstalledProfile(root);
+        const isMinimal = profile === "minimal";
         const missing: string[] = [];
         const present: string[] = [];
         const notes: string[] = [];
@@ -898,7 +923,10 @@ export function doctorCommand(): Command {
         }[] = [];
 
         // Required file check
-        for (const asset of CRITICAL_ASSETS) {
+        const criticalAssets = isMinimal
+          ? MINIMAL_CRITICAL_ASSETS
+          : CRITICAL_ASSETS;
+        for (const asset of criticalAssets) {
           const assetPath = path.join(root, asset);
           if (await fs.pathExists(assetPath)) {
             present.push(asset);
@@ -975,12 +1003,20 @@ export function doctorCommand(): Command {
         });
 
         // Adapter presence check
-        const adapterResult = await checkAdapters(root);
-        checks.push({
-          name: "adapters_present",
-          status: adapterResult.ok ? "pass" : "fail",
-          note: adapterResult.notes.join("; "),
-        });
+        if (isMinimal) {
+          checks.push({
+            name: "adapters_present",
+            status: "pass",
+            note: "minimal profile: adapters not required",
+          });
+        } else {
+          const adapterResult = await checkAdapters(root);
+          checks.push({
+            name: "adapters_present",
+            status: adapterResult.ok ? "pass" : "fail",
+            note: adapterResult.notes.join("; "),
+          });
+        }
 
         // Local markdown link check
         const linkResult = await checkLocalMarkdownLinks(root);
@@ -999,14 +1035,23 @@ export function doctorCommand(): Command {
         });
 
         // Component registry check
-        const componentRegistryResult = await validateComponentsRegistry(root);
-        checks.push({
-          name: "component_registry",
-          status: componentRegistryResult.ok ? "pass" : "fail",
-          note: componentRegistryResult.ok
-            ? `${componentRegistryResult.component_count} component(s); protected paths ${componentRegistryResult.protected_paths_covered}/${componentRegistryResult.protected_paths_checked} covered`
-            : componentRegistryResult.errors.join("; "),
-        });
+        if (isMinimal) {
+          checks.push({
+            name: "component_registry",
+            status: "pass",
+            note: "minimal profile: components registry not required",
+          });
+        } else {
+          const componentRegistryResult =
+            await validateComponentsRegistry(root);
+          checks.push({
+            name: "component_registry",
+            status: componentRegistryResult.ok ? "pass" : "fail",
+            note: componentRegistryResult.ok
+              ? `${componentRegistryResult.component_count} component(s); protected paths ${componentRegistryResult.protected_paths_covered}/${componentRegistryResult.protected_paths_checked} covered`
+              : componentRegistryResult.errors.join("; "),
+          });
+        }
 
         // Read-only verifier check
         const readOnlyResult = await checkReadOnlyVerifier(root);
@@ -1057,12 +1102,20 @@ export function doctorCommand(): Command {
         });
 
         // Managed runtime contract blocks in docs/templates/adapters
-        const managedContractResult = await checkManagedContractBlocks(root);
-        checks.push({
-          name: "managed_contract_blocks",
-          status: managedContractResult.ok ? "pass" : "fail",
-          note: managedContractResult.notes.join("; "),
-        });
+        if (isMinimal) {
+          checks.push({
+            name: "managed_contract_blocks",
+            status: "pass",
+            note: "minimal profile: managed contract blocks not required",
+          });
+        } else {
+          const managedContractResult = await checkManagedContractBlocks(root);
+          checks.push({
+            name: "managed_contract_blocks",
+            status: managedContractResult.ok ? "pass" : "fail",
+            note: managedContractResult.notes.join("; "),
+          });
+        }
 
         const healthy = checks.every((c) => c.status === "pass");
 

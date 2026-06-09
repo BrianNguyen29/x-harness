@@ -28,8 +28,12 @@ func handleIntake(args []string, stdout, stderr io.Writer) int {
 		return handleIntakeContract(args[1:], stdout, stderr)
 	case "handoff":
 		return handleIntakeHandoff(args[1:], stdout, stderr)
+	case "-h", "--help", "help":
+		fmt.Fprintln(stderr, "usage: x-harness intake <classify|explain|contract|handoff> [options]")
+		return ExitUsage
 	default:
 		fmt.Fprintf(stderr, "unknown intake subcommand: %s\n", args[0])
+		fmt.Fprintln(stderr, "usage: x-harness intake <classify|explain|contract|handoff> [options]")
 		return ExitUsage
 	}
 }

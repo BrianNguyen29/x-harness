@@ -179,3 +179,15 @@ func TestProfileRecommendNoSubcommand(t *testing.T) {
 		t.Fatalf("expected subcommand required error, got: %q", stderr.String())
 	}
 }
+
+func TestProfileHelp(t *testing.T) {
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := Run([]string{"profile", "--help"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "usage:") {
+		t.Fatalf("expected usage message, got: %s", stderr.String())
+	}
+}

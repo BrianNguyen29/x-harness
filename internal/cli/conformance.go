@@ -17,6 +17,9 @@ func handleConformance(args []string, stdout io.Writer, stderr io.Writer) int {
 	switch args[0] {
 	case "run":
 		return handleConformanceRun(args[1:], stdout, stderr)
+	case "-h", "--help", "help":
+		fmt.Fprintln(stderr, "usage: x-harness conformance <run> [options]")
+		return ExitUsage
 	default:
 		fmt.Fprintf(stderr, "unknown conformance subcommand: %s\n", args[0])
 		fmt.Fprintln(stderr, "usage: x-harness conformance <run> [options]")

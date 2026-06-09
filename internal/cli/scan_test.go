@@ -279,3 +279,67 @@ func TestScanCleanSkill(t *testing.T) {
 		t.Fatalf("expected risk none, got %s", result.Summary.Risk)
 	}
 }
+
+func TestScanHelp(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"scan", "--help"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "usage:") {
+		t.Fatalf("expected usage message, got: %s", stderr.String())
+	}
+}
+
+func TestScanAdapterWithRoot(t *testing.T) {
+	tmpDir := t.TempDir()
+	adaptersDir := filepath.Join(tmpDir, "adapters", "generic")
+	if err := os.MkdirAll(adaptersDir, 0755); err != nil {
+		t.Fatalf("failed to create temp adapters dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(adaptersDir, "README.md"), []byte("# Generic\n"), 0644); err != nil {
+		t.Fatalf("failed to write temp readme: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"scan", "adapter", "--root", tmpDir, "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result struct {
+		FilesScanned int `json:"files_scanned"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.FilesScanned == 0 {
+		t.Fatalf("expected at least one file scanned, got %d", result.FilesScanned)
+	}
+}
+
+func TestScanManagedWithRoot(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "file.md"), []byte("<!-- BEGIN X-HARNESS MANAGED CONTRACT: test -->\ncontent\n<!-- END X-HARNESS MANAGED CONTRACT: test -->\n"), 0644); err != nil {
+		t.Fatalf("failed to write temp file: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"scan", "managed", "--root", tmpDir, "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected exit code %d, got %d. stderr: %s", ExitOK, code, stderr.String())
+	}
+
+	var result struct {
+		FilesScanned int `json:"files_scanned"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s", err, stdout.String())
+	}
+	if result.FilesScanned != 1 {
+		t.Fatalf("expected 1 file scanned, got %d", result.FilesScanned)
+	}
+}

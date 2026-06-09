@@ -127,6 +127,9 @@ func handleCard(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleCardVerify(args[1:], stdout, stderr)
 	case "init":
 		return handleCardInit(args[1:], stdout, stderr)
+	case "-h", "--help", "help":
+		fmt.Fprintln(stderr, "usage: x-harness card <generate|verify|init> [options]")
+		return ExitUsage
 	default:
 		fmt.Fprintf(stderr, "unknown card subcommand: %s\n", args[0])
 		fmt.Fprintln(stderr, "usage: x-harness card <generate|verify|init> [options]")

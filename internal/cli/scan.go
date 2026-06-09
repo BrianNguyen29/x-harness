@@ -23,6 +23,9 @@ func handleScan(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleScanSkill(args[1:], stdout, stderr)
 	case "managed":
 		return handleScanManaged(args[1:], stdout, stderr)
+	case "-h", "--help", "help":
+		fmt.Fprintln(stderr, "usage: x-harness scan <adapter|skill|managed> [options]")
+		return ExitUsage
 	default:
 		fmt.Fprintf(stderr, "unknown scan subcommand: %s\n", args[0])
 		fmt.Fprintln(stderr, "usage: x-harness scan <adapter|skill|managed> [options]")
@@ -30,31 +33,38 @@ func handleScan(args []string, stdout io.Writer, stderr io.Writer) int {
 	}
 }
 
-func parseScanFlags(args []string, stderr io.Writer) (jsonMode bool, remaining []string, exitCode int) {
+func parseScanFlags(args []string, stderr io.Writer) (jsonMode bool, root string, remaining []string, exitCode int) {
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--json":
 			jsonMode = true
+		case "--root":
+			if i+1 < len(args) {
+				root = args[i+1]
+				i++
+			}
 		default:
 			if strings.HasPrefix(args[i], "-") {
 				fmt.Fprintf(stderr, "unknown flag: %s\n", args[i])
-				return false, nil, ExitUsage
+				return false, "", nil, ExitUsage
 			}
 			remaining = append(remaining, args[i])
 		}
 	}
-	return jsonMode, remaining, -1
+	return jsonMode, root, remaining, -1
 }
 
 func handleScanAdapter(args []string, stdout io.Writer, stderr io.Writer) int {
-	jsonMode, _, exitCode := parseScanFlags(args, stderr)
+	jsonMode, root, _, exitCode := parseScanFlags(args, stderr)
 	if exitCode >= 0 {
 		return exitCode
 	}
 
-	root := findAdaptersRepoRoot()
 	if root == "" {
-		root = "."
+		root = findAdaptersRepoRoot()
+		if root == "" {
+			root = "."
+		}
 	}
 	adaptersDir := filepath.Join(root, "adapters")
 
@@ -75,7 +85,7 @@ func handleScanAdapter(args []string, stdout io.Writer, stderr io.Writer) int {
 }
 
 func handleScanSkill(args []string, stdout io.Writer, stderr io.Writer) int {
-	jsonMode, remaining, exitCode := parseScanFlags(args, stderr)
+	jsonMode, _, remaining, exitCode := parseScanFlags(args, stderr)
 	if exitCode >= 0 {
 		return exitCode
 	}
@@ -101,14 +111,16 @@ func handleScanSkill(args []string, stdout io.Writer, stderr io.Writer) int {
 }
 
 func handleScanManaged(args []string, stdout io.Writer, stderr io.Writer) int {
-	jsonMode, _, exitCode := parseScanFlags(args, stderr)
+	jsonMode, root, _, exitCode := parseScanFlags(args, stderr)
 	if exitCode >= 0 {
 		return exitCode
 	}
 
-	root := findAdaptersRepoRoot()
 	if root == "" {
-		root = "."
+		root = findAdaptersRepoRoot()
+		if root == "" {
+			root = "."
+		}
 	}
 
 	// Collect all files that contain managed block markers

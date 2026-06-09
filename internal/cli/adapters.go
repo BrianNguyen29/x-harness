@@ -148,16 +148,47 @@ func evalAdapter(a adapterInfo, root string) adapterEvalResult {
 
 func handleAdaptersEval(args []string, stdout io.Writer, stderr io.Writer) int {
 	jsonMode := false
+	root := ""
+	var nameFilter string
 	for i := 0; i < len(args); i++ {
-		if args[i] == "--json" {
+		switch args[i] {
+		case "--json":
 			jsonMode = true
+		case "--root":
+			if i+1 < len(args) {
+				root = args[i+1]
+				i++
+			}
+		default:
+			if !strings.HasPrefix(args[i], "-") && nameFilter == "" {
+				nameFilter = args[i]
+			}
 		}
 	}
 
-	results := make([]adapterEvalResult, 0, len(adapters))
+	if root == "" {
+		root = findAdaptersRepoRoot()
+	}
+
+	targetAdapters := adapters
+	if nameFilter != "" {
+		found := false
+		for _, a := range adapters {
+			if a.Name == nameFilter {
+				targetAdapters = []adapterInfo{a}
+				found = true
+				break
+			}
+		}
+		if !found {
+			fmt.Fprintf(stderr, "unknown adapter: %s\n", nameFilter)
+			return ExitError
+		}
+	}
+
+	results := make([]adapterEvalResult, 0, len(targetAdapters))
 	passCount := 0
-	root := findAdaptersRepoRoot()
-	for _, a := range adapters {
+	for _, a := range targetAdapters {
 		r := evalAdapter(a, root)
 		results = append(results, r)
 		if r.OK {
@@ -165,17 +196,18 @@ func handleAdaptersEval(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 	}
 
+	total := len(targetAdapters)
 	if jsonMode {
 		output := map[string]any{
 			"adapters":   results,
 			"pass_count": passCount,
-			"total":      len(adapters),
+			"total":      total,
 		}
 		if err := WriteJSON(stdout, output); err != nil {
 			fmt.Fprintf(stderr, "failed to write JSON: %v\n", err)
 			return ExitError
 		}
-		if passCount < len(adapters) {
+		if passCount < total {
 			return ExitError
 		}
 		return ExitOK
@@ -200,9 +232,9 @@ func handleAdaptersEval(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 	}
 	WriteLine(stdout, "")
-	WriteLine(stdout, "pass: %d/%d", passCount, len(adapters))
+	WriteLine(stdout, "pass: %d/%d", passCount, total)
 
-	if passCount < len(adapters) {
+	if passCount < total {
 		return ExitError
 	}
 	return ExitOK
@@ -215,20 +247,29 @@ type adapterDoctorCheck struct {
 }
 
 type adapterDoctorResult struct {
-	Path   string              `json:"path"`
-	OK     bool                `json:"ok"`
+	Path   string               `json:"path"`
+	OK     bool                 `json:"ok"`
 	Checks []adapterDoctorCheck `json:"checks"`
 }
 
 func handleAdaptersDoctor(args []string, stdout io.Writer, stderr io.Writer) int {
 	jsonMode := false
+	root := ""
 	for i := 0; i < len(args); i++ {
-		if args[i] == "--json" {
+		switch args[i] {
+		case "--json":
 			jsonMode = true
+		case "--root":
+			if i+1 < len(args) {
+				root = args[i+1]
+				i++
+			}
 		}
 	}
 
-	root := findAdaptersRepoRoot()
+	if root == "" {
+		root = findAdaptersRepoRoot()
+	}
 	if root == "" {
 		fmt.Fprintln(stderr, "could not find repository root")
 		return ExitError

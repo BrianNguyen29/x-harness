@@ -129,6 +129,7 @@ type latencyBenchmarkSample struct {
 
 func handleBenchmark(args []string, stdout io.Writer, stderr io.Writer) int {
 	filter := "all"
+	filterSet := false
 	mutationFiles := "100,1000,5000"
 	mutationConcurrency := "1,4,16,64"
 	commands := "verify,doctor,examples,test:fast"
@@ -143,6 +144,7 @@ func handleBenchmark(args []string, stdout io.Writer, stderr io.Writer) int {
 		case "--filter":
 			if i+1 < len(args) {
 				filter = args[i+1]
+				filterSet = true
 				i++
 			}
 		case "--mutation-files":
@@ -198,6 +200,11 @@ func handleBenchmark(args []string, stdout io.Writer, stderr io.Writer) int {
 	if err != nil {
 		fmt.Fprintf(stderr, "error: cannot find repository root: %v\n", err)
 		return ExitError
+	}
+
+	if !filterSet {
+		fmt.Fprintln(stderr, "benchmark requires --filter; use --filter latency, mutation-guard, or adversarial")
+		return ExitUsage
 	}
 
 	if filter == "mutation-guard" {

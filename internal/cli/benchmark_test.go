@@ -264,3 +264,15 @@ func TestBenchmarkLatencyJSONShape(t *testing.T) {
 		t.Fatalf("expected one non-timeout sample, got %+v", entry.Samples)
 	}
 }
+
+func TestBenchmarkMissingFilterShowsUsage(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"benchmark", "--json"}, &stdout, &stderr)
+	if code != ExitUsage {
+		t.Fatalf("expected exit code %d, got %d", ExitUsage, code)
+	}
+	if !strings.Contains(stderr.String(), "requires --filter") {
+		t.Fatalf("expected missing filter message, got: %s", stderr.String())
+	}
+}

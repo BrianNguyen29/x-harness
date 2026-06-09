@@ -33,6 +33,9 @@ func handleReadiness(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleReadinessPR(args[1:], stdout, stderr)
 	case "release":
 		return handleReadinessRelease(args[1:], stdout, stderr)
+	case "-h", "--help", "help":
+		fmt.Fprintln(stderr, "usage: x-harness readiness <task|pr|release> [options]")
+		return ExitUsage
 	default:
 		fmt.Fprintf(stderr, "unknown readiness subcommand: %s\n", args[0])
 		fmt.Fprintln(stderr, "usage: x-harness readiness <task|pr|release> [options]")
@@ -56,7 +59,7 @@ func handleReadinessTask(args []string, stdout io.Writer, stderr io.Writer) int 
 		}
 	}
 
-	if cardPath == "" {
+	if cardPath == "" || strings.HasPrefix(cardPath, "-") {
 		fmt.Fprintln(stderr, "usage: x-harness readiness task --card <path> [--json]")
 		return ExitUsage
 	}

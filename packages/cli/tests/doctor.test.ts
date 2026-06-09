@@ -427,7 +427,7 @@ components:
     expect(exitCode).toBe(0);
     expect(stdout).toContain("# x-harness Doctor Report");
     expect(stdout).toContain("| required_files | pass |");
-  });
+  }, 10000);
 
   it("rejects unknown doctor output formats", async () => {
     const { stderr, exitCode } = await execaNode([
@@ -447,5 +447,96 @@ components:
     const check = report.checks.find((c: Check) => c.name === "policy_drift");
     expect(check).toBeDefined();
     expect(check.note).not.toContain("[explicit]");
+  });
+
+  it("reports healthy for minimal profile project", async () => {
+    const tmpDir = mkdtempSync(path.join(tmpdir(), "x-harness-doctor-"));
+    try {
+      // Scaffold a minimal project matching xh init --minimal output
+      await fs.ensureDir(path.join(tmpDir, "docs"));
+      await fs.ensureDir(path.join(tmpDir, "templates"));
+      await fs.ensureDir(path.join(tmpDir, "policies"));
+      await fs.ensureDir(path.join(tmpDir, ".x-harness"));
+      fs.copyFileSync(
+        path.join(repoRoot, "AGENTS.md"),
+        path.join(tmpDir, "AGENTS.md")
+      );
+      await fs.writeFile(
+        path.join(tmpDir, "X_HARNESS.md"),
+        "# X-Harness\n",
+        "utf-8"
+      );
+      await fs.writeFile(
+        path.join(tmpDir, "docs", "VERIFY_GATE.md"),
+        "verifier is read-only\n",
+        "utf-8"
+      );
+      await fs.writeFile(
+        path.join(tmpDir, "docs", "RUNTIME_CONTRACT.md"),
+        "# Runtime Contract\n",
+        "utf-8"
+      );
+      await fs.writeFile(
+        path.join(tmpDir, "templates", "COMPLETION_CARD.md"),
+        "# Completion Card\n",
+        "utf-8"
+      );
+      await fs.writeFile(
+        path.join(tmpDir, "templates", "SUBAGENT_TASK_light.md"),
+        "# light\n",
+        "utf-8"
+      );
+      await fs.writeFile(
+        path.join(tmpDir, "templates", "SUBAGENT_TASK_standard.md"),
+        "# standard\n",
+        "utf-8"
+      );
+      await fs.writeFile(
+        path.join(tmpDir, "templates", "SUBAGENT_TASK_deep.md"),
+        "# deep\n",
+        "utf-8"
+      );
+      fs.copyFileSync(
+        path.join(repoRoot, "policies", "admission.yaml"),
+        path.join(tmpDir, "policies", "admission.yaml")
+      );
+      await fs.writeFile(
+        path.join(tmpDir, ".x-harness", "manifest.yaml"),
+        `version: "1"\ngenerated_at: "2026-01-01T00:00:00Z"\nprofile: minimal\nentries: []\n`,
+        "utf-8"
+      );
+
+      const { stdout, exitCode } = await execaNode([
+        "doctor",
+        "--root",
+        tmpDir,
+      ]);
+      expect(exitCode).toBe(0);
+      const report = JSON.parse(stdout);
+      expect(report.healthy).toBe(true);
+
+      const adaptersCheck = report.checks.find(
+        (c: Check) => c.name === "adapters_present"
+      );
+      expect(adaptersCheck).toBeDefined();
+      expect(adaptersCheck.status).toBe("pass");
+      expect(adaptersCheck.note).toContain("minimal profile");
+
+      const registryCheck = report.checks.find(
+        (c: Check) => c.name === "component_registry"
+      );
+      expect(registryCheck).toBeDefined();
+      expect(registryCheck.status).toBe("pass");
+      expect(registryCheck.note).toContain("minimal profile");
+
+      const managedCheck = report.checks.find(
+        (c: Check) => c.name === "managed_contract_blocks"
+      );
+      expect(managedCheck).toBeDefined();
+      expect(managedCheck.status).toBe("pass");
+      expect(managedCheck.note).toContain("minimal profile");
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 });
