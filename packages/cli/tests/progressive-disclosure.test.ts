@@ -7,7 +7,12 @@ describe("progressive disclosure", () => {
     expect(exitCode).toBe(0);
     expect(stdout).toContain("Start here");
     expect(stdout).toContain("check");
+    expect(stdout).toContain("init");
     expect(stdout).toContain("--help-all");
+    expect(stdout).toContain("Getting started");
+    expect(stdout).toContain("Daily tasks");
+    expect(stdout).toContain("Health & recovery");
+    expect(stdout).toContain("Automation");
   });
 
   it("default help shows only beginner commands", async () => {
@@ -28,6 +33,11 @@ describe("progressive disclosure", () => {
     expect(stdout).not.toContain("intake");
     expect(stdout).not.toContain("governance");
     expect(stdout).not.toContain("federation");
+    // Categories should be present
+    expect(stdout).toContain("Getting started");
+    expect(stdout).toContain("Daily tasks");
+    expect(stdout).toContain("Health & recovery");
+    expect(stdout).toContain("Automation");
     // Footer should be present
     expect(stdout).toContain("--help-all");
     expect(stdout).toContain("--help-maturity");

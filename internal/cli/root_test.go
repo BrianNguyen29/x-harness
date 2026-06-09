@@ -27,6 +27,12 @@ func TestHelpListsBeginnerCommands(t *testing.T) {
 			t.Fatalf("help output should not include advanced command %q:\n%s", name, output)
 		}
 	}
+	categories := []string{"Getting started", "Daily tasks", "Health & recovery", "Automation"}
+	for _, cat := range categories {
+		if !strings.Contains(output, cat) {
+			t.Fatalf("help output missing category %q:\n%s", cat, output)
+		}
+	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected empty stderr, got %q", stderr.String())
 	}
@@ -68,8 +74,17 @@ func TestNoArgsShowsStartHere(t *testing.T) {
 	if !strings.Contains(output, "check") {
 		t.Fatalf("no-args output missing 'check':\n%s", output)
 	}
+	if !strings.Contains(output, "init") {
+		t.Fatalf("no-args output missing 'init':\n%s", output)
+	}
 	if !strings.Contains(output, "--help-all") {
 		t.Fatalf("no-args output missing '--help-all':\n%s", output)
+	}
+	categories := []string{"Getting started", "Daily tasks", "Health & recovery", "Automation"}
+	for _, cat := range categories {
+		if !strings.Contains(output, cat) {
+			t.Fatalf("no-args output missing category %q:\n%s", cat, output)
+		}
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected empty stderr, got %q", stderr.String())
@@ -330,10 +345,16 @@ func TestActionsListsBeginnerActions(t *testing.T) {
 		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
 	}
 	out := stdout.String()
-	expected := []string{"prepare", "check", "recover", "doctor", "actions", "status", "reset", "init", "add", "start"}
+	expected := []string{"prepare", "check", "recover", "doctor", "actions", "status", "reset", "init", "add", "start", "learn", "run"}
 	for _, name := range expected {
 		if !strings.Contains(out, name) {
 			t.Fatalf("actions output missing %q:\n%s", name, out)
+		}
+	}
+	categories := []string{"Getting started", "Daily tasks", "Health & recovery", "Automation"}
+	for _, cat := range categories {
+		if !strings.Contains(out, cat) {
+			t.Fatalf("actions output missing category %q:\n%s", cat, out)
 		}
 	}
 }
