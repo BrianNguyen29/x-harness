@@ -35,6 +35,7 @@ beta:
   learn
   packet
   profile
+  run
   start
 
 experimental:

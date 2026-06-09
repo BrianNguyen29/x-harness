@@ -38,6 +38,7 @@ import { profileCommand } from "./commands/profile.js";
 import { decisionCommand } from "./commands/decision.js";
 import { startCommand } from "./commands/start.js";
 import { learnCommand } from "./commands/learn.js";
+import { runCommand } from "./commands/run.js";
 import { CliError, handleCliError } from "./core/exit.js";
 
 const program = new Command();
@@ -58,6 +59,7 @@ const beginnerCommands = new Set([
   "add",
   "start",
   "learn",
+  "run",
 ]);
 
 const commandMaturity: Record<string, string> = {
@@ -72,6 +74,7 @@ const commandMaturity: Record<string, string> = {
   add: "stable",
   start: "beta",
   learn: "beta",
+  run: "beta",
   verify: "stable",
   handoff: "stable",
   report: "stable",
@@ -122,6 +125,7 @@ function printStartHere() {
     "  xh start           Guided onboarding: doctor, examples verify, init wizard, next steps"
   );
   console.log("  xh learn           Read-only concept tour for beginners");
+  console.log("  xh run             Run a built-in workflow recipe");
   console.log(
     "  xh check (verify)  Run read-only verification against a completion card"
   );
@@ -229,6 +233,7 @@ program.addCommand(profileCommand());
 program.addCommand(decisionCommand());
 program.addCommand(startCommand());
 program.addCommand(learnCommand());
+program.addCommand(runCommand());
 
 // Commands with beginner-friendly aliases
 const verify = verifyCommand();
@@ -307,6 +312,9 @@ actions.action(() => {
   );
   console.log(
     "| **learn**    | Read-only concept tour for beginners                     |"
+  );
+  console.log(
+    "| **run**      | Run a built-in workflow recipe                           |"
   );
   console.log(
     "| **prepare**  | Check if workspace is ready for agent task handoff        |"
