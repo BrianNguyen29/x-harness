@@ -71,6 +71,9 @@ jobs:
       - name: Go test
         run: go test ./...
 
+      - name: Go test race
+        run: go test -race ./...
+
       - name: Go vet
         run: go vet ./...
 
@@ -221,6 +224,16 @@ jobs:
           node "$PACKAGED_CLI" frozen verify "$TMP_REPO/x-harness-frozen.tar.gz" --json
           node "$PACKAGED_CLI" import "$TMP_REPO/x-harness-frozen.tar.gz" --frozen --target "$TMP_REPO/frozen-target" --merge --json
           node "$PACKAGED_CLI" doctor --root "$TMP_REPO/frozen-target"
+
+      - name: Go-native frozen transfer compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          TMP_REPO="$(mktemp -d)"
+          ./x-harness export --frozen --root "$PWD" --out "$TMP_REPO/x-harness-frozen.tar.gz" --json
+          ./x-harness frozen verify "$TMP_REPO/x-harness-frozen.tar.gz" --json
+          ./x-harness import "$TMP_REPO/x-harness-frozen.tar.gz" --frozen --target "$TMP_REPO/frozen-target" --merge --json
+          ./x-harness doctor --root "$TMP_REPO/frozen-target"
 
       - name: "TypeScript compatibility: strict verify"
         run: node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json

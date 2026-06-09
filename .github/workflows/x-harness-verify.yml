@@ -123,3 +123,7 @@ jobs:
         run: node packages/cli/dist/index.js examples verify
       - name: "TypeScript compatibility: adversarial benchmark"
         run: node packages/cli/dist/index.js benchmark --filter adversarial --gate --json
+      - name: "TypeScript compatibility: context contract"
+        run: node packages/cli/dist/index.js context --contract --json
+      - name: "TypeScript compatibility: help maturity"
+        run: node packages/cli/dist/index.js --help-maturity
