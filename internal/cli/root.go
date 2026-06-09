@@ -72,6 +72,7 @@ var commands = []CommandInfo{
 	{Name: "uninstall", Description: "Uninstall managed files using manifest", Maturity: MaturityBeta},
 	{Name: "start", Description: "Guided onboarding: doctor, examples verify, init wizard, next steps", Primary: true, Maturity: MaturityBeta},
 	{Name: "learn", Description: "Read-only concept tour for beginners", Primary: true, Maturity: MaturityBeta},
+	{Name: "quick", Description: "Read-only next-action recommender for newcomers", Primary: true, Maturity: MaturityBeta},
 	{Name: "run", Description: "Run a built-in workflow recipe", Primary: true, Maturity: MaturityBeta},
 	{Name: "actions", Description: "List beginner-friendly actions", Maturity: MaturityBeta},
 	{Name: "card", Description: "Generate or verify admission cards", Maturity: MaturityBeta},
@@ -88,7 +89,7 @@ var commands = []CommandInfo{
 
 func isBeginnerCommand(name string) bool {
 	switch name {
-	case "check", "prepare", "recover", "doctor", "actions", "status", "reset", "init", "add", "start", "learn", "run":
+	case "check", "prepare", "recover", "doctor", "actions", "status", "reset", "init", "add", "start", "learn", "quick", "run":
 		return true
 	}
 	return false
@@ -141,6 +142,8 @@ func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return handleStart(args[1:], stdout, stderr)
 	case "learn":
 		return handleLearn(args[1:], stdout, stderr)
+	case "quick":
+		return handleQuick(args[1:], stdout, stderr)
 	case "run":
 		return handleRun(args[1:], stdout, stderr)
 	case "context":
@@ -277,6 +280,7 @@ func printStartHere(w io.Writer) {
 	WriteLine(w, "Getting started")
 	WriteLine(w, "  %-18s %s", "start", beginnerCommandDesc("start"))
 	WriteLine(w, "  %-18s %s", "learn", beginnerCommandDesc("learn"))
+	WriteLine(w, "  %-18s %s", "quick", beginnerCommandDesc("quick"))
 	WriteLine(w, "  %-18s %s", "init", beginnerCommandDesc("init"))
 	WriteLine(w, "")
 	WriteLine(w, "Daily tasks")
@@ -313,6 +317,7 @@ func printHelp(w io.Writer) {
 	WriteLine(w, "Getting started")
 	WriteLine(w, "  %-18s %s", "start", beginnerCommandDesc("start"))
 	WriteLine(w, "  %-18s %s", "learn", beginnerCommandDesc("learn"))
+	WriteLine(w, "  %-18s %s", "quick", beginnerCommandDesc("quick"))
 	WriteLine(w, "  %-18s %s", "init", beginnerCommandDesc("init"))
 	WriteLine(w, "")
 	WriteLine(w, "Daily tasks")
@@ -420,6 +425,7 @@ func printActions(w io.Writer) {
 	WriteLine(w, "| :-- | :-- |")
 	WriteLine(w, "| **start** | %s |", beginnerCommandDesc("start"))
 	WriteLine(w, "| **learn** | %s |", beginnerCommandDesc("learn"))
+	WriteLine(w, "| **quick** | %s |", beginnerCommandDesc("quick"))
 	WriteLine(w, "| **init** | %s |", beginnerCommandDesc("init"))
 	WriteLine(w, "")
 	WriteLine(w, "## Daily tasks")
