@@ -38,6 +38,7 @@ import { profileCommand } from "./commands/profile.js";
 import { decisionCommand } from "./commands/decision.js";
 import { startCommand } from "./commands/start.js";
 import { learnCommand } from "./commands/learn.js";
+import { quickCommand } from "./commands/quick.js";
 import { runCommand } from "./commands/run.js";
 import { CliError, handleCliError } from "./core/exit.js";
 
@@ -60,6 +61,7 @@ const beginnerCommands = new Set([
   "add",
   "start",
   "learn",
+  "quick",
   "run",
 ]);
 
@@ -75,6 +77,7 @@ const commandMaturity: Record<string, string> = {
   add: "stable",
   start: "beta",
   learn: "beta",
+  quick: "beta",
   run: "beta",
   verify: "stable",
   handoff: "stable",
@@ -127,6 +130,9 @@ function printStartHere() {
     "  xh start           Guided onboarding: doctor, examples verify, init wizard, next steps"
   );
   console.log("  xh learn           Read-only concept tour for beginners");
+  console.log(
+    "  xh quick           Read-only next-action recommender for newcomers"
+  );
   console.log("  xh init            Install harness assets into a workspace");
   console.log("");
   console.log("Daily tasks");
@@ -175,6 +181,9 @@ function printHelp() {
     "  xh start           Guided onboarding: doctor, examples verify, init wizard, next steps"
   );
   console.log("  xh learn           Read-only concept tour for beginners");
+  console.log(
+    "  xh quick           Read-only next-action recommender for newcomers"
+  );
   console.log("  xh init            Install harness assets into a workspace");
   console.log("");
   console.log("Daily tasks");
@@ -301,6 +310,7 @@ program.addCommand(profileCommand());
 program.addCommand(decisionCommand());
 program.addCommand(startCommand());
 program.addCommand(learnCommand());
+program.addCommand(quickCommand());
 program.addCommand(runCommand());
 
 // Commands with beginner-friendly aliases
@@ -376,6 +386,9 @@ actions.action(() => {
     "| **start** | Guided onboarding: doctor, examples verify, init wizard, next steps |"
   );
   console.log("| **learn** | Read-only concept tour for beginners |");
+  console.log(
+    "| **quick** | Read-only next-action recommender for newcomers |"
+  );
   console.log("| **init** | Install harness assets into a workspace |");
   console.log("");
   console.log("## Daily tasks");
