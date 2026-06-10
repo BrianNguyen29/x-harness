@@ -57,3 +57,29 @@ Recovery routes are included in:
 - `./x-harness recovery suggest` generates a review-required playbook.
 
 The CLI does not mutate `completion-card.yaml` by default.
+
+## Patch card
+
+`xh recover --patch-card <path>` generates a deterministic, conservative patch for a completion card. By default it runs in **dry-run/preview mode** and never mutates the card file.
+
+```bash
+# Preview what would change
+xh recover --patch-card completion-card.yaml
+
+# Apply the patch in-place (requires --confirm)
+xh recover --patch-card completion-card.yaml --confirm
+
+# Write the patched card to a new file instead of overwriting
+xh recover --patch-card completion-card.yaml --out patched-card.yaml
+
+# Append evidence to empty claim.evidence and evidence.files_changed
+xh recover --patch-card completion-card.yaml --confirm --evidence src/main.go
+```
+
+Behavior:
+- `--confirm` is required to actually mutate the card. Without it, the command prints a preview of the planned operations.
+- `--out <path>` writes the patched card to a new file. In dry-run mode, `--out` writes the would-be patched card for review.
+- `--evidence <id-or-path>` appends the value to `claim.evidence` and `evidence.files_changed` only when those fields are empty.
+- When confirming, a timestamped backup is written next to the original card before mutation.
+- The patcher never overwrites user-provided scalar fields; existing values are reported as `skipped`.
+- V1 patch categories are intentionally narrow: missing `handoff.next_action` and `handoff.owner` are filled using deterministic recovery routes when safe.

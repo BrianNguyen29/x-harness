@@ -51,6 +51,90 @@ func CoreContract() Contract {
 	}
 }
 
+func runtimeContractMarkdown() string {
+	return strings.Join([]string{
+		"# x-harness Generated Runtime Contract",
+		"",
+		"Generated from file-first source artifacts and the renderer mirror:",
+		"",
+		"- policies/admission.yaml",
+		"- schemas/completion-card.schema.json",
+		"- packages/cli/src/core/contract.ts",
+		"",
+		"## Canonical Rules",
+		"",
+		"- Completion is admitted, not claimed.",
+		"- Verifier is read-only.",
+		"- Success is the only accepted outcome.",
+		"- Canonical tiers: light, standard, deep.",
+		"- PGV is advisory-only.",
+		"",
+		"## Fix Status Fields",
+		"",
+		"Completion cards use claim.fix_status as the canonical fix-status field. Subagent returns may use result.fix_status only in compatibility return payloads.",
+		"",
+		"## Completion Candidate",
+		"",
+		"```yaml",
+		"claim:",
+		"  fix_status: fixed",
+		"verification:",
+		"  status: passed",
+		"```",
+		"",
+		"## Accepted Completion",
+		"",
+		"```yaml",
+		"admission:",
+		"  outcome: success",
+		"acceptance_status: accepted",
+		"```",
+		"",
+		"## Evidence Floor",
+		"",
+		"- **light**: files_changed + (command_evidence or manual_rationale).",
+		"- **standard**: files_changed + command_evidence + done_checklist + prediction.",
+		"- **deep**: files_changed + command_evidence + evidence_scope_declared + untested_regions_declared + remaining_risks_declared + execution_controls_present + rollback_policy_present + done_checklist + prediction. Runtime-enforced: verification_artifacts, state.read_set, state.write_set.",
+		"",
+		"## Strict Evidence Provenance",
+		"",
+		"- verify --strict requires command_evidence entries to include command, exit_code, runner, and started_at for standard/deep cards.",
+		"- verify --strict requires verification_artifacts entries to include command, exit_code, runner, and started_at for standard/deep cards.",
+	}, "\n")
+}
+
+type evidenceFloorTier struct {
+	Required        []string `json:"required"`
+	OneOf           []string `json:"oneOf,omitempty"`
+	Recommended     []string `json:"recommended,omitempty"`
+	RuntimeEnforced []string `json:"runtimeEnforced,omitempty"`
+}
+
+type contractJSONOutput struct {
+	Facts     []ContractFact `json:"facts"`
+	Rules     []string       `json:"rules"`
+	FixStatus struct {
+		CompletionCard string `json:"completionCard"`
+		SubagentReturn string `json:"subagentReturn"`
+	} `json:"fixStatus"`
+	CompletionCandidate struct {
+		Claim        map[string]string `json:"claim"`
+		Verification map[string]string `json:"verification"`
+	} `json:"completionCandidate"`
+	AcceptedCompletion struct {
+		Admission        map[string]string `json:"admission"`
+		AcceptanceStatus string            `json:"acceptanceStatus"`
+	} `json:"acceptedCompletion"`
+	EvidenceFloor struct {
+		Light    evidenceFloorTier `json:"light"`
+		Standard evidenceFloorTier `json:"standard"`
+		Deep     evidenceFloorTier `json:"deep"`
+	} `json:"evidenceFloor"`
+	StrictProvenance []string `json:"strictProvenance"`
+	Hash             string   `json:"hash"`
+	Markdown         string   `json:"markdown"`
+}
+
 func generateManagedBlock() string {
 	ctx := contextcheck.CanonicalContext()
 	hash := contextcheck.ContextHash(ctx)
@@ -88,20 +172,73 @@ func runContext(args []string, stdout io.Writer, _ io.Writer) int {
 		}
 	}
 
-	contract := CoreContract()
+	markdown := runtimeContractMarkdown()
+	hash := contextcheck.ContextHash(markdown)
 
 	if jsonMode {
-		if err := WriteJSON(stdout, contract); err != nil {
+		output := contractJSONOutput{
+			Facts: CoreContract().Facts,
+			Rules: []string{
+				"Completion is admitted, not claimed.",
+				"Verifier is read-only.",
+				"Success is the only accepted outcome.",
+				"Canonical tiers: light, standard, deep.",
+				"PGV is advisory-only.",
+			},
+			FixStatus: struct {
+				CompletionCard string `json:"completionCard"`
+				SubagentReturn string `json:"subagentReturn"`
+			}{
+				CompletionCard: "Completion cards use claim.fix_status as the canonical fix-status field.",
+				SubagentReturn: "Subagent returns may use result.fix_status only in compatibility return payloads.",
+			},
+			CompletionCandidate: struct {
+				Claim        map[string]string `json:"claim"`
+				Verification map[string]string `json:"verification"`
+			}{
+				Claim:        map[string]string{"fix_status": "fixed"},
+				Verification: map[string]string{"status": "passed"},
+			},
+			AcceptedCompletion: struct {
+				Admission        map[string]string `json:"admission"`
+				AcceptanceStatus string            `json:"acceptanceStatus"`
+			}{
+				Admission:        map[string]string{"outcome": "success"},
+				AcceptanceStatus: "accepted",
+			},
+			EvidenceFloor: struct {
+				Light    evidenceFloorTier `json:"light"`
+				Standard evidenceFloorTier `json:"standard"`
+				Deep     evidenceFloorTier `json:"deep"`
+			}{
+				Light: evidenceFloorTier{
+					Required: []string{"files_changed"},
+					OneOf:    []string{"command_evidence", "manual_rationale"},
+				},
+				Standard: evidenceFloorTier{
+					Required: []string{"files_changed", "command_evidence", "done_checklist", "prediction"},
+				},
+				Deep: evidenceFloorTier{
+					Required:        []string{"files_changed", "command_evidence", "evidence_scope_declared", "untested_regions_declared", "remaining_risks_declared", "execution_controls_present", "rollback_policy_present", "done_checklist", "prediction"},
+					RuntimeEnforced: []string{"verification_artifacts", "state.read_set", "state.write_set"},
+				},
+			},
+			StrictProvenance: []string{
+				"verify --strict requires command_evidence entries to include command, exit_code, runner, and started_at for standard/deep cards.",
+				"verify --strict requires verification_artifacts entries to include command, exit_code, runner, and started_at for standard/deep cards.",
+			},
+			Hash:     hash,
+			Markdown: markdown,
+		}
+		if err := WriteJSON(stdout, output); err != nil {
 			return ExitError
 		}
 		return ExitOK
 	}
 
-	WriteLine(stdout, "x-harness Canonical Contract")
+	WriteLine(stdout, "%s", markdown)
 	WriteLine(stdout, "")
-	for _, fact := range contract.Facts {
-		WriteLine(stdout, "- %s", strings.ReplaceAll(fact.Description, "\n", "\n  "))
-	}
+	WriteLine(stdout, "contract-hash: %s", hash)
 	return ExitOK
 }
 

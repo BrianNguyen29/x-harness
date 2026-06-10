@@ -18,10 +18,13 @@ Before publish, the release workflow runs the following primary gates through th
 - Strict verify gate: `./x-harness verify --card examples/ci/strict-verify/completion-card.yaml --strict --json`
 - Workspace doctor: `./x-harness doctor --root . --json`
 - Golden examples: `./x-harness examples verify --json`
-- Adversarial benchmark gate: `./x-harness benchmark --filter adversarial --json > benchmark-report.json`
+- Adversarial benchmark gate: `./x-harness benchmark --filter adversarial --gate --json > benchmark-report.json`
 - `npm -w packages/cli run pack:dry-run`
 - `go test ./...`
+- `go test -race ./...`
 - `go vet ./...`
+- Go-native regression suite: `./x-harness examples verify --suite=regression --json`
+- Go-native conformance minimal gate: `./x-harness conformance run --profile minimal --json`
 - `npm run parity:check-go`
 
 ### Release artifact generation
@@ -45,7 +48,7 @@ Before publish, the release workflow runs the following primary gates through th
   - `node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json`
   - `node packages/cli/dist/index.js doctor --root .`
   - `node packages/cli/dist/index.js examples verify`
-  - `node packages/cli/dist/index.js benchmark --filter adversarial --json`
+  - `node packages/cli/dist/index.js benchmark --filter adversarial --gate --json`
 
 ### Publish
 

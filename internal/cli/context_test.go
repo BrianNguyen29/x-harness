@@ -24,10 +24,16 @@ func TestContextContractPlain(t *testing.T) {
 	out := stdout.String()
 	for _, phrase := range []string{
 		"Completion is admitted, not claimed",
-		"verifier is read-only",
+		"Verifier is read-only",
 		"Success is the only accepted outcome",
 		"Canonical tiers",
 		"PGV is advisory-only",
+		"## Fix Status Fields",
+		"## Completion Candidate",
+		"## Accepted Completion",
+		"## Evidence Floor",
+		"## Strict Evidence Provenance",
+		"contract-hash:",
 	} {
 		if !strings.Contains(out, phrase) {
 			t.Fatalf("expected output to contain %q, got:\n%s", phrase, out)
@@ -46,17 +52,47 @@ func TestContextContractJSON(t *testing.T) {
 		t.Fatalf("expected empty stderr, got %q", stderr.String())
 	}
 
-	var contract struct {
+	var output struct {
 		Facts []struct {
 			Rule        string `json:"rule"`
 			Description string `json:"description"`
 		} `json:"facts"`
+		Rules               []string `json:"rules"`
+		FixStatus           struct {
+			CompletionCard string `json:"completionCard"`
+			SubagentReturn string `json:"subagentReturn"`
+		} `json:"fixStatus"`
+		CompletionCandidate struct {
+			Claim        map[string]string `json:"claim"`
+			Verification map[string]string `json:"verification"`
+		} `json:"completionCandidate"`
+		AcceptedCompletion struct {
+			Admission        map[string]string `json:"admission"`
+			AcceptanceStatus string            `json:"acceptanceStatus"`
+		} `json:"acceptedCompletion"`
+		EvidenceFloor struct {
+			Light    struct{ Required []string `json:"required"` } `json:"light"`
+			Standard struct{ Required []string `json:"required"` } `json:"standard"`
+			Deep     struct{ Required []string `json:"required"` } `json:"deep"`
+		} `json:"evidenceFloor"`
+		StrictProvenance []string `json:"strictProvenance"`
+		Hash             string   `json:"hash"`
+		Markdown         string   `json:"markdown"`
 	}
-	if err := json.Unmarshal(stdout.Bytes(), &contract); err != nil {
+	if err := json.Unmarshal(stdout.Bytes(), &output); err != nil {
 		t.Fatalf("expected valid JSON, got error: %v\noutput: %s", err, stdout.String())
 	}
-	if len(contract.Facts) == 0 {
+	if len(output.Facts) == 0 {
 		t.Fatal("expected at least one fact in JSON output")
+	}
+	if len(output.Rules) == 0 {
+		t.Fatal("expected at least one rule in JSON output")
+	}
+	if output.Hash == "" {
+		t.Fatal("expected hash in JSON output")
+	}
+	if output.Markdown == "" {
+		t.Fatal("expected markdown in JSON output")
 	}
 }
 
