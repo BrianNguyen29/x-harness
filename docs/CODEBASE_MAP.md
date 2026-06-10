@@ -96,7 +96,7 @@ the appropriate owner.
 | Golden examples | `examples/golden/` (28 scenario directories; 26 card-backed fixtures + 2 conformance-strict reference scenarios) |
 | CI example fixtures | `examples/ci/` |
 | Real-world examples | `examples/real-world/` |
-| Platform adapters | `adapters/{generic,claude-code,cursor,opencode,antigravity}/` |
+| Platform adapters | `adapters/{generic,claude-code,cursor,opencode,antigravity,codex}/` |
 | Public docs | `docs/` |
 | Go CLI source | `cmd/x-harness/` + `internal/` |
 | TypeScript CLI source | `packages/cli/src/` |
@@ -155,6 +155,7 @@ truth for agent instructions.
   - `adapters/cursor/` — Cursor rule file (`.cursor/rules/x-harness.mdc`)
   - `adapters/opencode/` — OpenCode agent docs
   - `adapters/antigravity/` — rules and workflows
+  - `adapters/codex/` — Codex adapter (repo-root `AGENTS.md`)
 
 ---
 

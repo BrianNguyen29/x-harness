@@ -67,6 +67,13 @@ x-harness adapters are thin conventions that make the harness usable inside spec
 - Use when: You use Antigravity as the agent platform.
 - Key files: `rules/x-harness.md`, `workflows/x-harness-implementation.md`, `workflows/x-harness-verify.md`, `workflows/x-harness-recover.md`
 
+### Codex
+
+- Location: `adapters/codex/`
+- Use when: You use Codex as the agent platform.
+- Key files: `AGENTS.md`
+- Notes: Codex reads repo-root `AGENTS.md` as its primary instruction source. There is no third-party custom slash command API.
+
 ## Tier selection quick reference
 
 | Tier     | When to use                                         | Evidence required                                                                                             |

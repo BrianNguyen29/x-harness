@@ -292,6 +292,7 @@ When verification fails, the engine emits a structured recovery object routing t
 | [Cursor](adapters/cursor) | You use Cursor. | `.cursor/rules/x-harness.mdc` |
 | [OpenCode](adapters/opencode) | You use OpenCode. | `verify-agent.md`, worker / verifier agents |
 | [Antigravity](adapters/antigravity) | You use Antigravity. | rules + workflows under `rules/` and `workflows/` |
+| [Codex](adapters/codex) | You use Codex. | `AGENTS.md` |
 
 You only need **one**. Adapters are thin wrappers around the same CLI; they do not fork the contract.
 

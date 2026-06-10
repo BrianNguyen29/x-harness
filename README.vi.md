@@ -292,6 +292,7 @@ Khi verify thất bại, engine sinh một đối tượng recovery có cấu tr
 | [Cursor](adapters/cursor)           | Bạn dùng Cursor.                                         | `.cursor/rules/x-harness.mdc`                    |
 | [OpenCode](adapters/opencode)       | Bạn dùng OpenCode.                                       | `verify-agent.md`, agent worker / verifier       |
 | [Antigravity](adapters/antigravity) | Bạn dùng Antigravity.                                    | rules + workflows trong `rules/` và `workflows/` |
+| [Codex](adapters/codex)             | Bạn dùng Codex.                                          | `AGENTS.md`                                      |
 
 Bạn chỉ cần **một**. Adapter là lớp vỏ mỏng quanh cùng một CLI; chúng không phân nhánh contract.
 

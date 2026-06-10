@@ -60,4 +60,4 @@ Start with the `completion-card` schema (`schemas/completion-card.schema.json`).
 
 ### Can I use `x-harness` in agent frameworks other than OpenCode?
 
-Yes! Through the platform adapters, `x-harness` seamlessly supports Claude Code, Cursor, OpenCode, Antigravity, and any generic development tool that can read Markdown instructions and run CLI commands.
+Yes! Through the platform adapters, `x-harness` seamlessly supports Claude Code, Cursor, OpenCode, Antigravity, Codex, and any generic development tool that can read Markdown instructions and run CLI commands.

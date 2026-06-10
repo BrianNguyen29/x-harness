@@ -88,7 +88,7 @@ Evidence floor by tier:
 - Recovery rules: `policies/recovery.yaml`
 - Card schema: `schemas/completion-card.schema.json`
 - Handoff templates: `templates/SUBAGENT_TASK_{light,standard,deep}.md`
-- Platform adapters: `adapters/opencode/`, `adapters/claude-code/`, `adapters/cursor/`, `adapters/generic/`, `adapters/antigravity/`
+- Platform adapters: `adapters/opencode/`, `adapters/claude-code/`, `adapters/cursor/`, `adapters/generic/`, `adapters/antigravity/`, `adapters/codex/`
 - Golden examples: `examples/golden/`
 
 <!-- BEGIN X-HARNESS MANAGED CONTEXT -->

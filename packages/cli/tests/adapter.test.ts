@@ -70,6 +70,11 @@ describe("adapter contract", () => {
         "workflows/x-harness-verify.md",
       ],
     },
+    {
+      name: "codex",
+      path: "adapters/codex",
+      requiredFiles: ["README.md", "AGENTS.md"],
+    },
   ];
 
   for (const adapter of adapters) {
@@ -145,6 +150,7 @@ describe("adapter contract", () => {
       { adapter: "cursor", path: "adapters/cursor/README.md" },
       { adapter: "opencode", path: "adapters/opencode/README.md" },
       { adapter: "antigravity", path: "adapters/antigravity/README.md" },
+      { adapter: "codex", path: "adapters/codex/README.md" },
     ];
 
     for (const { adapter, path: filePath } of readmeFiles) {

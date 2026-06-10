@@ -208,6 +208,7 @@ adapters/
   cursor/
   opencode/
   antigravity/                    # Antigravity-specific constraints & workflows
+  codex/                          # Codex adapter (repo-root AGENTS.md)
 ```
 
 **Schema Canonical Strategy**: Root `schemas/` is the published contract. Runtime copies live in `packages/cli/schemas/`. Keep both copies synchronized when schema contracts change.
