@@ -58,7 +58,7 @@ x-harness adapters are thin conventions that make the harness usable inside spec
 
 - Location: `adapters/opencode/`
 - Use when: You use OpenCode as the agent platform.
-- Key files: `README.md`, `verify-agent.md`, `agents/x-harness-verify.md`, `agents/x-harness-recover.md`, `orchestrator_append.example.md`
+- Key files: `README.md`, `verify-agent.md`, `agents/x-harness-verify.md`, `agents/x-harness-recover.md`, `orchestrator_append.example.md`, `opencode.example.json`, `opencode.verify.example.json`
 - Workflow: orchestrator dispatch -> worker completion -> verify-agent read-only gate.
 
 ### Antigravity

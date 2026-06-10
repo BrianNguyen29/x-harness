@@ -120,7 +120,7 @@ function compareContextContract(tsOutput, goOutput, tsExit, goExit) {
   }
   const expectedFacts = [
     "Completion is admitted, not claimed",
-    "verifier is read-only",
+    "Verifier is read-only",
     "Success is the only accepted outcome",
     "Canonical tiers",
     "PGV is advisory-only",
@@ -129,6 +129,21 @@ function compareContextContract(tsOutput, goOutput, tsExit, goExit) {
     if (!goOutput.includes(fact)) {
       errors.push(`missing contract fact: ${fact}`);
     }
+  }
+  const expectedSections = [
+    "## Fix Status Fields",
+    "## Completion Candidate",
+    "## Accepted Completion",
+    "## Evidence Floor",
+    "## Strict Evidence Provenance",
+  ];
+  for (const section of expectedSections) {
+    if (!goOutput.includes(section)) {
+      errors.push(`missing contract section: ${section}`);
+    }
+  }
+  if (!goOutput.includes("contract-hash:")) {
+    errors.push(`missing contract-hash line`);
   }
   return errors;
 }

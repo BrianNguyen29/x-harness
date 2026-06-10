@@ -101,7 +101,7 @@ xh packet create --card completion-card.yaml
 
 Core command set includes:
 - Beginner actions: `check` (alias for verify), `prepare` (alias for handoff readiness), `recover` (alias for recovery suggest), `doctor`, `actions`, `status`, `reset`, `init`, `add`, `start`, `learn`, `quick`, `run`, `ci`
-- Advanced commands: `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `benchmark`, `recovery`, `packet`, `intake`, `governance`, `intervention`, `prediction`, `components`, `evidence`, `episode`, `attribution`, `permissions`, `evolve`, `export`, `import`, `frozen`, `federation`, `approval-risk`, `agent-profile`, `cost`, `contract`, `start`, `learn`, `quick`, `run`, `ci`, `actions`, `profile`, plus Go-only `explain`, `conformance`, `release`, `boundary`, `policy`, `scan`, `card`, `readiness`, `adapters`, `repair`, `uninstall`
+- Advanced commands: `handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `benchmark`, `recovery`, `packet`, `intake`, `governance`, `intervention`, `prediction`, `components`, `evidence`, `episode`, `attribution`, `permissions`, `evolve`, `export`, `import`, `frozen`, `federation`, `approval-risk`, `agent-profile`, `cost`, `profile`, plus Go-only `contract`, `explain`, `conformance`, `release`, `boundary`, `policy`, `scan`, `card`, `readiness`, `adapters`, `repair`, `uninstall`
 
 Run `xh --help` for beginner-friendly commands. Use `xh --help-all` for the full command registry.
 
@@ -134,7 +134,7 @@ templates/
   COMPLETION_CARD.md
   HARNESS_CHANGE_CONTRACT.md
 
-schemas/                          # Published contract (do not edit directly for runtime)
+schemas/                          # Key schemas (published contract; do not edit directly for runtime)
   completion-card.schema.json
   subagent-return.schema.json
   verify-event.schema.json

@@ -109,6 +109,17 @@ The verify gate supports optional enforce flags that promote advisory checks int
 
 All enforce flags default to `off`. They are intended for CI and strict conformance runs where additional policy dimensions must be admission-critical.
 
+## Verify profiles
+
+`xh verify` supports preset profiles that configure the default strictness of enforce flags and optional checks:
+
+- `light-local` — Minimal checks, no mutation guard. Boundary, decision, intent, and context enforcement are advisory-only and never block.
+- `ci-standard` — Enables mutation guard and context floor. Contract oracles are disabled; boundary, decision, intent, and context enforcement are advisory-only.
+- `ci-strict` — Enables mutation guard, context floor, contract oracles, and strict withheld-reason schema. Blocks high/critical boundary violations and missing `context_alignment.decision_refs` on standard/deep cards. Intent and context manifest staleness are blocked by default.
+- `governed-deep` — All ci-strict checks. Blocks all boundary violations unless approved via `boundary_approvals`, blocks missing `context_alignment.decision_refs`, missing/blank `intent_ref`, and stale context manifests on standard/deep cards.
+
+Explicit flags (e.g., `--mutation-guard`, `--boundary-enforce`) override profile defaults.
+
 ## Context manifest relation
 
 The `xh context manifest write` command generates a manifest of file hashes (default `.x-harness/context-manifest.yaml`). `xh context manifest check --manifest <path>` verifies that the tracked files have not drifted. When `--context-enforce` is enabled, verify checks manifest freshness as part of the admission gate.
