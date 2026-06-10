@@ -193,6 +193,7 @@ const ADAPTERS = [
   "adapters/cursor",
   "adapters/opencode",
   "adapters/antigravity",
+  "adapters/codex",
 ];
 
 const DANGEROUS_PGV_PHRASES = [

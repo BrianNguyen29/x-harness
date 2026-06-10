@@ -48,6 +48,12 @@ var adapters = []adapterInfo{
 		Capabilities: []string{"prepare", "check", "recover", "doctor", "actions", "status", "reset"},
 		Formats:      []string{"rules", "workflows"},
 	},
+	{
+		Name:         "codex",
+		Description:  "Codex agent platform integration",
+		Capabilities: []string{"prepare", "check", "recover", "doctor", "actions", "status", "reset"},
+		Formats:      []string{"AGENTS.md"},
+	},
 }
 
 func handleAdapters(args []string, stdout io.Writer, stderr io.Writer) int {

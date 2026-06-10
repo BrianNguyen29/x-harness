@@ -555,6 +555,8 @@ export const MANAGED_CONTRACT_TARGETS: ManagedContractTarget[] = [
     "antigravity-recover-workflow-contract",
     "adapters/antigravity/workflows/x-harness-recover.md"
   ),
+  managedTarget("codex-readme-contract", "adapters/codex/README.md"),
+  managedTarget("codex-agents-contract", "adapters/codex/AGENTS.md"),
 ];
 
 export function generateManagedContractBlock(
