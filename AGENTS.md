@@ -78,8 +78,8 @@ Admission policy (`policies/admission.yaml`) requires:
 Evidence floor by tier:
 
 - **light**: `files_changed` + (`command_evidence` or `manual_rationale`)
-- **standard**: `files_changed` + `command_evidence` + `done_checklist` + `prediction`
-- **deep** (runtime-enforced): `files_changed` + `command_evidence` + `evidence_scope_declared` + `untested_regions_declared` + `remaining_risks_declared` + `execution_controls_present` + `rollback_policy_present` + `done_checklist` + `prediction`. Deep also requires `verification_artifacts`, `state.read_set`, and `state.write_set`.
+- **standard**: `files_changed` + `command_evidence` + `done_checklist` + `prediction`; `evidence_scope_declared` and `untested_regions_declared` are recommended.
+- **deep**: `files_changed` + `command_evidence` + `evidence_scope_declared` + `untested_regions_declared` + `remaining_risks_declared` + `execution_controls_present` + `rollback_policy_present` + `done_checklist` + `prediction`. Runtime-enforced: `verification_artifacts`, `state.read_set`, and `state.write_set`.
 
 ## Where to look
 
@@ -88,13 +88,14 @@ Evidence floor by tier:
 - Recovery rules: `policies/recovery.yaml`
 - Card schema: `schemas/completion-card.schema.json`
 - Handoff templates: `templates/SUBAGENT_TASK_{light,standard,deep}.md`
+- Runtime contract: `docs/RUNTIME_CONTRACT.md`
 - Platform adapters: `adapters/opencode/`, `adapters/claude-code/`, `adapters/cursor/`, `adapters/generic/`, `adapters/antigravity/`, `adapters/codex/`
 - Golden examples: `examples/golden/`
 
 <!-- BEGIN X-HARNESS MANAGED CONTEXT -->
 <!-- generated-by: x-harness -->
-<!-- generated-at: 2026-05-25T03:35:44.539Z -->
-<!-- context-hash: 8817d535c4e04a79 -->
+<!-- generated-at: 2026-06-10T15:57:59.697Z -->
+<!-- context-hash: b40c242bdf8b2bdb -->
 
 # x-harness Canonical Context
 
@@ -121,7 +122,7 @@ The managed context block in AGENTS.md is authoritative. Files are read in this 
 Agents may propose completion but cannot self-admit. A completion card with `claim.fix_status: fixed` is only a completion candidate. Compatibility subagent returns may use `result.fix_status`.
 
 ### Verifier is read-only
-The verifier may inspect files, evidence, diffs, and trace events. It must not edit source files or repair the work product while verifying.
+The verifier may inspect files, tasks, stories, templates, returns, evidence, diffs, command output, and trace events. It must not edit source files or repair the work product while verifying.
 
 ### Success is the only accepted outcome
 `admission.outcome: success` and `acceptance_status: accepted` are required for admission. All other outcomes are withheld.
