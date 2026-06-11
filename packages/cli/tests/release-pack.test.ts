@@ -635,7 +635,10 @@ describe("release packaging", () => {
     expect(releaseWorkflow).toContain("npm -w packages/cli run pack:dry-run");
     expect(releaseWorkflow).toContain("npm sbom --workspace x-harness");
     expect(releaseWorkflow).toContain(
-      "npm publish --workspace x-harness --provenance"
+      'npm publish "$TARBALL" --provenance --access public --tag next'
+    );
+    expect(releaseWorkflow).toContain(
+      'gh release upload "$VERSION" .x-harness/release/go-modules.sbom.json --clobber'
     );
     expect(releaseWorkflow).toContain("Packed CLI smoke test");
     expect(releaseWorkflow).toContain("Frozen transfer compatibility");

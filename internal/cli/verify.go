@@ -1244,7 +1244,6 @@ func renderVerifyResult(result VerifyResult, jsonMode, verbose, strictWithheldRe
 		} else {
 			return WriteJSON(stdout, result)
 		}
-		return nil
 	}
 	if verbose {
 		WriteLine(stdout, "source: %s", sourcePath)
