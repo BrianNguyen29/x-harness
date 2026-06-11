@@ -48,6 +48,23 @@ In multi-agent or long-running sessions, the following artifact precedence appli
 If chat says done but `completion-card.yaml` says withheld, treat completion as withheld.
 If `completion-card.yaml` claims accepted but verify output disagrees, verify output wins.
 
+## Managed context synchronization
+
+Validate every context entry registered in `.x-harness/managed-blocks.yaml`:
+
+```bash
+./x-harness context sync --check --registry --root . --json
+```
+
+Refresh stale registered context blocks from the canonical context:
+
+```bash
+./x-harness context sync --write --registry --root . --json
+```
+
+Registry synchronization only rewrites entries whose `type` is `context`.
+Managed contract blocks remain controlled by the canonical contract generator.
+
 <!-- BEGIN X-HARNESS MANAGED CONTRACT: runtime-contract -->
 <!-- generated-by: x-harness -->
 <!-- contract-hash: 17fb15a892d6764f -->

@@ -57,8 +57,8 @@ func TestContextContractJSON(t *testing.T) {
 			Rule        string `json:"rule"`
 			Description string `json:"description"`
 		} `json:"facts"`
-		Rules               []string `json:"rules"`
-		FixStatus           struct {
+		Rules     []string `json:"rules"`
+		FixStatus struct {
 			CompletionCard string `json:"completionCard"`
 			SubagentReturn string `json:"subagentReturn"`
 		} `json:"fixStatus"`
@@ -71,9 +71,15 @@ func TestContextContractJSON(t *testing.T) {
 			AcceptanceStatus string            `json:"acceptanceStatus"`
 		} `json:"acceptedCompletion"`
 		EvidenceFloor struct {
-			Light    struct{ Required []string `json:"required"` } `json:"light"`
-			Standard struct{ Required []string `json:"required"` } `json:"standard"`
-			Deep     struct{ Required []string `json:"required"` } `json:"deep"`
+			Light struct {
+				Required []string `json:"required"`
+			} `json:"light"`
+			Standard struct {
+				Required []string `json:"required"`
+			} `json:"standard"`
+			Deep struct {
+				Required []string `json:"required"`
+			} `json:"deep"`
 		} `json:"evidenceFloor"`
 		StrictProvenance []string `json:"strictProvenance"`
 		Hash             string   `json:"hash"`
@@ -277,6 +283,87 @@ func TestContextSyncWriteJSON(t *testing.T) {
 	}
 	if result["context_hash"] == "" {
 		t.Fatalf("expected context_hash to be present")
+	}
+}
+
+func TestContextSyncRegistryCheckAndWrite(t *testing.T) {
+	tmpDir := t.TempDir()
+	registryDir := filepath.Join(tmpDir, ".x-harness")
+	if err := os.MkdirAll(registryDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	begin := "<!-- BEGIN TEST CONTEXT -->"
+	end := "<!-- END TEST CONTEXT -->"
+	staleBody := strings.Replace(
+		contextcheck.CanonicalContext(),
+		"The verifier may inspect files, tasks, stories, templates, returns, evidence, diffs, command output, and trace events.",
+		"The verifier may inspect files, evidence, diffs, and trace events.",
+		1,
+	)
+	staleContent := "# Adapter\n\n" + begin + "\n<!-- context-hash: " + contextcheck.ContextHash(staleBody) + " -->\n\n" + staleBody + "\n\n" + end + "\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "adapter.md"), []byte(staleContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	registry := `version: "1"
+blocks:
+  - path: adapter.md
+    type: context
+    begin_marker: "<!-- BEGIN TEST CONTEXT -->"
+    end_marker: "<!-- END TEST CONTEXT -->"
+    hash_prefix: "<!-- context-hash: "
+`
+	if err := os.WriteFile(filepath.Join(registryDir, "managed-blocks.yaml"), []byte(registry), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"context", "sync", "--check", "--registry", "--root", tmpDir, "--json"}, &stdout, &stderr)
+	if code != ExitError {
+		t.Fatalf("expected stale registry exit %d, got %d: %s", ExitError, code, stdout.String())
+	}
+	var checkResult struct {
+		Valid bool     `json:"valid"`
+		Stale []string `json:"stale"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &checkResult); err != nil {
+		t.Fatalf("decode check result: %v", err)
+	}
+	if checkResult.Valid || len(checkResult.Stale) != 1 {
+		t.Fatalf("expected one stale registry entry, got %+v", checkResult)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"context", "sync", "--write", "--registry", "--root", tmpDir, "--json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("expected registry write exit %d, got %d: %s", ExitOK, code, stderr.String())
+	}
+	var writeResult struct {
+		Valid   bool     `json:"valid"`
+		Updated []string `json:"updated"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &writeResult); err != nil {
+		t.Fatalf("decode write result: %v", err)
+	}
+	if !writeResult.Valid || len(writeResult.Updated) != 1 || writeResult.Updated[0] != "adapter.md" {
+		t.Fatalf("unexpected registry write result: %+v", writeResult)
+	}
+
+	content, err := os.ReadFile(filepath.Join(tmpDir, "adapter.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	valid, note := contextcheck.ValidateManagedBlockExpected(
+		string(content),
+		begin,
+		end,
+		"<!-- context-hash: ",
+		contextcheck.CanonicalContext(),
+	)
+	if !valid {
+		t.Fatalf("expected refreshed registry context: %s", note)
 	}
 }
 

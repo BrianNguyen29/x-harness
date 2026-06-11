@@ -245,22 +245,55 @@ func resolveLinkTarget(root, fileDir, target string) string {
 // It extracts the block between beginMarker and endMarker, finds the hash after hashPrefix,
 // and verifies that the hash of the block body (excluding markers and HTML comments) matches.
 func ValidateManagedBlockGeneric(content, beginMarker, endMarker, hashPrefix string) (bool, string) {
+	actualHash, actualBody, note, ok := extractManagedBlockBody(content, beginMarker, endMarker, hashPrefix)
+	if !ok {
+		return false, note
+	}
+	expectedHash := ContextHash(actualBody)
+
+	if actualHash != expectedHash {
+		return false, fmt.Sprintf("hash stale: expected %s, found %s", expectedHash, actualHash)
+	}
+
+	return true, "managed block is fresh"
+}
+
+// ValidateManagedBlockExpected validates both the hash and body against an
+// authoritative expected body. Context blocks use this path so a stale block
+// cannot pass merely because its hash matches its own outdated content.
+func ValidateManagedBlockExpected(content, beginMarker, endMarker, hashPrefix, expectedBody string) (bool, string) {
+	actualHash, actualBody, note, ok := extractManagedBlockBody(content, beginMarker, endMarker, hashPrefix)
+	if !ok {
+		return false, note
+	}
+	expectedBody = strings.TrimSpace(strings.ReplaceAll(expectedBody, "\r\n", "\n"))
+	expectedHash := ContextHash(expectedBody)
+	if actualHash != expectedHash {
+		return false, fmt.Sprintf("hash stale: expected %s, found %s", expectedHash, actualHash)
+	}
+	if actualBody != expectedBody {
+		return false, "managed block body differs from canonical context"
+	}
+	return true, "managed block is fresh"
+}
+
+func extractManagedBlockBody(content, beginMarker, endMarker, hashPrefix string) (string, string, string, bool) {
 	content = strings.ReplaceAll(content, "\r\n", "\n")
 	beginIndex := strings.Index(content, beginMarker)
 	endIndex := strings.Index(content, endMarker)
 	if beginIndex == -1 || endIndex == -1 || endIndex < beginIndex {
-		return false, "missing managed block"
+		return "", "", "missing managed block", false
 	}
 	block := content[beginIndex : endIndex+len(endMarker)]
 
 	idx := strings.Index(block, hashPrefix)
 	if idx == -1 {
-		return false, "managed block missing hash"
+		return "", "", "managed block missing hash", false
 	}
 	hashStart := idx + len(hashPrefix)
 	hashEnd := strings.Index(block[hashStart:], " -->")
 	if hashEnd == -1 {
-		return false, "managed block missing hash"
+		return "", "", "managed block missing hash", false
 	}
 	actualHash := block[hashStart : hashStart+hashEnd]
 
@@ -274,19 +307,13 @@ func ValidateManagedBlockGeneric(content, beginMarker, endMarker, hashPrefix str
 		filtered = append(filtered, line)
 	}
 	actualBody := strings.TrimSpace(strings.Join(filtered, "\n"))
-	expectedHash := ContextHash(actualBody)
-
-	if actualHash != expectedHash {
-		return false, fmt.Sprintf("hash stale: expected %s, found %s", expectedHash, actualHash)
-	}
-
-	return true, "managed block is fresh"
+	return actualHash, actualBody, "", true
 }
 
 // RegistryEntry describes a single managed block in the registry.
 type RegistryEntry struct {
-	Path       string `yaml:"path"`
-	Type       string `yaml:"type"`
+	Path        string `yaml:"path"`
+	Type        string `yaml:"type"`
 	BeginMarker string `yaml:"begin_marker"`
 	EndMarker   string `yaml:"end_marker"`
 	HashPrefix  string `yaml:"hash_prefix"`
@@ -298,9 +325,29 @@ type Registry struct {
 	Blocks  []RegistryEntry `yaml:"blocks"`
 }
 
-// ValidateRegistry reads .x-harness/managed-blocks.yaml and validates all registered blocks.
-// It returns a slice of error strings (empty if all valid) and an error if the registry itself is unreadable.
-func ValidateRegistry(root string) ([]string, error) {
+// ResolveRegistryEntryPath resolves an entry path and rejects paths outside
+// the workspace root.
+func ResolveRegistryEntryPath(root, entryPath string) (string, error) {
+	rootAbs, err := filepath.Abs(root)
+	if err != nil {
+		return "", err
+	}
+	targetAbs, err := filepath.Abs(filepath.Join(rootAbs, filepath.FromSlash(entryPath)))
+	if err != nil {
+		return "", err
+	}
+	rel, err := filepath.Rel(rootAbs, targetAbs)
+	if err != nil {
+		return "", err
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("path escapes workspace root")
+	}
+	return targetAbs, nil
+}
+
+// ReadRegistry loads the managed-block registry from a workspace.
+func ReadRegistry(root string) (*Registry, error) {
 	registryPath := filepath.Join(root, ".x-harness", "managed-blocks.yaml")
 	data, err := os.ReadFile(registryPath)
 	if err != nil {
@@ -311,16 +358,72 @@ func ValidateRegistry(root string) ([]string, error) {
 	if err := yaml.Unmarshal(data, &reg); err != nil {
 		return nil, fmt.Errorf("invalid managed-blocks registry: %w", err)
 	}
+	return &reg, nil
+}
+
+// ManagedContextBlock renders the canonical context using registry markers.
+func ManagedContextBlock(entry RegistryEntry) string {
+	body := CanonicalContext()
+	return strings.Join([]string{
+		entry.BeginMarker,
+		"<!-- generated-by: x-harness -->",
+		fmt.Sprintf("%s%s -->", entry.HashPrefix, ContextHash(body)),
+		"",
+		body,
+		"",
+		entry.EndMarker,
+	}, "\n")
+}
+
+// InjectManagedBlock replaces an existing managed block or appends it.
+func InjectManagedBlock(content string, entry RegistryEntry, block string) string {
+	beginIndex := strings.Index(content, entry.BeginMarker)
+	endIndex := strings.Index(content, entry.EndMarker)
+	if beginIndex != -1 && endIndex != -1 && endIndex > beginIndex {
+		before := content[:beginIndex]
+		after := content[endIndex+len(entry.EndMarker):]
+		return before + block + after
+	}
+	separator := "\n\n"
+	if strings.HasSuffix(content, "\n") {
+		separator = ""
+	}
+	return content + separator + block + "\n"
+}
+
+// ValidateRegistry reads .x-harness/managed-blocks.yaml and validates all registered blocks.
+// It returns a slice of error strings (empty if all valid) and an error if the registry itself is unreadable.
+func ValidateRegistry(root string) ([]string, error) {
+	reg, err := ReadRegistry(root)
+	if err != nil {
+		return nil, err
+	}
 
 	var failures []string
 	for _, entry := range reg.Blocks {
-		entryPath := filepath.Join(root, filepath.FromSlash(entry.Path))
+		entryPath, err := ResolveRegistryEntryPath(root, entry.Path)
+		if err != nil {
+			failures = append(failures, fmt.Sprintf("%s: %v", entry.Path, err))
+			continue
+		}
 		b, err := os.ReadFile(entryPath)
 		if err != nil {
 			failures = append(failures, fmt.Sprintf("%s: unreadable: %v", entry.Path, err))
 			continue
 		}
-		valid, note := ValidateManagedBlockGeneric(string(b), entry.BeginMarker, entry.EndMarker, entry.HashPrefix)
+		var valid bool
+		var note string
+		if entry.Type == "context" {
+			valid, note = ValidateManagedBlockExpected(
+				string(b),
+				entry.BeginMarker,
+				entry.EndMarker,
+				entry.HashPrefix,
+				CanonicalContext(),
+			)
+		} else {
+			valid, note = ValidateManagedBlockGeneric(string(b), entry.BeginMarker, entry.EndMarker, entry.HashPrefix)
+		}
 		if !valid {
 			failures = append(failures, fmt.Sprintf("%s: %s", entry.Path, note))
 		}

@@ -59,6 +59,9 @@ describe("CI workflow", () => {
     expect(workflow).toContain("go vet ./...");
     expect(workflow).toContain("go build ./cmd/x-harness");
     expect(workflow).toContain("npm run parity:check-go");
+    expect(workflow).toContain(
+      "./x-harness conformance run --profile strict --json"
+    );
     expect(workflow).toContain("go-fuzz-smoke");
     expect(workflow).toContain("-fuzz=FuzzValidate");
   });
