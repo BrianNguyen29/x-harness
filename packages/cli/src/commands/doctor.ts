@@ -410,6 +410,25 @@ async function checkTierLabels(
   return { ok, notes };
 }
 
+async function resolveAgentsContent(root: string): Promise<string> {
+  const agentsPath = path.join(root, "AGENTS.md");
+  if (!(await fs.pathExists(agentsPath))) {
+    return "";
+  }
+  let content = await fs.readFile(agentsPath, "utf-8");
+  const referenced = content.includes(
+    "See the root agent contract at `../../AGENTS.md`"
+  )
+    ? path.resolve(root, "..", "..", "AGENTS.md")
+    : content.includes("See the root agent contract at `../AGENTS.md`")
+      ? path.resolve(root, "..", "AGENTS.md")
+      : null;
+  if (referenced && (await fs.pathExists(referenced))) {
+    content = await fs.readFile(referenced, "utf-8");
+  }
+  return content;
+}
+
 async function checkAgentsSize(
   root: string
 ): Promise<{ ok: boolean; notes: string[] }> {
@@ -431,11 +450,10 @@ async function checkAgentsSize(
 async function checkContextFreshness(
   root: string
 ): Promise<{ ok: boolean; notes: string[] }> {
-  const agentsPath = path.join(root, "AGENTS.md");
-  if (!(await fs.pathExists(agentsPath))) {
+  const content = await resolveAgentsContent(root);
+  if (!content) {
     return { ok: false, notes: ["AGENTS.md not found"] };
   }
-  const content = await fs.readFile(agentsPath, "utf-8");
   const result = validateManagedBlock(content);
   return {
     ok: result.valid,
@@ -603,15 +621,17 @@ async function checkReadOnlyVerifier(
     ok = false;
   }
 
-  const agentsPath = path.join(root, "AGENTS.md");
-  if (await fs.pathExists(agentsPath)) {
-    const content = await fs.readFile(agentsPath, "utf-8");
-    if (content.includes("read-only")) {
+  const agentsContent = await resolveAgentsContent(root);
+  if (agentsContent) {
+    if (agentsContent.includes("read-only")) {
       notes.push("AGENTS.md states verifier is read-only");
     } else {
       notes.push("AGENTS.md missing read-only verifier statement");
       ok = false;
     }
+  } else {
+    notes.push("AGENTS.md not found");
+    ok = false;
   }
   return { ok, notes };
 }
