@@ -140,3 +140,13 @@ blocks:
     begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTRACT: opencode-verify-agent-redirect-contract -->"
     end_marker: "<!-- END X-HARNESS MANAGED CONTRACT: opencode-verify-agent-redirect-contract -->"
     hash_prefix: "<!-- contract-hash: "
+  - path: adapters/codex/AGENTS.md
+    type: context
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTEXT -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTEXT -->"
+    hash_prefix: "<!-- context-hash: "
+  - path: adapters/codex/README.md
+    type: context
+    begin_marker: "<!-- BEGIN X-HARNESS MANAGED CONTEXT -->"
+    end_marker: "<!-- END X-HARNESS MANAGED CONTEXT -->"
+    hash_prefix: "<!-- context-hash: "

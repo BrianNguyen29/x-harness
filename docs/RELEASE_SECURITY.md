@@ -25,6 +25,7 @@ Before publish, the release workflow runs the following primary gates through th
 - `go vet ./...`
 - Go-native regression suite: `./x-harness examples verify --suite=regression --json`
 - Go-native conformance minimal gate: `./x-harness conformance run --profile minimal --json`
+- Go-native conformance strict gate: `./x-harness conformance run --profile strict --json`
 - `npm run parity:check-go`
 
 ### Release artifact generation

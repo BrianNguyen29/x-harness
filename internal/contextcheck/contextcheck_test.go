@@ -313,6 +313,76 @@ blocks:
 	}
 }
 
+func TestValidateRegistryRejectsSelfConsistentStaleContext(t *testing.T) {
+	tmpDir := t.TempDir()
+	registryDir := filepath.Join(tmpDir, ".x-harness")
+	if err := os.MkdirAll(registryDir, 0755); err != nil {
+		t.Fatalf("mkdir .x-harness: %v", err)
+	}
+
+	begin := "<!-- BEGIN CONTEXT -->"
+	end := "<!-- END CONTEXT -->"
+	staleBody := strings.Replace(
+		CanonicalContext(),
+		"The verifier may inspect files, tasks, stories, templates, returns, evidence, diffs, command output, and trace events.",
+		"The verifier may inspect files, evidence, diffs, and trace events.",
+		1,
+	)
+	content := begin + "\n<!-- hash: " + ContextHash(staleBody) + " -->\n\n" + staleBody + "\n\n" + end + "\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "adapter.md"), []byte(content), 0644); err != nil {
+		t.Fatalf("write adapter.md: %v", err)
+	}
+
+	registry := `version: "1"
+blocks:
+  - path: adapter.md
+    type: context
+    begin_marker: "<!-- BEGIN CONTEXT -->"
+    end_marker: "<!-- END CONTEXT -->"
+    hash_prefix: "<!-- hash: "
+`
+	if err := os.WriteFile(filepath.Join(registryDir, "managed-blocks.yaml"), []byte(registry), 0644); err != nil {
+		t.Fatalf("write registry: %v", err)
+	}
+
+	failures, err := ValidateRegistry(tmpDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(failures) != 1 {
+		t.Fatalf("expected one stale context failure, got %v", failures)
+	}
+	if !strings.Contains(failures[0], "stale") && !strings.Contains(failures[0], "differs") {
+		t.Fatalf("expected canonical context drift failure, got %s", failures[0])
+	}
+}
+
+func TestValidateRegistryRejectsEscapingPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	registryDir := filepath.Join(tmpDir, ".x-harness")
+	if err := os.MkdirAll(registryDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	registry := `version: "1"
+blocks:
+  - path: ../outside.md
+    type: context
+    begin_marker: "<!-- BEGIN CONTEXT -->"
+    end_marker: "<!-- END CONTEXT -->"
+    hash_prefix: "<!-- hash: "
+`
+	if err := os.WriteFile(filepath.Join(registryDir, "managed-blocks.yaml"), []byte(registry), 0644); err != nil {
+		t.Fatal(err)
+	}
+	failures, err := ValidateRegistry(tmpDir)
+	if err != nil {
+		t.Fatalf("unexpected registry error: %v", err)
+	}
+	if len(failures) != 1 || !strings.Contains(failures[0], "escapes workspace root") {
+		t.Fatalf("expected path escape failure, got %v", failures)
+	}
+}
+
 func TestCheckDeadLinksExcludesGenerated(t *testing.T) {
 	tmpDir := t.TempDir()
 	areas := []string{"node_modules", "dist", "coverage", "build", "vendor", ".x-harness", "docs"}

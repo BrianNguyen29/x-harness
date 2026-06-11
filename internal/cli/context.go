@@ -136,32 +136,106 @@ type contractJSONOutput struct {
 }
 
 func generateManagedBlock() string {
-	ctx := contextcheck.CanonicalContext()
-	hash := contextcheck.ContextHash(ctx)
-	return strings.Join([]string{
-		contextcheck.ManagedBegin,
-		"<!-- generated-by: x-harness -->",
-		fmt.Sprintf("<!-- context-hash: %s -->", hash),
-		"",
-		ctx,
-		"",
-		contextcheck.ManagedEnd,
-	}, "\n")
+	return contextcheck.ManagedContextBlock(rootContextRegistryEntry())
 }
 
 func injectManagedBlock(content, block string) string {
-	beginIndex := strings.Index(content, contextcheck.ManagedBegin)
-	endIndex := strings.Index(content, contextcheck.ManagedEnd)
-	if beginIndex != -1 && endIndex != -1 && endIndex > beginIndex {
-		before := content[:beginIndex]
-		after := content[endIndex+len(contextcheck.ManagedEnd):]
-		return before + block + after
+	return contextcheck.InjectManagedBlock(content, rootContextRegistryEntry(), block)
+}
+
+func rootContextRegistryEntry() contextcheck.RegistryEntry {
+	return contextcheck.RegistryEntry{
+		Path:        "AGENTS.md",
+		Type:        "context",
+		BeginMarker: contextcheck.ManagedBegin,
+		EndMarker:   contextcheck.ManagedEnd,
+		HashPrefix:  "<!-- context-hash: ",
 	}
-	separator := "\n\n"
-	if strings.HasSuffix(content, "\n") {
-		separator = ""
+}
+
+func runContextRegistrySync(root string, checkMode, jsonMode bool, stdout io.Writer, stderr io.Writer) int {
+	registry, err := contextcheck.ReadRegistry(root)
+	if err != nil {
+		if jsonMode {
+			_ = WriteJSON(stdout, map[string]any{"valid": false, "registry": true, "error": err.Error()})
+		} else {
+			fmt.Fprintf(stderr, "Error: %v\n", err)
+		}
+		return ExitError
 	}
-	return content + separator + block + "\n"
+
+	checked := 0
+	stale := []string{}
+	updated := []string{}
+	for _, entry := range registry.Blocks {
+		if entry.Type != "context" {
+			continue
+		}
+		checked++
+		targetPath, resolveErr := contextcheck.ResolveRegistryEntryPath(root, entry.Path)
+		if resolveErr != nil {
+			stale = append(stale, fmt.Sprintf("%s: %v", entry.Path, resolveErr))
+			continue
+		}
+		content, readErr := os.ReadFile(targetPath)
+		if readErr != nil {
+			stale = append(stale, fmt.Sprintf("%s: unreadable: %v", entry.Path, readErr))
+			continue
+		}
+		valid, note := contextcheck.ValidateManagedBlockExpected(
+			string(content),
+			entry.BeginMarker,
+			entry.EndMarker,
+			entry.HashPrefix,
+			contextcheck.CanonicalContext(),
+		)
+		if valid {
+			continue
+		}
+		if checkMode {
+			stale = append(stale, fmt.Sprintf("%s: %s", entry.Path, note))
+			continue
+		}
+
+		block := contextcheck.ManagedContextBlock(entry)
+		next := contextcheck.InjectManagedBlock(string(content), entry, block)
+		if err := os.WriteFile(targetPath, []byte(next), 0644); err != nil {
+			stale = append(stale, fmt.Sprintf("%s: write failed: %v", entry.Path, err))
+			continue
+		}
+		updated = append(updated, entry.Path)
+	}
+
+	if checked == 0 {
+		stale = append(stale, "registry contains no context entries")
+	}
+	valid := len(stale) == 0
+	if jsonMode {
+		_ = WriteJSON(stdout, map[string]any{
+			"valid":    valid,
+			"registry": true,
+			"checked":  checked,
+			"stale":    stale,
+			"updated":  updated,
+		})
+	} else if checkMode {
+		if valid {
+			fmt.Fprintf(stdout, "managed context registry is fresh (%d file(s) checked)\n", checked)
+		} else {
+			fmt.Fprintf(stderr, "managed context registry is stale:\n- %s\n", strings.Join(stale, "\n- "))
+		}
+	} else {
+		if valid {
+			fmt.Fprintf(stdout, "refreshed %d managed context file(s)\n", len(updated))
+		} else {
+			fmt.Fprintf(stderr, "managed context registry refresh failed:\n- %s\n", strings.Join(stale, "\n- "))
+		}
+	}
+
+	if valid {
+		return ExitOK
+	}
+	return ExitError
 }
 
 func runContext(args []string, stdout io.Writer, _ io.Writer) int {
@@ -246,6 +320,7 @@ func runContextSync(args []string, stdout io.Writer, stderr io.Writer) int {
 	checkMode := false
 	writeMode := false
 	jsonMode := false
+	registryMode := false
 	root := ""
 
 	for i := 0; i < len(args); i++ {
@@ -257,6 +332,8 @@ func runContextSync(args []string, stdout io.Writer, stderr io.Writer) int {
 			writeMode = true
 		case "--json":
 			jsonMode = true
+		case "--registry":
+			registryMode = true
 		case "--root":
 			if i+1 < len(args) {
 				root = args[i+1]
@@ -266,12 +343,19 @@ func runContextSync(args []string, stdout io.Writer, stderr io.Writer) int {
 	}
 
 	if !checkMode && !writeMode {
-		fmt.Fprintln(stderr, "usage: x-harness context sync --check|--write [--root <path>] [--json]")
+		fmt.Fprintln(stderr, "usage: x-harness context sync --check|--write [--registry] [--root <path>] [--json]")
+		return ExitUsage
+	}
+	if checkMode && writeMode {
+		fmt.Fprintln(stderr, "error: context sync accepts only one of --check or --write")
 		return ExitUsage
 	}
 
 	if root == "" {
 		root = "."
+	}
+	if registryMode {
+		return runContextRegistrySync(root, checkMode, jsonMode, stdout, stderr)
 	}
 	agentsPath := filepath.Join(root, "AGENTS.md")
 
@@ -634,7 +718,7 @@ func runContextManifestCheck(args []string, stdout io.Writer, stderr io.Writer) 
 
 func handleContext(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: x-harness context --contract [--json] | context sync --check|--write [--root <path>] [--json] | context gc --check|--write [--root <path>] [--json] | context manifest write --files <paths> [--out <path>] [--json] | context manifest check --manifest <path> [--json]")
+		fmt.Fprintln(stderr, "usage: x-harness context --contract [--json] | context sync --check|--write [--registry] [--root <path>] [--json] | context gc --check|--write [--root <path>] [--json] | context manifest write --files <paths> [--out <path>] [--json] | context manifest check --manifest <path> [--json]")
 		return ExitUsage
 	}
 
