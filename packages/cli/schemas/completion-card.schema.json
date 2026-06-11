@@ -519,10 +519,10 @@
     },
     "boundary_approvals": {
       "type": "array",
-      "description": "Optional list of approved boundary rule_ids. Each entry suppresses blocking for the named rule under governed-deep (block_all) enforcement. Other profiles and the contract-oracle check ignore this list. Minimal V1 shape: {rule_id, reason?}.",
+      "description": "Optional list of externally approved boundary rule_ids. Each entry suppresses blocking for the named rule under governed-deep (block_all) enforcement only when approver, approved_at, and reason are present.",
       "items": {
         "type": "object",
-        "required": ["rule_id"],
+        "required": ["rule_id", "approver", "approved_at", "reason"],
         "properties": {
           "rule_id": {
             "type": "string",

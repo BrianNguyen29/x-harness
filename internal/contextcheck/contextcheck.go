@@ -258,6 +258,35 @@ func ValidateManagedBlockGeneric(content, beginMarker, endMarker, hashPrefix str
 	return true, "managed block is fresh"
 }
 
+func ValidateManagedContractBlock(content, beginMarker, endMarker, hashPrefix string) (bool, string) {
+	valid, note := ValidateManagedBlockGeneric(content, beginMarker, endMarker, hashPrefix)
+	if !valid {
+		return false, note
+	}
+	_, actualBody, note, ok := extractManagedBlockBody(content, beginMarker, endMarker, hashPrefix)
+	if !ok {
+		return false, note
+	}
+	for _, required := range canonicalContractSnippets() {
+		if strings.Contains(actualBody, required) {
+			return true, "managed contract block is fresh"
+		}
+	}
+	return false, "managed contract body missing canonical snippets"
+}
+
+func canonicalContractSnippets() []string {
+	return []string{
+		"Completion is admitted, not claimed.",
+		"Verifier is read-only.",
+		"Success is the only accepted outcome.",
+		"Canonical tiers: light, standard, deep.",
+		"PGV is advisory-only.",
+		"Completion cards use claim.fix_status as the canonical fix-status field.",
+		"Accepted completion requires `admission.outcome: success` and `acceptance_status: accepted`.",
+	}
+}
+
 // ValidateManagedBlockExpected validates both the hash and body against an
 // authoritative expected body. Context blocks use this path so a stale block
 // cannot pass merely because its hash matches its own outdated content.
@@ -422,7 +451,7 @@ func ValidateRegistry(root string) ([]string, error) {
 				CanonicalContext(),
 			)
 		} else {
-			valid, note = ValidateManagedBlockGeneric(string(b), entry.BeginMarker, entry.EndMarker, entry.HashPrefix)
+			valid, note = ValidateManagedContractBlock(string(b), entry.BeginMarker, entry.EndMarker, entry.HashPrefix)
 		}
 		if !valid {
 			failures = append(failures, fmt.Sprintf("%s: %s", entry.Path, note))

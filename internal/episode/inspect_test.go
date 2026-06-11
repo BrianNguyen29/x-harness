@@ -116,8 +116,8 @@ func createValidEpisode(t *testing.T, dir string) {
 			"blocking_predicate": nil,
 		},
 		"mutation_guard": map[string]interface{}{
-			"enabled":               false,
-			"violated":              false,
+			"enabled":                false,
+			"violated":               false,
 			"unexpected_delta_count": 0,
 		},
 		"signing": map[string]interface{}{
@@ -231,6 +231,41 @@ func TestInspectEpisode_ValidTarball(t *testing.T) {
 	}
 	if !result.OK {
 		t.Fatalf("expected ok=true, got errors: %v", result.Errors)
+	}
+}
+
+func TestInspectEpisode_TarballRejectsPathTraversal(t *testing.T) {
+	tarPath := filepath.Join(t.TempDir(), "evil.tar.gz")
+	file, err := os.Create(tarPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gz := gzip.NewWriter(file)
+	tw := tar.NewWriter(gz)
+	payload := []byte("escape")
+	if err := tw.WriteHeader(&tar.Header{
+		Name: "../escape.txt",
+		Mode: 0644,
+		Size: int64(len(payload)),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tw.Write(payload); err != nil {
+		t.Fatal(err)
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := gz.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = InspectEpisode(tarPath)
+	if err == nil || !strings.Contains(err.Error(), "unsafe path") {
+		t.Fatalf("expected unsafe path error, got %v", err)
 	}
 }
 

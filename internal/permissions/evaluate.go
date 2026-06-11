@@ -237,6 +237,34 @@ func ValidateIntervention(root, pathStr, capability, command string) Interventio
 	if !filepath.IsAbs(pathStr) {
 		interventionPath = filepath.Join(root, pathStr)
 	}
+	resolvedPath, err := filepath.Abs(interventionPath)
+	if err != nil {
+		return InterventionInfo{
+			Provided: true,
+			Valid:    false,
+			Reason:   strPtr(fmt.Sprintf("failed to resolve intervention path: %v", err)),
+			Path:     strPtr(interventionPath),
+		}
+	}
+	resolvedRoot, err := filepath.Abs(root)
+	if err != nil {
+		return InterventionInfo{
+			Provided: true,
+			Valid:    false,
+			Reason:   strPtr(fmt.Sprintf("failed to resolve workspace root: %v", err)),
+			Path:     strPtr(resolvedPath),
+		}
+	}
+	rel, err := filepath.Rel(resolvedRoot, resolvedPath)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return InterventionInfo{
+			Provided: true,
+			Valid:    false,
+			Reason:   strPtr("intervention path escapes workspace root"),
+			Path:     strPtr(resolvedPath),
+		}
+	}
+	interventionPath = resolvedPath
 
 	if _, err := os.Stat(interventionPath); err != nil {
 		return InterventionInfo{
@@ -258,25 +286,47 @@ func ValidateIntervention(root, pathStr, capability, command string) Interventio
 	}
 
 	schemaPath := filepath.Join(root, "schemas", "intervention.schema.json")
-	if _, err := os.Stat(schemaPath); err == nil {
-		validator, err := schema.Compile(schemaPath)
-		if err == nil {
-			if err := validator.Validate(artifact); err != nil {
-				if verr, ok := err.(*jsonschema.ValidationError); ok {
-					return InterventionInfo{
-						Provided: true,
-						Valid:    false,
-						Reason:   strPtr(verr.Error()),
-						Path:     strPtr(interventionPath),
-					}
-				}
-				return InterventionInfo{
-					Provided: true,
-					Valid:    false,
-					Reason:   strPtr(err.Error()),
-					Path:     strPtr(interventionPath),
-				}
+	if _, err := os.Stat(schemaPath); err != nil {
+		return InterventionInfo{
+			Provided: true,
+			Valid:    false,
+			Reason:   strPtr("intervention schema not found"),
+			Path:     strPtr(interventionPath),
+		}
+	}
+	validator, err := schema.Compile(schemaPath)
+	if err != nil {
+		return InterventionInfo{
+			Provided: true,
+			Valid:    false,
+			Reason:   strPtr(fmt.Sprintf("failed to compile intervention schema: %v", err)),
+			Path:     strPtr(interventionPath),
+		}
+	}
+	if err := validator.Validate(artifact); err != nil {
+		if verr, ok := err.(*jsonschema.ValidationError); ok {
+			return InterventionInfo{
+				Provided: true,
+				Valid:    false,
+				Reason:   strPtr(verr.Error()),
+				Path:     strPtr(interventionPath),
 			}
+		}
+		return InterventionInfo{
+			Provided: true,
+			Valid:    false,
+			Reason:   strPtr(err.Error()),
+			Path:     strPtr(interventionPath),
+		}
+	}
+
+	authorizer, _ := artifact["authorizer"].(string)
+	if strings.TrimSpace(authorizer) == "" {
+		return InterventionInfo{
+			Provided: true,
+			Valid:    false,
+			Reason:   strPtr("intervention authorizer is required"),
+			Path:     strPtr(interventionPath),
 		}
 	}
 

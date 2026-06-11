@@ -69,8 +69,9 @@ Strict runs the entire minimal profile first. If any minimal check fails, strict
 
 **Check:** `mutation_guard_verified`
 
-- Strict requires a Git workspace. Non-Git workspaces cannot pass strict conformance.
-- In a Git workspace, `strict` runs a bounded before/after snapshot of the working tree and verifies that no unexpected file changes occurred during the conformance run.
+- Strict uses the Git snapshot path when a Git workspace is available.
+- In non-Git workspaces, strict uses the bounded directory snapshot fallback with the same ignore policy as verify mutation guard.
+- Strict runs a bounded before/after snapshot of the working tree and verifies that no unexpected file changes occurred during the conformance run.
 - The `.x-harness/` directory and its contents are allowlisted.
 - If no baseline can be established, the check fails fail-closed.
 - **Note:** This check verifies that the *conformance runner itself* did not mutate source files. It does not require a clean worktree prior to execution.
@@ -215,7 +216,7 @@ The following decisions have been reviewed and approved. They are encoded below 
 1. **Waiver file location:** `.x-harness/conformance-waivers.yaml`.
 2. **Capability suite blocking:** Advisory indefinitely; non-blocking in strict v1.
 3. **Medium severity scanner findings:** Advisory in strict v1.
-4. **Non-git fallback:** Strict requires a Git workspace. Non-Git workspaces cannot pass strict conformance.
+4. **Non-git fallback:** Strict uses Git metadata when available and falls back to bounded directory snapshots for non-Git workspaces. If no mutation baseline can be established, strict fails closed.
 5. **Exit code `2` usage:** Reserved for usage errors only. Conformance failures use exit code `1`.
 6. **Golden example expansion:** Strict-specific fixtures are intended to live under `examples/golden/conformance-strict/` (e.g., `success-strict`, `blocked-strict-mutation-guard`). The directory is created as needed; not all fixtures may be populated at every commit.
 7. **Adapters doctor scope:** File-local only in v1. External URL or network checks are out of scope.

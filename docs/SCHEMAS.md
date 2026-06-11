@@ -60,7 +60,7 @@ These schemas are included in the package and used by command-specific features 
 | `evolution-constitution.schema.json`  | Experimental evolution constitution files.   |
 | `federation-pattern.schema.json`      | Federation pattern exchange.                 |
 | `frozen-manifest.schema.json`         | Frozen transfer manifests.                   |
-| `intervention.schema.json`            | Governance intervention artifacts.            |
+| `intervention.schema.json`            | Governance intervention artifacts; runtime approval support requires a non-empty `authorizer`. |
 | `packet.schema.json`                  | Immutable packet records.                    |
 | `permissions.schema.json`             | Permissions policy validation.               |
 | `release-evidence.schema.json`        | Release evidence bundles (`version`, `artifacts`, `conformance`) emitted by `xh release`. |

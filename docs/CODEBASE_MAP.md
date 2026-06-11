@@ -127,19 +127,19 @@ These are not implemented in the TypeScript CLI.
 
 The main PR gate is `.github/workflows/x-harness-verify.yml`. It runs:
 
-- `quality` — Node 22 matrix for `typecheck`, `build`, `lint`, `format:check`, `test`.
+- `quality` — Node 22 matrix for `typecheck`, `test:typecheck`, `build`, `lint`, `format:check`, `test`.
 - `go-quality` — Go 1.22 matrix for `go test`, `go test -race`, `go vet`,
 `go build ./cmd/x-harness`, and `npm run parity:check-go`.
 - `go-fuzz-smoke` — bounded Go fuzz target (`FuzzValidate`).
 - `verify-gates` — builds both CLIs and runs Go-native primary gates
 (strict verify, policy matrix/explain, explain card, evidence run, docs drift,
 release verify-docs, doctor, examples verify, regression suite, adversarial
-benchmark, conformance minimal) plus TypeScript compatibility parity gates.
+benchmark, conformance minimal and strict) plus TypeScript compatibility parity gates.
 
 Release workflow (`.github/workflows/release.yml`) builds cross-platform Go
 binaries, generates SHA256 checksums, signs with cosign, runs platform smoke
-tests, and publishes the npm package with provenance. SBOM generation is handled
-by `.github/workflows/sbom.yml`.
+tests, and publishes from a dedicated publish job only after smoke passes. SBOM
+generation is handled by the release workflow and `.github/workflows/sbom.yml`.
 
 ---
 

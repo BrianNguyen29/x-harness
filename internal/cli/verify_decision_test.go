@@ -251,8 +251,8 @@ func TestVerifyDecisionEnforceBlockBlocksWhenMissing(t *testing.T) {
 	if result.WithheldReason.FailureClass != "decision_refs_missing" {
 		t.Fatalf("expected failure_class=decision_refs_missing, got %s", result.WithheldReason.FailureClass)
 	}
-	if result.WithheldReason.Class != "decision_refs_missing" {
-		t.Fatalf("expected class=decision_refs_missing, got %s", result.WithheldReason.Class)
+	if result.WithheldReason.Class != "context_insufficient" {
+		t.Fatalf("expected class=context_insufficient, got %s", result.WithheldReason.Class)
 	}
 	if result.WithheldReason.Owner != "implementation-worker" {
 		t.Fatalf("expected owner=implementation-worker, got %s", result.WithheldReason.Owner)

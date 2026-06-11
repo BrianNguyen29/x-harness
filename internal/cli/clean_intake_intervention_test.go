@@ -176,7 +176,7 @@ func TestInterventionValidateValid(t *testing.T) {
 	schemaContent := `{
   "title": "intervention",
   "type": "object",
-  "required": ["actor", "task", "scope", "decision", "reason", "expiration"],
+  "required": ["actor", "task", "scope", "decision", "reason", "expiration", "authorizer"],
   "properties": {
     "actor": { "type": "string" },
     "task": { "type": "string" },
@@ -200,6 +200,7 @@ scope: global
 decision: allow
 reason: test
 expiration: 2099-01-01T00:00:00Z
+authorizer: maintainer
 `
 	interventionPath := filepath.Join(tmpDir, "intervention.yaml")
 	if err := os.WriteFile(interventionPath, []byte(intervention), 0644); err != nil {
@@ -231,7 +232,7 @@ func TestInterventionValidateInvalid(t *testing.T) {
 	schemaContent := `{
   "title": "intervention",
   "type": "object",
-  "required": ["actor", "task", "scope", "decision", "reason", "expiration"],
+  "required": ["actor", "task", "scope", "decision", "reason", "expiration", "authorizer"],
   "properties": {
     "actor": { "type": "string" },
     "task": { "type": "string" },
@@ -255,6 +256,7 @@ scope: global
 decision: deny
 reason: test
 expiration: 2099-01-01T00:00:00Z
+authorizer: maintainer
 `
 	interventionPath := filepath.Join(tmpDir, "intervention.yaml")
 	if err := os.WriteFile(interventionPath, []byte(intervention), 0644); err != nil {
@@ -286,7 +288,7 @@ func TestInterventionValidateJSON(t *testing.T) {
 	schemaContent := `{
   "title": "intervention",
   "type": "object",
-  "required": ["actor", "task", "scope", "decision", "reason", "expiration"],
+  "required": ["actor", "task", "scope", "decision", "reason", "expiration", "authorizer"],
   "properties": {
     "actor": { "type": "string" },
     "task": { "type": "string" },
@@ -310,6 +312,7 @@ scope: global
 decision: allow
 reason: test
 expiration: 2099-01-01T00:00:00Z
+authorizer: maintainer
 `
 	interventionPath := filepath.Join(tmpDir, "intervention.yaml")
 	if err := os.WriteFile(interventionPath, []byte(intervention), 0644); err != nil {
@@ -568,7 +571,7 @@ func TestInterventionValidateYAMLTimeType(t *testing.T) {
 	schemaContent := `{
   "title": "intervention",
   "type": "object",
-  "required": ["actor", "task", "scope", "decision", "reason", "expiration"],
+  "required": ["actor", "task", "scope", "decision", "reason", "expiration", "authorizer"],
   "properties": {
     "actor": { "type": "string" },
     "task": { "type": "string" },
@@ -592,6 +595,7 @@ scope: global
 decision: allow
 reason: test
 expiration: 2099-01-01T00:00:00Z
+authorizer: maintainer
 `
 	interventionPath := filepath.Join(tmpDir, "intervention.yaml")
 	if err := os.WriteFile(interventionPath, []byte(intervention), 0644); err != nil {

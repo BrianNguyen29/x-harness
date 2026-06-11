@@ -2,7 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "intervention",
   "type": "object",
-  "required": ["actor", "task", "scope", "decision", "reason", "expiration"],
+  "required": [
+    "actor",
+    "task",
+    "scope",
+    "decision",
+    "reason",
+    "expiration",
+    "authorizer"
+  ],
   "properties": {
     "actor": {
       "type": "string",

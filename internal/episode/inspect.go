@@ -21,23 +21,23 @@ import (
 
 // EpisodeValidationResult represents validation outcome.
 type EpisodeValidationResult struct {
-	OK        bool            `json:"ok"`
-	EpisodeID *string         `json:"episode_id"`
-	TaskID    *string         `json:"task_id"`
-	Errors    []string        `json:"errors"`
-	Warnings  []string        `json:"warnings"`
+	OK        bool             `json:"ok"`
+	EpisodeID *string          `json:"episode_id"`
+	TaskID    *string          `json:"task_id"`
+	Errors    []string         `json:"errors"`
+	Warnings  []string         `json:"warnings"`
 	Manifest  *EpisodeManifest `json:"manifest,omitempty"`
-	FileCount int             `json:"file_count"`
+	FileCount int              `json:"file_count"`
 }
 
 // EpisodeManifest represents manifest.json structure.
 type EpisodeManifest struct {
-	SchemaVersion      string            `json:"schema_version"`
-	EpisodeID          string            `json:"episode_id"`
-	TaskID             string            `json:"task_id"`
-	CreatedAt          string            `json:"created_at"`
-	XHarnessVersion    string            `json:"x_harness_version"`
-	PreviousEpisodeID  *string           `json:"previous_episode_id"`
+	SchemaVersion      string                 `json:"schema_version"`
+	EpisodeID          string                 `json:"episode_id"`
+	TaskID             string                 `json:"task_id"`
+	CreatedAt          string                 `json:"created_at"`
+	XHarnessVersion    string                 `json:"x_harness_version"`
+	PreviousEpisodeID  *string                `json:"previous_episode_id"`
 	Git                map[string]interface{} `json:"git"`
 	PolicyHashes       map[string]interface{} `json:"policy_hashes"`
 	SchemaHashes       map[string]interface{} `json:"schema_hashes"`
@@ -45,9 +45,9 @@ type EpisodeManifest struct {
 	MutationGuard      map[string]interface{} `json:"mutation_guard"`
 	Signing            map[string]interface{} `json:"signing"`
 	BundleRefs         map[string]interface{} `json:"bundle_refs"`
-	AdmissionAuthority bool              `json:"admission_authority"`
-	HashesHash         string            `json:"hashes_hash"`
-	ManifestHash       string            `json:"manifest_hash"`
+	AdmissionAuthority bool                   `json:"admission_authority"`
+	HashesHash         string                 `json:"hashes_hash"`
+	ManifestHash       string                 `json:"manifest_hash"`
 }
 
 // EpisodeFileHash represents a single file hash entry.
@@ -124,8 +124,8 @@ func extractTarball(tarPath, destDir string) error {
 			return err
 		}
 
-		target := filepath.Join(destDir, header.Name)
-		if !strings.HasPrefix(filepath.Clean(target), filepath.Clean(destDir)) {
+		target, err := safeTarTarget(destDir, header.Name)
+		if err != nil {
 			return fmt.Errorf("tarball contains unsafe path: %s", header.Name)
 		}
 
@@ -150,6 +150,31 @@ func extractTarball(tarPath, destDir string) error {
 		}
 	}
 	return nil
+}
+
+func safeTarTarget(destDir, name string) (string, error) {
+	if strings.TrimSpace(name) == "" || filepath.IsAbs(name) {
+		return "", fmt.Errorf("unsafe tar path")
+	}
+	cleanDest, err := filepath.Abs(destDir)
+	if err != nil {
+		return "", err
+	}
+	target, err := filepath.Abs(filepath.Join(cleanDest, name))
+	if err != nil {
+		return "", err
+	}
+	rel, err := filepath.Rel(cleanDest, target)
+	if err != nil {
+		return "", err
+	}
+	if rel == "." {
+		return target, nil
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("path escapes destination")
+	}
+	return target, nil
 }
 
 func findEpisodeDir(root string) (string, error) {

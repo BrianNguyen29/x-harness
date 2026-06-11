@@ -200,8 +200,8 @@ func TestVerifyBoundaryEnforceBlockHighBlocksCritical(t *testing.T) {
 	if result.WithheldReason.FailureClass != "boundary_violation" {
 		t.Fatalf("expected failure_class=boundary_violation, got %s", result.WithheldReason.FailureClass)
 	}
-	if result.WithheldReason.Class != "boundary_violation" {
-		t.Fatalf("expected class=boundary_violation, got %s", result.WithheldReason.Class)
+	if result.WithheldReason.Class != "approval_scope_invalid" {
+		t.Fatalf("expected class=approval_scope_invalid, got %s", result.WithheldReason.Class)
 	}
 }
 
@@ -335,6 +335,7 @@ accountable: bob
 boundary_approvals:
   - rule_id: ui-cannot-access-db
     approver: alice
+    approved_at: "2026-01-01T00:00:00Z"
     reason: approved for fixture
 evidence:
   files_changed:
@@ -578,8 +579,8 @@ func TestExtractBoundaryApprovals(t *testing.T) {
 	}
 	doc := map[string]any{
 		"boundary_approvals": []any{
-			map[string]any{"rule_id": "r1"},
-			map[string]any{"rule_id": "  r2  "},
+			map[string]any{"rule_id": "r1", "approver": "alice", "approved_at": "2026-01-01T00:00:00Z", "reason": "ok"},
+			map[string]any{"rule_id": "  r2  ", "approver": "bob", "approved_at": "2026-01-01T00:00:00Z", "reason": "ok"},
 			// missing rule_id is skipped
 			map[string]any{"approver": "alice"},
 			// non-object entry is skipped

@@ -55,9 +55,11 @@ Allowed artifact statuses:
 passed, failed, blocked, skipped, timeout, error
 ```
 
+For command-backed evidence, any non-zero `exit_code` in `claim.evidence.command_evidence[]` or `verification_artifacts[]` blocks admission, even if the artifact `status` says `passed`.
+
 ## Read-only mutation guard
 
-The verify command supports an opt-in `--mutation-guard` flag. `--strict` enables the same guard automatically. When enabled, verify snapshots the repository state before and after its work and compares the delta. This does not require a clean worktree.
+The verify command supports an explicit `--mutation-guard` flag. The guard is also enabled by `--strict`, by standard/deep tier auto-detection, and by admission-capable verify profiles such as `ci-standard`, `ci-strict`, and `governed-deep`. When enabled, verify snapshots the workspace before and after the full verification pipeline and compares the delta. This does not require a clean worktree.
 
 Behavior:
 
@@ -65,8 +67,9 @@ Behavior:
 - In non-git workspaces, the guard falls back to a directory snapshot with bounded-concurrency content hashing.
 - Hashing concurrency defaults to `16`. Set `X_HARNESS_MUTATION_GUARD_HASH_CONCURRENCY` for high file-count dirty/untracked worktrees; values below `1` fall back to the default and values above `64` are capped at `64`.
 - Non-git fallback always ignores `.git/`, `node_modules/`, and `.x-harness/`. It also reads root `.gitignore` entries and optional `policies/mutation-guard.yaml` `fallback_ignore` rules.
-- If no baseline can be established, strict verification is fail-closed because read-only verification cannot be proven.
+- If no baseline can be established while the guard is enabled, verification is fail-closed because read-only verification cannot be proven.
 - Writes under `.x-harness/` (including trace output in `.x-harness/traces/`) are allowlisted and do not trigger the guard.
+- The guard wraps schema validation, admission policy, approval-risk, contract oracle, boundary, decision, intent, context, and trace rendering paths.
 - If any unexpected file change is detected, verify produces a `blocked` outcome with `blocking_predicate: verifier_not_read_only` and recovery routed to `admission-verifier`.
 - Without `--mutation-guard`, existing behavior is unchanged.
 
@@ -82,6 +85,8 @@ By default this measures git and non-git fallback snapshots with `100`, `1000`, 
 ## Governance verification
 
 For `deep` tasks with `governance.requires_human_approval: true`, verify checks that `approval_status` is `approved`. Pending or missing approval blocks admission.
+
+Governance intervention artifacts used by permissions/admission support must remain inside the workspace root, validate against `schemas/intervention.schema.json`, include a non-empty `authorizer`, use an allowing decision, remain unexpired, and cover the target scope. Invalid intervention artifacts fail closed instead of granting approval authority.
 
 ## Contract oracle verification
 
@@ -120,6 +125,8 @@ All enforce flags default to `off`. They are intended for CI and strict conforma
 
 Explicit flags (e.g., `--mutation-guard`, `--boundary-enforce`) override profile defaults.
 
+`boundary_approvals` suppress only matching boundary findings and only when each approval includes `rule_id`, `approver`, RFC3339 `approved_at`, and `reason`. Rule-only or malformed entries are ignored.
+
 ## Context manifest relation
 
 The `xh context manifest write` command generates a manifest of file hashes (default `.x-harness/context-manifest.yaml`). `xh context manifest check --manifest <path>` verifies that the tracked files have not drifted. When `--context-enforce` is enabled, verify checks manifest freshness as part of the admission gate.
@@ -127,6 +134,8 @@ The `xh context manifest write` command generates a manifest of file hashes (def
 ## Compatibility boundary
 
 The Go runtime emits `withheld_reason` as a **compatibility superset** that includes both strict-schema fields and legacy fields:
+
+Go verify JSON also emits `schema_version: "x-harness.verify-result.v1"` so automation can pin the result contract.
 
 - **Strict-schema fields**: `class`, `stage`, `owner`, `schema_recoverability`, `blocking_predicate`, `next_action`
 - **Legacy fields**: `failure_class`, `failure_stage`, legacy `recoverability` values

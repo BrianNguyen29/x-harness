@@ -10,7 +10,8 @@ dist/
 build/
 lib/
 *.tsbuildinfo
-x-harness
+/x-harness
+/x-harness.exe
 
 # Coverage
 coverage/

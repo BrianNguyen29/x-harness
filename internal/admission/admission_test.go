@@ -43,6 +43,31 @@ func TestSuccessLight(t *testing.T) {
 	}
 }
 
+func TestVerificationArtifactNonZeroExitBlocks(t *testing.T) {
+	doc := loadGolden(t, "success-standard-scoped-evidence")
+	evidence := doc["evidence"].(map[string]any)
+	evidence["verification_artifacts"] = []any{
+		map[string]any{
+			"command":   "npm test",
+			"status":    "passed",
+			"exit_code": 1,
+		},
+	}
+	result := Run(doc, false, false)
+	if result.Outcome == "success" || result.AcceptanceStatus == "accepted" {
+		t.Fatalf("expected withheld for non-zero verification artifact exit, got %+v", result)
+	}
+	found := false
+	for _, err := range result.Errors {
+		if strings.Contains(err, "evidence.verification_artifacts has non-zero exit_code 1") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected non-zero artifact exit error, got %v", result.Errors)
+	}
+}
+
 func TestWithheldPartialFix(t *testing.T) {
 	doc := loadGolden(t, "withheld-partial-fix")
 	result := Run(doc, false, false)

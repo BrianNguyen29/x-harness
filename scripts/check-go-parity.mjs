@@ -8,6 +8,10 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const baselineRoot = path.join(repoRoot, "tests", "parity", "baseline", "typescript");
 const manifestPath = path.join(baselineRoot, "manifest.json");
 const goBinary = path.join(repoRoot, "x-harness");
+const parityAllowlist = new Map([
+  // Keep empty by default. Entries must use ISO date strings and should be
+  // removed before the expiry date, e.g. ["case:id", "2026-07-01"].
+]);
 
 function parseArgs(argv) {
   return {
@@ -81,6 +85,57 @@ function skipReason(caseId) {
   return "unsupported case";
 }
 
+function allowlisted(caseId) {
+  const expiry = parityAllowlist.get(caseId);
+  if (!expiry) return false;
+  return Date.parse(`${expiry}T23:59:59Z`) >= Date.now();
+}
+
+function compact(value) {
+  if (value === undefined || value === null || value === "") return null;
+  if (Array.isArray(value)) return value.map(compact);
+  if (typeof value === "object") {
+    const out = {};
+    for (const key of Object.keys(value).sort()) {
+      const v = compact(value[key]);
+      if (v !== null) out[key] = v;
+    }
+    return Object.keys(out).length === 0 ? null : out;
+  }
+  return value;
+}
+
+function normalizedVerifyContract(output, runtime) {
+  const wr = output.withheld_reason ?? null;
+  const decision = output.decision ?? {};
+  return compact({
+    runtime,
+    ok: output.ok,
+    task_id: output.task_id ?? null,
+    admission_outcome: output.admission_outcome ?? decision.outcome ?? null,
+    acceptance_status: output.acceptance_status ?? decision.acceptance_status ?? null,
+    product_intent_status: output.product_intent_status ?? null,
+    withheld_reason: wr
+      ? {
+          class: wr.class,
+          stage: wr.stage,
+          owner: wr.owner,
+          recoverability: wr.schema_recoverability ?? wr.recoverability,
+          next_action: wr.next_action,
+          blocking_predicate: wr.blocking_predicate,
+          failure_class: wr.failure_class,
+          failure_stage: wr.failure_stage,
+        }
+      : null,
+  });
+}
+
+function diffObjects(label, expected, actual) {
+  const e = JSON.stringify(expected);
+  const a = JSON.stringify(actual);
+  return e === a ? [] : [`${label} mismatch:\n  ts=${JSON.stringify(expected)}\n  go=${JSON.stringify(actual)}`];
+}
+
 function compareVerifyJson(tsOutput, goOutput, tsExit, goExit) {
   const errors = [];
   if (tsExit !== goExit) {
@@ -99,6 +154,22 @@ function compareVerifyJson(tsOutput, goOutput, tsExit, goExit) {
   if (tsAcceptance !== goAcceptance) {
     errors.push(`acceptance status mismatch: ts=${tsAcceptance}, go=${goAcceptance}`);
   }
+  if (goOutput.schema_version !== "x-harness.verify-result.v1") {
+    errors.push(`Go verify JSON schema_version mismatch: ${goOutput.schema_version}`);
+  }
+  const tsContract = normalizedVerifyContract(tsOutput, "verify");
+  const goContract = normalizedVerifyContract(goOutput, "verify");
+  delete tsContract.runtime;
+  delete goContract.runtime;
+  if (tsContract.task_id === "TASK-UNKNOWN") {
+    delete tsContract.task_id;
+    delete goContract.task_id;
+  }
+  if (!tsContract.withheld_reason) {
+    delete tsContract.withheld_reason;
+    delete goContract.withheld_reason;
+  }
+  errors.push(...diffObjects("verify contract", tsContract, goContract));
   return errors;
 }
 
@@ -385,8 +456,7 @@ function compareBenchmarkAdversarialJson(tsOutput, goOutput, tsExit, goExit) {
 function compareExamplesVerifyJson(tsOutput, goOutput, tsExit, goExit) {
   const errors = [];
   if (tsExit !== goExit) {
-    // Allow exit code difference because Go may report mismatches for
-    // schema/admission behavior that diverges from TypeScript.
+    errors.push(`exit code mismatch: ts=${tsExit}, go=${goExit}`);
   }
   if (typeof goOutput.ok !== "boolean") {
     errors.push(`ok must be a boolean`);
@@ -407,11 +477,11 @@ function compareExamplesVerifyJson(tsOutput, goOutput, tsExit, goExit) {
     if (tr.name !== gr.name) {
       errors.push(`result[${i}].name mismatch: ts=${tr.name}, go=${gr.name}`);
     }
-    if (!gr.outcome) {
-      errors.push(`result[${i}].outcome is required`);
+    if (tr.outcome !== gr.outcome) {
+      errors.push(`result[${i}].outcome mismatch: ts=${tr.outcome}, go=${gr.outcome}`);
     }
-    if (!gr.acceptance_status) {
-      errors.push(`result[${i}].acceptance_status is required`);
+    if (tr.acceptance_status !== gr.acceptance_status) {
+      errors.push(`result[${i}].acceptance_status mismatch: ts=${tr.acceptance_status}, go=${gr.acceptance_status}`);
     }
     if (!Array.isArray(gr.errors)) {
       errors.push(`result[${i}].errors must be an array`);
@@ -456,7 +526,11 @@ function main() {
     const caseId = c.id;
 
     if (!isSupported(caseId)) {
-      results.skipped.push({ id: caseId, reason: skipReason(caseId) });
+      if (allowlisted(caseId)) {
+        results.skipped.push({ id: caseId, reason: skipReason(caseId), expires: parityAllowlist.get(caseId) });
+      } else {
+        results.failed.push({ id: caseId, errors: [`unsupported parity case without active allowlist: ${skipReason(caseId)}`] });
+      }
       continue;
     }
 

@@ -240,8 +240,8 @@ func TestVerifyIntentEnforceBlockBlocksWhenMissing(t *testing.T) {
 	if result.WithheldReason.FailureClass != "intent_ref_missing" {
 		t.Fatalf("expected failure_class=intent_ref_missing, got %s", result.WithheldReason.FailureClass)
 	}
-	if result.WithheldReason.Class != "intent_ref_missing" {
-		t.Fatalf("expected class=intent_ref_missing, got %s", result.WithheldReason.Class)
+	if result.WithheldReason.Class != "context_insufficient" {
+		t.Fatalf("expected class=context_insufficient, got %s", result.WithheldReason.Class)
 	}
 	if result.WithheldReason.Owner != "implementation-worker" {
 		t.Fatalf("expected owner=implementation-worker, got %s", result.WithheldReason.Owner)

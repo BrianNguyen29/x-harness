@@ -168,7 +168,7 @@ func TestValidateInterventionExpired(t *testing.T) {
 	schemaContent := `{
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["actor", "task", "scope", "decision", "reason", "expiration"],
+	  "required": ["actor", "task", "scope", "decision", "reason", "expiration", "authorizer"],
   "properties": {
     "actor": { "type": "string" },
     "task": { "type": "string" },
@@ -193,6 +193,7 @@ scope: global
 decision: allow
 reason: test
 expiration: "2020-01-01T00:00:00Z"
+authorizer: maintainer
 `
 	path := filepath.Join(tmpDir, "intervention.yaml")
 	if err := os.WriteFile(path, []byte(intervention), 0644); err != nil {
@@ -217,7 +218,7 @@ func TestValidateInterventionValid(t *testing.T) {
 	schemaContent := `{
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["actor", "task", "scope", "decision", "reason", "expiration"],
+	  "required": ["actor", "task", "scope", "decision", "reason", "expiration", "authorizer"],
   "properties": {
     "actor": { "type": "string" },
     "task": { "type": "string" },
@@ -243,6 +244,7 @@ scope: global
 decision: allow
 reason: test
 expiration: "%s"
+authorizer: maintainer
 `, future)
 	path := filepath.Join(tmpDir, "intervention.yaml")
 	if err := os.WriteFile(path, []byte(intervention), 0644); err != nil {

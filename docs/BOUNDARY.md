@@ -53,6 +53,10 @@ xh verify --card completion-card.yaml --boundary-enforce off|advisory|block_high
 - `block_high` — high-severity violations block admission.
 - `block_all` — any violation blocks admission.
 
+### Boundary approvals in verify
+
+`boundary_approvals` can suppress only matching boundary findings and only when each entry includes `rule_id`, `approver`, RFC3339 `approved_at`, and `reason`. Rule-only or malformed approvals are ignored. Boundary approvals do not override contract-oracle failures and do not grant admission authority by themselves.
+
 ## Exit codes
 
 - `0` — no violations (or policy missing / lint passed).

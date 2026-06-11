@@ -13,7 +13,7 @@ A release candidate is a tagged pre-release that must pass the full verification
 ## Release Requirements
 
 1. **Dual-run CI passes**
-   - Node.js quality gates: typecheck, build, lint, format, test.
+   - Node.js quality gates: typecheck, test:typecheck, build, lint, format, test.
    - Go quality gates: `go test ./...`, `go test -race ./...`, `go vet ./...`, `go build ./cmd/x-harness`.
    - Go parity check: `npm run parity:check-go`.
    - Go-native primary gates (required):
@@ -52,10 +52,11 @@ A release candidate is a tagged pre-release that must pass the full verification
    - SBOM (`sbom.cdx.json`) and npm pack manifest (`npm-pack.json`) retained.
 
 8. **GitHub Release artifact attachment**
-   - For tagged releases, the release workflow attaches all artifacts to the GitHub Release:
+   - For tagged releases, the publish job attaches all artifacts to the GitHub Release after packed-CLI and platform smoke jobs pass:
      - Go binaries, signatures (`.sig`), certificates (`.pem`), and `checksums.txt`.
      - `release-checksums.txt` covering all release artifacts.
      - CycloneDX SBOM (`sbom.cdx.json`).
+     - Go module SBOM source (`go-modules.sbom.json`).
      - Scoop manifest (`scoop/x-harness.json`).
      - Homebrew formula (`x-harness.rb`).
      - npm tarball (`x-harness-*.tgz`) and npm pack manifest (`npm-pack.json`).

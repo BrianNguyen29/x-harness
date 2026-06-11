@@ -19,7 +19,7 @@ The repository includes these public CI workflows:
 
 The verify workflow is the main pull-request gate. See `.github/workflows/x-harness-verify.yml` for the current pinned YAML. At a high level it runs four jobs:
 
-- `quality` — Node 22 matrix for `typecheck`, `build`, `lint`, `format`, and `test`.
+- `quality` — Node 22 matrix for `typecheck`, `test:typecheck`, `build`, `lint`, `format`, and `test`.
 - `go-quality` — Go 1.22 matrix for `go test ./...`, `go test -race ./...`, `go vet ./...`, `go build ./cmd/x-harness`, and `npm run parity:check-go`.
 - `go-fuzz-smoke` — bounded fuzz target (`FuzzValidate` in `./internal/schema`).
 - `verify-gates` — builds both CLIs and runs Go-native primary gates plus TypeScript compatibility parity gates.
@@ -27,22 +27,23 @@ The verify workflow is the main pull-request gate. See `.github/workflows/x-harn
 ### What the workflow does
 
 1. Installs Node and Go dependencies/toolchains
-2. Type-checks, builds, lints, formats, and tests the TypeScript CLI
+2. Type-checks, test-typechecks, builds, lints, formats, and tests the TypeScript CLI
 3. Runs Go tests, race detector, `go vet`, and `go build ./cmd/x-harness`
 4. Runs `npm run parity:check-go` to validate that Go CLI behavior matches the committed TypeScript baseline
 5. Runs a bounded Go fuzz smoke target (`FuzzValidate`)
-6. Runs Go-native primary gates: policy matrix, strict verify, verify profile (`ci-standard`), policy explain, explain card, evidence run, docs drift, release verify-docs, doctor, examples verify, regression suite, adversarial benchmark, and conformance minimal
+6. Runs Go-native primary gates: policy matrix, strict verify, verify profile (`ci-standard`), policy explain, explain card, evidence run, docs drift, release verify-docs, doctor, examples verify, regression suite, adversarial benchmark, and conformance minimal and strict
    - Note: `conformance run` supports only `minimal` and `strict` profiles. `ci-standard` is a `xh verify` profile, not a conformance profile.
 7. Runs TypeScript compatibility gates as a secondary validation layer
 
 The release workflow also builds native Go binaries for Linux, macOS, and
 Windows, generates SHA256 checksums, signs tag-release binaries with cosign,
-runs smoke tests on Linux/macOS/Windows amd64 artifacts, and attaches all
-release artifacts to the GitHub Release for tagged builds.
+and runs smoke tests on Linux/macOS/Windows amd64 artifacts plus Linux arm64.
+The separate publish job attaches release artifacts and publishes the npm
+tarball only after smoke jobs pass on tagged builds.
 
 ## Parity checks
 
-`npm run parity:check-go` validates that the Go CLI output matches the committed TypeScript baseline for key commands. This ensures the Go implementation does not drift from the canonical behavior established by the TypeScript CLI during the compatibility window. If parity fails, update the baseline with `npm run parity:capture-ts` after confirming the Go behavior is correct.
+`npm run parity:check-go` validates that the Go CLI output matches the committed TypeScript baseline for key commands. Verify parity compares normalized, contract-critical payloads and requires the Go JSON `schema_version`. Unsupported Go skips fail unless an explicit allowlist entry with an expiry exists. If parity fails, update the baseline with `npm run parity:capture-ts` only after confirming the Go behavior is correct.
 
 ## Local-build fallback
 

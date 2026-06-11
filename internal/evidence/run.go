@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"hash"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -122,12 +124,23 @@ func RunCommand(opts CommandRunOptions, outDir, outPath string) (*CommandRunResu
 		return nil, fmt.Errorf("cannot start command: %w", err)
 	}
 
-	// Drain output concurrently. Each pipe is bounded by maxCapture; the
-	// remaining bytes are counted but not retained.
-	stdoutBytes, stdoutCaptured, stdoutTruncated := drainWithCap(stdoutReader, maxCapture)
-	stderrBytes, stderrCaptured, stderrTruncated := drainWithCap(stderrReader, maxCapture)
+	// Drain output concurrently so a noisy stderr pipe cannot block stdout
+	// consumption (or the reverse). Hashes cover the full stream; captured
+	// fields remain bounded prefixes for readable evidence records.
+	stdoutCh := make(chan drainResult, 1)
+	stderrCh := make(chan drainResult, 1)
+	go func() { stdoutCh <- drainWithCap(stdoutReader, maxCapture) }()
+	go func() { stderrCh <- drainWithCap(stderrReader, maxCapture) }()
 
 	waitErr := cmd.Wait()
+	stdoutDrain := <-stdoutCh
+	stderrDrain := <-stderrCh
+	if stdoutDrain.err != nil {
+		return nil, fmt.Errorf("cannot read stdout: %w", stdoutDrain.err)
+	}
+	if stderrDrain.err != nil {
+		return nil, fmt.Errorf("cannot read stderr: %w", stderrDrain.err)
+	}
 	endedAt := time.Now().UTC()
 	exitCode := 0
 	if waitErr != nil {
@@ -138,7 +151,7 @@ func RunCommand(opts CommandRunOptions, outDir, outPath string) (*CommandRunResu
 		}
 	}
 
-	evidenceID := commandRecordID(opts.Command, opts.Args, startedAt, exitCode, stdoutBytes, stderrBytes)
+	evidenceID := commandRecordID(opts.Command, opts.Args, startedAt, exitCode, stdoutDrain.bytes, stderrDrain.bytes)
 
 	rec := CommandRecord{
 		SchemaVersion:   CommandRunSchemaVersion,
@@ -150,14 +163,14 @@ func RunCommand(opts CommandRunOptions, outDir, outPath string) (*CommandRunResu
 		StartedAt:       startedAt.UTC().Format(time.RFC3339Nano),
 		EndedAt:         endedAt.UTC().Format(time.RFC3339Nano),
 		DurationMillis:  endedAt.Sub(startedAt).Milliseconds(),
-		StdoutBytes:     stdoutBytes,
-		StderrBytes:     stderrBytes,
-		StdoutSHA256:    sha256Hex(stdoutCaptured),
-		StderrSHA256:    sha256Hex(stderrCaptured),
-		StdoutCaptured:  stdoutCaptured,
-		StderrCaptured:  stderrCaptured,
-		StdoutTruncated: stdoutTruncated,
-		StderrTruncated: stderrTruncated,
+		StdoutBytes:     stdoutDrain.bytes,
+		StderrBytes:     stderrDrain.bytes,
+		StdoutSHA256:    stdoutDrain.sha256,
+		StderrSHA256:    stderrDrain.sha256,
+		StdoutCaptured:  stdoutDrain.captured,
+		StderrCaptured:  stderrDrain.captured,
+		StdoutTruncated: stdoutDrain.truncated,
+		StderrTruncated: stderrDrain.truncated,
 	}
 
 	// Capture git state at the same moment so the record can later
@@ -208,17 +221,25 @@ func RunCommand(opts CommandRunOptions, outDir, outPath string) (*CommandRunResu
 
 // drainWithCap reads from r up to maxBytes. Returns the total bytes read,
 // the captured prefix (up to maxBytes), and whether more bytes remained.
-func drainWithCap(r interface {
-	Read(p []byte) (n int, err error)
-}, maxBytes int) (int, string, bool) {
+type drainResult struct {
+	bytes     int
+	captured  string
+	truncated bool
+	sha256    string
+	err       error
+}
+
+func drainWithCap(r io.Reader, maxBytes int) drainResult {
 	buf := make([]byte, 8192)
 	var captured strings.Builder
+	hasher := sha256.New()
 	total := 0
 	truncated := false
 	for {
 		n, err := r.Read(buf)
 		if n > 0 {
 			total += n
+			_, _ = hasher.Write(buf[:n])
 			remaining := maxBytes - captured.Len()
 			if remaining > 0 {
 				if n <= remaining {
@@ -232,15 +253,25 @@ func drainWithCap(r interface {
 			}
 		}
 		if err != nil {
+			if strings.Contains(err.Error(), "file already closed") {
+				break
+			}
+			if err != io.EOF {
+				return drainResult{bytes: total, captured: captured.String(), truncated: truncated, sha256: hashHex(hasher), err: err}
+			}
 			break
 		}
 	}
-	return total, captured.String(), truncated
+	return drainResult{bytes: total, captured: captured.String(), truncated: truncated, sha256: hashHex(hasher)}
 }
 
 func sha256Hex(s string) string {
 	h := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(h[:])
+}
+
+func hashHex(h hash.Hash) string {
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // commandRecordID builds a stable evidence id from the command, args,

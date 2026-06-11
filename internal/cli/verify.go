@@ -109,12 +109,22 @@ func ownerFromBlockingPredicate(predicate string) string {
 // This is a best-effort mapping for the compatibility superset.
 func classFromFailureClass(failureClass string) string {
 	switch failureClass {
+	case "stale_context":
+		return "context_stale"
 	case "context_missing":
 		return "context_floor_blocked"
 	case "schema_invalid":
 		return "schema_or_policy_invalid"
 	case "mutation_detected":
 		return "verifier_not_read_only"
+	case "governance_missing":
+		return "approval_receipt_missing"
+	case "command_risky":
+		return "approval_receipt_missing"
+	case "evidence_provenance_invalid":
+		return "external_dependency_unverified"
+	case "tier_under_escalated":
+		return "approval_scope_invalid"
 	case "evidence_missing", "evidence_floor_missing":
 		return "evidence_floor_missing"
 	case "prediction_missing":
@@ -124,7 +134,9 @@ func classFromFailureClass(failureClass string) string {
 	case "admission_mapping_invalid":
 		return "admission_mapping_invalid"
 	case "boundary_violation":
-		return "boundary_violation"
+		return "approval_scope_invalid"
+	case "decision_refs_missing", "intent_ref_missing":
+		return "context_insufficient"
 	default:
 		return failureClass
 	}
@@ -138,6 +150,8 @@ func stageFromFailureStage(failureStage string) string {
 		return "context"
 	case "verify_pipeline":
 		return "verification"
+	case "admission_gate":
+		return "admission"
 	default:
 		return failureStage
 	}
@@ -145,6 +159,7 @@ func stageFromFailureStage(failureStage string) string {
 
 // VerifyResult is the minimal output of the verify command.
 type VerifyResult struct {
+	SchemaVersion       string                `json:"schema_version"`
 	OK                  bool                  `json:"ok"`
 	TaskID              string                `json:"task_id"`
 	Tier                string                `json:"tier"`
@@ -533,8 +548,37 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			renderVerifyResult(result, jsonMode, verbose, strictWithheldReason, stdout, sourcePath, schemaPath)
 			return ExitError
 		}
+		handoff := mapValue(subagentDoc, "handoff")
+		owner := strings.TrimSpace(stringValue(handoff, "owner"))
+		if owner == "" {
+			owner = "compatibility-subagent"
+		}
+		resultDoc := mapValue(subagentDoc, "result")
+		fixStatus := strings.TrimSpace(stringValue(resultDoc, "fix_status"))
+		verifyStatus := strings.TrimSpace(stringInMap(mapValue(subagentDoc, "verification"), "status"))
+		admissionOutcome := "blocked"
+		acceptanceStatus := "withheld"
+		if fixStatus == "fixed" && verifyStatus == "passed" {
+			admissionOutcome = "success"
+			acceptanceStatus = "accepted"
+		}
+		taskID := strings.TrimSpace(stringValue(subagentDoc, "task_id"))
+		if taskID == "" {
+			taskID = "compat-" + strings.TrimSuffix(filepath.Base(subagentPath), filepath.Ext(subagentPath))
+		}
 		mappedDoc := map[string]any{
-			"subagent_return": subagentDoc,
+			"schema_version":    "x-harness.completion-card.v1",
+			"task_id":           taskID,
+			"owner":             owner,
+			"accountable":       owner,
+			"subagent_return":   subagentDoc,
+			"admission":         map[string]any{"outcome": admissionOutcome},
+			"acceptance_status": acceptanceStatus,
+			"claim": map[string]any{
+				"fix_status": fixStatus,
+				"summary":    stringValue(resultDoc, "summary"),
+				"evidence":   mapValue(subagentDoc, "evidence"),
+			},
 		}
 		if tier == "" {
 			tier = "standard"
@@ -567,7 +611,18 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 
 	var result VerifyResult
 
+	var outerGuard *verifyMutationSnapshot
 	if useMutationGuard {
+		outerGuard, err = beginVerifyMutationSnapshot(root)
+		if err != nil {
+			mg := &mutationguard.Result{Enabled: true, SkippedReason: err.Error(), Violated: true}
+			result := buildVerifyResult(doc, nil, mg, strict, contextFloor, cardPath, root)
+			blockForMutationGuardError(&result, err)
+			if renderErr := renderVerifyResult(result, jsonMode, verbose, strictWithheldReason, stdout, sourcePath, schemaPath); renderErr != nil {
+				fmt.Fprintf(stderr, "error: failed to render verify result: %v\n", renderErr)
+			}
+			return ExitError
+		}
 		var validateFn func() error
 		if cardPath != "" {
 			v, err := schema.Compile(schemaPath)
@@ -733,7 +788,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			result.AdmissionOutcome = "blocked"
 			result.AcceptanceStatus = "withheld"
 			result.WithheldReason = &withheldReason{
-				Class:                "decision_refs_missing",
+				Class:                classFromFailureClass("decision_refs_missing"),
 				Stage:                "verification",
 				Owner:                ownerFromBlockingPredicate(predicate),
 				FailureClass:         "decision_refs_missing",
@@ -768,7 +823,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			result.AdmissionOutcome = "blocked"
 			result.AcceptanceStatus = "withheld"
 			result.WithheldReason = &withheldReason{
-				Class:                "intent_ref_missing",
+				Class:                classFromFailureClass("intent_ref_missing"),
 				Stage:                "verification",
 				Owner:                ownerFromBlockingPredicate(predicate),
 				FailureClass:         "intent_ref_missing",
@@ -834,7 +889,25 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 	}
 
-	renderVerifyResult(result, jsonMode, verbose, strictWithheldReason, stdout, sourcePath, schemaPath)
+	if outerGuard != nil {
+		mgResult, err := outerGuard.finish()
+		if err != nil {
+			if result.MutationGuard == nil {
+				result.MutationGuard = &mutationguard.Result{Enabled: true, SkippedReason: err.Error(), Violated: true}
+			}
+			blockForMutationGuardError(&result, err)
+		} else if mgResult != nil && mgResult.Violated {
+			result.MutationGuard = mgResult
+			blockForMutationViolation(&result)
+		} else if result.MutationGuard == nil {
+			result.MutationGuard = mgResult
+		}
+	}
+
+	if err := renderVerifyResult(result, jsonMode, verbose, strictWithheldReason, stdout, sourcePath, schemaPath); err != nil {
+		fmt.Fprintf(stderr, "error: failed to render verify result: %v\n", err)
+		return ExitError
+	}
 
 	if trace {
 		event := TraceEvent{
@@ -854,12 +927,14 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			"next_owner":           nil,
 			"next_action":          nil,
 			"created_at":           time.Now().UTC().Format(time.RFC3339Nano),
-			"notes":                result.AdmissionErrors,
-			"errors":               []string{},
+			"notes":                result.AdmissionNotes,
+			"errors":               append([]string{}, result.AdmissionErrors...),
 		}
 		if result.WithheldReason != nil {
 			event["blocking_predicate"] = result.WithheldReason.BlockingPredicate
 			event["blocked_reason_class"] = result.WithheldReason.FailureClass
+			event["next_owner"] = result.WithheldReason.Owner
+			event["next_action"] = result.WithheldReason.NextAction
 		}
 		if result.SchemaError != "" {
 			event["errors"] = append(event["errors"].([]string), result.SchemaError)
@@ -921,6 +996,99 @@ func injectTestMutation(root string, stderr io.Writer) {
 	}
 }
 
+type verifyMutationSnapshot struct {
+	root    string
+	useGit  bool
+	before  *mutationguard.Snapshot
+	gitRoot string
+}
+
+func beginVerifyMutationSnapshot(root string) (*verifyMutationSnapshot, error) {
+	if mutationguard.IsGitAvailable() {
+		if gitRoot, err := mutationguard.FindGitRoot(root); err == nil {
+			before, err := mutationguard.TakeSnapshot(gitRoot)
+			if err != nil {
+				return nil, fmt.Errorf("before snapshot failed: %w", err)
+			}
+			return &verifyMutationSnapshot{root: root, useGit: true, before: before, gitRoot: gitRoot}, nil
+		}
+	}
+	before, err := mutationguard.TakeFallbackSnapshot(root)
+	if err != nil {
+		return nil, fmt.Errorf("fallback before snapshot failed: %w", err)
+	}
+	return &verifyMutationSnapshot{root: root, before: before}, nil
+}
+
+func (s *verifyMutationSnapshot) finish() (*mutationguard.Result, error) {
+	var after *mutationguard.Snapshot
+	var err error
+	if s.useGit {
+		after, err = mutationguard.TakeSnapshot(s.gitRoot)
+	} else {
+		after, err = mutationguard.TakeFallbackSnapshot(s.root)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("after snapshot failed: %w", err)
+	}
+	deltas := mutationguard.Compare(s.before, after)
+	unexpected := mutationguard.FilterUnexpected(deltas)
+	return &mutationguard.Result{
+		Enabled:          true,
+		Deltas:           deltas,
+		UnexpectedDeltas: unexpected,
+		Violated:         len(unexpected) > 0,
+	}, nil
+}
+
+func blockForMutationGuardError(result *VerifyResult, err error) {
+	if result == nil {
+		return
+	}
+	if result.MutationGuard == nil {
+		result.MutationGuard = &mutationguard.Result{Enabled: true, SkippedReason: err.Error(), Violated: true}
+	}
+	result.OK = false
+	result.AdmissionOutcome = "blocked"
+	result.AcceptanceStatus = "withheld"
+	predicate := "verifier_not_read_only"
+	recoverability := "manual_review"
+	result.WithheldReason = &withheldReason{
+		Class:                "verifier_not_read_only",
+		Stage:                "verification",
+		Owner:                ownerFromBlockingPredicate(predicate),
+		FailureClass:         "mutation_detected",
+		FailureStage:         "verify_pipeline",
+		Recoverability:       recoverability,
+		SchemaRecoverability: schemaRecoverabilityFromLegacy(recoverability),
+		NextAction:           "review_and_resubmit",
+		BlockingPredicate:    predicate,
+	}
+	result.AdmissionErrors = append(result.AdmissionErrors, fmt.Sprintf("mutation_guard_error: %v", err))
+}
+
+func blockForMutationViolation(result *VerifyResult) {
+	if result == nil {
+		return
+	}
+	result.OK = false
+	result.AdmissionOutcome = "blocked"
+	result.AcceptanceStatus = "withheld"
+	predicate := "verifier_not_read_only"
+	recoverability := "manual_review"
+	result.WithheldReason = &withheldReason{
+		Class:                "verifier_not_read_only",
+		Stage:                "verification",
+		Owner:                ownerFromBlockingPredicate(predicate),
+		FailureClass:         "mutation_detected",
+		FailureStage:         "verify_pipeline",
+		Recoverability:       recoverability,
+		SchemaRecoverability: schemaRecoverabilityFromLegacy(recoverability),
+		NextAction:           "review_and_resubmit",
+		BlockingPredicate:    predicate,
+	}
+}
+
 func runWithMutationGuard(root string, strict bool, doc map[string]any, validateFn func() error, stderr io.Writer, contextFloor bool, cardPath string) VerifyResult {
 	var useGit bool
 	var gitRoot string
@@ -959,30 +1127,25 @@ func runWithMutationGuard(root string, strict bool, doc map[string]any, validate
 	}
 
 	if guardErr != nil {
-		mg := &mutationguard.Result{Enabled: true, SkippedReason: guardErr.Error(), Violated: strict}
+		mg := &mutationguard.Result{Enabled: true, SkippedReason: guardErr.Error(), Violated: true}
 		result := buildVerifyResult(doc, schemaErr, mg, strict, contextFloor, cardPath, root)
-		if strict {
-			fmt.Fprintf(stderr, "mutation_guard_error: guard failed in strict mode: %v\n", guardErr)
-			result.OK = false
-			result.AdmissionOutcome = "blocked"
-			result.AcceptanceStatus = "withheld"
-		}
+		fmt.Fprintf(stderr, "mutation_guard_error: guard failed: %v\n", guardErr)
+		blockForMutationGuardError(&result, guardErr)
 		return result
 	}
 
 	result := buildVerifyResult(doc, schemaErr, mgResult, strict, contextFloor, cardPath, root)
 	if mgResult != nil && mgResult.Violated {
-		result.OK = false
-		result.AdmissionOutcome = "blocked"
-		result.AcceptanceStatus = "withheld"
+		blockForMutationViolation(&result)
 	}
 	return result
 }
 
 func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationguard.Result, strict bool, contextFloor bool, cardPath string, root string) VerifyResult {
 	result := VerifyResult{
-		TaskID: stringValue(doc, "task_id"),
-		Tier:   stringValue(doc, "tier"),
+		SchemaVersion: "x-harness.verify-result.v1",
+		TaskID:        stringValue(doc, "task_id"),
+		Tier:          stringValue(doc, "tier"),
 	}
 
 	if schemaErr != nil {
@@ -1067,7 +1230,7 @@ func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationgu
 	return result
 }
 
-func renderVerifyResult(result VerifyResult, jsonMode, verbose, strictWithheldReason bool, stdout io.Writer, sourcePath, schemaPath string) {
+func renderVerifyResult(result VerifyResult, jsonMode, verbose, strictWithheldReason bool, stdout io.Writer, sourcePath, schemaPath string) error {
 	if jsonMode {
 		if strictWithheldReason && result.WithheldReason != nil {
 			strictResult := result
@@ -1077,11 +1240,11 @@ func renderVerifyResult(result VerifyResult, jsonMode, verbose, strictWithheldRe
 			// In strict mode, recoverability shows schema enum value
 			strictWR.Recoverability = strictWR.SchemaRecoverability
 			strictResult.WithheldReason = &strictWR
-			WriteJSON(stdout, strictResult)
+			return WriteJSON(stdout, strictResult)
 		} else {
-			WriteJSON(stdout, result)
+			return WriteJSON(stdout, result)
 		}
-		return
+		return nil
 	}
 	if verbose {
 		WriteLine(stdout, "source: %s", sourcePath)
@@ -1132,6 +1295,7 @@ func renderVerifyResult(result VerifyResult, jsonMode, verbose, strictWithheldRe
 			WriteLine(stdout, "mutation_guard: clean")
 		}
 	}
+	return nil
 }
 
 func stringValue(doc map[string]any, key string) string {
@@ -1203,10 +1367,10 @@ func isValidIntentEnforce(v string) bool {
 	return false
 }
 
-// extractBoundaryApprovals reads the optional `boundary_approvals` array
-// from a completion card document and returns the set of approved
-// `rule_id` values. The field is advisory-only and missing/empty
-// produces an empty set so callers can treat the result uniformly.
+// extractBoundaryApprovals reads externally authorized `boundary_approvals`
+// entries and returns the set of rule_ids that can suppress boundary blocking.
+// Rule-only entries are deliberately ignored so an agent cannot self-approve a
+// protected boundary in the same completion card.
 func extractBoundaryApprovals(doc map[string]any) map[string]bool {
 	approved := map[string]bool{}
 	if doc == nil {
@@ -1228,6 +1392,15 @@ func extractBoundaryApprovals(doc map[string]any) map[string]bool {
 		ruleID, _ := entry["rule_id"].(string)
 		ruleID = strings.TrimSpace(ruleID)
 		if ruleID == "" {
+			continue
+		}
+		approver, _ := entry["approver"].(string)
+		reason, _ := entry["reason"].(string)
+		approvedAt, _ := entry["approved_at"].(string)
+		if strings.TrimSpace(approver) == "" || strings.TrimSpace(reason) == "" {
+			continue
+		}
+		if _, err := time.Parse(time.RFC3339, strings.TrimSpace(approvedAt)); err != nil {
 			continue
 		}
 		approved[ruleID] = true

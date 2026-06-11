@@ -41,15 +41,9 @@ func evaluateEvidenceFloor(doc map[string]any, tier string) evidenceResult {
 		if !ok {
 			continue
 		}
-		exitCode, ok := intLikeValue(record["exit_code"])
-		if !ok || exitCode == 0 {
-			continue
+		if finding, ok := nonZeroExitFinding("evidence.command_evidence", record); ok {
+			result.errors = append(result.errors, finding)
 		}
-		message := fmt.Sprintf("evidence.command_evidence has non-zero exit_code %d", exitCode)
-		if command := stringInMap(record, "command"); strings.TrimSpace(command) != "" {
-			message += fmt.Sprintf(" for command %q", command)
-		}
-		result.errors = append(result.errors, evidenceFinding{message: message, predicate: "admission_failed"})
 	}
 
 	switch tier {
@@ -344,6 +338,9 @@ func evaluateArtifactStatus(doc map[string]any) evidenceResult {
 		if !ok {
 			continue
 		}
+		if finding, ok := nonZeroExitFinding("evidence.verification_artifacts", record); ok {
+			result.errors = append(result.errors, finding)
+		}
 		status := stringInMap(record, "status")
 		if status == "" || status == "passed" {
 			continue
@@ -360,6 +357,18 @@ func evaluateArtifactStatus(doc map[string]any) evidenceResult {
 	}
 
 	return result
+}
+
+func nonZeroExitFinding(prefix string, record map[string]any) (evidenceFinding, bool) {
+	exitCode, ok := intLikeValue(record["exit_code"])
+	if !ok || exitCode == 0 {
+		return evidenceFinding{}, false
+	}
+	message := fmt.Sprintf("%s has non-zero exit_code %d", prefix, exitCode)
+	if command := stringInMap(record, "command"); strings.TrimSpace(command) != "" {
+		message += fmt.Sprintf(" for command %q", command)
+	}
+	return evidenceFinding{message: message, predicate: "admission_failed"}, true
 }
 
 func evaluateStrictProvenance(doc map[string]any, tier string, strict bool) evidenceResult {

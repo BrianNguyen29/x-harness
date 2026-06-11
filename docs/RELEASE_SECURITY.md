@@ -37,6 +37,7 @@ Before publish, the release workflow runs the following primary gates through th
 - Copy Go binaries, signatures, and checksums into the npm package
 - Build release tarball (`npm pack`)
 - Generate CycloneDX SBOM (`sbom.cdx.json`)
+- Generate Go module SBOM source (`go-modules.sbom.json`)
 - Generate `release-checksums.txt` covering all release artifacts
 
 ### Post-build smoke and compatibility
@@ -53,13 +54,14 @@ Before publish, the release workflow runs the following primary gates through th
 
 ### Publish
 
-- Attach release artifacts to the GitHub Release (tagged releases)
-- Publish to npm with provenance (tagged releases; requires `NPM_TOKEN`)
 - Cross-platform smoke tests (`linux/amd64`, `darwin/amd64`, `windows/amd64`)
+- Linux arm64 smoke test (`linux/arm64`)
+- Attach release artifacts to the GitHub Release only after smoke jobs pass (tagged releases)
+- Publish to npm with provenance only after smoke jobs pass (tagged releases; requires `NPM_TOKEN`)
 
 The adversarial benchmark is a hard release gate: `false_accept_count` and `adversarial_false_accept_count` must both remain `0`. Adversarial cases also exercise governance-enforced verification for protected-path approval spoofing.
 
-> **Arm64 build-vs-smoke gap**: arm64 binaries are included in the release matrix but are not smoke-tested in CI because GitHub-hosted arm64 runners are not universally available for Linux and Windows. The cross-platform smoke job covers amd64 only and is skipped automatically if the release job fails.
+> **Arm64 build-vs-smoke gap**: Linux arm64 is smoke-tested on `ubuntu-24.04-arm`. Darwin arm64 and Windows arm64 binaries are built and checksummed but are not executed because GitHub-hosted runners for those targets are not universally available.
 
 ## Package Assets
 
@@ -90,10 +92,10 @@ The TypeScript CLI resolves package assets through `packages/cli/src/core/assets
 Tagged releases publish with npm provenance:
 
 ```bash
-npm publish --workspace x-harness --provenance --access public
+npm publish .x-harness/release/x-harness-<version>.tgz --provenance --access public --tag next
 ```
 
-The release job uses GitHub OIDC (`id-token: write`) and `actions/setup-node` with the npm registry. If npm trusted publishing is configured, prefer it over long-lived publish tokens. If a token is still required, it must be scoped to package publish and stored as `NPM_TOKEN`.
+The publish job uses GitHub OIDC (`id-token: write`) and `actions/setup-node` with the npm registry. The build/release job uses OIDC for cosign signing but does not publish. If npm trusted publishing is configured, prefer it over long-lived publish tokens. If a token is still required, it must be scoped to package publish and stored as `NPM_TOKEN`.
 
 ## SBOM
 
@@ -107,13 +109,14 @@ SBOM artifacts are uploaded with release artifacts. Release review should retain
 
 ## GitHub Release Artifacts
 
-Tagged releases automatically attach the following artifacts to the GitHub Release via the release workflow:
+On tagged releases, the publish job attaches the following artifacts to the GitHub Release only after packed-CLI and platform smoke jobs pass:
 
 - All platform Go binaries (`x-harness-<version>-<os>-<arch>`)
 - Cosign signatures (`.sig`) and certificates (`.pem`) for each binary
 - `checksums.txt` (SHA256 of Go binaries)
 - `release-checksums.txt` (SHA256 of all release artifacts)
 - CycloneDX SBOM (`sbom.cdx.json`)
+- Go module SBOM source (`go-modules.sbom.json`)
 - npm pack manifest (`npm-pack.json`)
 - npm tarball (`x-harness-<version>.tgz`)
 - Scoop manifest (`scoop/x-harness.json`)
