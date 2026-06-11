@@ -44,7 +44,7 @@ The managed context block in AGENTS.md is authoritative. Files are read in this 
 Agents may propose completion but cannot self-admit. A completion card with ` + "`" + `claim.fix_status: fixed` + "`" + ` is only a completion candidate. Compatibility subagent returns may use ` + "`" + `result.fix_status` + "`" + `.
 
 ### Verifier is read-only
-The verifier may inspect files, evidence, diffs, and trace events. It must not edit source files or repair the work product while verifying.
+The verifier may inspect files, tasks, stories, templates, returns, evidence, diffs, command output, and trace events. It must not edit source files or repair the work product while verifying.
 
 ### Success is the only accepted outcome
 ` + "`" + `admission.outcome: success` + "`" + ` and ` + "`" + `acceptance_status: accepted` + "`" + ` are required for admission. All other outcomes are withheld.
