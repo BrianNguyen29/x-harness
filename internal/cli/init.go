@@ -348,6 +348,13 @@ func buildInitPlan(mode, assetRoot, targetDir, adapters string, stderr io.Writer
 				"policies",
 				"templates",
 				"adapters",
+				"AGENTS.md",
+				"X_HARNESS.md",
+				".github/workflows/x-harness-verify.yml",
+				".x-harness/managed-blocks.yaml",
+				"docs",
+				"components",
+				"tools",
 			},
 		}
 		assets := modeAssets[mode]
@@ -358,6 +365,9 @@ func buildInitPlan(mode, assetRoot, targetDir, adapters string, stderr io.Writer
 				continue
 			}
 			dest := filepath.Join(targetDir, filepath.Base(asset))
+			if strings.HasPrefix(asset, ".") {
+				dest = filepath.Join(targetDir, filepath.FromSlash(asset))
+			}
 			plan = append(plan, initPlanItem{src: src, dest: dest})
 		}
 

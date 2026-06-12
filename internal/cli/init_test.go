@@ -73,10 +73,16 @@ func TestInitFullMode(t *testing.T) {
 		t.Fatalf("expected full complete, got: %s", stdout.String())
 	}
 
-	for _, dir := range []string{"examples", "schemas", "policies", "templates", "adapters"} {
+	for _, dir := range []string{"examples", "schemas", "policies", "templates", "adapters", "docs", "components", "tools"} {
 		path := filepath.Join(tmpDir, dir)
 		if _, err := os.Stat(path); err != nil {
 			t.Fatalf("expected %s to exist: %v", dir, err)
+		}
+	}
+	for _, file := range []string{"AGENTS.md", "X_HARNESS.md", ".github/workflows/x-harness-verify.yml", ".x-harness/managed-blocks.yaml"} {
+		path := filepath.Join(tmpDir, file)
+		if _, err := os.Stat(path); err != nil {
+			t.Fatalf("expected %s to exist: %v", file, err)
 		}
 	}
 }

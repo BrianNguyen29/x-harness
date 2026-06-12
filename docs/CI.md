@@ -102,6 +102,16 @@ To verify a completion card in CI:
 
 The `--trace` flag appends the verify event to `.x-harness/traces/events.jsonl`.
 
+## Real Sandbox Integration Tests
+
+For local validation against throwaway codebases, run:
+
+```bash
+npm -w packages/cli run test:integration
+```
+
+The integration profile includes `sandbox-integration.test.ts`, which creates temporary app workspaces, initializes harness assets, runs `doctor`, `context`, `permissions`, and strict `verify`, checks non-Git mutation guard fallback, and confirms verifier-side mutation detection. Go-native boundary enforcement is covered by `go test ./internal/cli -run Boundary`.
+
 ## Trace verification in CI
 
 To check trace integrity:

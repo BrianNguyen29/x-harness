@@ -66,6 +66,7 @@ interface InterventionArtifact {
   expiration?: string;
   scope?: string;
   paths?: string[];
+  authorizer?: string;
 }
 
 function normalizeCommand(command: string): string {
@@ -273,6 +274,18 @@ async function validateInterventionForPermission(
       reason: (validate.errors ?? [])
         .map((err) => `${err.instancePath || "/"} ${err.message ?? "invalid"}`)
         .join("; "),
+      path: interventionPath,
+    };
+  }
+
+  if (
+    typeof artifact.authorizer !== "string" ||
+    artifact.authorizer.trim() === ""
+  ) {
+    return {
+      provided: true,
+      valid: false,
+      reason: "intervention authorizer is required",
       path: interventionPath,
     };
   }

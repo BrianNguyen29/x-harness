@@ -27,6 +27,16 @@ const MODE_ASSETS: Record<string, string[]> = {
   full: ["examples", "schemas", "policies", "templates", "adapters"],
 };
 
+const FULL_PROFILE_CORE_ASSETS = [
+  "AGENTS.md",
+  "X_HARNESS.md",
+  ".github/workflows/x-harness-verify.yml",
+  ".x-harness/managed-blocks.yaml",
+  "docs",
+  "components",
+  "tools",
+];
+
 export function initCommand(): Command {
   return new Command("init")
     .description("Initialize x-harness files")
@@ -112,6 +122,14 @@ export function initCommand(): Command {
           if (!(await fs.pathExists(src))) continue;
           const dest = path.join(targetDir, path.basename(asset));
           plan.push({ src, dest });
+        }
+
+        if (mode === "full") {
+          for (const asset of FULL_PROFILE_CORE_ASSETS) {
+            const src = path.join(assetRoot, asset);
+            if (!(await fs.pathExists(src))) continue;
+            plan.push({ src, dest: path.join(targetDir, asset) });
+          }
         }
 
         // Include adapter guidance in standard mode

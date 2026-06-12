@@ -25,6 +25,7 @@ async function writeIntervention(
     decision: string;
     expiration: string;
     paths: string[];
+    authorizer: string;
   }> = {}
 ): Promise<string> {
   const dir = makeTempDir();
@@ -43,7 +44,7 @@ ${(overrides.paths ?? ["capability:dependency_install"])
 decision: ${overrides.decision ?? "allow"}
 reason: permission exception for test
 expiration: ${expiration}
-authorizer: maintainer
+authorizer: ${overrides.authorizer ?? "maintainer"}
 created_at: ${new Date().toISOString()}
 `,
     "utf-8"
@@ -162,6 +163,21 @@ describe("permissions core", () => {
     expect(result.intervention.reason).toContain("expired");
   });
 
+  it("rejects blank intervention authorizers", async () => {
+    const intervention = await writeIntervention({ authorizer: "" });
+    const result = await checkPermission({
+      root: repoRoot,
+      role: "worker",
+      tier: "deep",
+      capability: "dependency_install",
+      intervention,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe("requires_intervention");
+    expect(result.intervention.valid).toBe(false);
+    expect(result.intervention.reason).toContain("authorizer");
+  });
+
   it("runs built-in fixtures", async () => {
     const result = await runPermissionFixtures(repoRoot);
     expect(result.ok).toBe(true);
@@ -252,6 +268,30 @@ describe("permissions command", () => {
     const output = JSON.parse(stdout);
     expect(output.status).toBe("allowed");
     expect(output.intervention.valid).toBe(true);
+  });
+
+  it("rejects approval-gated capability through CLI with blank authorizer", async () => {
+    const intervention = await writeIntervention({ authorizer: "" });
+    const { stdout, exitCode } = await execaNode([
+      "permissions",
+      "check",
+      "--role",
+      "worker",
+      "--tier",
+      "deep",
+      "--capability",
+      "dependency_install",
+      "--intervention",
+      intervention,
+      "--root",
+      repoRoot,
+      "--json",
+    ]);
+    expect(exitCode).toBe(1);
+    const output = JSON.parse(stdout);
+    expect(output.status).toBe("requires_intervention");
+    expect(output.intervention.valid).toBe(false);
+    expect(output.intervention.reason).toContain("authorizer");
   });
 
   it("runs built-in fixture command", async () => {

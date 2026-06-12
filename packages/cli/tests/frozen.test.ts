@@ -164,6 +164,40 @@ describe("frozen transfer", () => {
     );
   });
 
+  it("rejects unsafe archive paths during verify and import", async () => {
+    const tmp = makeTempDir();
+    const bundle = await exportBundle(tmp);
+
+    const unsafe = path.join(tmp, "unsafe-payload.tar.gz");
+    await appendTarEntry(bundle, unsafe, "../outside.txt", "not safe");
+
+    const verify = await execaNode(["frozen", "verify", unsafe, "--json"]);
+    expect(verify.exitCode).toBe(1);
+    const verifyOutput = JSON.parse(verify.stdout);
+    expect(verifyOutput.ok).toBe(false);
+    expect(verifyOutput.errors.join("\n")).toContain(
+      "unsafe archive path: ../outside.txt"
+    );
+
+    const target = path.join(tmp, "target");
+    const imported = await execaNode([
+      "import",
+      unsafe,
+      "--frozen",
+      "--target",
+      target,
+      "--merge",
+      "--json",
+    ]);
+    expect(imported.exitCode).toBe(1);
+    const importOutput = JSON.parse(imported.stdout);
+    expect(importOutput.ok).toBe(false);
+    expect(importOutput.errors.join("\n")).toContain(
+      "unsafe archive path: ../outside.txt"
+    );
+    expect(await fs.pathExists(path.join(tmp, "outside.txt"))).toBe(false);
+  });
+
   it("defaults import to dry-run and writes nothing", async () => {
     const tmp = makeTempDir();
     const bundle = await exportBundle(tmp);

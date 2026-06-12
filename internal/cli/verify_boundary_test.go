@@ -205,6 +205,69 @@ func TestVerifyBoundaryEnforceBlockHighBlocksCritical(t *testing.T) {
 	}
 }
 
+func TestVerifyBoundaryApprovalWithBlankApproverDoesNotSuppress(t *testing.T) {
+	tmpDir := setupBoundaryEnforceTestDir(t)
+
+	cardYAML := `schema_version: "1"
+task_id: TASK-BOUNDARY-APPROVAL-BLANK-APPROVER
+tier: light
+owner: alice
+accountable: bob
+evidence:
+  files_changed:
+    - src/ui/login.ts
+  manual_rationale: Touches a UI file
+claim:
+  fix_status: fixed
+  summary: Wired boundary enforcement
+  evidence:
+    - description: source change
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: alice
+boundary_approvals:
+  - rule_id: ui-cannot-access-db
+    approver: ""
+    approved_at: "2026-06-01T00:00:00Z"
+    reason: approval record is missing authority identity
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "completion-card.yaml"), []byte(cardYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"verify", "--card", "completion-card.yaml", "--boundary-enforce", "block_high", "--json"}, &stdout, &stderr)
+	if code == ExitOK {
+		t.Fatalf("expected non-ok exit, got %d. stdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+
+	var result VerifyResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("expected valid JSON: %v\noutput: %s\nstderr: %s", err, stdout.String(), stderr.String())
+	}
+	if result.OK {
+		t.Fatal("expected not ok")
+	}
+	if result.WithheldReason == nil {
+		t.Fatal("expected withheld_reason")
+	}
+	if result.WithheldReason.BlockingPredicate != "boundary_violation" {
+		t.Fatalf("expected boundary_violation, got %s", result.WithheldReason.BlockingPredicate)
+	}
+	if len(result.AdmissionErrors) == 0 || !strings.Contains(strings.Join(result.AdmissionErrors, "\n"), "ui-cannot-access-db") {
+		t.Fatalf("expected boundary admission error, got %v", result.AdmissionErrors)
+	}
+}
+
 func TestVerifyBoundaryEnforceBlockAllBlocksInfo(t *testing.T) {
 	// A boundary violation at info severity should still block under
 	// block_all (governed-deep).
