@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-label="x-harness — completion is admitted, not claimed">
+  <title>x-harness — completion is admitted, not claimed</title>
+  <desc>Wide README hero banner for x-harness (light theme): a lightweight, file-first verification harness for AI-agent workflows.</desc>
+
+  <defs>
+    <!-- Background gradient: soft paper to slate-50 -->
+    <linearGradient id="xh-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.55" stop-color="#F8FAFC"/>
+      <stop offset="1" stop-color="#EEF2F7"/>
+    </linearGradient>
+
+    <!-- Warm radial glow (top-right) -->
+    <radialGradient id="xh-glow" cx="0.86" cy="0.18" r="0.55">
+      <stop offset="0" stop-color="#F59E0B" stop-opacity="0.10"/>
+      <stop offset="0.5" stop-color="#F59E0B" stop-opacity="0.03"/>
+      <stop offset="1" stop-color="#F59E0B" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Cool secondary glow (bottom-left) -->
+    <radialGradient id="xh-glow2" cx="0.08" cy="0.95" r="0.5">
+      <stop offset="0" stop-color="#16A34A" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#16A34A" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Subtle grid pattern -->
+    <pattern id="xh-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#E2E8F0" stroke-width="0.5" stroke-opacity="0.7"/>
+    </pattern>
+
+    <!-- Mark fill -->
+    <linearGradient id="xh-mark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F1F5F9"/>
+    </linearGradient>
+
+    <!-- Card preview fill -->
+    <linearGradient id="xh-card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F8FAFC"/>
+    </linearGradient>
+
+    <!-- Status pip glow -->
+    <radialGradient id="xh-pip" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#16A34A" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#16A34A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background layers -->
+  <rect width="1280" height="320" fill="url(#xh-bg)"/>
+  <rect width="1280" height="320" fill="url(#xh-grid)"/>
+  <rect width="1280" height="320" fill="url(#xh-glow)"/>
+  <rect width="1280" height="320" fill="url(#xh-glow2)"/>
+
+  <!-- Subtle outer border -->
+  <rect x="0.5" y="0.5" width="1279" height="319" fill="none" stroke="#E2E8F0" stroke-width="1"/>
+
+  <!-- ============ LOGO MARK (left) ============ -->
+  <g transform="translate(64, 60)">
+    <!-- Soft shadow under mark -->
+    <ellipse cx="48" cy="106" rx="44" ry="5" fill="#0F172A" fill-opacity="0.12"/>
+    <!-- Rounded card frame -->
+    <rect x="0" y="0" width="96" height="96" rx="20" ry="20" fill="url(#xh-mark)" stroke="#CBD5E1" stroke-width="1.5"/>
+    <!-- Top inner highlight -->
+    <path d="M 18 1.5 L 78 1.5" stroke="#FFFFFF" stroke-width="1" stroke-opacity="0.9" stroke-linecap="round"/>
+    <!-- The "x" -->
+    <g stroke-linecap="round">
+      <line x1="30" y1="30" x2="66" y2="66" stroke="#0F172A" stroke-width="9"/>
+      <line x1="66" y1="30" x2="30" y2="66" stroke="#0F172A" stroke-width="9"/>
+    </g>
+    <!-- Status pip (green) in top-right corner -->
+    <circle cx="86" cy="10" r="11" fill="url(#xh-pip)"/>
+    <circle cx="86" cy="10" r="6.5" fill="#16A34A"/>
+    <circle cx="84.5" cy="8.5" r="2" fill="#BBF7D0"/>
+  </g>
+
+  <!-- ============ WORDMARK + MANTRA ============ -->
+  <g transform="translate(192, 0)">
+    <!-- x-harness wordmark -->
+    <text x="0" y="138"
+          font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+          font-size="72" font-weight="900" letter-spacing="-2.5" fill="#0F172A">
+      <tspan fill="#D97706">x</tspan><tspan fill="#0F172A">-harness</tspan>
+    </text>
+
+    <!-- Mantra -->
+    <g transform="translate(2, 170)">
+      <text x="0" y="0"
+            font-family="ui-monospace, 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace"
+            font-size="13" font-weight="600" letter-spacing="2" fill="#94A3B8">[</text>
+      <text x="14" y="0"
+            font-family="ui-monospace, 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace"
+            font-size="13" font-weight="600" letter-spacing="3" fill="#334155">COMPLETION  IS  ADMITTED,  NOT  CLAIMED</text>
+      <text x="498" y="0"
+            font-family="ui-monospace, 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace"
+            font-size="13" font-weight="600" letter-spacing="2" fill="#94A3B8">]</text>
+    </g>
+  </g>
+
+  <!-- ============ VALUE PROP CHIPS ============ -->
+  <g transform="translate(192, 200)" font-family="ui-monospace, 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace" font-size="12" font-weight="600">
+    <g transform="translate(0, 0)">
+      <rect x="0" y="0" width="96" height="26" rx="13" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+      <circle cx="13" cy="13" r="3" fill="#0891B2"/>
+      <text x="24" y="17" fill="#334155" letter-spacing="0.4">file-first</text>
+    </g>
+    <g transform="translate(104, 0)">
+      <rect x="0" y="0" width="100" height="26" rx="13" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+      <circle cx="13" cy="13" r="3" fill="#7C3AED"/>
+      <text x="24" y="17" fill="#334155" letter-spacing="0.4">read-only</text>
+    </g>
+    <g transform="translate(212, 0)">
+      <rect x="0" y="0" width="108" height="26" rx="13" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+      <circle cx="13" cy="13" r="3" fill="#D97706"/>
+      <text x="24" y="17" fill="#334155" letter-spacing="0.4">fail-closed</text>
+    </g>
+    <g transform="translate(328, 0)">
+      <rect x="0" y="0" width="148" height="26" rx="13" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+      <circle cx="13" cy="13" r="3" fill="#16A34A"/>
+      <text x="24" y="17" fill="#334155" letter-spacing="0.4">adapter-agnostic</text>
+    </g>
+  </g>
+
+  <!-- ============ CARD PREVIEW (right) ============ -->
+  <g transform="translate(768, 56)">
+    <!-- Card shadow -->
+    <ellipse cx="216" cy="208" rx="180" ry="6" fill="#0F172A" fill-opacity="0.10"/>
+    <!-- Card body -->
+    <rect x="0" y="0" width="432" height="200" rx="12" fill="url(#xh-card)" stroke="#E2E8F0" stroke-width="1"/>
+
+    <!-- Card top bar -->
+    <path d="M 0 12 Q 0 0 12 0 L 420 0 Q 432 0 432 12 L 432 32 L 0 32 Z" fill="#F1F5F9"/>
+    <line x1="0" y1="32" x2="432" y2="32" stroke="#E2E8F0" stroke-width="1"/>
+    <circle cx="18" cy="16" r="4" fill="#EF4444" fill-opacity="0.6"/>
+    <circle cx="32" cy="16" r="4" fill="#F59E0B" fill-opacity="0.6"/>
+    <circle cx="46" cy="16" r="4" fill="#22C55E" fill-opacity="0.6"/>
+    <text x="216" y="20" text-anchor="middle"
+          font-family="ui-monospace, 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace"
+          font-size="11" font-weight="500" fill="#475569" letter-spacing="0.5">completion-card.yaml</text>
+
+    <!-- YAML body -->
+    <g font-family="ui-monospace, 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace" font-size="12.5">
+      <text x="20" y="62" fill="#94A3B8">tier:</text>
+      <text x="76" y="62" fill="#0F172A">standard</text>
+
+      <text x="20" y="86" fill="#94A3B8">claim:</text>
+      <text x="76" y="86" fill="#0F172A">fix_status: <tspan fill="#16A34A" font-weight="700">fixed</tspan></text>
+
+      <text x="20" y="110" fill="#94A3B8">verification:</text>
+      <text x="124" y="110" fill="#0F172A">status: <tspan fill="#16A34A" font-weight="700">passed</tspan></text>
+
+      <text x="20" y="134" fill="#94A3B8">admission:</text>
+      <text x="120" y="134" fill="#0F172A">outcome: <tspan fill="#16A34A" font-weight="700">success</tspan></text>
+    </g>
+
+    <!-- Verifier line -->
+    <g font-family="ui-monospace, 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace" font-size="11.5">
+      <text x="20" y="166" fill="#94A3B8">$</text>
+      <text x="32" y="166" fill="#475569">xh</text>
+      <text x="58" y="166" fill="#0F172A">verify</text>
+      <text x="102" y="166" fill="#475569">--card</text>
+      <text x="150" y="166" fill="#0F172A">completion-card.yaml</text>
+    </g>
+
+    <!-- ACCEPTED status badge -->
+    <g transform="translate(280, 156)">
+      <rect x="0" y="0" width="132" height="26" rx="13" fill="#DCFCE7" stroke="#16A34A" stroke-width="1"/>
+      <path d="M 12 13 L 17 18 L 26 9" fill="none" stroke="#16A34A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="34" y="18"
+            font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+            font-size="11" font-weight="800" letter-spacing="2" fill="#15803D">ACCEPTED</text>
+    </g>
+  </g>
+
+  <!-- Bottom-right CLI stamp -->
+  <g transform="translate(1216, 298)">
+    <text x="0" y="0" text-anchor="end"
+          font-family="ui-monospace, 'JetBrains Mono', 'Fira Code', Consolas, monospace"
+          font-size="10" font-weight="500" fill="#94A3B8" letter-spacing="0.5">$ xh verify →</text>
+  </g>
+</svg>

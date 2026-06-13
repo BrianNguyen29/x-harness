@@ -1,3 +1,10 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/banner.svg">
+  <img src="assets/banner-light.svg" alt="x-harness — completion is admitted, not claimed. A lightweight, file-first verification harness for AI-agent workflows.">
+</picture>
+
+<br/>
+
 # ⚡ x-harness
 
 > **Completion is admitted, not claimed.**
