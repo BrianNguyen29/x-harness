@@ -40,6 +40,9 @@ To use the TypeScript compatibility CLI instead:
 npm install && npm run build
 ```
 
+> [!TIP]
+> **Source-pack limitation**: a source checkout after `npm run build` can run the Node fallback (`node packages/cli/dist/index.js`). The published npm tarball is **Go-only** and excludes `dist/`. If you run `npm pack` from a source checkout without injecting release Go binaries into `packages/cli/go-binaries/`, the wrapper will report a missing Go binary and missing Node fallback. To produce a runnable tarball, use the release workflow or manually inject a Go binary named `go-binaries/x-harness-<os>-<arch>` before packing.
+
 ### 2. Run the Health Check (Doctor)
 
 Use the `doctor` command to verify that all schemas compile, YAML policies are valid, and required templates are present:
