@@ -63,6 +63,10 @@ A release candidate is a tagged pre-release that must pass the full verification
      - Adversarial benchmark report (`benchmark-report.json`).
    - Consumers can verify downloads with `sha256sum -c checksums.txt` and `cosign verify-blob`.
 
+## Local Release Notes
+
+- `release:local` runs `build`, `typecheck`, `lint`, `format:check`, and `test:release` in sequence. Do **not** run it concurrently with `parity:check-go`, `npm run build`, or other npm workspace operations that touch the same `packages/cli` build output. Concurrent runs can race on `dist/` and cause transient failures. If `release:local` fails, run it solo before investigating.
+
 ## Wrapper Default-to-Go
 
 The npm wrapper (`bin/x-harness.js`) defaults to the Go binary when a platform-matching binary is present. Node fallback is available **only** in source checkouts where `dist/index.js` exists; the published package is Go-only.

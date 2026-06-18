@@ -102,7 +102,7 @@ rules:
   - id: path-traversal
     category: path_traversal
     severity: medium
-    description: "suspicious path traversal sequences"
+    description: "suspicious path traversal sequences (adapter AGENTS.md root-link ../../AGENTS.md is waived in-code only for adapters/<name>/AGENTS.md)"
     pattern: '(?i)(\.\./){2,}|/\.\./\.\./|\.{3,}/'
     waivable: true
 

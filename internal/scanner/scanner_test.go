@@ -234,6 +234,83 @@ func TestScanAdmissionSkillPackClean(t *testing.T) {
 	}
 }
 
+func TestScanPathTraversalAgentsRootLinkExcluded(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentsFile := filepath.Join(tmpDir, "adapters", "fake", "AGENTS.md")
+	if err := os.MkdirAll(filepath.Dir(agentsFile), 0755); err != nil {
+		t.Fatalf("failed to create adapter dir: %v", err)
+	}
+	content := "See the root agent contract at `../../AGENTS.md`.\n"
+	if err := os.WriteFile(agentsFile, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+
+	rules := DefaultRules()
+	result, err := Scan(rules, []string{agentsFile})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, f := range result.Findings {
+		if f.RuleID == "path-traversal" {
+			t.Fatalf("expected path-traversal finding to be excluded for adapter AGENTS.md root link, got: %+v", f)
+		}
+	}
+}
+
+func TestScanPathTraversalAgentsRootLinkDetectedOutsideAdapter(t *testing.T) {
+	tmpDir := t.TempDir()
+	file := filepath.Join(tmpDir, "notes.md")
+	content := "See the root agent contract at `../../AGENTS.md`.\n"
+	if err := os.WriteFile(file, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+
+	rules := DefaultRules()
+	result, err := Scan(rules, []string{file})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	found := false
+	for _, f := range result.Findings {
+		if f.RuleID == "path-traversal" {
+			found = true
+			if f.Severity != "medium" {
+				t.Fatalf("expected medium severity, got %s", f.Severity)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected path-traversal finding for ../../AGENTS.md outside adapters/")
+	}
+}
+
+func TestScanPathTraversalGenericStillDetected(t *testing.T) {
+	tmpDir := t.TempDir()
+	file := filepath.Join(tmpDir, "risky.md")
+	content := "cd ../../etc/passwd\n"
+	if err := os.WriteFile(file, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+
+	rules := DefaultRules()
+	result, err := Scan(rules, []string{file})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	found := false
+	for _, f := range result.Findings {
+		if f.RuleID == "path-traversal" {
+			found = true
+			if f.Severity != "medium" {
+				t.Fatalf("expected medium severity, got %s", f.Severity)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected path-traversal finding for generic ../../ sequence")
+	}
+}
+
 func TestScanBinarySkipped(t *testing.T) {
 	tmpDir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(tmpDir, "image.png"), []byte("PNG\nrandom\n"), 0644); err != nil {

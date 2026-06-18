@@ -295,6 +295,13 @@ func scanFile(rules []Rule, path string) (*fileScanResult, error) {
 				if excluded {
 					continue
 				}
+				// Narrow adapter root-link waiver: only skip path-traversal for
+				// ../../AGENTS.md inside an adapters/<name>/AGENTS.md file.
+				if rule.ID == "path-traversal" && strings.Contains(line, "../../AGENTS.md") {
+					if filepath.Base(path) == "AGENTS.md" && strings.Contains(filepath.ToSlash(filepath.Dir(path)), "/adapters/") {
+						continue
+					}
+				}
 				snippet := strings.TrimSpace(line)
 				if len(snippet) > 120 {
 					snippet = snippet[:120] + "..."
