@@ -132,9 +132,9 @@ func RunCommand(opts CommandRunOptions, outDir, outPath string) (*CommandRunResu
 	go func() { stdoutCh <- drainWithCap(stdoutReader, maxCapture) }()
 	go func() { stderrCh <- drainWithCap(stderrReader, maxCapture) }()
 
-	waitErr := cmd.Wait()
 	stdoutDrain := <-stdoutCh
 	stderrDrain := <-stderrCh
+	waitErr := cmd.Wait()
 	if stdoutDrain.err != nil {
 		return nil, fmt.Errorf("cannot read stdout: %w", stdoutDrain.err)
 	}

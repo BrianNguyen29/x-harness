@@ -489,6 +489,12 @@ func checkScannerHighSeverity(root string) Check {
 		case string(scanner.SeverityHigh):
 			highFindings = append(highFindings, f)
 		case string(scanner.SeverityMedium):
+			// Waive known legitimate adapter AGENTS.md root-contract links
+			if f.RuleID == "path-traversal" && strings.Contains(f.Snippet, "../../AGENTS.md") {
+				if dir := filepath.ToSlash(filepath.Dir(f.File)); strings.Contains(dir, "/adapters/") && filepath.Base(f.File) == "AGENTS.md" {
+					continue
+				}
+			}
 			mediumFindings = append(mediumFindings, f)
 		}
 	}

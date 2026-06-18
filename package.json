@@ -20,6 +20,7 @@
     "dev": "npm -w packages/cli run dev",
     "test": "npm -w packages/cli run test",
     "test:fast": "npm -w packages/cli run test:fast",
+    "test:dot": "npm -w packages/cli run test:dot",
     "test:smoke": "npm -w packages/cli run test:smoke",
     "test:integration": "npm -w packages/cli run test:integration",
     "test:release": "npm -w packages/cli run test:release",
