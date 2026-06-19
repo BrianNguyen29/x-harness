@@ -57,7 +57,7 @@ Before publish, the release workflow runs the following primary gates through th
 - Cross-platform smoke tests (`linux/amd64`, `darwin/amd64`, `windows/amd64`)
 - Linux arm64 smoke test (`linux/arm64`)
 - Attach release artifacts to the GitHub Release only after smoke jobs pass (tagged releases)
-- Publish to npm with provenance only after smoke jobs pass (tagged releases; requires `NPM_TOKEN`)
+- Publish to npm with provenance only after smoke jobs pass. Stable release tags require `NPM_TOKEN`; RC tags attach signed GitHub Release artifacts and skip npm publish when `NPM_TOKEN` is not configured.
 
 The adversarial benchmark is a hard release gate: `false_accept_count` and `adversarial_false_accept_count` must both remain `0`. Adversarial cases also exercise governance-enforced verification for protected-path approval spoofing.
 
@@ -95,7 +95,7 @@ Tagged releases publish with npm provenance:
 npm publish .x-harness/release/x-harness-<version>.tgz --provenance --access public --tag next
 ```
 
-The publish job uses GitHub OIDC (`id-token: write`) and `actions/setup-node` with the npm registry. The build/release job uses OIDC for cosign signing but does not publish. If npm trusted publishing is configured, prefer it over long-lived publish tokens. If a token is still required, it must be scoped to package publish and stored as `NPM_TOKEN`.
+The publish job uses GitHub OIDC (`id-token: write`) and `actions/setup-node` with the npm registry. The build/release job uses OIDC for cosign signing but does not publish. If npm trusted publishing is configured, prefer it over long-lived publish tokens. If a token is still required, it must be scoped to package publish and stored as `NPM_TOKEN`. Stable tags fail closed when `NPM_TOKEN` is missing; RC tags still publish signed GitHub Release artifacts and intentionally skip npm publish without the token.
 
 ## SBOM
 
