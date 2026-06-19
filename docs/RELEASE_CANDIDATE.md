@@ -62,7 +62,7 @@ A release candidate is a tagged pre-release that must pass the full verification
      - npm tarball (`x-harness-*.tgz`) and npm pack manifest (`npm-pack.json`).
      - Adversarial benchmark report (`benchmark-report.json`).
    - Consumers can verify downloads with `sha256sum -c checksums.txt` and `cosign verify-blob --bundle`.
-   - RC tags may skip npm publish when `NPM_TOKEN` is not configured; stable tags must fail closed without npm publish credentials.
+   - RC tags skip npm publish and retain signed GitHub Release artifacts; stable tags must fail closed without npm publish credentials.
 
 ## Local Release Notes
 

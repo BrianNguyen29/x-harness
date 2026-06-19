@@ -385,14 +385,14 @@ jobs:
           echo "NPM_TOKEN is required for stable release tags." >&2
           exit 1
       - name: Publish to npm with provenance
-        if: ${{ env.NODE_AUTH_TOKEN != '' }}
+        if: ${{ env.NODE_AUTH_TOKEN != '' && !contains(github.ref_name, '-') }}
         shell: bash
         run: |
           set -euo pipefail
           TARBALL="$(find "$PWD/.x-harness/release" -maxdepth 1 -name 'x-harness-*.tgz' -print -quit)"
           test -n "$TARBALL"
           npm publish "$TARBALL" --provenance --access public --tag next
-      - name: Skip npm publish for RC without token
-        if: ${{ env.NODE_AUTH_TOKEN == '' && contains(github.ref_name, '-') }}
+      - name: Skip npm publish for RC tags
+        if: ${{ contains(github.ref_name, '-') }}
         shell: bash
-        run: echo "NPM_TOKEN is not configured; RC artifacts were attached to the GitHub Release without npm publish."
+        run: echo "RC artifacts were attached to the GitHub Release; npm publish is reserved for stable tags."
