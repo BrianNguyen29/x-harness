@@ -1,0 +1,102 @@
+schema_version: "1"
+task_id: TASK-CI-GOVERNED-DEEP-001
+tier: standard
+owner: ci
+accountable: maintainer
+context_acknowledged: true
+context_alignment:
+  stale_ground_checked: true
+  product_contract_refs:
+    - examples/ci/governed-deep-verify/README.md
+  architecture_refs: []
+  decision_refs:
+    - examples/ci/governed-deep-verify/README.md
+  test_matrix_refs: []
+  unresolved_context_questions: []
+  context_evidence: []
+intent_ref: examples/ci/governed-deep-verify/README.md
+intake:
+  classification: normal
+  mapped_tier: standard
+  rationale: CI representative fixture covers governed-deep verification with full evidence provenance.
+  signals:
+    - routine_implementation
+  negative_signals_considered:
+    - ci
+    - release
+  auto_escalated: false
+state:
+  read_set:
+  - examples/ci/governed-deep-verify/completion-card.yaml
+  - examples/ci/governed-deep-verify/README.md
+  write_set:
+    - examples/ci/governed-deep-verify/completion-card.yaml
+approval_receipt:
+  decision: approved
+  approver: ci
+  classified_commands:
+    - command: ./x-harness verify --card examples/ci/governed-deep-verify/completion-card.yaml --profile governed-deep --json
+      risk: high
+  aggregate_risk: high
+done_checklist:
+  source_of_truth_read: true
+  scope_explained: true
+  read_write_sets_declared: true
+  evidence_attached: true
+  coverage_gap_declared: true
+  risk_and_rollback_declared: true
+  prediction_declared: true
+prediction:
+  claim: Governed-deep verify accepts a representative standard completion card with full evidence provenance and diff-check awareness.
+  expected_effect: verify --profile governed-deep exits 0 and reports mutation guard passed.
+  measurable_signal: ./x-harness verify --card examples/ci/governed-deep-verify/completion-card.yaml --profile governed-deep --json
+  falsification_method: Run governed-deep verify in CI; missing evidence hashes, strict provenance fields, or diff mismatch fail the command.
+  horizon: same_verify
+  confidence: high
+evidence:
+  files_changed:
+    - examples/ci/governed-deep-verify/completion-card.yaml
+  command_evidence:
+    - command: ./x-harness verify --card examples/ci/governed-deep-verify/completion-card.yaml --profile governed-deep --json
+      exit_code: 0
+      runner: github-actions-node-22
+      started_at: "2026-06-19T00:00:00.000Z"
+      ended_at: "2026-06-19T00:00:05.000Z"
+      stdout_hash: "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  verification_artifacts:
+    - kind: custom
+      command: ./x-harness verify --card examples/ci/governed-deep-verify/completion-card.yaml --profile governed-deep --json
+      status: passed
+      exit_code: 0
+      runner: github-actions-node-22
+      started_at: "2026-06-19T00:00:00.000Z"
+      ended_at: "2026-06-19T00:00:05.000Z"
+      stdout_hash: "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      verifies:
+        - governed-deep verifier accepts the representative card
+      does_not_verify:
+        - downstream repository integration
+      confidence: high
+  untested_regions:
+    - downstream repository integration
+claim:
+  fix_status: fixed
+  summary: CI governed-deep fixture is valid and representative.
+  evidence:
+    - description: Governed-deep verify command exits successfully for this card.
+      command: ./x-harness verify --card examples/ci/governed-deep-verify/completion-card.yaml --profile governed-deep --json
+verification:
+  status: passed
+  checks:
+    - name: schema-valid
+      result: passed
+    - name: strict-verify
+      result: passed
+admission:
+  outcome: success
+acceptance_status: accepted
+handoff:
+  next_action: none
+  owner: ci
+governance:
+  approval_status: approved

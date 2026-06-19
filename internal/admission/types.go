@@ -8,6 +8,13 @@ type FailureTaxonomy struct {
 	NextAction     string `json:"next_action"`
 }
 
+type AdmissionOptions struct {
+	Strict              bool
+	ContextFloor        bool
+	RequireDeepApproval bool
+	RequireEvidenceHash bool
+}
+
 // Result is the output of the admission decision engine.
 type Result struct {
 	Outcome           string           `json:"outcome"`

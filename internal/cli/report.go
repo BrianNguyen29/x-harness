@@ -218,7 +218,7 @@ func handleReport(args []string, stdout io.Writer, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "warning: could not compute policy hash for %s: %v\n", policyPath, err)
 	}
 
-	admResult := admission.Run(doc, false, false)
+	admResult := admission.Run(doc, admission.AdmissionOptions{})
 	verifyRuntimeMs := int(time.Since(startTime).Milliseconds())
 
 	metrics := computeMetrics(doc, inputCardHash, policyHash, verifyRuntimeMs)

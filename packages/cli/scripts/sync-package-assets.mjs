@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -7,6 +7,7 @@ const packageRoot = resolve(scriptDir, "..");
 const repoRoot = resolve(packageRoot, "..", "..");
 
 const requiredFiles = [
+  "AGENTS.md",
   "X_HARNESS.md",
   "README.md",
   "README.vi.md",
@@ -16,6 +17,8 @@ const requiredFiles = [
   "CONTRIBUTING.md",
   "SECURITY.md",
   "SUPPORT.md",
+  ".github/workflows/x-harness-verify.yml",
+  ".x-harness/managed-blocks.yaml",
 ];
 
 const requiredDirs = [
@@ -52,21 +55,14 @@ function copyDir(relativePath) {
   cpSync(source, target, { recursive: true });
 }
 
-function writeAgentsStub() {
-  const stub = `# x-harness Agent Contract\n\nSee the root agent contract at \`../../AGENTS.md\`.\n`;
-  writeFileSync(join(packageRoot, "AGENTS.md"), stub, "utf-8");
-}
-
 for (const file of requiredFiles) {
   copyFile(file);
 }
-
-writeAgentsStub();
 
 for (const dir of requiredDirs) {
   copyDir(dir);
 }
 
 console.error(
-  `synced ${requiredFiles.length + requiredDirs.length + 1} package asset group(s)`
+  `synced ${requiredFiles.length + requiredDirs.length} package asset group(s)`
 );

@@ -67,7 +67,7 @@ func TestPredictionMissingFields(t *testing.T) {
 				"acceptance_status": "accepted",
 				"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 			}
-			result := Run(doc, false, false)
+			result := Run(doc, AdmissionOptions{})
 			if result.Outcome != "failed" {
 				t.Fatalf("expected failed, got %s", result.Outcome)
 			}
@@ -112,7 +112,7 @@ func TestDoneChecklistEvidenceAttachedTrueNoEvidence(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -178,7 +178,7 @@ func TestDoneChecklistReadWriteSetsDeclaredTrueMissingSets(t *testing.T) {
 			if tt.state != nil {
 				doc["state"] = tt.state
 			}
-			result := Run(doc, false, false)
+			result := Run(doc, AdmissionOptions{})
 			if result.Outcome != "failed" {
 				t.Fatalf("expected failed, got %s", result.Outcome)
 			}
@@ -223,7 +223,7 @@ func TestDoneChecklistPredictionDeclaredMismatch(t *testing.T) {
 			"acceptance_status": "accepted",
 			"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 		}
-		result := Run(doc, false, false)
+		result := Run(doc, AdmissionOptions{})
 		if result.Outcome != "failed" {
 			t.Fatalf("expected failed, got %s", result.Outcome)
 		}
@@ -271,7 +271,7 @@ func TestDoneChecklistEvidenceAttachedFalseButPresent(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -342,7 +342,7 @@ func TestDoneChecklistReadWriteSetsDeclaredFalseButPresent(t *testing.T) {
 			if tt.state != nil {
 				doc["state"] = tt.state
 			}
-			result := Run(doc, false, false)
+			result := Run(doc, AdmissionOptions{})
 			if result.Outcome != "failed" {
 				t.Fatalf("expected failed, got %s", result.Outcome)
 			}

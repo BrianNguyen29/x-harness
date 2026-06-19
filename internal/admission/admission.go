@@ -8,7 +8,7 @@ import (
 // Run evaluates a parsed completion card and returns an admission result.
 // When contextFloor is true, additional context alignment checks are enforced
 // for standard and deep tier cards.
-func Run(doc map[string]any, strict bool, contextFloor bool) Result {
+func Run(doc map[string]any, opts AdmissionOptions) Result {
 	errors := make([]string, 0)
 	notes := make([]string, 0)
 	blockingPredicate := ""
@@ -131,7 +131,7 @@ func Run(doc map[string]any, strict bool, contextFloor bool) Result {
 	}
 
 	// Context floor (opt-in via --context-floor flag)
-	if contextFloor {
+	if opts.ContextFloor {
 		cfResult := evaluateContextFloor(doc, tier)
 		notes = append(notes, cfResult.notes...)
 		for _, errMsg := range cfResult.errors {
@@ -200,13 +200,21 @@ func Run(doc map[string]any, strict bool, contextFloor bool) Result {
 	}
 
 	// Strict provenance
-	provResult := evaluateStrictProvenance(doc, tier, strict)
+	provResult := evaluateStrictProvenance(doc, tier, opts.Strict)
 	for _, e := range provResult.errors {
 		applyFinding(e.message, e.predicate, false)
 	}
 
+	// Evidence hash requirement (opt-in via --require-evidence-hash or governed-deep profile)
+	if opts.RequireEvidenceHash {
+		hashResult := evaluateEvidenceHash(doc, tier)
+		for _, e := range hashResult.errors {
+			applyFinding(e.message, e.predicate, false)
+		}
+	}
+
 	// Done checklist + prediction for standard/deep
-	cpResult := evaluateDoneChecklistAndPrediction(doc, strict, tier)
+	cpResult := evaluateDoneChecklistAndPrediction(doc, opts.Strict, tier)
 	for _, e := range cpResult.errors {
 		if e.predicate == "done_checklist_prediction_mismatch" {
 			applyFinding(e.message, e.predicate, true)
@@ -216,12 +224,21 @@ func Run(doc map[string]any, strict bool, contextFloor bool) Result {
 	}
 
 	// Deep approval check
-	if tier == "deep" && governance != nil {
-		if boolInMap(governance, "requires_human_approval") {
-			approvalStatus := stringInMap(governance, "approval_status")
-			if approvalStatus != "approved" {
-				applyFinding("deep task requires human approval before admission", "approval_missing", false)
-			}
+	requiresApproval := false
+	if tier == "deep" {
+		if opts.RequireDeepApproval {
+			requiresApproval = true
+		} else if governance != nil && boolInMap(governance, "requires_human_approval") {
+			requiresApproval = true
+		}
+	}
+	if requiresApproval {
+		approvalStatus := ""
+		if governance != nil {
+			approvalStatus = stringInMap(governance, "approval_status")
+		}
+		if approvalStatus != "approved" {
+			applyFinding("deep task requires human approval before admission", "approval_missing", false)
 		}
 	}
 

@@ -13,8 +13,17 @@ const strictFixturePath = path.join(
   "strict-verify",
   "completion-card.yaml"
 );
+const governedDeepFixturePath = path.join(
+  repoRoot,
+  "examples",
+  "ci",
+  "governed-deep-verify",
+  "completion-card.yaml"
+);
 const strictVerifyCommand =
   "node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json";
+const governedDeepVerifyCommand =
+  "node packages/cli/dist/index.js verify --card examples/ci/governed-deep-verify/completion-card.yaml --profile governed-deep --json";
 const adversarialBenchmarkCommand =
   "node packages/cli/dist/index.js benchmark --filter adversarial --gate --json";
 
@@ -44,7 +53,9 @@ describe("CI workflow", () => {
     );
     const workflow = fs.readFileSync(workflowPath, "utf-8");
     expect(fs.existsSync(strictFixturePath)).toBe(true);
+    expect(fs.existsSync(governedDeepFixturePath)).toBe(true);
     expect(workflow).toContain(strictVerifyCommand);
+    expect(workflow).toContain(governedDeepVerifyCommand);
     expect(workflow).toContain("npm run build && npm run test");
     expect(workflow).not.toContain("npm run test:smoke");
     expect(workflow).not.toContain("npm run test:integration");
@@ -121,6 +132,78 @@ describe("CI workflow", () => {
           check.note?.includes("context_acknowledged")
         )
       ).toBe(false);
+    } finally {
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("governed-deep verify fixture passes with mutation guard enabled", async () => {
+    const tmpRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), "xh-ci-governed-deep-")
+    );
+    try {
+      fs.mkdirSync(
+        path.join(tmpRoot, "examples", "ci", "governed-deep-verify"),
+        {
+          recursive: true,
+        }
+      );
+      fs.mkdirSync(path.join(tmpRoot, "policies"), { recursive: true });
+      fs.copyFileSync(
+        governedDeepFixturePath,
+        path.join(
+          tmpRoot,
+          "examples",
+          "ci",
+          "governed-deep-verify",
+          "completion-card.yaml"
+        )
+      );
+      fs.copyFileSync(
+        path.join(
+          repoRoot,
+          "examples",
+          "ci",
+          "governed-deep-verify",
+          "README.md"
+        ),
+        path.join(
+          tmpRoot,
+          "examples",
+          "ci",
+          "governed-deep-verify",
+          "README.md"
+        )
+      );
+      fs.copyFileSync(
+        path.join(repoRoot, "policies", "admission.yaml"),
+        path.join(tmpRoot, "policies", "admission.yaml")
+      );
+      const gitInit = await execFileAsync("git", ["init"], tmpRoot);
+      expect(gitInit.exitCode).toBe(0);
+
+      const { stdout, exitCode } = await execFileAsync(
+        process.execPath,
+        [
+          path.join(packageRoot, "dist", "index.js"),
+          "verify",
+          "--card",
+          "examples/ci/governed-deep-verify/completion-card.yaml",
+          "--profile",
+          "governed-deep",
+          "--json",
+        ],
+        tmpRoot
+      );
+      expect(exitCode).toBe(0);
+      const output = JSON.parse(stdout);
+      expect(output.ok).toBe(true);
+      expect(output.acceptance_status).toBe("accepted");
+      expect(
+        output.checks.some((check: { note?: string }) =>
+          check.note?.includes("mutation guard passed")
+        )
+      ).toBe(true);
     } finally {
       fs.rmSync(tmpRoot, { recursive: true, force: true });
     }

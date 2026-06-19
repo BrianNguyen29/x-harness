@@ -59,6 +59,9 @@ jobs:
       - name: Go-native strict verify gate
         run: ./x-harness verify --card examples/ci/strict-verify/completion-card.yaml --strict --json
 
+      - name: Go-native governed-deep verify gate
+        run: ./x-harness verify --profile governed-deep --card examples/ci/governed-deep-verify/completion-card.yaml --json
+
       - name: Go-native workspace doctor
         run: ./x-harness doctor --root . --json
 

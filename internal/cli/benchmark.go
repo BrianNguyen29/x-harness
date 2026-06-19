@@ -706,7 +706,7 @@ func runAdversarialCase(root, cardPath, name string) adversarialCaseResult {
 		schemaErr = validator.Validate(doc)
 	}
 
-	admResult := admission.Run(doc, false, false)
+	admResult := admission.Run(doc, admission.AdmissionOptions{})
 
 	mutationGuardExpected := name == "verifier-mutates-source"
 	tier := stringValue(doc, "tier")

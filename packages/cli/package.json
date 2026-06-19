@@ -45,6 +45,8 @@
     "CONTRIBUTING.md",
     "SECURITY.md",
     "SUPPORT.md",
+    ".github/workflows/x-harness-verify.yml",
+    ".x-harness/managed-blocks.yaml",
     "packaging"
   ],
   "bin": {

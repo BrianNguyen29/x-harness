@@ -106,6 +106,67 @@ func TestCollectInfoDirtyRepo(t *testing.T) {
 	}
 }
 
+func TestChangedFiles(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+
+	tmpDir := t.TempDir()
+	if err := exec.Command("git", "-C", tmpDir, "init").Run(); err != nil {
+		t.Fatalf("git init failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "config", "user.email", "test@test.com").Run(); err != nil {
+		t.Fatalf("git config failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "config", "user.name", "Test").Run(); err != nil {
+		t.Fatalf("git config failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "a.txt"), []byte("a\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "add", "a.txt").Run(); err != nil {
+		t.Fatalf("git add failed: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmpDir, "commit", "-m", "init").Run(); err != nil {
+		t.Fatalf("git commit failed: %v", err)
+	}
+
+	files, err := ChangedFiles(tmpDir, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(files) != 0 {
+		t.Fatalf("expected no changed files for clean repo, got %v", files)
+	}
+
+	// Modify tracked file
+	if err := os.WriteFile(filepath.Join(tmpDir, "a.txt"), []byte("modified\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// Add untracked file
+	if err := os.WriteFile(filepath.Join(tmpDir, "b.txt"), []byte("b\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	files, err = ChangedFiles(tmpDir, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(files) != 2 {
+		t.Fatalf("expected 2 changed files, got %v", files)
+	}
+	set := make(map[string]bool)
+	for _, f := range files {
+		set[f] = true
+	}
+	if !set["a.txt"] {
+		t.Fatal("expected a.txt in changed files")
+	}
+	if !set["b.txt"] {
+		t.Fatal("expected b.txt in changed files")
+	}
+}
+
 func TestCollectInfoBranch(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not available")

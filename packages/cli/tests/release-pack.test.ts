@@ -11,13 +11,14 @@ const repoRoot = path.resolve(path.join(packageRoot, "..", ".."));
 function execFileAsync(
   file: string,
   args: string[],
-  cwd: string
+  cwd: string,
+  env?: NodeJS.ProcessEnv
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise((resolve) => {
     execFile(
       file,
       args,
-      { cwd, maxBuffer: 20 * 1024 * 1024 },
+      { cwd, maxBuffer: 20 * 1024 * 1024, env },
       (error, stdout, stderr) => {
         resolve({
           stdout,
@@ -552,6 +553,8 @@ describe("release packaging", () => {
       "CONTRIBUTING.md",
       "SECURITY.md",
       "SUPPORT.md",
+      ".github/workflows/x-harness-verify.yml",
+      ".x-harness/managed-blocks.yaml",
     ]) {
       expect(files.has(required), `packed file missing: ${required}`).toBe(
         true
@@ -644,6 +647,9 @@ describe("release packaging", () => {
     expect(releaseWorkflow).toContain("Frozen transfer compatibility");
     expect(releaseWorkflow).toContain("frozen verify");
     expect(releaseWorkflow).toContain("--frozen --target");
+    expect(releaseWorkflow).toContain(
+      "./x-harness verify --profile governed-deep --card examples/ci/governed-deep-verify/completion-card.yaml --json"
+    );
     expectWorkflowStepOrder(
       releaseWorkflow,
       BUILD_GO_BINARIES_STEP,
@@ -755,6 +761,8 @@ describe("release packaging", () => {
       "SECURITY.md",
       "SUPPORT.md",
       "X_HARNESS.md",
+      ".github/workflows/x-harness-verify.yml",
+      ".x-harness/managed-blocks.yaml",
       "adapters",
       "bin",
       "components",
@@ -1217,6 +1225,66 @@ describe("release packaging", () => {
         tmpDir
       );
       expect(result.stdout).toContain("GO_PRIMARY_WRAPPER_OK");
+      expect(result.exitCode).toBe(0);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("sets X_HARNESS_ASSET_ROOT when not already defined", async () => {
+    const tmpDir = fs.mkdtempSync(
+      path.join(tmpdir(), "x-harness-wrapper-env-")
+    );
+    try {
+      const fakePackageRoot = tmpDir;
+      const fakeBinDir = path.join(fakePackageRoot, "bin");
+      const fakeGoBinariesDir = path.join(fakePackageRoot, "go-binaries");
+      fs.mkdirSync(fakeBinDir, { recursive: true });
+      fs.mkdirSync(fakeGoBinariesDir, { recursive: true });
+
+      const wrapperSrc = path.join(packageRoot, "bin", "x-harness.js");
+      const wrapperDest = path.join(fakeBinDir, "x-harness.js");
+      fs.copyFileSync(wrapperSrc, wrapperDest);
+
+      const version = "0.0.0-test";
+      fs.writeFileSync(
+        path.join(fakePackageRoot, "package.json"),
+        JSON.stringify({ name: "x-harness-test", version })
+      );
+
+      const platformMap: Record<string, string> = {
+        linux: "linux",
+        darwin: "darwin",
+        win32: "windows",
+      };
+      const archMap: Record<string, string> = {
+        x64: "amd64",
+        arm64: "arm64",
+      };
+      const goos = platformMap[process.platform] ?? process.platform;
+      const goarch = archMap[process.arch] ?? process.arch;
+      const ext = goos === "windows" ? ".exe" : "";
+      const binaryName = `x-harness-v${version}-${goos}-${goarch}${ext}`;
+      const binaryPath = path.join(fakeGoBinariesDir, binaryName);
+
+      // Create a fake executable that prints the value of X_HARNESS_ASSET_ROOT.
+      fs.writeFileSync(
+        binaryPath,
+        '#!/bin/sh\necho "ASSET_ROOT=$X_HARNESS_ASSET_ROOT"\n'
+      );
+      fs.chmodSync(binaryPath, 0o755);
+
+      // Run without X_HARNESS_ASSET_ROOT in the child environment.
+      const childEnv = { ...process.env };
+      delete childEnv.X_HARNESS_ASSET_ROOT;
+
+      const result = await execFileAsync(
+        process.execPath,
+        [wrapperDest, "--version"],
+        tmpDir,
+        childEnv
+      );
+      expect(result.stdout).toContain(`ASSET_ROOT=${fakePackageRoot}`);
       expect(result.exitCode).toBe(0);
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });

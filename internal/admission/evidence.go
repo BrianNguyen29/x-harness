@@ -453,3 +453,53 @@ func evaluateStrictProvenance(doc map[string]any, tier string, strict bool) evid
 
 	return result
 }
+
+func evaluateEvidenceHash(doc map[string]any, tier string) evidenceResult {
+	result := evidenceResult{errors: []evidenceFinding{}, notes: []string{}}
+	if tier != "standard" && tier != "deep" {
+		return result
+	}
+
+	evidence := mapValue(doc, "evidence")
+	for i, item := range sliceInMap(evidence, "command_evidence") {
+		record, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		hasHash := false
+		for _, key := range []string{"stdout_hash", "stderr_hash", "artifact_hash"} {
+			if s := stringInMap(record, key); strings.TrimSpace(s) != "" {
+				hasHash = true
+				break
+			}
+		}
+		if !hasHash {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("evidence.command_evidence[%d] requires at least one of stdout_hash, stderr_hash, or artifact_hash", i),
+				predicate: "evidence_provenance_missing",
+			})
+		}
+	}
+
+	for i, item := range sliceInMap(evidence, "verification_artifacts") {
+		record, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		hasHash := false
+		for _, key := range []string{"stdout_hash", "stderr_hash", "artifact_hash"} {
+			if s := stringInMap(record, key); strings.TrimSpace(s) != "" {
+				hasHash = true
+				break
+			}
+		}
+		if !hasHash {
+			result.errors = append(result.errors, evidenceFinding{
+				message:   fmt.Sprintf("evidence.verification_artifacts[%d] requires at least one of stdout_hash, stderr_hash, or artifact_hash", i),
+				predicate: "evidence_provenance_missing",
+			})
+		}
+	}
+
+	return result
+}

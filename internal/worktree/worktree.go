@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
 // Info holds worktree metadata collected from git.
 type Info struct {
-	Root             string `json:"root"`
-	GitCommonDir     string `json:"git_common_dir"`
-	Branch           string `json:"branch"`
-	Commit           string `json:"commit"`
+	Root              string `json:"root"`
+	GitCommonDir      string `json:"git_common_dir"`
+	Branch            string `json:"branch"`
+	Commit            string `json:"commit"`
 	DirtyBaselineHash string `json:"dirty_baseline_hash"`
 }
 
@@ -53,6 +54,51 @@ func CollectInfo(root string) *Info {
 	info.DirtyBaselineHash = computeDirtyHash(root, info.Commit)
 
 	return info
+}
+
+// ChangedFiles returns the list of changed/staged/untracked files relative to the given base ref.
+// If base is empty, it compares against HEAD.
+func ChangedFiles(root, base string) ([]string, error) {
+	if base == "" {
+		base = "HEAD"
+	}
+	out, err := gitOutput(root, "diff", "--name-only", base)
+	if err != nil {
+		return nil, err
+	}
+	staged, err := gitOutput(root, "diff", "--cached", "--name-only")
+	if err != nil {
+		return nil, err
+	}
+	untracked, err := gitOutput(root, "ls-files", "--others", "--exclude-standard")
+	if err != nil {
+		return nil, err
+	}
+	set := make(map[string]struct{})
+	for _, line := range strings.Split(out, "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			set[line] = struct{}{}
+		}
+	}
+	for _, line := range strings.Split(staged, "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			set[line] = struct{}{}
+		}
+	}
+	for _, line := range strings.Split(untracked, "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			set[line] = struct{}{}
+		}
+	}
+	files := make([]string, 0, len(set))
+	for f := range set {
+		files = append(files, f)
+	}
+	sort.Strings(files)
+	return files, nil
 }
 
 func gitOutput(dir string, args ...string) (string, error) {

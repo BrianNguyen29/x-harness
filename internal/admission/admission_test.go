@@ -31,7 +31,7 @@ func loadGolden(t *testing.T, name string) map[string]any {
 
 func TestSuccessLight(t *testing.T) {
 	doc := loadGolden(t, "success-light")
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -53,7 +53,7 @@ func TestVerificationArtifactNonZeroExitBlocks(t *testing.T) {
 			"exit_code": 1,
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome == "success" || result.AcceptanceStatus == "accepted" {
 		t.Fatalf("expected withheld for non-zero verification artifact exit, got %+v", result)
 	}
@@ -70,7 +70,7 @@ func TestVerificationArtifactNonZeroExitBlocks(t *testing.T) {
 
 func TestWithheldPartialFix(t *testing.T) {
 	doc := loadGolden(t, "withheld-partial-fix")
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -81,7 +81,7 @@ func TestWithheldPartialFix(t *testing.T) {
 
 func TestSuccessStandardScopedEvidence(t *testing.T) {
 	doc := loadGolden(t, "success-standard-scoped-evidence")
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -95,7 +95,7 @@ func TestSuccessStandardScopedEvidence(t *testing.T) {
 
 func TestDeepApprovalRequired(t *testing.T) {
 	doc := loadGolden(t, "deep-approval-required")
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -116,7 +116,7 @@ func TestDeepApprovalRequired(t *testing.T) {
 
 func TestBlockedTierDowngrade(t *testing.T) {
 	doc := loadGolden(t, "blocked-tier-downgrade")
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -137,7 +137,7 @@ func TestBlockedTierDowngrade(t *testing.T) {
 
 func TestMultiAgentSuccess(t *testing.T) {
 	doc := loadGolden(t, "multi-agent-success")
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -151,7 +151,7 @@ func TestMultiAgentSuccess(t *testing.T) {
 
 func TestBlockedMissingEvidence(t *testing.T) {
 	doc := loadGolden(t, "blocked-missing-evidence")
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -162,7 +162,7 @@ func TestBlockedMissingEvidence(t *testing.T) {
 
 func TestBlockedMissingEvidenceScope(t *testing.T) {
 	doc := loadGolden(t, "blocked-missing-evidence-scope")
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -183,7 +183,7 @@ func TestBlockedMissingEvidenceScope(t *testing.T) {
 
 func TestFailedTypecheckRecoveryRoute(t *testing.T) {
 	doc := loadGolden(t, "failed-typecheck-recovery-route")
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -208,7 +208,7 @@ func TestHiddenDangerousCommand(t *testing.T) {
 	if err := loader.LoadDocument(path, &doc); err != nil {
 		t.Fatalf("failed to load card: %v", err)
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -233,7 +233,7 @@ func TestLyingCommandExitCode(t *testing.T) {
 	if err := loader.LoadDocument(path, &doc); err != nil {
 		t.Fatalf("failed to load card: %v", err)
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -268,7 +268,7 @@ func TestStaleGroundTaxonomy(t *testing.T) {
 		},
 		"stale_ground": true,
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.WithheldReason == nil {
 		t.Fatal("expected withheld_reason for stale_ground")
 	}
@@ -314,7 +314,7 @@ func TestMissingEvidenceTaxonomy(t *testing.T) {
 			"files_changed": []any{},
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.WithheldReason == nil {
 		t.Fatal("expected withheld_reason for missing evidence")
 	}
@@ -328,7 +328,7 @@ func TestMissingEvidenceTaxonomy(t *testing.T) {
 
 func TestDeepApprovalTaxonomy(t *testing.T) {
 	doc := loadGolden(t, "deep-approval-required")
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.WithheldReason == nil {
 		t.Fatal("expected withheld_reason for deep approval missing")
 	}
@@ -369,7 +369,7 @@ func TestStaleGroundBlocks(t *testing.T) {
 		},
 		"stale_ground": true,
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "blocked" {
 		t.Fatalf("expected blocked, got %s", result.Outcome)
 	}
@@ -423,7 +423,7 @@ func TestAcceptanceStatusMapping(t *testing.T) {
 					"owner":       "o",
 				},
 			}
-			result := Run(doc, false, false)
+			result := Run(doc, AdmissionOptions{})
 			if result.Outcome != tt.outcome {
 				t.Fatalf("expected outcome %s, got %s", tt.outcome, result.Outcome)
 			}
@@ -477,7 +477,7 @@ func TestStrictStandardMissingFieldsFails(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, true, false)
+	result := Run(doc, AdmissionOptions{Strict: true})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -558,7 +558,7 @@ func TestStrictStandardFullFieldsPasses(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, true, false)
+	result := Run(doc, AdmissionOptions{Strict: true})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -605,7 +605,7 @@ func TestStrictLightMissingFieldsExempt(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, true, false)
+	result := Run(doc, AdmissionOptions{Strict: true})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -659,7 +659,7 @@ func TestStandardHighRiskMissingReceipt(t *testing.T) {
 			"approval_status": "approved",
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -737,7 +737,7 @@ func TestStandardHighRiskWithReceipt(t *testing.T) {
 			"approval_status": "approved",
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -807,7 +807,7 @@ func TestDeepMediumRiskMissingReceipt(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -898,7 +898,7 @@ func TestDeepMediumRiskWithReceipt(t *testing.T) {
 			"approval_status": "approved",
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -947,7 +947,7 @@ func TestLightHighRiskNoReceiptAllowed(t *testing.T) {
 			"approval_status": "approved",
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s", result.Outcome)
 	}
@@ -1004,7 +1004,7 @@ func TestApprovalReceiptTaxonomy(t *testing.T) {
 			"approval_status": "approved",
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.WithheldReason == nil {
 		t.Fatal("expected withheld_reason for missing approval receipt")
 	}
@@ -1072,7 +1072,7 @@ func TestApprovalReceiptInvalidDecision(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -1157,7 +1157,7 @@ func TestApprovalReceiptInsufficientAggregateRisk(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -1226,7 +1226,7 @@ func TestApprovalReceiptMissingCommandCoverage(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -1303,7 +1303,7 @@ func TestStrictDeepMissingArtifactsProvenanceFails(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, true, false)
+	result := Run(doc, AdmissionOptions{Strict: true})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -1328,6 +1328,217 @@ func TestStrictDeepMissingArtifactsProvenanceFails(t *testing.T) {
 // TestEvidenceFloorDriftGuard compares policies/admission.yaml evidence-floor
 // declarations against the Go runtime admission behavior. It fails if either
 // side changes without a matching change on the other.
+func TestRequireDeepApprovalEnforced(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "deep",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"state": map[string]any{"read_set": []any{"r"}, "write_set": []any{"w"}},
+		"evidence": map[string]any{
+			"files_changed": []any{"f.go"},
+			"command_evidence": []any{
+				map[string]any{"command": "go test", "exit_code": 0},
+			},
+			"verification_artifacts": []any{
+				map[string]any{"kind": "k", "command": "go test", "status": "passed", "verifies": []any{"v"}},
+			},
+			"untested_regions":   []any{"u"},
+			"remaining_risks":    []any{"r"},
+			"rollback_policy":    []any{"rp"},
+			"execution_controls": []any{"ec"},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed", "summary": "s", "evidence": []any{"e"},
+		},
+		"verification":      map[string]any{"status": "passed", "checks": []any{}},
+		"admission":         map[string]any{"outcome": "success"},
+		"acceptance_status": "accepted",
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
+	}
+	result := Run(doc, AdmissionOptions{RequireDeepApproval: true})
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed when RequireDeepApproval=true and no governance, got %s", result.Outcome)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if e == "deep task requires human approval before admission" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected deep approval error, got %v", result.Errors)
+	}
+	if result.BlockingPredicate != "approval_missing" {
+		t.Fatalf("expected approval_missing predicate, got %s", result.BlockingPredicate)
+	}
+}
+
+func TestRequireDeepApprovalWithApprovedGovernance(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "deep",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"state": map[string]any{"read_set": []any{"r"}, "write_set": []any{"w"}},
+		"evidence": map[string]any{
+			"files_changed": []any{"f.go"},
+			"command_evidence": []any{
+				map[string]any{"command": "go test", "exit_code": 0},
+			},
+			"verification_artifacts": []any{
+				map[string]any{"kind": "k", "command": "go test", "status": "passed", "verifies": []any{"v"}},
+			},
+			"untested_regions":   []any{"u"},
+			"remaining_risks":    []any{"r"},
+			"rollback_policy":    []any{"rp"},
+			"execution_controls": []any{"ec"},
+		},
+		"governance": map[string]any{
+			"approval_status": "approved",
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed", "summary": "s", "evidence": []any{"e"},
+		},
+		"verification":      map[string]any{"status": "passed", "checks": []any{}},
+		"admission":         map[string]any{"outcome": "success"},
+		"acceptance_status": "accepted",
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
+	}
+	result := Run(doc, AdmissionOptions{RequireDeepApproval: true})
+	if result.Outcome != "success" {
+		t.Fatalf("expected success when RequireDeepApproval=true and governance approved, got %s errors=%v", result.Outcome, result.Errors)
+	}
+}
+
+func TestRequireEvidenceHashBlocksMissingHash(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"evidence": map[string]any{
+			"files_changed": []any{"f.go"},
+			"command_evidence": []any{
+				map[string]any{"command": "go test", "exit_code": 0},
+			},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed", "summary": "s", "evidence": []any{"e"},
+		},
+		"verification":      map[string]any{"status": "passed", "checks": []any{}},
+		"admission":         map[string]any{"outcome": "success"},
+		"acceptance_status": "accepted",
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
+	}
+	result := Run(doc, AdmissionOptions{RequireEvidenceHash: true})
+	if result.Outcome != "failed" {
+		t.Fatalf("expected failed when RequireEvidenceHash=true and no hash, got %s", result.Outcome)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if strings.Contains(e, "stdout_hash") || strings.Contains(e, "stderr_hash") || strings.Contains(e, "artifact_hash") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected evidence hash error, got %v", result.Errors)
+	}
+	if result.BlockingPredicate != "evidence_provenance_missing" {
+		t.Fatalf("expected evidence_provenance_missing predicate, got %s", result.BlockingPredicate)
+	}
+}
+
+func TestRequireEvidenceHashPassesWithHash(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "standard",
+		"owner":          "a",
+		"accountable":    "b",
+		"done_checklist": map[string]any{"source_of_truth_read": true, "prediction_declared": true},
+		"prediction": map[string]any{
+			"claim": "p", "expected_effect": "e", "falsification_method": "f", "measurable_signal": "m", "horizon": "same_verify",
+		},
+		"evidence": map[string]any{
+			"files_changed": []any{"f.go"},
+			"command_evidence": []any{
+				map[string]any{"command": "go test", "exit_code": 0, "stdout_hash": "abc123"},
+			},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed", "summary": "s", "evidence": []any{"e"},
+		},
+		"verification":      map[string]any{"status": "passed", "checks": []any{}},
+		"admission":         map[string]any{"outcome": "success"},
+		"acceptance_status": "accepted",
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
+	}
+	result := Run(doc, AdmissionOptions{RequireEvidenceHash: true})
+	if result.Outcome != "success" {
+		t.Fatalf("expected success when hash present, got %s errors=%v", result.Outcome, result.Errors)
+	}
+}
+
+func TestRequireEvidenceHashLightExempt(t *testing.T) {
+	doc := map[string]any{
+		"schema_version": "1",
+		"task_id":        "T",
+		"tier":           "light",
+		"owner":          "a",
+		"accountable":    "b",
+		"evidence": map[string]any{
+			"files_changed": []any{"f.go"},
+			"command_evidence": []any{
+				map[string]any{"command": "go test", "exit_code": 0},
+			},
+		},
+		"claim": map[string]any{
+			"fix_status": "fixed", "summary": "s", "evidence": []any{"e"},
+		},
+		"verification":      map[string]any{"status": "passed", "checks": []any{}},
+		"admission":         map[string]any{"outcome": "success"},
+		"acceptance_status": "accepted",
+		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
+	}
+	result := Run(doc, AdmissionOptions{RequireEvidenceHash: true})
+	if result.Outcome != "success" {
+		t.Fatalf("expected light tier exempt from evidence hash, got %s errors=%v", result.Outcome, result.Errors)
+	}
+}
+
+func TestPolicyDriftGuardDeepApproval(t *testing.T) {
+	var policyDoc map[string]any
+	if err := loader.LoadDocument("../../policies/admission.yaml", &policyDoc); err != nil {
+		t.Fatalf("failed to load policies/admission.yaml: %v", err)
+	}
+
+	rejectSuccessIf := mapValue(policyDoc, "reject_success_if")
+	if rejectSuccessIf == nil {
+		t.Fatal("policies/admission.yaml missing reject_success_if")
+	}
+	if !boolInMap(rejectSuccessIf, "approval_required_but_missing") {
+		t.Fatal("policies/admission.yaml reject_success_if.approval_required_but_missing must be true (drift from Go deep approval enforcement)")
+	}
+}
+
 func TestEvidenceFloorDriftGuard(t *testing.T) {
 	var policyDoc map[string]any
 	if err := loader.LoadDocument("../../policies/admission.yaml", &policyDoc); err != nil {
@@ -1551,7 +1762,7 @@ func TestEvidenceFloorDriftGuard(t *testing.T) {
 			}
 
 			card := minimalCard(tc.name)
-			result := Run(card, false, false)
+			result := Run(card, AdmissionOptions{})
 			if result.Outcome != "success" {
 				t.Fatalf("minimal %s card should pass; got outcome=%s errors=%v", tc.name, result.Outcome, result.Errors)
 			}
@@ -1566,7 +1777,7 @@ func TestEvidenceFloorDriftGuard(t *testing.T) {
 				t.Run("missing_"+field, func(t *testing.T) {
 					c := minimalCard(tc.name)
 					check.remove(c)
-					r := Run(c, false, false)
+					r := Run(c, AdmissionOptions{})
 					if r.Outcome != "failed" && r.Outcome != "blocked" {
 						t.Fatalf("expected failed/blocked when %s missing, got %s", field, r.Outcome)
 					}
@@ -1589,7 +1800,7 @@ func TestEvidenceFloorDriftGuard(t *testing.T) {
 					ev := c["evidence"].(map[string]any)
 					delete(ev, "command_evidence")
 					ev["manual_rationale"] = "rationale text"
-					r := Run(c, false, false)
+					r := Run(c, AdmissionOptions{})
 					if r.Outcome != "success" {
 						t.Fatalf("light should pass with manual_rationale only; got outcome=%s errors=%v", r.Outcome, r.Errors)
 					}
@@ -1599,7 +1810,7 @@ func TestEvidenceFloorDriftGuard(t *testing.T) {
 					ev := c["evidence"].(map[string]any)
 					delete(ev, "command_evidence")
 					delete(ev, "manual_rationale")
-					r := Run(c, false, false)
+					r := Run(c, AdmissionOptions{})
 					if r.Outcome != "failed" && r.Outcome != "blocked" {
 						t.Fatalf("light should fail without command_evidence or manual_rationale, got %s", r.Outcome)
 					}
@@ -1650,7 +1861,7 @@ func TestTierGuardBlocksLightWithSchemaPath(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" && result.Outcome != "blocked" {
 		t.Fatalf("expected failed/blocked, got %s", result.Outcome)
 	}
@@ -1700,7 +1911,7 @@ func TestTierGuardWarnsLightWithHighRiskCommand(t *testing.T) {
 			"approval_status": "approved",
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	// Should still pass (warning as note, not error) for conservative false-positive control
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for conservative light-tier command warning, got %s errors=%v", result.Outcome, result.Errors)
@@ -1770,7 +1981,7 @@ func TestTierGuardWarnsStandardWithBoth(t *testing.T) {
 			"approval_status": "approved",
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	// Should still pass because it's only a warning for standard tier
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for standard-tier warning, got %s errors=%v", result.Outcome, result.Errors)
@@ -1820,7 +2031,7 @@ func TestEscalationBlocksLightWithPolicyPath(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -1865,7 +2076,7 @@ func TestEscalationBlocksStandardWithAuthPath(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -1911,7 +2122,7 @@ func TestEscalationAllowsDeepWithSchemaPath(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for deep + schema path, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -1944,7 +2155,7 @@ func TestEscalationAllowsSafeDocsPath(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for light + safe docs path, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -1981,7 +2192,7 @@ func TestEscalationBypassedByApprovedGovernance(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for standard + escalation files with approved governance, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -2023,7 +2234,7 @@ func TestEscalationBlocksStandardWithWorkflowPath(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -2056,7 +2267,7 @@ func TestEscalationTaxonomy(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s", result.Outcome)
 	}
@@ -2112,7 +2323,7 @@ func TestContextFloorStandardMissingContextAlignment(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, true)
+	result := Run(doc, AdmissionOptions{ContextFloor: true})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed for missing context_alignment, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -2167,7 +2378,7 @@ func TestContextFloorStandardMissingStaleGroundChecked(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, true)
+	result := Run(doc, AdmissionOptions{ContextFloor: true})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed for stale_ground_checked=false, got %s", result.Outcome)
 	}
@@ -2224,7 +2435,7 @@ func TestContextFloorStandardMissingRefs(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, true)
+	result := Run(doc, AdmissionOptions{ContextFloor: true})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed for missing refs, got %s", result.Outcome)
 	}
@@ -2290,7 +2501,7 @@ func TestContextFloorDeepMissingContextPackID(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, true)
+	result := Run(doc, AdmissionOptions{ContextFloor: true})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed for missing context_pack_id, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -2357,7 +2568,7 @@ func TestContextFloorDeepUnresolvedQuestions(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, true)
+	result := Run(doc, AdmissionOptions{ContextFloor: true})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed for unresolved questions, got %s", result.Outcome)
 	}
@@ -2403,7 +2614,7 @@ func TestContextFloorLightAdvisoryOnly(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, true)
+	result := Run(doc, AdmissionOptions{ContextFloor: true})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for light tier (advisory only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -2453,7 +2664,7 @@ func TestContextFloorNoFlagNoBlock(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success without context floor flag, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -2514,7 +2725,7 @@ func TestContextFloorManifestFreshNoAdvisory(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, true)
+	result := Run(doc, AdmissionOptions{ContextFloor: true})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -2581,7 +2792,7 @@ func TestContextFloorManifestStaleEmitsAdvisory(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, true)
+	result := Run(doc, AdmissionOptions{ContextFloor: true})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -2648,7 +2859,7 @@ func TestContextFloorManifestObjectPath(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, true)
+	result := Run(doc, AdmissionOptions{ContextFloor: true})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -2700,7 +2911,7 @@ func TestContextFloorManifestMissingNoEffect(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, true)
+	result := Run(doc, AdmissionOptions{ContextFloor: true})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -2746,7 +2957,7 @@ func TestContextFloorMissingReferencedFile(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, true)
+	result := Run(doc, AdmissionOptions{ContextFloor: true})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed for missing referenced file, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -2796,7 +3007,7 @@ func TestContextFloorTaxonomy(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, true)
+	result := Run(doc, AdmissionOptions{ContextFloor: true})
 	if result.WithheldReason == nil {
 		t.Fatal("expected withheld_reason for context floor failure")
 	}
@@ -2842,7 +3053,7 @@ func TestTierGuardBlocksLightWithAuthorityPath(t *testing.T) {
 			"owner":       "o",
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" && result.Outcome != "blocked" {
 		t.Fatalf("expected failed/blocked, got %s", result.Outcome)
 	}
@@ -2907,7 +3118,7 @@ func TestTierGuardWarnsStandardWithAuthorityPathAndHighRiskCommand(t *testing.T)
 			"approval_status": "approved",
 		},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for standard-tier warning, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3026,7 +3237,7 @@ func containsNote(notes []string, fragment string) bool {
 }
 
 func TestProductIntentStandardMissingEmitsAdvisory(t *testing.T) {
-	result := Run(standardProductIntentFixture(nil), false, false)
+	result := Run(standardProductIntentFixture(nil), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3040,7 +3251,7 @@ func TestProductIntentStandardMissingEmitsAdvisory(t *testing.T) {
 
 func TestProductIntentStandardUnknownEmitsAdvisory(t *testing.T) {
 	intent := map[string]any{"status": "unknown"}
-	result := Run(standardProductIntentFixture(intent), false, false)
+	result := Run(standardProductIntentFixture(intent), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3051,7 +3262,7 @@ func TestProductIntentStandardUnknownEmitsAdvisory(t *testing.T) {
 
 func TestProductIntentStandardAlignedNoAdvisory(t *testing.T) {
 	intent := map[string]any{"status": "aligned"}
-	result := Run(standardProductIntentFixture(intent), false, false)
+	result := Run(standardProductIntentFixture(intent), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3064,7 +3275,7 @@ func TestProductIntentStandardOtherStatusesNoAdvisory(t *testing.T) {
 	for _, status := range []string{"unreviewed", "disputed", "not_applicable"} {
 		t.Run(status, func(t *testing.T) {
 			intent := map[string]any{"status": status}
-			result := Run(standardProductIntentFixture(intent), false, false)
+			result := Run(standardProductIntentFixture(intent), AdmissionOptions{})
 			if result.Outcome != "success" {
 				t.Fatalf("expected success for status %s, got %s errors=%v", status, result.Outcome, result.Errors)
 			}
@@ -3076,7 +3287,7 @@ func TestProductIntentStandardOtherStatusesNoAdvisory(t *testing.T) {
 }
 
 func TestProductIntentDeepMissingEmitsAdvisory(t *testing.T) {
-	result := Run(deepProductIntentFixture(nil), false, false)
+	result := Run(deepProductIntentFixture(nil), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3087,7 +3298,7 @@ func TestProductIntentDeepMissingEmitsAdvisory(t *testing.T) {
 
 func TestProductIntentDeepUnknownEmitsAdvisory(t *testing.T) {
 	intent := map[string]any{"status": "unknown"}
-	result := Run(deepProductIntentFixture(intent), false, false)
+	result := Run(deepProductIntentFixture(intent), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3097,7 +3308,7 @@ func TestProductIntentDeepUnknownEmitsAdvisory(t *testing.T) {
 }
 
 func TestProductIntentLightNoAdvisory(t *testing.T) {
-	result := Run(lightProductIntentFixture(), false, false)
+	result := Run(lightProductIntentFixture(), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for light, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3108,7 +3319,7 @@ func TestProductIntentLightNoAdvisory(t *testing.T) {
 
 func TestProductIntentEmptyStatusTreatedAsMissing(t *testing.T) {
 	intent := map[string]any{"status": "   "}
-	result := Run(standardProductIntentFixture(intent), false, false)
+	result := Run(standardProductIntentFixture(intent), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3151,7 +3362,7 @@ func lightTestAdequacyFixture() map[string]any {
 }
 
 func TestTestAdequacyStandardMissingEmitsAdvisory(t *testing.T) {
-	result := Run(standardTestAdequacyFixture(nil), false, false)
+	result := Run(standardTestAdequacyFixture(nil), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3171,7 +3382,7 @@ func TestTestAdequacyStandardCompleteEmitsNoAdvisory(t *testing.T) {
 		"known_gaps":         []any{"no Safari"},
 		"notes":              "manual review",
 	}
-	result := Run(standardTestAdequacyFixture(adequacy), false, false)
+	result := Run(standardTestAdequacyFixture(adequacy), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3186,7 +3397,7 @@ func TestTestAdequacyStandardEmptyImpactedBehaviorsEmitsAdvisory(t *testing.T) {
 		"tests_selected":     []any{"X.test.ts"},
 		"why_sufficient":     "covers both behaviors",
 	}
-	result := Run(standardTestAdequacyFixture(adequacy), false, false)
+	result := Run(standardTestAdequacyFixture(adequacy), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3200,7 +3411,7 @@ func TestTestAdequacyStandardMissingTestsSelectedEmitsAdvisory(t *testing.T) {
 		"impacted_behaviors": []any{"x"},
 		"why_sufficient":     "ok",
 	}
-	result := Run(standardTestAdequacyFixture(adequacy), false, false)
+	result := Run(standardTestAdequacyFixture(adequacy), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3215,7 +3426,7 @@ func TestTestAdequacyStandardBlankWhySufficientEmitsAdvisory(t *testing.T) {
 		"tests_selected":     []any{"X.test.ts"},
 		"why_sufficient":     "   ",
 	}
-	result := Run(standardTestAdequacyFixture(adequacy), false, false)
+	result := Run(standardTestAdequacyFixture(adequacy), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3230,7 +3441,7 @@ func TestTestAdequacyDeepMissingKnownGapsEmitsAdvisory(t *testing.T) {
 		"tests_selected":     []any{"X.test.ts"},
 		"why_sufficient":     "ok",
 	}
-	result := Run(deepTestAdequacyFixture(adequacy), false, false)
+	result := Run(deepTestAdequacyFixture(adequacy), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3246,7 +3457,7 @@ func TestTestAdequacyDeepExplicitEmptyKnownGapsNoAdvisory(t *testing.T) {
 		"why_sufficient":     "ok",
 		"known_gaps":         []any{},
 	}
-	result := Run(deepTestAdequacyFixture(adequacy), false, false)
+	result := Run(deepTestAdequacyFixture(adequacy), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3256,7 +3467,7 @@ func TestTestAdequacyDeepExplicitEmptyKnownGapsNoAdvisory(t *testing.T) {
 }
 
 func TestTestAdequacyLightNoAdvisory(t *testing.T) {
-	result := Run(lightTestAdequacyFixture(), false, false)
+	result := Run(lightTestAdequacyFixture(), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for light, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3300,7 +3511,7 @@ func lightEvidenceAdequacyFixture() map[string]any {
 }
 
 func TestEvidenceAdequacyStandardMissingEmitsAdvisory(t *testing.T) {
-	result := Run(standardEvidenceAdequacyFixture(nil), false, false)
+	result := Run(standardEvidenceAdequacyFixture(nil), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3318,7 +3529,7 @@ func TestEvidenceAdequacyStandardCompleteEmitsNoAdvisory(t *testing.T) {
 		"gaps":    []any{"no Safari"},
 		"notes":   "manual review",
 	}
-	result := Run(standardEvidenceAdequacyFixture(adequacy), false, false)
+	result := Run(standardEvidenceAdequacyFixture(adequacy), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3335,7 +3546,7 @@ func TestEvidenceAdequacyStandardBlankSummaryEmitsAdvisory(t *testing.T) {
 		"summary": "   ",
 		"gaps":    []any{"no Safari"},
 	}
-	result := Run(standardEvidenceAdequacyFixture(adequacy), false, false)
+	result := Run(standardEvidenceAdequacyFixture(adequacy), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3348,7 +3559,7 @@ func TestEvidenceAdequacyStandardMissingSummaryEmitsAdvisory(t *testing.T) {
 	adequacy := map[string]any{
 		"gaps": []any{"no Safari"},
 	}
-	result := Run(standardEvidenceAdequacyFixture(adequacy), false, false)
+	result := Run(standardEvidenceAdequacyFixture(adequacy), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3358,7 +3569,7 @@ func TestEvidenceAdequacyStandardMissingSummaryEmitsAdvisory(t *testing.T) {
 }
 
 func TestEvidenceAdequacyDeepMissingEmitsAdvisory(t *testing.T) {
-	result := Run(deepEvidenceAdequacyFixture(nil), false, false)
+	result := Run(deepEvidenceAdequacyFixture(nil), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3368,7 +3579,7 @@ func TestEvidenceAdequacyDeepMissingEmitsAdvisory(t *testing.T) {
 }
 
 func TestEvidenceAdequacyLightNoAdvisory(t *testing.T) {
-	result := Run(lightEvidenceAdequacyFixture(), false, false)
+	result := Run(lightEvidenceAdequacyFixture(), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for light, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3415,7 +3626,7 @@ func lightIntentContractFixture() map[string]any {
 }
 
 func TestIntentContractStandardMissingEmitsAdvisory(t *testing.T) {
-	result := Run(standardIntentContractFixture(nil), false, false)
+	result := Run(standardIntentContractFixture(nil), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3442,7 +3653,7 @@ func TestIntentContractStandardCompleteEmitsNoAdvisory(t *testing.T) {
 		},
 		"notes": "first vertical slice",
 	}
-	result := Run(standardIntentContractFixture(contract), false, false)
+	result := Run(standardIntentContractFixture(contract), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3459,7 +3670,7 @@ func TestIntentContractStandardBlankProductGoalEmitsAdvisory(t *testing.T) {
 		"user_visible_change": true,
 		"product_goal":        "   ",
 	}
-	result := Run(standardIntentContractFixture(contract), false, false)
+	result := Run(standardIntentContractFixture(contract), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3475,7 +3686,7 @@ func TestIntentContractStandardMissingUserVisibleChangeEmitsAdvisory(t *testing.
 	contract := map[string]any{
 		"product_goal": "ship the advisory slice",
 	}
-	result := Run(standardIntentContractFixture(contract), false, false)
+	result := Run(standardIntentContractFixture(contract), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3492,7 +3703,7 @@ func TestIntentContractStandardUserVisibleChangeFalseEmitsNoAdvisory(t *testing.
 		"user_visible_change": false,
 		"product_goal":        "internal refactor with no user-visible effect",
 	}
-	result := Run(standardIntentContractFixture(contract), false, false)
+	result := Run(standardIntentContractFixture(contract), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3505,7 +3716,7 @@ func TestIntentContractStandardUserVisibleChangeFalseEmitsNoAdvisory(t *testing.
 }
 
 func TestIntentContractDeepMissingEmitsAdvisory(t *testing.T) {
-	result := Run(deepIntentContractFixture(nil), false, false)
+	result := Run(deepIntentContractFixture(nil), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3518,7 +3729,7 @@ func TestIntentContractDeepMissingEmitsAdvisory(t *testing.T) {
 }
 
 func TestIntentContractLightNoAdvisory(t *testing.T) {
-	result := Run(lightIntentContractFixture(), false, false)
+	result := Run(lightIntentContractFixture(), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for light, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3562,7 +3773,7 @@ func lightIntentRefFixture() map[string]any {
 }
 
 func TestIntentRefStandardMissingEmitsAdvisory(t *testing.T) {
-	result := Run(standardIntentRefFixture(""), false, false)
+	result := Run(standardIntentRefFixture(""), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3575,7 +3786,7 @@ func TestIntentRefStandardMissingEmitsAdvisory(t *testing.T) {
 }
 
 func TestIntentRefStandardBlankEmitsAdvisory(t *testing.T) {
-	result := Run(standardIntentRefFixture("   "), false, false)
+	result := Run(standardIntentRefFixture("   "), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3585,7 +3796,7 @@ func TestIntentRefStandardBlankEmitsAdvisory(t *testing.T) {
 }
 
 func TestIntentRefStandardPresentEmitsNoAdvisory(t *testing.T) {
-	result := Run(standardIntentRefFixture("doc/intake-lite.md"), false, false)
+	result := Run(standardIntentRefFixture("doc/intake-lite.md"), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3595,7 +3806,7 @@ func TestIntentRefStandardPresentEmitsNoAdvisory(t *testing.T) {
 }
 
 func TestIntentRefDeepMissingEmitsAdvisory(t *testing.T) {
-	result := Run(deepIntentRefFixture(""), false, false)
+	result := Run(deepIntentRefFixture(""), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3605,7 +3816,7 @@ func TestIntentRefDeepMissingEmitsAdvisory(t *testing.T) {
 }
 
 func TestIntentRefDeepPresentEmitsNoAdvisory(t *testing.T) {
-	result := Run(deepIntentRefFixture("product-intent/intake-lite"), false, false)
+	result := Run(deepIntentRefFixture("product-intent/intake-lite"), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3615,7 +3826,7 @@ func TestIntentRefDeepPresentEmitsNoAdvisory(t *testing.T) {
 }
 
 func TestIntentRefLightNoAdvisory(t *testing.T) {
-	result := Run(lightIntentRefFixture(), false, false)
+	result := Run(lightIntentRefFixture(), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for light, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3663,7 +3874,7 @@ func lightDecisionRefsFixture() map[string]any {
 }
 
 func TestDecisionRefsStandardMissingEmitsAdvisory(t *testing.T) {
-	result := Run(standardDecisionRefsFixture(nil), false, false)
+	result := Run(standardDecisionRefsFixture(nil), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3676,7 +3887,7 @@ func TestDecisionRefsStandardMissingEmitsAdvisory(t *testing.T) {
 }
 
 func TestDecisionRefsStandardEmptyArrayEmitsAdvisory(t *testing.T) {
-	result := Run(standardDecisionRefsFixture([]any{}), false, false)
+	result := Run(standardDecisionRefsFixture([]any{}), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3686,7 +3897,7 @@ func TestDecisionRefsStandardEmptyArrayEmitsAdvisory(t *testing.T) {
 }
 
 func TestDecisionRefsStandardBlankEntriesEmitsAdvisory(t *testing.T) {
-	result := Run(standardDecisionRefsFixture([]any{"   ", ""}), false, false)
+	result := Run(standardDecisionRefsFixture([]any{"   ", ""}), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3696,7 +3907,7 @@ func TestDecisionRefsStandardBlankEntriesEmitsAdvisory(t *testing.T) {
 }
 
 func TestDecisionRefsStandardPresentEmitsNoAdvisory(t *testing.T) {
-	result := Run(standardDecisionRefsFixture([]any{"decisions/intake-lite.md"}), false, false)
+	result := Run(standardDecisionRefsFixture([]any{"decisions/intake-lite.md"}), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3706,7 +3917,7 @@ func TestDecisionRefsStandardPresentEmitsNoAdvisory(t *testing.T) {
 }
 
 func TestDecisionRefsDeepMissingEmitsAdvisory(t *testing.T) {
-	result := Run(deepDecisionRefsFixture(nil), false, false)
+	result := Run(deepDecisionRefsFixture(nil), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success (advisory-only), got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3716,7 +3927,7 @@ func TestDecisionRefsDeepMissingEmitsAdvisory(t *testing.T) {
 }
 
 func TestDecisionRefsLightNoAdvisory(t *testing.T) {
-	result := Run(lightDecisionRefsFixture(), false, false)
+	result := Run(lightDecisionRefsFixture(), AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for light, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3847,7 +4058,7 @@ func TestEscalationDriftGuard(t *testing.T) {
 				"acceptance_status": "accepted",
 				"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 			}
-			result := Run(doc, false, false)
+			result := Run(doc, AdmissionOptions{})
 			if result.BlockingPredicate != "tier_escalation_required" {
 				t.Fatalf("expected blocking_predicate tier_escalation_required for pattern %q, got %q (errors=%v)",
 					pattern, result.BlockingPredicate, result.Errors)
@@ -3879,7 +4090,7 @@ func TestEscalationDriftGuard(t *testing.T) {
 			"acceptance_status": "accepted",
 			"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 		}
-		result := Run(doc, false, false)
+		result := Run(doc, AdmissionOptions{})
 		if result.BlockingPredicate == "tier_escalation_required" {
 			t.Fatalf("safe docs path should not trigger escalation, got errors=%v", result.Errors)
 		}
@@ -3924,7 +4135,7 @@ func TestOperationEscalationBlocksLightWithDeleteFiles(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3954,7 +4165,7 @@ func TestOperationEscalationBlocksStandardWithGitMutation(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -3984,7 +4195,7 @@ func TestOperationEscalationBlocksStandardWithUnknownCommand(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -4020,7 +4231,7 @@ func TestOperationEscalationTriggersFromVerificationArtifacts(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "failed" {
 		t.Fatalf("expected failed, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -4070,7 +4281,7 @@ func TestOperationEscalationAllowsDeepWithBlockedCommand(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for deep tier with blocked command, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -4099,7 +4310,7 @@ func TestOperationEscalationAllowsSafeBuildCommand(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for safe build commands at light tier, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -4140,7 +4351,7 @@ func TestOperationEscalationBypassedByApprovedGovernance(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("expected success for approved governance bypass, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -4202,7 +4413,7 @@ func TestEscalationSizeRulesDeferred(t *testing.T) {
 		"acceptance_status": "accepted",
 		"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 	}
-	result := Run(doc, false, false)
+	result := Run(doc, AdmissionOptions{})
 	if result.Outcome != "success" {
 		t.Fatalf("size_rules is deferred; many files_changed must not block, got %s errors=%v", result.Outcome, result.Errors)
 	}
@@ -4327,7 +4538,7 @@ func TestEscalationOperationDriftGuard(t *testing.T) {
 				"acceptance_status": "accepted",
 				"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 			}
-			result := Run(doc, false, false)
+			result := Run(doc, AdmissionOptions{})
 			if result.BlockingPredicate != "tier_escalation_required" {
 				t.Fatalf("expected blocking_predicate tier_escalation_required for intent %q, got %q (errors=%v)",
 					intent, result.BlockingPredicate, result.Errors)
@@ -4356,7 +4567,7 @@ func TestEscalationOperationDriftGuard(t *testing.T) {
 				"acceptance_status": "accepted",
 				"handoff":           map[string]any{"next_action": "n", "owner": "o"},
 			}
-			result := Run(doc, false, false)
+			result := Run(doc, AdmissionOptions{})
 			if result.BlockingPredicate == "tier_escalation_required" {
 				t.Fatalf("safe command %q should not trigger operation escalation, got errors=%v", safe, result.Errors)
 			}

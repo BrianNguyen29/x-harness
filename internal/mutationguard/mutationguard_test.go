@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -75,6 +76,139 @@ func TestTakeSnapshotWithUntracked(t *testing.T) {
 	}
 	if snap.StatusMap["hello.txt"] != "??" {
 		t.Fatalf("expected ?? status, got %v", snap.StatusMap["hello.txt"])
+	}
+}
+
+func TestSnapshotCapturesHeadSHA(t *testing.T) {
+	if !IsGitAvailable() {
+		t.Skip("git not available")
+	}
+	dir := setupGitRepo(t)
+	os.WriteFile(filepath.Join(dir, "file.txt"), []byte("hello"), 0644)
+	exec.Command("git", "-C", dir, "add", "file.txt").Run()
+	exec.Command("git", "-C", dir, "commit", "-m", "init").Run()
+
+	snap, err := TakeSnapshot(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if snap.HeadSHA == "" {
+		t.Fatal("expected HeadSHA to be captured")
+	}
+	if snap.DirtyTreeHash == "" {
+		t.Fatal("expected DirtyTreeHash to be captured")
+	}
+}
+
+func TestCompareDetectsHeadChange(t *testing.T) {
+	if !IsGitAvailable() {
+		t.Skip("git not available")
+	}
+	dir := setupGitRepo(t)
+	os.WriteFile(filepath.Join(dir, "a.txt"), []byte("a"), 0644)
+	exec.Command("git", "-C", dir, "add", "a.txt").Run()
+	exec.Command("git", "-C", dir, "commit", "-m", "first").Run()
+
+	before, err := TakeSnapshot(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	os.WriteFile(filepath.Join(dir, "b.txt"), []byte("b"), 0644)
+	exec.Command("git", "-C", dir, "add", "b.txt").Run()
+	exec.Command("git", "-C", dir, "commit", "-m", "second").Run()
+
+	after, err := TakeSnapshot(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	deltas := Compare(before, after)
+	hasHeadDelta := false
+	for _, d := range deltas {
+		if d.Path == "@@HEAD" {
+			hasHeadDelta = true
+			break
+		}
+	}
+	if !hasHeadDelta {
+		t.Fatalf("expected HEAD change delta, got %v", deltas)
+	}
+}
+
+func TestGuardDetectsNestedXHarness(t *testing.T) {
+	if !IsGitAvailable() {
+		t.Skip("git not available")
+	}
+	dir := setupGitRepo(t)
+	os.WriteFile(filepath.Join(dir, "tracked.txt"), []byte("before"), 0644)
+	exec.Command("git", "-C", dir, "add", "tracked.txt").Run()
+	exec.Command("git", "-C", dir, "commit", "-m", "init").Run()
+
+	result, err := Guard(dir, func() error {
+		os.MkdirAll(filepath.Join(dir, "src", ".x-harness"), 0755)
+		os.WriteFile(filepath.Join(dir, "src", ".x-harness", "trace.json"), []byte("{}"), 0644)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if !result.Violated {
+		t.Fatalf("expected violation for nested .x-harness writes, got deltas: %v", result.UnexpectedDeltas)
+	}
+	found := false
+	for _, d := range result.UnexpectedDeltas {
+		if strings.Contains(d.Path, "src/.x-harness") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected nested .x-harness delta in unexpected deltas, got %v", result.UnexpectedDeltas)
+	}
+}
+
+func TestCompareDetectsDirtyTreeChange(t *testing.T) {
+	if !IsGitAvailable() {
+		t.Skip("git not available")
+	}
+	dir := setupGitRepo(t)
+	os.WriteFile(filepath.Join(dir, "tracked.txt"), []byte("before"), 0644)
+	exec.Command("git", "-C", dir, "add", "tracked.txt").Run()
+	exec.Command("git", "-C", dir, "commit", "-m", "init").Run()
+
+	before, err := TakeSnapshot(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if before.DirtyTreeHash == "" {
+		t.Fatal("expected DirtyTreeHash to be captured")
+	}
+
+	// Make the working tree dirty by modifying a tracked file
+	os.WriteFile(filepath.Join(dir, "tracked.txt"), []byte("after"), 0644)
+
+	after, err := TakeSnapshot(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if after.DirtyTreeHash == "" {
+		t.Fatal("expected DirtyTreeHash to be captured after dirty")
+	}
+	if before.DirtyTreeHash == after.DirtyTreeHash {
+		t.Fatalf("expected dirty tree hash to differ, got before=%s after=%s", before.DirtyTreeHash, after.DirtyTreeHash)
+	}
+
+	deltas := Compare(before, after)
+	hasDirtyDelta := false
+	for _, d := range deltas {
+		if d.Path == "@@DIRTYTREE" {
+			hasDirtyDelta = true
+			break
+		}
+	}
+	if !hasDirtyDelta {
+		t.Fatalf("expected @@DIRTYTREE delta, got %v", deltas)
 	}
 }
 
@@ -160,8 +294,8 @@ func TestIsAllowlisted(t *testing.T) {
 	}{
 		{".x-harness", true},
 		{".x-harness/trace.json", true},
-		{"foo/.x-harness/bar", true},
-		{"foo.x-harness", true},
+		{"foo/.x-harness/bar", false},
+		{"foo.x-harness", false},
 		{".x-harness-mutation-guard-probe-123-456.probe", false},
 		{".x-harness-mutation-guard-probe-foo", false},
 		{"src/main.go", false},

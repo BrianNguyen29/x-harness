@@ -179,18 +179,21 @@ type VerifyResult struct {
 // to a real flag in handleVerify. The list of names must match
 // schemas/policy-matrix.schema.json profile enums.
 type VerifyProfile struct {
-	Name            string
-	Description     string
-	MutationGuard   bool
-	Strict          bool
-	ContextFloor    bool
-	ContractOracles bool
-	WorktreeAware   bool
-	StrictWithheld  bool
-	BoundaryEnforce string // off|advisory|block_high|block_all (default "" = use flag)
-	DecisionEnforce string // off|advisory|block for context_alignment.decision_refs (default "" = use flag)
-	IntentEnforce   string // off|advisory|block for top-level intent_ref (default "" = use flag)
-	ContextEnforce  string // off|advisory|block for context manifest staleness (default "" = use flag)
+	Name                string
+	Description         string
+	MutationGuard       bool
+	Strict              bool
+	ContextFloor        bool
+	ContractOracles     bool
+	WorktreeAware       bool
+	StrictWithheld      bool
+	RequireDeepApproval bool
+	RequireEvidenceHash bool
+	DiffCheck           bool
+	BoundaryEnforce     string // off|advisory|block_high|block_all (default "" = use flag)
+	DecisionEnforce     string // off|advisory|block for context_alignment.decision_refs (default "" = use flag)
+	IntentEnforce       string // off|advisory|block for top-level intent_ref (default "" = use flag)
+	ContextEnforce      string // off|advisory|block for context manifest staleness (default "" = use flag)
 }
 
 // verifyProfileNames returns the sorted list of profile names for usage
@@ -246,18 +249,21 @@ var verifyProfiles = map[string]VerifyProfile{
 		ContextEnforce:  "block",
 	},
 	"governed-deep": {
-		Name:            "governed-deep",
-		Description:     "Governed deep: all ci-strict checks plus strict withheld reason schema. Blocks all boundary violations unless approved via boundary_approvals, blocks missing context_alignment.decision_refs on standard/deep cards, blocks missing/blank intent_ref on standard/deep cards, and blocks stale context manifests on standard/deep cards.",
-		MutationGuard:   true,
-		Strict:          true,
-		ContextFloor:    true,
-		ContractOracles: true,
-		WorktreeAware:   true,
-		StrictWithheld:  true,
-		BoundaryEnforce: "block_all",
-		DecisionEnforce: "block",
-		IntentEnforce:   "block",
-		ContextEnforce:  "block",
+		Name:                "governed-deep",
+		Description:         "Governed deep: all ci-strict checks plus strict withheld reason schema, deep approval, evidence hash, and diff check. Blocks all boundary violations unless approved via boundary_approvals, blocks missing context_alignment.decision_refs on standard/deep cards, blocks missing/blank intent_ref on standard/deep cards, and blocks stale context manifests on standard/deep cards.",
+		MutationGuard:       true,
+		Strict:              true,
+		ContextFloor:        true,
+		ContractOracles:     true,
+		WorktreeAware:       true,
+		StrictWithheld:      true,
+		RequireDeepApproval: true,
+		RequireEvidenceHash: true,
+		DiffCheck:           true,
+		BoundaryEnforce:     "block_all",
+		DecisionEnforce:     "block",
+		IntentEnforce:       "block",
+		ContextEnforce:      "block",
 	},
 }
 
@@ -333,6 +339,10 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	decisionEnforce := ""
 	intentEnforce := ""
 	contextEnforce := ""
+	requireDeepApproval := false
+	requireEvidenceHash := false
+	diffCheck := false
+	diffBase := ""
 	profileName := ""
 
 	// Track which flags the caller set explicitly so the profile layer
@@ -347,6 +357,9 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 	explicitDecisionEnforce := false
 	explicitIntentEnforce := false
 	explicitContextEnforce := false
+	explicitRequireDeepApproval := false
+	explicitRequireEvidenceHash := false
+	explicitDiffCheck := false
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -465,6 +478,20 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			contextEnforce = v
 			explicitContextEnforce = true
 			i++
+		case "--require-deep-approval":
+			requireDeepApproval = true
+			explicitRequireDeepApproval = true
+		case "--require-evidence-hash":
+			requireEvidenceHash = true
+			explicitRequireEvidenceHash = true
+		case "--diff-check":
+			diffCheck = true
+			explicitDiffCheck = true
+		case "--diff-base":
+			if i+1 < len(args) {
+				diffBase = args[i+1]
+				i++
+			}
 		}
 	}
 
@@ -504,10 +531,19 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		if !explicitContextEnforce {
 			contextEnforce = profile.ContextEnforce
 		}
+		if !explicitRequireDeepApproval {
+			requireDeepApproval = profile.RequireDeepApproval
+		}
+		if !explicitRequireEvidenceHash {
+			requireEvidenceHash = profile.RequireEvidenceHash
+		}
+		if !explicitDiffCheck {
+			diffCheck = profile.DiffCheck
+		}
 	}
 
 	if (cardPath == "" && subagentPath == "") || (cardPath != "" && subagentPath != "") {
-		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--profile <light-local|ci-standard|ci-strict|governed-deep>] [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--strict-withheld-reason] [--trace] [--trace-dir <dir>] [--worktree-aware] [--context-floor] [--contract-oracles] [--contract-oracles-policy <path>] [--boundary-enforce off|advisory|block_high|block_all] [--boundary-policy <path>] [--decision-enforce off|advisory|block] [--intent-enforce off|advisory|block] [--context-enforce off|advisory|block]")
+		fmt.Fprintln(stderr, "usage: x-harness verify --card <path> | --subagent-return <path> [--profile <light-local|ci-standard|ci-strict|governed-deep>] [--tier <tier>] [--json] [--verbose] [--mutation-guard] [--strict] [--strict-withheld-reason] [--trace] [--trace-dir <dir>] [--worktree-aware] [--context-floor] [--contract-oracles] [--contract-oracles-policy <path>] [--boundary-enforce off|advisory|block_high|block_all] [--boundary-policy <path>] [--decision-enforce off|advisory|block] [--intent-enforce off|advisory|block] [--context-enforce off|advisory|block] [--require-deep-approval] [--require-evidence-hash] [--diff-check] [--diff-base <ref>]")
 		return ExitUsage
 	}
 
@@ -544,7 +580,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 		schemaErr = v.Validate(subagentDoc)
 		if schemaErr != nil {
-			result := buildVerifyResult(nil, schemaErr, nil, strict, false, "", root)
+			result := buildVerifyResult(nil, schemaErr, nil, admission.AdmissionOptions{Strict: strict}, "", root)
 			renderVerifyResult(result, jsonMode, verbose, strictWithheldReason, stdout, sourcePath, schemaPath)
 			return ExitError
 		}
@@ -616,7 +652,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		outerGuard, err = beginVerifyMutationSnapshot(root)
 		if err != nil {
 			mg := &mutationguard.Result{Enabled: true, SkippedReason: err.Error(), Violated: true}
-			result := buildVerifyResult(doc, nil, mg, strict, contextFloor, cardPath, root)
+			result := buildVerifyResult(doc, nil, mg, admission.AdmissionOptions{Strict: strict, ContextFloor: contextFloor, RequireDeepApproval: requireDeepApproval, RequireEvidenceHash: requireEvidenceHash}, cardPath, root)
 			blockForMutationGuardError(&result, err)
 			if renderErr := renderVerifyResult(result, jsonMode, verbose, strictWithheldReason, stdout, sourcePath, schemaPath); renderErr != nil {
 				fmt.Fprintf(stderr, "error: failed to render verify result: %v\n", renderErr)
@@ -632,7 +668,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			}
 			validateFn = func() error { return v.Validate(doc) }
 		}
-		result = runWithMutationGuard(root, strict, doc, validateFn, stderr, contextFloor, cardPath)
+		result = runWithMutationGuard(root, admission.AdmissionOptions{Strict: strict, ContextFloor: contextFloor, RequireDeepApproval: requireDeepApproval, RequireEvidenceHash: requireEvidenceHash}, doc, validateFn, stderr, cardPath)
 	} else {
 		if cardPath != "" {
 			v, err := schema.Compile(schemaPath)
@@ -642,7 +678,7 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 			}
 			schemaErr = v.Validate(doc)
 		}
-		result = buildVerifyResult(doc, schemaErr, nil, strict, contextFloor, cardPath, root)
+		result = buildVerifyResult(doc, schemaErr, nil, admission.AdmissionOptions{Strict: strict, ContextFloor: contextFloor, RequireDeepApproval: requireDeepApproval, RequireEvidenceHash: requireEvidenceHash}, cardPath, root)
 	}
 
 	// Stamp the active profile (if any) on the result. Field is omitted
@@ -889,6 +925,48 @@ func handleVerify(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 	}
 
+	// Diff check (opt-in via --diff-check or governed-deep profile).
+	// Compares actual git changed/staged/untracked files against the
+	// declared evidence.files_changed. Blocks when actual undeclared
+	// files exist with predicate undeclared_changes.
+	if diffCheck && result.OK {
+		actualFiles, err := worktree.ChangedFiles(root, diffBase)
+		if err == nil {
+			declaredSet := make(map[string]bool)
+			evidence := mapValue(doc, "evidence")
+			for _, item := range sliceInMap(evidence, "files_changed") {
+				if s, ok := item.(string); ok {
+					declaredSet[s] = true
+				}
+			}
+			var undeclared []string
+			for _, f := range actualFiles {
+				if !declaredSet[f] {
+					undeclared = append(undeclared, f)
+				}
+			}
+			if len(undeclared) > 0 {
+				predicate := "undeclared_changes"
+				recoverability := "retry_with_fixes"
+				result.OK = false
+				result.AdmissionOutcome = "blocked"
+				result.AcceptanceStatus = "withheld"
+				result.WithheldReason = &withheldReason{
+					Class:                classFromFailureClass("evidence_provenance_invalid"),
+					Stage:                "verification",
+					Owner:                ownerFromBlockingPredicate(predicate),
+					FailureClass:         "evidence_provenance_invalid",
+					FailureStage:         "verify_pipeline",
+					Recoverability:       recoverability,
+					SchemaRecoverability: schemaRecoverabilityFromLegacy(recoverability),
+					NextAction:           "review_and_resubmit",
+					BlockingPredicate:    predicate,
+				}
+				result.AdmissionErrors = append(result.AdmissionErrors, fmt.Sprintf("diff check: undeclared changed file(s): %s", strings.Join(undeclared, ", ")))
+			}
+		}
+	}
+
 	if outerGuard != nil {
 		mgResult, err := outerGuard.finish()
 		if err != nil {
@@ -1089,7 +1167,7 @@ func blockForMutationViolation(result *VerifyResult) {
 	}
 }
 
-func runWithMutationGuard(root string, strict bool, doc map[string]any, validateFn func() error, stderr io.Writer, contextFloor bool, cardPath string) VerifyResult {
+func runWithMutationGuard(root string, opts admission.AdmissionOptions, doc map[string]any, validateFn func() error, stderr io.Writer, cardPath string) VerifyResult {
 	var useGit bool
 	var gitRoot string
 	var gitErr error
@@ -1128,20 +1206,20 @@ func runWithMutationGuard(root string, strict bool, doc map[string]any, validate
 
 	if guardErr != nil {
 		mg := &mutationguard.Result{Enabled: true, SkippedReason: guardErr.Error(), Violated: true}
-		result := buildVerifyResult(doc, schemaErr, mg, strict, contextFloor, cardPath, root)
+		result := buildVerifyResult(doc, schemaErr, mg, opts, cardPath, root)
 		fmt.Fprintf(stderr, "mutation_guard_error: guard failed: %v\n", guardErr)
 		blockForMutationGuardError(&result, guardErr)
 		return result
 	}
 
-	result := buildVerifyResult(doc, schemaErr, mgResult, strict, contextFloor, cardPath, root)
+	result := buildVerifyResult(doc, schemaErr, mgResult, opts, cardPath, root)
 	if mgResult != nil && mgResult.Violated {
 		blockForMutationViolation(&result)
 	}
 	return result
 }
 
-func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationguard.Result, strict bool, contextFloor bool, cardPath string, root string) VerifyResult {
+func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationguard.Result, opts admission.AdmissionOptions, cardPath string, root string) VerifyResult {
 	result := VerifyResult{
 		SchemaVersion: "x-harness.verify-result.v1",
 		TaskID:        stringValue(doc, "task_id"),
@@ -1175,7 +1253,7 @@ func buildVerifyResult(doc map[string]any, schemaErr error, mgResult *mutationgu
 		doc["_cardPath"] = cardPath
 	}
 
-	admResult := admission.Run(doc, strict, contextFloor)
+	admResult := admission.Run(doc, opts)
 	result.AdmissionOutcome = admResult.Outcome
 	result.AcceptanceStatus = admResult.AcceptanceStatus
 	result.AdmissionErrors = admResult.Errors

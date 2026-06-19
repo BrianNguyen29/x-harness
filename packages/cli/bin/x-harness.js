@@ -68,6 +68,10 @@ function runNodeFallback() {
 }
 
 async function main() {
+  if (!process.env.X_HARNESS_ASSET_ROOT) {
+    process.env.X_HARNESS_ASSET_ROOT = packageRoot;
+  }
+
   const nodeEntrypointExists = existsSync(nodeEntrypoint);
 
   if (process.env.X_HARNESS_GO === "0") {

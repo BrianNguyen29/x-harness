@@ -15,9 +15,12 @@ import (
 
 // Snapshot captures the Git working tree state at a point in time.
 type Snapshot struct {
-	StatusMap map[string]string
-	HashMap   map[string]string
-	RepoRoot  string
+	StatusMap       map[string]string
+	HashMap         map[string]string
+	RepoRoot        string
+	HeadSHA         string
+	DirtyTreeHash   string
+	SubmoduleStatus string
 }
 
 // Delta represents a change detected between two snapshots.
@@ -87,11 +90,42 @@ func TakeSnapshot(repoRoot string) (*Snapshot, error) {
 		}
 	}
 
+	headSHA, _ := gitHeadSHA(repoRoot)
+	dirtyHash, _ := gitDirtyHash(repoRoot)
+	subStatus, _ := gitSubmoduleStatus(repoRoot)
+
 	return &Snapshot{
-		StatusMap: statusMap,
-		HashMap:   hashMap,
-		RepoRoot:  repoRoot,
+		StatusMap:       statusMap,
+		HashMap:         hashMap,
+		RepoRoot:        repoRoot,
+		HeadSHA:         headSHA,
+		DirtyTreeHash:   dirtyHash,
+		SubmoduleStatus: subStatus,
 	}, nil
+}
+
+func gitHeadSHA(repoRoot string) (string, error) {
+	out, err := exec.Command("git", "-C", repoRoot, "rev-parse", "HEAD").Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+func gitDirtyHash(repoRoot string) (string, error) {
+	out, err := exec.Command("git", "-C", repoRoot, "diff", "HEAD").Output()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("sha256:%x", sha256.Sum256(out)), nil
+}
+
+func gitSubmoduleStatus(repoRoot string) (string, error) {
+	out, err := exec.Command("git", "-C", repoRoot, "submodule", "status").Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
 }
 
 func contentHash(repoRoot, filePath string) (string, error) {
@@ -159,6 +193,27 @@ func Compare(before, after *Snapshot) []Delta {
 			})
 		}
 	}
+	if before.HeadSHA != after.HeadSHA {
+		deltas = append(deltas, Delta{
+			Path:         "@@HEAD",
+			BeforeStatus: before.HeadSHA,
+			AfterStatus:  after.HeadSHA,
+		})
+	}
+	if before.SubmoduleStatus != after.SubmoduleStatus {
+		deltas = append(deltas, Delta{
+			Path:         "@@SUBMODULE",
+			BeforeStatus: before.SubmoduleStatus,
+			AfterStatus:  after.SubmoduleStatus,
+		})
+	}
+	if before.DirtyTreeHash != after.DirtyTreeHash {
+		deltas = append(deltas, Delta{
+			Path:         "@@DIRTYTREE",
+			BeforeStatus: before.DirtyTreeHash,
+			AfterStatus:  after.DirtyTreeHash,
+		})
+	}
 	return deltas
 }
 
@@ -166,10 +221,7 @@ func Compare(before, after *Snapshot) []Delta {
 func IsAllowlisted(filePath string) bool {
 	normalized := strings.ReplaceAll(filePath, "\\", "/")
 	return normalized == ".x-harness" ||
-		strings.HasPrefix(normalized, ".x-harness/") ||
-		strings.Contains(normalized, "/.x-harness/") ||
-		strings.HasSuffix(normalized, ".x-harness") ||
-		strings.HasSuffix(normalized, ".x-harness/")
+		strings.HasPrefix(normalized, ".x-harness/")
 }
 
 // FilterUnexpected removes allowlisted deltas.
@@ -392,9 +444,12 @@ func TakeFallbackSnapshot(root string) (*Snapshot, error) {
 	wg.Wait()
 
 	return &Snapshot{
-		StatusMap: statusMap,
-		HashMap:   hashMap,
-		RepoRoot:  root,
+		StatusMap:       statusMap,
+		HashMap:         hashMap,
+		RepoRoot:        root,
+		HeadSHA:         "",
+		DirtyTreeHash:   "",
+		SubmoduleStatus: "",
 	}, nil
 }
 

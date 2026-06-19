@@ -77,6 +77,7 @@ evidence:
       exit_code: 0
       runner: go-test
       started_at: "2026-06-06T00:00:00Z"
+      stdout_hash: "abc123"
 claim:
   fix_status: fixed
   summary: TASK-INTENT-ENFORCE-001
