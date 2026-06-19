@@ -34,7 +34,7 @@ Before publish, the release workflow runs the following primary gates through th
 - SHA256 checksums for all binaries (`checksums.txt`)
 - Go binary smoke test (`linux/amd64`)
 - Sign Go binaries with cosign (tagged releases only)
-- Copy Go binaries, signatures, and checksums into the npm package
+- Copy Go binaries, Sigstore bundles, and checksums into the npm package
 - Build release tarball (`npm pack`)
 - Generate CycloneDX SBOM (`sbom.cdx.json`)
 - Generate Go module SBOM source (`go-modules.sbom.json`)
@@ -112,7 +112,7 @@ SBOM artifacts are uploaded with release artifacts. Release review should retain
 On tagged releases, the publish job attaches the following artifacts to the GitHub Release only after packed-CLI and platform smoke jobs pass:
 
 - All platform Go binaries (`x-harness-<version>-<os>-<arch>`)
-- Cosign signatures (`.sig`) and certificates (`.pem`) for each binary
+- Sigstore bundle files (`.sigstore.json`) for each binary
 - `checksums.txt` (SHA256 of Go binaries)
 - `release-checksums.txt` (SHA256 of all release artifacts)
 - CycloneDX SBOM (`sbom.cdx.json`)
@@ -133,8 +133,7 @@ And verify the cosign signature (requires `cosign` CLI):
 
 ```bash
 cosign verify-blob \
-  --signature x-harness-v1.2.3-linux-amd64.sig \
-  --certificate x-harness-v1.2.3-linux-amd64.pem \
+  --bundle x-harness-v1.2.3-linux-amd64.sigstore.json \
   --certificate-identity-regexp='https://github.com/BrianNguyen29/x-harness/.github/workflows/release.yml@refs/tags/.*' \
   --certificate-oidc-issuer='https://token.actions.githubusercontent.com' \
   x-harness-v1.2.3-linux-amd64
@@ -145,18 +144,14 @@ cosign verify-blob \
 Tagged releases sign Go binaries with cosign (keyless via GitHub OIDC):
 
 ```bash
-cosign sign-blob --yes \
-  --output-signature "${bin}.sig" \
-  --output-certificate "${bin}.pem" \
-  "$bin"
+cosign sign-blob --yes --bundle "${bin}.sigstore.json" "$bin"
 ```
 
-Signature (`.sig`) and certificate (`.pem`) artifacts are uploaded alongside the binaries. Consumers can verify with:
+Sigstore bundle (`.sigstore.json`) artifacts are uploaded alongside the binaries. Consumers can verify with:
 
 ```bash
 cosign verify-blob \
-  --signature x-harness-v1.2.3-linux-amd64.sig \
-  --certificate x-harness-v1.2.3-linux-amd64.pem \
+  --bundle x-harness-v1.2.3-linux-amd64.sigstore.json \
   --certificate-identity-regexp='https://github.com/BrianNguyen29/x-harness/.github/workflows/release.yml@refs/tags/.*' \
   --certificate-oidc-issuer='https://token.actions.githubusercontent.com' \
   x-harness-v1.2.3-linux-amd64
@@ -169,7 +164,7 @@ In addition to signing, releases must keep:
 - `npm pack --dry-run` output reviewed in CI.
 - Packed CLI smoke test proving `xh init`, `xh verify`, and `xh doctor` run from the tarball.
 - Frozen compatibility proving the packed CLI can export, verify, and merge-import a frozen bundle.
-- Go binary checksums and smoke evidence proving the native binary can run `doctor`, `examples verify`, and golden `verify` locally.
+- Go binary checksums, Sigstore bundles, and smoke evidence proving the native binary can run `doctor`, `examples verify`, and golden `verify` locally.
 - Cross-platform smoke tests on `linux/amd64`, `darwin/amd64`, and `windows/amd64` via the release workflow.
 - Arm64 build-vs-smoke gap documented: arm64 binaries are built but not smoke-tested in CI.
 

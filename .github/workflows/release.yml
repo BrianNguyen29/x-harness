@@ -150,11 +150,16 @@ jobs:
         run: |
           set -euo pipefail
           for bin in .x-harness/release/go-binaries/x-harness-*; do
-            if [ -f "$bin" ] && [ ! -f "$bin.sig" ]; then
-              cosign sign-blob --yes \
-                --output-signature "${bin}.sig" \
-                --output-certificate "${bin}.pem" \
-                "$bin"
+            if [ -f "$bin" ] && [[ "$bin" != *.sigstore.json ]] && [ ! -f "${bin}.sigstore.json" ]; then
+              for attempt in 1 2 3; do
+                if cosign sign-blob --yes --bundle "${bin}.sigstore.json" "$bin"; then
+                  break
+                fi
+                if [ "$attempt" -eq 3 ]; then
+                  exit 1
+                fi
+                sleep $((attempt * 10))
+              done
             fi
           done
 

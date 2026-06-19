@@ -36,7 +36,7 @@ A release candidate is a tagged pre-release that must pass the full verification
    - Binaries signed with Sigstore cosign on tag releases.
 
 4. **Injection into npm package**
-   - Signed Go binaries, signatures, certificates, and `checksums.txt` copied into `packages/cli/go-binaries/` before `npm pack`.
+   - Signed Go binaries, Sigstore bundles, and `checksums.txt` copied into `packages/cli/go-binaries/` before `npm pack`.
    - The packed tarball contains the platform-native Go binaries and the wrapper shim, but **not** the Node.js fallback `dist/`.
 
 5. **Packed tarball smoke tests**
@@ -53,7 +53,7 @@ A release candidate is a tagged pre-release that must pass the full verification
 
 8. **GitHub Release artifact attachment**
    - For tagged releases, the publish job attaches all artifacts to the GitHub Release after packed-CLI and platform smoke jobs pass:
-     - Go binaries, signatures (`.sig`), certificates (`.pem`), and `checksums.txt`.
+     - Go binaries, Sigstore bundles (`.sigstore.json`), and `checksums.txt`.
      - `release-checksums.txt` covering all release artifacts.
      - CycloneDX SBOM (`sbom.cdx.json`).
      - Go module SBOM source (`go-modules.sbom.json`).
@@ -61,7 +61,7 @@ A release candidate is a tagged pre-release that must pass the full verification
      - Homebrew formula (`x-harness.rb`).
      - npm tarball (`x-harness-*.tgz`) and npm pack manifest (`npm-pack.json`).
      - Adversarial benchmark report (`benchmark-report.json`).
-   - Consumers can verify downloads with `sha256sum -c checksums.txt` and `cosign verify-blob`.
+   - Consumers can verify downloads with `sha256sum -c checksums.txt` and `cosign verify-blob --bundle`.
 
 ## Local Release Notes
 
