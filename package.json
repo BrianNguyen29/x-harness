@@ -1,6 +1,6 @@
 {
   "name": "x-harness-repo",
-  "version": "0.99.0-rc6",
+  "version": "0.99.0-rc7",
   "private": true,
   "license": "MIT",
   "type": "module",

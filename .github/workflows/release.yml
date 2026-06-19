@@ -356,7 +356,11 @@ jobs:
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME}"
           if ! gh release view "$VERSION" >/dev/null 2>&1; then
-            gh release create "$VERSION" --title "Release $VERSION" --generate-notes
+            release_flags=()
+            if [[ "$VERSION" == *-* ]]; then
+              release_flags+=(--prerelease --latest=false)
+            fi
+            gh release create "$VERSION" --title "Release $VERSION" --generate-notes "${release_flags[@]}"
           fi
           for f in .x-harness/release/go-binaries/x-harness-*; do
             if [ -f "$f" ]; then

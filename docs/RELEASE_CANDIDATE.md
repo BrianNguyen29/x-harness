@@ -52,7 +52,7 @@ A release candidate is a tagged pre-release that must pass the full verification
    - SBOM (`sbom.cdx.json`) and npm pack manifest (`npm-pack.json`) retained.
 
 8. **GitHub Release artifact attachment**
-   - For tagged releases, the publish job attaches all artifacts to the GitHub Release after packed-CLI and platform smoke jobs pass:
+   - For tagged releases, the publish job attaches all artifacts to the GitHub Release after packed-CLI and platform smoke jobs pass. RC tags are marked prerelease and not latest:
      - Go binaries, Sigstore bundles (`.sigstore.json`), and `checksums.txt`.
      - `release-checksums.txt` covering all release artifacts.
      - CycloneDX SBOM (`sbom.cdx.json`).
@@ -62,7 +62,7 @@ A release candidate is a tagged pre-release that must pass the full verification
      - npm tarball (`x-harness-*.tgz`) and npm pack manifest (`npm-pack.json`).
      - Adversarial benchmark report (`benchmark-report.json`).
    - Consumers can verify downloads with `sha256sum -c checksums.txt` and `cosign verify-blob --bundle`.
-   - RC tags skip npm publish and retain signed GitHub Release artifacts; stable tags must fail closed without npm publish credentials.
+   - RC tags skip npm publish and retain signed prerelease GitHub Release artifacts; stable tags must fail closed without npm publish credentials.
 
 ## Local Release Notes
 
