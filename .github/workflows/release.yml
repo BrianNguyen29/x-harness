@@ -348,7 +348,8 @@ jobs:
       - name: Attach release artifacts to GitHub Release
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME}"
