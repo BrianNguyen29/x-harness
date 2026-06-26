@@ -57,6 +57,11 @@ passed, failed, blocked, skipped, timeout, error
 
 For command-backed evidence, any non-zero `exit_code` in `claim.evidence.command_evidence[]` or `verification_artifacts[]` blocks admission, even if the artifact `status` says `passed`.
 
+For stronger provenance, prefer command records produced by `xh evidence run`
+or CI artifacts bound with `ci_run_url`, repository state, and checksums. See
+[Evidence Provenance](EVIDENCE_PROVENANCE.md) for the runtime fields enforced by
+`--strict`, `--require-evidence-hash`, and governed profiles.
+
 ## Read-only mutation guard
 
 The verify command supports an explicit `--mutation-guard` flag. The guard is also enabled by `--strict`, by standard/deep tier auto-detection, and by admission-capable verify profiles such as `ci-standard`, `ci-strict`, and `governed-deep`. When enabled, verify snapshots the workspace before and after the full verification pipeline and compares the delta. This does not require a clean worktree.

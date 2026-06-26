@@ -391,6 +391,7 @@ func checkTierLabels(report *Report, root string) {
 		filepath.Join(root, "internal", "scanner", "scanner.go"):                true,
 		filepath.Join(root, "internal", "cli", "scan.go"):                       true,
 		filepath.Join(root, "internal", "conformance", "conformance.go"):        true,
+		filepath.Join(root, "docs", "AUDIT_ROADMAP.md"):                         true,
 	}
 
 	labelRe := regexp.MustCompile(`(?i)\b(small|medium|large)\b`)

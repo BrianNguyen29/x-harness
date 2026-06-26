@@ -170,5 +170,5 @@ on the overlapping subset.
 analysis.
 - Adapter enforcement depends on the host platform reading its convention files;
 the harness itself does not monitor or enforce adapter behavior.
-- `x-harness` is pre-1.0 (`0.99.0-rc1`). A passing verify gate means the card
+- `x-harness` is pre-1.0 (`0.99.0-rc7`). A passing verify gate means the card
 meets the policy, not that the underlying code is bug-free.

@@ -1,0 +1,303 @@
+[
+  {
+    "name": "verify",
+    "description": "Run read-only verification against a completion card",
+    "primary": true,
+    "onboarding": true,
+    "onboarding_order": 3,
+    "maturity": "stable"
+  },
+  {
+    "name": "check",
+    "description": "Alias for verify",
+    "primary": true,
+    "onboarding": true,
+    "onboarding_order": 4,
+    "maturity": "stable"
+  },
+  {
+    "name": "doctor",
+    "description": "Validate workspace health and configuration",
+    "primary": true,
+    "onboarding": true,
+    "onboarding_order": 2,
+    "maturity": "stable"
+  },
+  {
+    "name": "examples",
+    "description": "Verify bundled examples",
+    "primary": true,
+    "maturity": "stable"
+  },
+  {
+    "name": "context",
+    "description": "Show canonical context and runtime contract",
+    "primary": true,
+    "maturity": "stable"
+  },
+  {
+    "name": "benchmark",
+    "description": "Measure latency and verification benchmark behavior",
+    "primary": true,
+    "maturity": "stable"
+  },
+  {
+    "name": "handoff",
+    "description": "Generate structured handoff prompts",
+    "primary": true,
+    "maturity": "stable"
+  },
+  {
+    "name": "prepare",
+    "description": "Alias for handoff readiness",
+    "primary": true,
+    "maturity": "stable"
+  },
+  {
+    "name": "report",
+    "description": "Show trace summary or metrics report",
+    "primary": true,
+    "maturity": "stable"
+  },
+  {
+    "name": "status",
+    "description": "Alias for report",
+    "primary": true,
+    "maturity": "stable"
+  },
+  {
+    "name": "trace",
+    "description": "Append or verify trace events",
+    "primary": true,
+    "maturity": "stable"
+  },
+  {
+    "name": "clean",
+    "description": "Clean generated harness state",
+    "primary": true,
+    "maturity": "stable"
+  },
+  {
+    "name": "reset",
+    "description": "Alias for safe generated-state cleanup",
+    "primary": true,
+    "maturity": "stable"
+  },
+  {
+    "name": "init",
+    "description": "Install harness assets into a workspace",
+    "onboarding": true,
+    "onboarding_order": 1,
+    "maturity": "stable"
+  },
+  {
+    "name": "add",
+    "description": "Add claim, evidence, or completion card helpers",
+    "maturity": "stable"
+  },
+  {
+    "name": "recovery",
+    "description": "Generate recovery suggestions",
+    "maturity": "stable"
+  },
+  {
+    "name": "recover",
+    "description": "Alias for recovery suggest",
+    "maturity": "stable"
+  },
+  {
+    "name": "packet",
+    "description": "Work with claim/evidence packets",
+    "maturity": "beta"
+  },
+  {
+    "name": "intake",
+    "description": "Evaluate task intake tiering",
+    "maturity": "experimental"
+  },
+  {
+    "name": "decision",
+    "description": "Record or list decision memory records (ADR-lite)",
+    "maturity": "experimental"
+  },
+  {
+    "name": "governance",
+    "description": "Evaluate governance rules",
+    "maturity": "experimental"
+  },
+  {
+    "name": "intervention",
+    "description": "Record governance interventions",
+    "maturity": "experimental"
+  },
+  {
+    "name": "prediction",
+    "description": "Evaluate prediction/checklist claims",
+    "maturity": "experimental"
+  },
+  {
+    "name": "components",
+    "description": "Inspect component registry coverage",
+    "maturity": "experimental"
+  },
+  {
+    "name": "evidence",
+    "description": "Manage evidence corpus entries",
+    "maturity": "experimental"
+  },
+  {
+    "name": "episode",
+    "description": "Create episode packages",
+    "maturity": "experimental"
+  },
+  {
+    "name": "attribution",
+    "description": "Evaluate attribution metadata",
+    "maturity": "experimental"
+  },
+  {
+    "name": "permissions",
+    "description": "Evaluate permission rules",
+    "maturity": "experimental"
+  },
+  {
+    "name": "evolve",
+    "description": "Evaluate evolution candidates",
+    "maturity": "experimental"
+  },
+  {
+    "name": "export",
+    "description": "Export frozen artifacts",
+    "maturity": "experimental"
+  },
+  {
+    "name": "import",
+    "description": "Import frozen artifacts",
+    "maturity": "experimental"
+  },
+  {
+    "name": "frozen",
+    "description": "Inspect frozen manifests",
+    "maturity": "experimental"
+  },
+  {
+    "name": "federation",
+    "description": "Evaluate federation patterns",
+    "maturity": "experimental"
+  },
+  {
+    "name": "approval-risk",
+    "description": "Evaluate approval risk",
+    "maturity": "experimental"
+  },
+  {
+    "name": "agent-profile",
+    "description": "Inspect agent profiles",
+    "maturity": "experimental"
+  },
+  {
+    "name": "cost",
+    "description": "Evaluate cost budget data",
+    "maturity": "experimental"
+  },
+  {
+    "name": "profile",
+    "description": "Recommend installation profiles",
+    "maturity": "beta"
+  },
+  {
+    "name": "repair",
+    "description": "Repair managed files from manifest",
+    "maturity": "beta"
+  },
+  {
+    "name": "uninstall",
+    "description": "Uninstall managed files using manifest",
+    "maturity": "beta"
+  },
+  {
+    "name": "start",
+    "description": "Guided onboarding: doctor, examples verify, init wizard, next steps",
+    "primary": true,
+    "maturity": "beta"
+  },
+  {
+    "name": "learn",
+    "description": "Read-only concept tour for beginners",
+    "primary": true,
+    "maturity": "beta"
+  },
+  {
+    "name": "quick",
+    "description": "Read-only next-action recommender for newcomers",
+    "primary": true,
+    "maturity": "beta"
+  },
+  {
+    "name": "run",
+    "description": "Run a built-in workflow recipe",
+    "primary": true,
+    "maturity": "beta"
+  },
+  {
+    "name": "ci",
+    "description": "Run the built-in CI workflow",
+    "primary": true,
+    "maturity": "beta"
+  },
+  {
+    "name": "actions",
+    "description": "List beginner-friendly actions",
+    "maturity": "beta"
+  },
+  {
+    "name": "card",
+    "description": "Generate or verify admission cards",
+    "maturity": "beta"
+  },
+  {
+    "name": "conformance",
+    "description": "Run conformance checks",
+    "maturity": "beta"
+  },
+  {
+    "name": "readiness",
+    "description": "Evaluate readiness levels",
+    "maturity": "beta"
+  },
+  {
+    "name": "release",
+    "description": "Generate or verify release evidence",
+    "maturity": "beta"
+  },
+  {
+    "name": "adapters",
+    "description": "Inspect adapter matrix",
+    "maturity": "beta"
+  },
+  {
+    "name": "scan",
+    "description": "Run static security scan on adapter or skill files",
+    "maturity": "beta"
+  },
+  {
+    "name": "contract",
+    "description": "Run contract oracle checks",
+    "maturity": "experimental"
+  },
+  {
+    "name": "policy",
+    "description": "Show policy enforcement matrix and rule explainers",
+    "maturity": "beta"
+  },
+  {
+    "name": "explain",
+    "description": "Explain a completion card's admission/withheld state",
+    "maturity": "beta"
+  },
+  {
+    "name": "boundary",
+    "description": "Lint/check/explain boundary policy against repo source files",
+    "maturity": "beta"
+  }
+]

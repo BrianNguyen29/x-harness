@@ -38,6 +38,46 @@
 
 ---
 
+## 🧜 Mermaid Architecture Diagram
+
+```mermaid
+flowchart TB
+    subgraph Adapter["Adapter Layer"]
+        A1[Claude Code]
+        A2[Cursor]
+        A3[OpenCode]
+        A4[Antigravity]
+    end
+
+    subgraph CLI["Tooling & CLI Layer"]
+        C1[xh init / add / handoff]
+        C2[xh verify / doctor / conformance]
+        C3[xh report / benchmark / release]
+    end
+
+    subgraph Core["Core Layers"]
+        V["Validator Layer<br/>(JSON Schema)"]
+        AD["Admission Control Layer<br/>(policies/admission.yaml)"]
+        M["Metrics & Reporting Layer"]
+    end
+
+    subgraph Data["Data & Policy Files"]
+        S["schemas/"]
+        P["policies/"]
+        T[".x-harness/"]
+    end
+
+    Adapter -->|Mount Rules/Workflows| CLI
+    CLI -->|Validate| V
+    CLI -->|Evaluate| AD
+    CLI -->|Calculate| M
+    V -->|Load| S
+    AD -->|Load| P
+    M -->|Load| T
+```
+
+---
+
 ## 🧱 Key Architectural Layers
 
 ### 1. Adapter Layer

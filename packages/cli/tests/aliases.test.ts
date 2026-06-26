@@ -106,29 +106,18 @@ describe("alias registration", () => {
   });
 
   describe("actions command", () => {
-    it("actions output includes all beginner actions", async () => {
+    it("actions output includes core onboarding actions", async () => {
       const { stdout } = await execaNode(["actions"]);
-      const actions = [
-        "start",
-        "learn",
-        "init",
-        "check",
-        "actions",
-        "status",
-        "add",
-        "doctor",
-        "recover",
-        "reset",
-        "run",
-        "prepare",
-      ];
+      const actions = ["init", "doctor", "verify", "check"];
       for (const action of actions) {
         expect(stdout).toContain(action);
       }
+      expect(stdout).not.toContain("| **start** |");
+      expect(stdout).not.toContain("governance");
       expect(stdout).toContain("Getting started");
-      expect(stdout).toContain("Daily tasks");
-      expect(stdout).toContain("Health & recovery");
-      expect(stdout).toContain("Automation");
+      expect(stdout).not.toContain("Daily tasks");
+      expect(stdout).not.toContain("Health & recovery");
+      expect(stdout).not.toContain("Automation");
     });
 
     it("actions --help shows actions description", async () => {
@@ -141,9 +130,9 @@ describe("alias registration", () => {
       expect(exitCode).toBe(0);
       expect(stdout).toContain("Hành động dành cho người mới");
       expect(stdout).toContain("Bắt đầu");
-      expect(stdout).toContain("Tác vụ hằng ngày");
-      expect(stdout).toContain("Sức khỏe & khôi phục");
-      expect(stdout).toContain("Tự động hóa");
+      expect(stdout).not.toContain("Tác vụ hằng ngày");
+      expect(stdout).not.toContain("Sức khỏe & khôi phục");
+      expect(stdout).not.toContain("Tự động hóa");
       expect(stdout).toContain("Hành động");
       expect(stdout).toContain("Mô tả");
     });

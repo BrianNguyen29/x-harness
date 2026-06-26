@@ -155,6 +155,8 @@ export function descriptionHeader(lang: Lang): string {
 export function getBeginnerCommandDesc(name: string, lang: Lang): string {
   if (lang === "vi") {
     switch (name) {
+      case "verify":
+        return "Chạy cổng xác minh chỉ đọc đối với completion card";
       case "check":
         return "Chạy xác minh chỉ đọc đối với completion card";
       case "prepare":

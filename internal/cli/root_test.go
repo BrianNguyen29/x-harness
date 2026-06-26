@@ -7,6 +7,10 @@ import (
 	"testing"
 )
 
+func outputHasCommandLine(output, name string) bool {
+	return strings.Contains(output, "\n  "+name+" ") || strings.Contains(output, "\n  "+name+"\t")
+}
+
 func TestHelpListsBeginnerCommands(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -15,22 +19,24 @@ func TestHelpListsBeginnerCommands(t *testing.T) {
 		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
 	}
 	output := stdout.String()
-	beginner := []string{"check", "prepare", "recover", "doctor", "actions", "status", "reset", "init", "add", "start"}
-	for _, name := range beginner {
-		if !strings.Contains(output, name) {
-			t.Fatalf("help output does not include beginner command %q:\n%s", name, output)
+	core := []string{"init", "doctor", "verify", "check"}
+	for _, name := range core {
+		if !outputHasCommandLine(output, name) {
+			t.Fatalf("help output does not include core command %q:\n%s", name, output)
 		}
 	}
-	advanced := []string{"benchmark", "packet", "intake", "governance", "prediction", "components", "federation", "contract"}
+	advanced := []string{"start", "actions", "benchmark", "packet", "intake", "governance", "prediction", "components", "federation", "contract"}
 	for _, name := range advanced {
-		if strings.Contains(output, name) {
+		if outputHasCommandLine(output, name) {
 			t.Fatalf("help output should not include advanced command %q:\n%s", name, output)
 		}
 	}
-	categories := []string{"Getting started", "Daily tasks", "Health & recovery", "Automation"}
-	for _, cat := range categories {
-		if !strings.Contains(output, cat) {
-			t.Fatalf("help output missing category %q:\n%s", cat, output)
+	if !strings.Contains(output, "Getting started") {
+		t.Fatalf("help output missing Getting started category:\n%s", output)
+	}
+	for _, cat := range []string{"Daily tasks", "Health & recovery", "Automation"} {
+		if strings.Contains(output, cat) {
+			t.Fatalf("help output should not include category %q:\n%s", cat, output)
 		}
 	}
 	if stderr.Len() != 0 {
@@ -80,10 +86,12 @@ func TestNoArgsShowsStartHere(t *testing.T) {
 	if !strings.Contains(output, "--help-all") {
 		t.Fatalf("no-args output missing '--help-all':\n%s", output)
 	}
-	categories := []string{"Getting started", "Daily tasks", "Health & recovery", "Automation"}
-	for _, cat := range categories {
-		if !strings.Contains(output, cat) {
-			t.Fatalf("no-args output missing category %q:\n%s", cat, output)
+	if !strings.Contains(output, "Getting started") {
+		t.Fatalf("no-args output missing Getting started category:\n%s", output)
+	}
+	for _, cat := range []string{"Daily tasks", "Health & recovery", "Automation"} {
+		if strings.Contains(output, cat) {
+			t.Fatalf("no-args output should not include category %q:\n%s", cat, output)
 		}
 	}
 	if stderr.Len() != 0 {
@@ -345,16 +353,18 @@ func TestActionsListsBeginnerActions(t *testing.T) {
 		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
 	}
 	out := stdout.String()
-	expected := []string{"prepare", "check", "recover", "doctor", "actions", "status", "reset", "init", "add", "start", "learn", "quick", "run", "ci"}
+	expected := []string{"init", "doctor", "verify", "check"}
 	for _, name := range expected {
 		if !strings.Contains(out, name) {
 			t.Fatalf("actions output missing %q:\n%s", name, out)
 		}
 	}
-	categories := []string{"Getting started", "Daily tasks", "Health & recovery", "Automation"}
-	for _, cat := range categories {
-		if !strings.Contains(out, cat) {
-			t.Fatalf("actions output missing category %q:\n%s", cat, out)
+	if !strings.Contains(out, "Getting started") {
+		t.Fatalf("actions output missing Getting started category:\n%s", out)
+	}
+	for _, cat := range []string{"Daily tasks", "Health & recovery", "Automation"} {
+		if strings.Contains(out, cat) {
+			t.Fatalf("actions output should not include category %q:\n%s", cat, out)
 		}
 	}
 }
@@ -392,14 +402,10 @@ func TestNoArgsVietnamese(t *testing.T) {
 	if !strings.Contains(out, "Bắt đầu") {
 		t.Fatalf("expected Vietnamese 'Bắt đầu', got:\n%s", out)
 	}
-	if !strings.Contains(out, "Tác vụ hằng ngày") {
-		t.Fatalf("expected Vietnamese 'Tác vụ hằng ngày', got:\n%s", out)
-	}
-	if !strings.Contains(out, "Sức khỏe & khôi phục") {
-		t.Fatalf("expected Vietnamese 'Sức khỏe & khôi phục', got:\n%s", out)
-	}
-	if !strings.Contains(out, "Tự động hóa") {
-		t.Fatalf("expected Vietnamese 'Tự động hóa', got:\n%s", out)
+	for _, cat := range []string{"Tác vụ hằng ngày", "Sức khỏe & khôi phục", "Tự động hóa"} {
+		if strings.Contains(out, cat) {
+			t.Fatalf("no-args output should not include Vietnamese category %q:\n%s", cat, out)
+		}
 	}
 	if !strings.Contains(out, "Các lệnh thường dùng và cách sử dụng") {
 		t.Fatalf("expected Vietnamese 'Các lệnh thường dùng và cách sử dụng', got:\n%s", out)
@@ -441,9 +447,6 @@ func TestActionsVietnamese(t *testing.T) {
 	}
 	if !strings.Contains(out, "Bắt đầu") {
 		t.Fatalf("expected Vietnamese 'Bắt đầu', got:\n%s", out)
-	}
-	if !strings.Contains(out, "Tác vụ hằng ngày") {
-		t.Fatalf("expected Vietnamese 'Tác vụ hằng ngày', got:\n%s", out)
 	}
 	if !strings.Contains(out, "Hành động") {
 		t.Fatalf("expected Vietnamese 'Hành động', got:\n%s", out)

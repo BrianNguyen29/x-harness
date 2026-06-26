@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { initCommand } from "./commands/init.js";
 import { addCommand } from "./commands/add.js";
 import { verifyCommand } from "./commands/verify.js";
@@ -49,9 +52,6 @@ import {
   resolveLang,
   startHereTitle,
   categoryGettingStarted,
-  categoryDailyTasks,
-  categoryHealthRecovery,
-  categoryAutomation,
   discoverMore,
   newToXHarness,
   usageLabel,
@@ -75,76 +75,66 @@ import {
   descriptionHeader,
 } from "./i18n.js";
 
+const packageJson = JSON.parse(
+  readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "..", "package.json"),
+    "utf8"
+  )
+) as { version?: string };
+const CLI_VERSION = packageJson.version ?? "dev";
+
+interface CliCommandMetadata {
+  name: string;
+  description: string;
+  primary?: boolean;
+  onboarding?: boolean;
+  onboarding_order?: number;
+  maturity: "stable" | "beta" | "experimental" | "skeletal";
+}
+
+function loadCliCommandMetadata(): CliCommandMetadata[] {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    join(here, "..", "..", "..", "internal", "cli", "commands.json"),
+    join(here, "..", "internal", "cli", "commands.json"),
+  ];
+  for (const candidate of candidates) {
+    if (!existsSync(candidate)) continue;
+    return JSON.parse(readFileSync(candidate, "utf8")) as CliCommandMetadata[];
+  }
+  throw new Error("x-harness CLI command registry not found");
+}
+
+const CLI_COMMANDS = loadCliCommandMetadata();
+const commandDescriptions: Record<string, string> = Object.fromEntries(
+  CLI_COMMANDS.map((command) => [command.name, command.description])
+);
+
 const program = new Command();
 program
   .name("xh")
   .description("A lightweight verify-gated harness for AI-agent workflows")
-  .version("0.99.0-rc1")
+  .version(CLI_VERSION)
   .helpOption(false)
   .option("--lang <code>", "Language", "en");
 
-const beginnerCommands = new Set([
-  "check",
-  "prepare",
-  "recover",
-  "doctor",
-  "actions",
-  "status",
-  "reset",
-  "init",
-  "add",
-  "start",
-  "learn",
-  "quick",
-  "run",
-  "ci",
-]);
+const beginnerCommands = new Set(
+  CLI_COMMANDS.filter((command) => command.onboarding).map(
+    (command) => command.name
+  )
+);
 
-const commandMaturity: Record<string, string> = {
-  check: "stable",
-  prepare: "stable",
-  recover: "stable",
-  doctor: "stable",
-  actions: "beta",
-  status: "stable",
-  reset: "stable",
-  init: "stable",
-  add: "stable",
-  start: "beta",
-  learn: "beta",
-  quick: "beta",
-  run: "beta",
-  ci: "beta",
-  verify: "stable",
-  handoff: "stable",
-  report: "stable",
-  trace: "stable",
-  clean: "stable",
-  examples: "stable",
-  context: "stable",
-  recovery: "stable",
-  packet: "beta",
-  profile: "beta",
-  intake: "experimental",
-  governance: "experimental",
-  intervention: "experimental",
-  prediction: "experimental",
-  benchmark: "stable",
-  components: "experimental",
-  evidence: "experimental",
-  episode: "experimental",
-  attribution: "experimental",
-  permissions: "experimental",
-  evolve: "experimental",
-  frozen: "experimental",
-  export: "experimental",
-  import: "experimental",
-  federation: "experimental",
-  "approval-risk": "experimental",
-  "agent-profile": "experimental",
-  cost: "experimental",
-  decision: "experimental",
-};
+function onboardingCommands(): CliCommandMetadata[] {
+  return CLI_COMMANDS.filter((command) => command.onboarding).sort((a, b) => {
+    const left = a.onboarding_order ?? Number.MAX_SAFE_INTEGER;
+    const right = b.onboarding_order ?? Number.MAX_SAFE_INTEGER;
+    return left === right ? a.name.localeCompare(b.name) : left - right;
+  });
+}
+
+function commandDescription(name: string, lang: Lang): string {
+  return getBeginnerCommandDesc(name, lang) || commandDescriptions[name] || "";
+}
 
 function hideAdvancedCommands() {
   for (const cmd of program.commands) {
@@ -155,39 +145,18 @@ function hideAdvancedCommands() {
 }
 
 function printStartHere(lang: Lang) {
-  console.log("xh 0.99.0-rc1");
+  console.log(`xh ${CLI_VERSION}`);
   console.log("");
   console.log("A lightweight verify-gated harness for AI-agent workflows.");
   console.log("");
   console.log(startHereTitle(lang));
   console.log("");
   console.log(categoryGettingStarted(lang));
-  console.log(`  xh start           ${getBeginnerCommandDesc("start", lang)}`);
-  console.log(`  xh learn           ${getBeginnerCommandDesc("learn", lang)}`);
-  console.log(`  xh quick           ${getBeginnerCommandDesc("quick", lang)}`);
-  console.log(`  xh init            ${getBeginnerCommandDesc("init", lang)}`);
-  console.log("");
-  console.log(categoryDailyTasks(lang));
-  console.log(`  xh check (verify)  ${getBeginnerCommandDesc("check", lang)}`);
-  console.log(
-    `  xh actions         ${getBeginnerCommandDesc("actions", lang)}`
-  );
-  console.log(`  xh status          ${getBeginnerCommandDesc("status", lang)}`);
-  console.log(`  xh add             ${getBeginnerCommandDesc("add", lang)}`);
-  console.log("");
-  console.log(categoryHealthRecovery(lang));
-  console.log(`  xh doctor          ${getBeginnerCommandDesc("doctor", lang)}`);
-  console.log(
-    `  xh recover         ${getBeginnerCommandDesc("recover", lang)}`
-  );
-  console.log(`  xh reset           ${getBeginnerCommandDesc("reset", lang)}`);
-  console.log("");
-  console.log(categoryAutomation(lang));
-  console.log(`  xh run             ${getBeginnerCommandDesc("run", lang)}`);
-  console.log(`  xh ci              ${getBeginnerCommandDesc("ci", lang)}`);
-  console.log(
-    `  xh prepare         ${getBeginnerCommandDesc("prepare", lang)}`
-  );
+  for (const command of onboardingCommands()) {
+    console.log(
+      `  xh ${command.name.padEnd(14)} ${commandDescription(command.name, lang)}`
+    );
+  }
   console.log("");
   console.log(discoverMore(lang));
   console.log(`  xh --help            ${discoverHelpDesc(lang)}`);
@@ -198,7 +167,7 @@ function printStartHere(lang: Lang) {
 }
 
 function printHelp(lang: Lang) {
-  console.log("xh 0.99.0-rc1");
+  console.log(`xh ${CLI_VERSION}`);
   console.log("");
   console.log("A lightweight verify-gated harness for AI-agent workflows.");
   console.log("");
@@ -206,32 +175,11 @@ function printHelp(lang: Lang) {
   console.log("  xh <command> [options]");
   console.log("");
   console.log(categoryGettingStarted(lang));
-  console.log(`  xh start           ${getBeginnerCommandDesc("start", lang)}`);
-  console.log(`  xh learn           ${getBeginnerCommandDesc("learn", lang)}`);
-  console.log(`  xh quick           ${getBeginnerCommandDesc("quick", lang)}`);
-  console.log(`  xh init            ${getBeginnerCommandDesc("init", lang)}`);
-  console.log("");
-  console.log(categoryDailyTasks(lang));
-  console.log(`  xh check (verify)  ${getBeginnerCommandDesc("check", lang)}`);
-  console.log(
-    `  xh actions         ${getBeginnerCommandDesc("actions", lang)}`
-  );
-  console.log(`  xh status          ${getBeginnerCommandDesc("status", lang)}`);
-  console.log(`  xh add             ${getBeginnerCommandDesc("add", lang)}`);
-  console.log("");
-  console.log(categoryHealthRecovery(lang));
-  console.log(`  xh doctor          ${getBeginnerCommandDesc("doctor", lang)}`);
-  console.log(
-    `  xh recover         ${getBeginnerCommandDesc("recover", lang)}`
-  );
-  console.log(`  xh reset           ${getBeginnerCommandDesc("reset", lang)}`);
-  console.log("");
-  console.log(categoryAutomation(lang));
-  console.log(`  xh run             ${getBeginnerCommandDesc("run", lang)}`);
-  console.log(`  xh ci              ${getBeginnerCommandDesc("ci", lang)}`);
-  console.log(
-    `  xh prepare         ${getBeginnerCommandDesc("prepare", lang)}`
-  );
+  for (const command of onboardingCommands()) {
+    console.log(
+      `  xh ${command.name.padEnd(14)} ${commandDescription(command.name, lang)}`
+    );
+  }
   console.log("");
   console.log(forCommandSpecificHelp(lang));
   console.log("  xh <command> --help");
@@ -248,7 +196,7 @@ function printHelp(lang: Lang) {
 }
 
 function printHelpMaturity() {
-  console.log("xh 0.99.0-rc1");
+  console.log(`xh ${CLI_VERSION}`);
   console.log("");
   console.log("A lightweight verify-gated harness for AI-agent workflows.");
   console.log("");
@@ -262,28 +210,24 @@ function printHelpMaturity() {
   console.log("  xh <command> [options]");
   console.log("");
 
-  const groups: Record<string, string[]> = {
+  const groups: Record<string, CliCommandMetadata[]> = {
     stable: [],
     beta: [],
     experimental: [],
     skeletal: [],
   };
 
-  for (const cmd of program.commands) {
-    const mat = commandMaturity[cmd.name()] || "experimental";
-    const names = [cmd.name(), ...cmd.aliases()];
-    for (const n of names) {
-      if (!groups[mat].includes(n)) {
-        groups[mat].push(n);
-      }
-    }
+  for (const command of CLI_COMMANDS) {
+    groups[command.maturity].push(command);
   }
 
   for (const mat of ["stable", "beta", "experimental", "skeletal"]) {
     if (groups[mat].length > 0) {
       console.log(`${mat}:`);
-      for (const name of groups[mat].sort()) {
-        console.log(`  ${name}`);
+      for (const command of groups[mat].sort((a, b) =>
+        a.name.localeCompare(b.name)
+      )) {
+        console.log(`  ${command.name.padEnd(12)} ${command.description}`);
       }
       console.log("");
     }
@@ -407,32 +351,11 @@ actions.action((opts: { lang: string }) => {
   console.log(`## ${categoryGettingStarted(lang)}`);
   console.log(`| ${actionHeader(lang)} | ${descriptionHeader(lang)} |`);
   console.log("| :-- | :-- |");
-  console.log(`| **start** | ${getBeginnerCommandDesc("start", lang)} |`);
-  console.log(`| **learn** | ${getBeginnerCommandDesc("learn", lang)} |`);
-  console.log(`| **quick** | ${getBeginnerCommandDesc("quick", lang)} |`);
-  console.log(`| **init** | ${getBeginnerCommandDesc("init", lang)} |`);
-  console.log("");
-  console.log(`## ${categoryDailyTasks(lang)}`);
-  console.log(`| ${actionHeader(lang)} | ${descriptionHeader(lang)} |`);
-  console.log("| :-- | :-- |");
-  console.log(`| **check** | ${getBeginnerCommandDesc("check", lang)} |`);
-  console.log(`| **actions** | ${getBeginnerCommandDesc("actions", lang)} |`);
-  console.log(`| **status** | ${getBeginnerCommandDesc("status", lang)} |`);
-  console.log(`| **add** | ${getBeginnerCommandDesc("add", lang)} |`);
-  console.log("");
-  console.log(`## ${categoryHealthRecovery(lang)}`);
-  console.log(`| ${actionHeader(lang)} | ${descriptionHeader(lang)} |`);
-  console.log("| :-- | :-- |");
-  console.log(`| **doctor** | ${getBeginnerCommandDesc("doctor", lang)} |`);
-  console.log(`| **recover** | ${getBeginnerCommandDesc("recover", lang)} |`);
-  console.log(`| **reset** | ${getBeginnerCommandDesc("reset", lang)} |`);
-  console.log("");
-  console.log(`## ${categoryAutomation(lang)}`);
-  console.log(`| ${actionHeader(lang)} | ${descriptionHeader(lang)} |`);
-  console.log("| :-- | :-- |");
-  console.log(`| **run** | ${getBeginnerCommandDesc("run", lang)} |`);
-  console.log(`| **ci** | ${getBeginnerCommandDesc("ci", lang)} |`);
-  console.log(`| **prepare** | ${getBeginnerCommandDesc("prepare", lang)} |`);
+  for (const command of onboardingCommands()) {
+    console.log(
+      `| **${command.name}** | ${commandDescription(command.name, lang)} |`
+    );
+  }
   console.log("");
   console.log(forMoreInfo(lang));
 });

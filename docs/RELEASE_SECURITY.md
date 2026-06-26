@@ -179,11 +179,11 @@ The release workflow generates `x-harness.rb` from `scripts/generate-homebrew-fo
 Example:
 
 ```bash
-curl -LO https://github.com/BrianNguyen29/x-harness/releases/download/v0.99.0-rc1/x-harness.rb
+curl -LO https://github.com/BrianNguyen29/x-harness/releases/download/<tag>/x-harness.rb
 cp x-harness.rb homebrew-x-harness/Formula/x-harness.rb
 cd homebrew-x-harness
 git add Formula/x-harness.rb
-git commit -m "x-harness 0.99.0-rc1"
+git commit -m "x-harness <tag>"
 git push
 ```
 
@@ -194,3 +194,45 @@ brew tap BrianNguyen29/x-harness
 brew install x-harness
 brew upgrade x-harness
 ```
+
+## SLSA Provenance Plan
+
+The release workflow already produces Sigstore bundles (cosign) and npm provenance. To reach SLSA Level 3 for Go binaries, the following starter workflow and plan are provided:
+
+1. **Artifact preparation** — `.github/workflows/slsa-provenance.yml` builds the Go binary, generates a SHA256 checksum, and uploads the artifact with a `hashes` output.
+2. **SLSA attestation generation** — once the official `slsa-framework/slsa-github-generator` reusable workflow is pinned to a verified SHA, a `provenance` job can be added that calls the generic generator with the prepared base64-subjects.
+3. **Attestation attachment** — the generated `slsa-attestation.intoto.jsonl` is uploaded to the GitHub Release alongside the existing Sigstore bundles and checksums.
+4. **Consumer verification** — consumers can verify the SLSA attestation with the `slsa-verifier` CLI or rely on the existing cosign bundle and release checksums as a secondary signal.
+
+The starter workflow is disabled by default (`workflow_dispatch` only) so the generator pin can be reviewed and enabled without changing the release critical path.
+
+## Branch Protection and CODEOWNERS Backup
+
+### Required settings for `main`
+
+- **Require pull request before merging** — all commits to `main` must come through a PR.
+- **Require status checks to pass** — the following workflow jobs are required:
+  - `quality` matrix jobs (typecheck, build, lint, format, test)
+  - `go-quality` matrix jobs (test, race, vet, build, parity)
+  - `go-fuzz-smoke`
+  - `verify-gates`
+  - `verify-gates-supplemental` (when the supplemental workflow is enabled)
+- **Require signed commits** — all commits should be GPG or SSH signed where feasible.
+- **Restrict pushes that create files** — only allow pushes from the release workflow or automated bots for specific paths.
+- **Require CODEOWNERS review** for paths covered by `.github/CODEOWNERS`.
+
+### CODEOWNERS backup recommendation
+
+The current `.github/CODEOWNERS` assigns critical paths (`.github/workflows/`, `policies/`, `schemas/`, `internal/admission/`) to a single owner. To avoid a single point of failure:
+
+1. Add a secondary reviewer group or individual to each protected path, e.g.:
+   ```
+   .github/workflows/ @BrianNguyen29 @secondary-owner
+   policies/ @BrianNguyen29 @secondary-owner
+   schemas/ @BrianNguyen29 @secondary-owner
+   internal/admission/ @BrianNguyen29 @secondary-owner
+   ```
+2. Ensure the secondary owner is a repository admin or has `maintain` role so they can approve and merge when the primary owner is unavailable.
+3. Keep the backup owner list short (two or three individuals) to preserve review velocity while eliminating single-person dependency.
+
+> **Note**: Changing `.github/CODEOWNERS` itself requires the existing owner approval. Any backup-owner addition should be proposed in a dedicated PR with out-of-band confirmation from the proposed backup owner.

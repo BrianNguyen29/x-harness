@@ -10,34 +10,32 @@ describe("progressive disclosure", () => {
     expect(stdout).toContain("init");
     expect(stdout).toContain("--help-all");
     expect(stdout).toContain("Getting started");
-    expect(stdout).toContain("Daily tasks");
-    expect(stdout).toContain("Health & recovery");
-    expect(stdout).toContain("Automation");
+    expect(stdout).not.toContain("Daily tasks");
+    expect(stdout).not.toContain("Health & recovery");
+    expect(stdout).not.toContain("Automation");
   });
 
-  it("default help shows only beginner commands", async () => {
+  it("default help shows only core onboarding commands", async () => {
     const { stdout, exitCode } = await execaNode(["--help"]);
     expect(exitCode).toBe(0);
-    // Beginner commands should be present
-    expect(stdout).toContain("start");
-    expect(stdout).toContain("check");
-    expect(stdout).toContain("prepare");
-    expect(stdout).toContain("doctor");
-    expect(stdout).toContain("actions");
-    expect(stdout).toContain("status");
-    expect(stdout).toContain("reset");
+    // Core onboarding commands should be present
     expect(stdout).toContain("init");
-    expect(stdout).toContain("add");
-    // Advanced commands should not appear
+    expect(stdout).toContain("doctor");
+    expect(stdout).toContain("verify");
+    expect(stdout).toContain("check");
+    // Beta, advanced, and experimental commands should not appear
+    expect(stdout).not.toContain("\n  xh start");
+    expect(stdout).not.toContain("actions");
+    expect(stdout).not.toContain("prepare");
     expect(stdout).not.toContain("packet");
     expect(stdout).not.toContain("intake");
     expect(stdout).not.toContain("governance");
     expect(stdout).not.toContain("federation");
-    // Categories should be present
+    // Only the core onboarding category should be present
     expect(stdout).toContain("Getting started");
-    expect(stdout).toContain("Daily tasks");
-    expect(stdout).toContain("Health & recovery");
-    expect(stdout).toContain("Automation");
+    expect(stdout).not.toContain("Daily tasks");
+    expect(stdout).not.toContain("Health & recovery");
+    expect(stdout).not.toContain("Automation");
     // Footer should be present
     expect(stdout).toContain("--help-all");
     expect(stdout).toContain("--help-maturity");
@@ -69,9 +67,9 @@ describe("progressive disclosure", () => {
     const { stdout, exitCode } = await execaNode(["--lang", "vi"]);
     expect(exitCode).toBe(0);
     expect(stdout).toContain("Bắt đầu");
-    expect(stdout).toContain("Tác vụ hằng ngày");
-    expect(stdout).toContain("Sức khỏe & khôi phục");
-    expect(stdout).toContain("Tự động hóa");
+    expect(stdout).not.toContain("Tác vụ hằng ngày");
+    expect(stdout).not.toContain("Sức khỏe & khôi phục");
+    expect(stdout).not.toContain("Tự động hóa");
     expect(stdout).toContain("Các lệnh thường dùng và cách sử dụng");
     expect(stdout).toContain("Tất cả lệnh");
     expect(stdout).toContain("Các lệnh theo nhóm độ ổn định");

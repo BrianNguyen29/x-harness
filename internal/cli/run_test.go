@@ -112,15 +112,15 @@ func TestRunHelp(t *testing.T) {
 	}
 }
 
-func TestRunInHelpListing(t *testing.T) {
+func TestRunHiddenFromDefaultHelp(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	code := Run([]string{"--help"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
 	}
-	if !strings.Contains(stdout.String(), "run") {
-		t.Fatalf("expected help to include run, got: %s", stdout.String())
+	if outputHasCommandLine(stdout.String(), "run") {
+		t.Fatalf("expected default help to hide run, got: %s", stdout.String())
 	}
 }
 

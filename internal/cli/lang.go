@@ -201,6 +201,8 @@ func discoverHelpMaturityDesc(l Lang) string {
 func beginnerCommandDesc(name string, lang Lang) string {
 	if lang == LangVI {
 		switch name {
+		case "verify":
+			return "Chạy cổng xác minh chỉ đọc đối với completion card"
 		case "check":
 			return "Chạy xác minh chỉ đọc đối với completion card"
 		case "prepare":

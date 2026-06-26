@@ -63,15 +63,15 @@ func TestLearnHelp(t *testing.T) {
 	}
 }
 
-func TestLearnInHelpListing(t *testing.T) {
+func TestLearnHiddenFromDefaultHelp(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	code := Run([]string{"--help"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
 	}
-	if !strings.Contains(stdout.String(), "learn") {
-		t.Fatalf("expected help to include learn, got: %s", stdout.String())
+	if outputHasCommandLine(stdout.String(), "learn") {
+		t.Fatalf("expected default help to hide learn, got: %s", stdout.String())
 	}
 }
 

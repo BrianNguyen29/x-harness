@@ -1,0 +1,12 @@
+# x-harness Adapter Matrix
+
+adapters: 6
+
+| Adapter | Description | Capabilities | Formats |
+| :-- | :-- | :-- | :-- |
+| opencode | OpenCode agent platform integration | prepare, check, recover, doctor, actions, status, reset | verify-agent, orchestrator, example-json |
+| claude-code | Claude Code agent platform integration | prepare, check, recover, doctor, actions, status, reset | CLAUDE.md, agents, skills |
+| cursor | Cursor IDE agent platform integration | prepare, check, recover, doctor, actions, status, reset | rules |
+| generic | System-agnostic x-harness adapter | prepare, check, recover, doctor, actions, status, reset | AGENTS.md |
+| antigravity | Antigravity agent platform integration | prepare, check, recover, doctor, actions, status, reset | rules, workflows |
+| codex | Codex agent platform integration | prepare, check, recover, doctor, actions, status, reset | AGENTS.md |

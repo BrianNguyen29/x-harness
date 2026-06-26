@@ -13,6 +13,7 @@ enforces.
 - [FAQ](FAQ.md)
 - [Architecture](ARCHITECTURE.md)
 - [Adapters](ADAPTERS.md)
+- [Threat Model](THREAT_MODEL.md)
 
 ## Runtime Contract
 
@@ -25,6 +26,7 @@ enforces.
 - [Boundary](BOUNDARY.md) — deterministic path-glob + import-regex policy enforcement
 - [Intake](INTAKE.md) — task intake tiering and product-intent records
 - [Decision](DECISION.md) — lightweight decision memory records (ADR-lite)
+- [Evidence Provenance](EVIDENCE_PROVENANCE.md) — command evidence, CI binding, checksums, and attestation guidance
 
 ## Operations
 
@@ -38,3 +40,4 @@ enforces.
 ## Reference
 
 - [Conformance Strict Profile Spec](CONFORMANCE_STRICT_PROFILE.md) — Rules and verification criteria for `conformance run --profile strict`
+- [CLI Commands](CLI_COMMANDS.md) — generated command maturity matrix

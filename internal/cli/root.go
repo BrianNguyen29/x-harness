@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var Version = "0.99.0-rc1"
+var Version = "dev"
 
 func SetVersion(v string) {
 	if v != "" {
@@ -24,76 +24,17 @@ const (
 )
 
 type CommandInfo struct {
-	Name        string
-	Description string
-	Primary     bool
-	Maturity    Maturity
-}
-
-var commands = []CommandInfo{
-	{Name: "verify", Description: "Run read-only verification against a completion card", Primary: true, Maturity: MaturityStable},
-	{Name: "check", Description: "Alias for verify", Primary: true, Maturity: MaturityStable},
-	{Name: "doctor", Description: "Validate workspace health and configuration", Primary: true, Maturity: MaturityStable},
-	{Name: "examples", Description: "Verify bundled examples", Primary: true, Maturity: MaturityStable},
-	{Name: "context", Description: "Show canonical context and runtime contract", Primary: true, Maturity: MaturityStable},
-	{Name: "benchmark", Description: "Measure latency and verification benchmark behavior", Primary: true, Maturity: MaturityStable},
-	{Name: "handoff", Description: "Generate structured handoff prompts", Primary: true, Maturity: MaturityStable},
-	{Name: "prepare", Description: "Alias for handoff readiness", Primary: true, Maturity: MaturityStable},
-	{Name: "report", Description: "Show trace summary or metrics report", Primary: true, Maturity: MaturityStable},
-	{Name: "status", Description: "Alias for report", Primary: true, Maturity: MaturityStable},
-	{Name: "trace", Description: "Append or verify trace events", Primary: true, Maturity: MaturityStable},
-	{Name: "clean", Description: "Clean generated harness state", Primary: true, Maturity: MaturityStable},
-	{Name: "reset", Description: "Alias for safe generated-state cleanup", Primary: true, Maturity: MaturityStable},
-	{Name: "init", Description: "Install harness assets into a workspace", Maturity: MaturityStable},
-	{Name: "add", Description: "Add claim, evidence, or completion card helpers", Maturity: MaturityStable},
-	{Name: "recovery", Description: "Generate recovery suggestions", Maturity: MaturityStable},
-	{Name: "recover", Description: "Alias for recovery suggest", Maturity: MaturityStable},
-	{Name: "packet", Description: "Work with claim/evidence packets", Maturity: MaturityBeta},
-	{Name: "intake", Description: "Evaluate task intake tiering", Maturity: MaturityExperimental},
-	{Name: "decision", Description: "Record or list decision memory records (ADR-lite)", Maturity: MaturityExperimental},
-	{Name: "governance", Description: "Evaluate governance rules", Maturity: MaturityExperimental},
-	{Name: "intervention", Description: "Record governance interventions", Maturity: MaturityExperimental},
-	{Name: "prediction", Description: "Evaluate prediction/checklist claims", Maturity: MaturityExperimental},
-	{Name: "components", Description: "Inspect component registry coverage", Maturity: MaturityExperimental},
-	{Name: "evidence", Description: "Manage evidence corpus entries", Maturity: MaturityExperimental},
-	{Name: "episode", Description: "Create episode packages", Maturity: MaturityExperimental},
-	{Name: "attribution", Description: "Evaluate attribution metadata", Maturity: MaturityExperimental},
-	{Name: "permissions", Description: "Evaluate permission rules", Maturity: MaturityExperimental},
-	{Name: "evolve", Description: "Evaluate evolution candidates", Maturity: MaturityExperimental},
-	{Name: "export", Description: "Export frozen artifacts", Maturity: MaturityExperimental},
-	{Name: "import", Description: "Import frozen artifacts", Maturity: MaturityExperimental},
-	{Name: "frozen", Description: "Inspect frozen manifests", Maturity: MaturityExperimental},
-	{Name: "federation", Description: "Evaluate federation patterns", Maturity: MaturityExperimental},
-	{Name: "approval-risk", Description: "Evaluate approval risk", Maturity: MaturityExperimental},
-	{Name: "agent-profile", Description: "Inspect agent profiles", Maturity: MaturityExperimental},
-	{Name: "cost", Description: "Evaluate cost budget data", Maturity: MaturityExperimental},
-	{Name: "profile", Description: "Recommend installation profiles", Maturity: MaturityBeta},
-	{Name: "repair", Description: "Repair managed files from manifest", Maturity: MaturityBeta},
-	{Name: "uninstall", Description: "Uninstall managed files using manifest", Maturity: MaturityBeta},
-	{Name: "start", Description: "Guided onboarding: doctor, examples verify, init wizard, next steps", Primary: true, Maturity: MaturityBeta},
-	{Name: "learn", Description: "Read-only concept tour for beginners", Primary: true, Maturity: MaturityBeta},
-	{Name: "quick", Description: "Read-only next-action recommender for newcomers", Primary: true, Maturity: MaturityBeta},
-	{Name: "run", Description: "Run a built-in workflow recipe", Primary: true, Maturity: MaturityBeta},
-	{Name: "ci", Description: "Run the built-in CI workflow", Primary: true, Maturity: MaturityBeta},
-	{Name: "actions", Description: "List beginner-friendly actions", Maturity: MaturityBeta},
-	{Name: "card", Description: "Generate or verify admission cards", Maturity: MaturityBeta},
-	{Name: "conformance", Description: "Run conformance checks", Maturity: MaturityBeta},
-	{Name: "readiness", Description: "Evaluate readiness levels", Maturity: MaturityBeta},
-	{Name: "release", Description: "Generate or verify release evidence", Maturity: MaturityBeta},
-	{Name: "adapters", Description: "Inspect adapter matrix", Maturity: MaturityBeta},
-	{Name: "scan", Description: "Run static security scan on adapter or skill files", Maturity: MaturityBeta},
-	{Name: "contract", Description: "Run contract oracle checks", Maturity: MaturityExperimental},
-	{Name: "policy", Description: "Show policy enforcement matrix and rule explainers", Maturity: MaturityBeta},
-	{Name: "explain", Description: "Explain a completion card's admission/withheld state", Maturity: MaturityBeta},
-	{Name: "boundary", Description: "Lint/check/explain boundary policy against repo source files", Maturity: MaturityBeta},
+	Name            string   `json:"name"`
+	Description     string   `json:"description"`
+	Primary         bool     `json:"primary,omitempty"`
+	Onboarding      bool     `json:"onboarding,omitempty"`
+	OnboardingOrder int      `json:"onboarding_order,omitempty"`
+	Maturity        Maturity `json:"maturity"`
 }
 
 func isBeginnerCommand(name string) bool {
-	switch name {
-	case "check", "prepare", "recover", "doctor", "actions", "status", "reset", "init", "add", "start", "learn", "quick", "run", "ci":
-		return true
-	}
-	return false
+	command, ok := commandByName(name)
+	return ok && command.Onboarding
 }
 
 func Run(args []string, stdout io.Writer, stderr io.Writer) int {
@@ -262,26 +203,9 @@ func printStartHere(w io.Writer, lang Lang) {
 	WriteLine(w, "%s", startHereTitle(lang))
 	WriteLine(w, "")
 	WriteLine(w, "%s", categoryGettingStarted(lang))
-	WriteLine(w, "  %-18s %s", "start", beginnerCommandDesc("start", lang))
-	WriteLine(w, "  %-18s %s", "learn", beginnerCommandDesc("learn", lang))
-	WriteLine(w, "  %-18s %s", "quick", beginnerCommandDesc("quick", lang))
-	WriteLine(w, "  %-18s %s", "init", beginnerCommandDesc("init", lang))
-	WriteLine(w, "")
-	WriteLine(w, "%s", categoryDailyTasks(lang))
-	WriteLine(w, "  %-18s %s", "check (verify)", beginnerCommandDesc("check", lang))
-	WriteLine(w, "  %-18s %s", "actions", beginnerCommandDesc("actions", lang))
-	WriteLine(w, "  %-18s %s", "status", beginnerCommandDesc("status", lang))
-	WriteLine(w, "  %-18s %s", "add", beginnerCommandDesc("add", lang))
-	WriteLine(w, "")
-	WriteLine(w, "%s", categoryHealthRecovery(lang))
-	WriteLine(w, "  %-18s %s", "doctor", beginnerCommandDesc("doctor", lang))
-	WriteLine(w, "  %-18s %s", "recover", beginnerCommandDesc("recover", lang))
-	WriteLine(w, "  %-18s %s", "reset", beginnerCommandDesc("reset", lang))
-	WriteLine(w, "")
-	WriteLine(w, "%s", categoryAutomation(lang))
-	WriteLine(w, "  %-18s %s", "run", beginnerCommandDesc("run", lang))
-	WriteLine(w, "  %-18s %s", "ci", beginnerCommandDesc("ci", lang))
-	WriteLine(w, "  %-18s %s", "prepare", beginnerCommandDesc("prepare", lang))
+	for _, command := range onboardingCommands() {
+		WriteLine(w, "  %-18s %s", command.Name, beginnerCommandDesc(command.Name, lang))
+	}
 	WriteLine(w, "")
 	WriteLine(w, "%s", discoverMore(lang))
 	WriteLine(w, "  xh --help            %s", discoverHelpDesc(lang))
@@ -300,26 +224,9 @@ func printHelp(w io.Writer, lang Lang) {
 	WriteLine(w, "  xh <command> [options]")
 	WriteLine(w, "")
 	WriteLine(w, "%s", categoryGettingStarted(lang))
-	WriteLine(w, "  %-18s %s", "start", beginnerCommandDesc("start", lang))
-	WriteLine(w, "  %-18s %s", "learn", beginnerCommandDesc("learn", lang))
-	WriteLine(w, "  %-18s %s", "quick", beginnerCommandDesc("quick", lang))
-	WriteLine(w, "  %-18s %s", "init", beginnerCommandDesc("init", lang))
-	WriteLine(w, "")
-	WriteLine(w, "%s", categoryDailyTasks(lang))
-	WriteLine(w, "  %-18s %s", "check (verify)", beginnerCommandDesc("check", lang))
-	WriteLine(w, "  %-18s %s", "actions", beginnerCommandDesc("actions", lang))
-	WriteLine(w, "  %-18s %s", "status", beginnerCommandDesc("status", lang))
-	WriteLine(w, "  %-18s %s", "add", beginnerCommandDesc("add", lang))
-	WriteLine(w, "")
-	WriteLine(w, "%s", categoryHealthRecovery(lang))
-	WriteLine(w, "  %-18s %s", "doctor", beginnerCommandDesc("doctor", lang))
-	WriteLine(w, "  %-18s %s", "recover", beginnerCommandDesc("recover", lang))
-	WriteLine(w, "  %-18s %s", "reset", beginnerCommandDesc("reset", lang))
-	WriteLine(w, "")
-	WriteLine(w, "%s", categoryAutomation(lang))
-	WriteLine(w, "  %-18s %s", "run", beginnerCommandDesc("run", lang))
-	WriteLine(w, "  %-18s %s", "ci", beginnerCommandDesc("ci", lang))
-	WriteLine(w, "  %-18s %s", "prepare", beginnerCommandDesc("prepare", lang))
+	for _, command := range onboardingCommands() {
+		WriteLine(w, "  %-18s %s", command.Name, beginnerCommandDesc(command.Name, lang))
+	}
 	WriteLine(w, "")
 	WriteLine(w, "%s", forCommandSpecificHelp(lang))
 	WriteLine(w, "  xh <command> --help")
@@ -409,32 +316,9 @@ func printActions(w io.Writer, lang Lang) {
 	WriteLine(w, "## %s", categoryGettingStarted(lang))
 	WriteLine(w, "| %s | %s |", actionHeader(lang), descriptionHeader(lang))
 	WriteLine(w, "| :-- | :-- |")
-	WriteLine(w, "| **start** | %s |", beginnerCommandDesc("start", lang))
-	WriteLine(w, "| **learn** | %s |", beginnerCommandDesc("learn", lang))
-	WriteLine(w, "| **quick** | %s |", beginnerCommandDesc("quick", lang))
-	WriteLine(w, "| **init** | %s |", beginnerCommandDesc("init", lang))
-	WriteLine(w, "")
-	WriteLine(w, "## %s", categoryDailyTasks(lang))
-	WriteLine(w, "| %s | %s |", actionHeader(lang), descriptionHeader(lang))
-	WriteLine(w, "| :-- | :-- |")
-	WriteLine(w, "| **check** | %s |", beginnerCommandDesc("check", lang))
-	WriteLine(w, "| **actions** | %s |", beginnerCommandDesc("actions", lang))
-	WriteLine(w, "| **status** | %s |", beginnerCommandDesc("status", lang))
-	WriteLine(w, "| **add** | %s |", beginnerCommandDesc("add", lang))
-	WriteLine(w, "")
-	WriteLine(w, "## %s", categoryHealthRecovery(lang))
-	WriteLine(w, "| %s | %s |", actionHeader(lang), descriptionHeader(lang))
-	WriteLine(w, "| :-- | :-- |")
-	WriteLine(w, "| **doctor** | %s |", beginnerCommandDesc("doctor", lang))
-	WriteLine(w, "| **recover** | %s |", beginnerCommandDesc("recover", lang))
-	WriteLine(w, "| **reset** | %s |", beginnerCommandDesc("reset", lang))
-	WriteLine(w, "")
-	WriteLine(w, "## %s", categoryAutomation(lang))
-	WriteLine(w, "| %s | %s |", actionHeader(lang), descriptionHeader(lang))
-	WriteLine(w, "| :-- | :-- |")
-	WriteLine(w, "| **run** | %s |", beginnerCommandDesc("run", lang))
-	WriteLine(w, "| **ci** | %s |", beginnerCommandDesc("ci", lang))
-	WriteLine(w, "| **prepare** | %s |", beginnerCommandDesc("prepare", lang))
+	for _, command := range onboardingCommands() {
+		WriteLine(w, "| **%s** | %s |", command.Name, beginnerCommandDesc(command.Name, lang))
+	}
 	WriteLine(w, "")
 	WriteLine(w, "%s", forMoreInfoText(lang))
 }

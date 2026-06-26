@@ -2,9 +2,12 @@ package doctor
 
 import (
 	"bufio"
+	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -43,6 +46,7 @@ func CheckDocsDrift(root string) *DocsDriftReport {
 	checkPackageJSONMentionsVerify(r, root)
 	checkPolicyMatrixVsWorkflow(r, root)
 	checkPackageManagerConsistency(r, root)
+	checkPublicVersionReferences(r, root)
 
 	// Healthy stays true when no check marked itself failed.
 	return r
@@ -155,6 +159,74 @@ func checkPackageManagerConsistency(r *DocsDriftReport, root string) {
 		}
 	}
 	r.addPassed("package_manager_consistency", "no mixed npm/pnpm references in core files")
+}
+
+type packageVersionFile struct {
+	Version string `json:"version"`
+}
+
+// checkPublicVersionReferences keeps public release surfaces from drifting
+// away from package.json. The check intentionally scans only files that users
+// see first or that report CLI versions from source checkouts.
+func checkPublicVersionReferences(r *DocsDriftReport, root string) {
+	rootVersion, ok := readPackageVersion(filepath.Join(root, "package.json"))
+	if !ok {
+		r.addSkipped("public_version_references", "package.json version not found")
+		return
+	}
+	cliVersion, cliOK := readPackageVersion(filepath.Join(root, "packages", "cli", "package.json"))
+	if cliOK && cliVersion != rootVersion {
+		r.addFailed(
+			"package_version_mismatch",
+			fmt.Sprintf("package.json version %s does not match packages/cli/package.json version %s", rootVersion, cliVersion),
+			"package_version_mismatch",
+		)
+		return
+	}
+
+	versionPattern := regexp.MustCompile(`v?0\.[0-9]+\.[0-9]+(?:-rc[0-9]+)?`)
+	scanFiles := []string{
+		"README.md",
+		"docs/CODEBASE_MAP.md",
+		"docs/RELEASE_SECURITY.md",
+		"docs/RELEASE_CANDIDATE.md",
+		"internal/cli/root.go",
+		"packages/cli/src/index.ts",
+	}
+	for _, rel := range scanFiles {
+		path := filepath.Join(root, filepath.FromSlash(rel))
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		matches := versionPattern.FindAllString(string(data), -1)
+		for _, match := range matches {
+			normalized := strings.TrimPrefix(match, "v")
+			if normalized == rootVersion {
+				continue
+			}
+			r.addFailed(
+				"public_version_references:"+rel,
+				fmt.Sprintf("%s references stale version %s; expected %s from package.json", rel, match, rootVersion),
+				"version_drift:"+rel,
+			)
+			return
+		}
+	}
+	r.addPassed("public_version_references", "public version references match package.json")
+}
+
+func readPackageVersion(path string) (string, bool) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", false
+	}
+	var doc packageVersionFile
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return "", false
+	}
+	version := strings.TrimSpace(doc.Version)
+	return version, version != ""
 }
 
 // Helper kept here for symmetry with other packages. The scanner uses

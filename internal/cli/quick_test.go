@@ -94,15 +94,15 @@ func TestQuickHelp(t *testing.T) {
 	}
 }
 
-func TestQuickInHelpListing(t *testing.T) {
+func TestQuickHiddenFromDefaultHelp(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	code := Run([]string{"--help"}, &stdout, &stderr)
 	if code != ExitOK {
 		t.Fatalf("expected exit code %d, got %d", ExitOK, code)
 	}
-	if !strings.Contains(stdout.String(), "quick") {
-		t.Fatalf("expected help to include quick, got: %s", stdout.String())
+	if outputHasCommandLine(stdout.String(), "quick") {
+		t.Fatalf("expected default help to hide quick, got: %s", stdout.String())
 	}
 }
 

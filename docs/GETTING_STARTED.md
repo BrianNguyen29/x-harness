@@ -25,19 +25,30 @@ A passing `xh verify` means your **card matches the policy**. It does **not** me
 
 ## Quick start
 
-Run the guided onboarding:
+Use the core loop in the repository you want to protect:
 
 ```bash
-xh start
+xh init --minimal
+xh doctor --root . --json
+xh verify --card completion-card.yaml
 ```
 
-This runs a read-only check of your workspace (doctor), verifies the bundled examples, and previews the init wizard.
+If you are evaluating the x-harness source checkout itself, skip `init` and verify a bundled fixture:
+
+```bash
+xh doctor --root . --json
+xh verify --card examples/golden/regression/success-light/completion-card.yaml
+```
+
+`xh start` remains available as a guided helper, but it is not the primary onboarding path.
 
 ## Next steps
 
 1. **Hands-on** — [QUICKSTART.md](QUICKSTART.md): build the CLI and run your first verification.
 2. **Tutorial** — [tutorials/first-accepted-card.md](tutorials/first-accepted-card.md): end-to-end walkthrough of a valid completion card.
 3. **FAQ** — [FAQ.md](FAQ.md): common questions about Go vs TypeScript, LLM usage, and more.
-4. **Deep dive** — [ARCHITECTURE.md](ARCHITECTURE.md): layer model, validation cycle, and design notes.
+4. **Threat model** — [THREAT_MODEL.md](THREAT_MODEL.md): what x-harness does and does not protect against.
+5. **Evidence provenance** — [EVIDENCE_PROVENANCE.md](EVIDENCE_PROVENANCE.md): command evidence, hashes, CI binding, and attestation guidance.
+6. **Deep dive** — [ARCHITECTURE.md](ARCHITECTURE.md): layer model, validation cycle, and design notes.
 
 For the full command list, run `xh --help-all`. For the runtime contract, see [X_HARNESS.md](../X_HARNESS.md).

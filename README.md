@@ -130,13 +130,34 @@ Scoop and Homebrew manifests are generated automatically at release time from [`
 
 ### Fast track
 
+Run this in the project where you want to use x-harness:
+
 ```bash
-xh start
+xh init --minimal
+xh doctor --root . --json
+xh verify --card completion-card.yaml
 ```
 
-Or follow the steps manually:
+Or try the repository fixtures first:
 
-### 1. Health-check the workspace
+```bash
+xh doctor --root . --json
+xh verify --card examples/golden/regression/success-light/completion-card.yaml
+```
+
+### 1. Initialize a workspace
+
+To start using `x-harness` in another project, run `init` at its root:
+
+```bash
+xh init --minimal        # default: contracts, templates, policies, schemas
+# xh init --standard     # adds schemas and example solo-agent scenarios
+# xh init --full         # adds multi-agent examples, adapters, and a GitHub Action
+```
+
+`init` stops with a blocked summary if it finds conflicting files; re-run with `--force` only when you intentionally want to overwrite them.
+
+### 2. Health-check the workspace
 
 ```bash
 ./x-harness doctor
@@ -144,7 +165,7 @@ Or follow the steps manually:
 
 This validates that schemas, policies, templates, and adapter links are present and consistent. Look for `"healthy": true` in JSON output (`./x-harness doctor --json`).
 
-### 2. Run your first verification
+### 3. Run verification
 
 The repo ships with **28 golden scenario directories** across regression, capability, adversarial, conformance-strict, and recovery suites — **26 card-backed fixtures** plus **2 conformance-strict reference scenarios** (README-only, no completion card). Try a known-good one:
 
@@ -177,53 +198,25 @@ checks: 0 passed, 5 failed
 
 The task is **withheld**, not silently marked as done. This is the *fail-closed* default.
 
-### 3. Initialize a new workspace
-
-To start using `x-harness` in another project, run `init` at its root:
-
-```bash
-xh init --minimal        # default: contracts, templates, policies, schemas
-# xh init --standard     # adds schemas and example solo-agent scenarios
-# xh init --full         # adds multi-agent examples, adapters, and a GitHub Action
-```
-
-`init` stops with a blocked summary if it finds conflicting files; re-run with `--force` only when you intentionally want to overwrite them.
-
-### 4. Dispatch a task handoff
-
-```bash
-xh handoff standard --title "Fix checkout button alignment"
-```
-
-This generates a structured Markdown file with the explicit file set, evidence checklist, and rollback definitions for the `standard` tier.
-
 ---
 
-## Beginner actions
+## Daily core commands
 
-These are the actions you'll use most often. The full list is in `xh --help-all`.
+Most users should start with this narrow loop. The full command matrix is in [`docs/CLI_COMMANDS.md`](docs/CLI_COMMANDS.md) and `xh --help-all`.
 
+<!-- BEGIN X-HARNESS MANAGED CLI CORE COMMANDS -->
 | Action | What it does |
 | :-- | :-- |
-| **`start`** | Guided onboarding: doctor, examples verify, init wizard, next steps. |
-| **`learn`** | Read-only concept tour for beginners. |
-| **`quick`** | Next-action recommender for newcomers. |
-| **`check`** | Alias for `verify`. |
-| **`prepare`** | Check whether your workspace is ready for an agent handoff. |
-| **`recover`** | Generate a recovery playbook from an error message or trace. |
-| **`doctor`** | Validate workspace health (schemas, policies, links, freshness). |
-| **`actions`** | List all beginner-friendly actions (this list). |
-| **`status`** | Show a trace summary or card metrics. |
-| **`reset`** | Clean generated harness state (requires `--confirm`). |
-| **`init`** | Install harness assets into a target workspace. |
-| **`add`** | Add a metadata helper file (claim, evidence, or completion card). |
-| **`run`** | Run a task file or episode. |
-| **`ci`** | Run CI-oriented verification and reporting. |
+| `init` | Install harness assets into a workspace |
+| `doctor` | Validate workspace health and configuration |
+| `verify` | Run read-only verification against a completion card |
+| `check` | Alias for verify |
+<!-- END X-HARNESS MANAGED CLI CORE COMMANDS -->
 
 > **Terminal**: `xh <action>` (e.g. `xh check`)
 > **Agent chat**: `/xh:<action>` (e.g. `/xh:check`) — see [`docs/ADAPTERS.md`](docs/ADAPTERS.md)
 
-The advanced commands (`handoff`, `verify`, `trace`, `report`, `clean`, `examples`, `context`, `benchmark`, `recovery`, `packet`, `intake`, `governance`, `intervention`, `prediction`, `components`, `evidence`, `episode`, `attribution`, `permissions`, `evolve`, `export`, `import`, `frozen`, `federation`, `approval-risk`, `agent-profile`, `cost`, `contract`, `explain`, `conformance`, `release`, `boundary`, `policy`, `scan`, `card`, `readiness`, `adapters`, `repair`, `uninstall`, `profile`, …) are documented under [`docs/`](docs).
+Use `handoff`, `recover`, `report`, `trace`, and `benchmark` when you need more workflow structure. Governance, federation, cost, evolution, attribution, and other experimental commands are intentionally kept out of the default onboarding path; see [`docs/CLI_COMMANDS.md`](docs/CLI_COMMANDS.md) for maturity labels.
 
 ### Boundary checks (`xh boundary`)
 
@@ -326,6 +319,9 @@ You only need **one**. Adapters are thin wrappers around the same CLI; they do n
 | [`docs/CI.md`](docs/CI.md) | CI integration and dual-run gates. |
 | [`docs/RELEASE_SECURITY.md`](docs/RELEASE_SECURITY.md) | Release signing, SBOM, and provenance. |
 | [`docs/RELEASE_CANDIDATE.md`](docs/RELEASE_CANDIDATE.md) | Release-candidate checklist. |
+| [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) | Trust boundaries, attacker capabilities, and non-goals. |
+| [`docs/EVIDENCE_PROVENANCE.md`](docs/EVIDENCE_PROVENANCE.md) | Command evidence provenance, CI binding, checksums, and attestation guidance. |
+| [`docs/CLI_COMMANDS.md`](docs/CLI_COMMANDS.md) | Generated command maturity matrix. |
 | [`docs/PACKETS.md`](docs/PACKETS.md) | Immutable claim packets and chain integrity. |
 | [`docs/REPORT_FORMATS.md`](docs/REPORT_FORMATS.md) | Report output formats (Markdown, JSON, HTML). |
 
@@ -340,7 +336,7 @@ The authoritative contract is [`X_HARNESS.md`](X_HARNESS.md).
 
 ## Project status
 
-- **Version**: `0.99.0-rc1` (release candidate). The CLI is feature-complete for the v0.x contract, but the project is **pre-1.0**. Pin your version and expect minor contract changes before `1.0`.
+- **Version**: `0.99.0-rc7` (release candidate). The CLI is feature-complete for the v0.x contract, but the project is **pre-1.0**. Pin your version and expect minor contract changes before `1.0`.
 - **Native runtime**: Go CLI (recommended). The TypeScript CLI is a source-checkout compatibility baseline only and is no longer shipped in the published npm package.
 - **No production claims**: A passing `xh verify` is **not** a guarantee of correctness. It means your card matches the policy. See [`docs/VERIFY_GATE.md`](docs/VERIFY_GATE.md) for what the gate does and does not check.
 

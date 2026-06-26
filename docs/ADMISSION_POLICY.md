@@ -18,6 +18,12 @@ The canonical evidence floor is defined in the generated contract block below. I
 
 `done_checklist` is cross-checked against declared evidence, prediction, verification artifacts, and state where applicable. Optional checklist blocks on `light` cards are also checked for honesty if present. In strict or deep mode, `read_write_sets_declared: true` must be backed by `state.read_set` and `state.write_set`.
 
+Use `xh evidence run -- <command>` or CI-produced artifacts for command evidence
+whenever possible. Strict verification enforces command, exit code, runner, and
+start time for standard/deep command-backed evidence. `--require-evidence-hash`
+or the `governed-deep` profile also requires an output or artifact hash. See
+[Evidence Provenance](EVIDENCE_PROVENANCE.md).
+
 > The exact floor definitions below are managed by x-harness and take precedence over any human-written summary.
 
 ## Rejection conditions

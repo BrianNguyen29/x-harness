@@ -93,6 +93,72 @@ func TestCheckDocsDriftFailsOnMixedPackageManager(t *testing.T) {
 	}
 }
 
+func TestCheckDocsDriftFailsOnStalePublicVersionReference(t *testing.T) {
+	tmpDir := t.TempDir()
+	workflow := filepath.Join(tmpDir, ".github", "workflows", "x-harness-verify.yml")
+	if err := os.MkdirAll(filepath.Dir(workflow), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(workflow, []byte("name: x\njobs:\n  q:\n    steps:\n      - run: x-harness verify --card x.yaml\n      - run: x-harness policy matrix --json\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(tmpDir, "packages", "cli"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "package.json"), []byte(`{"version":"0.99.0-rc7","scripts":{"verify":"tsc && vitest"}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "packages", "cli", "package.json"), []byte(`{"version":"0.99.0-rc7"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("Version: 0.99.0-rc1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	report := CheckDocsDrift(tmpDir)
+	if report.Healthy {
+		t.Fatalf("expected unhealthy due to stale version, got %+v", report)
+	}
+	found := false
+	for _, tag := range report.DriftTags {
+		if tag == "version_drift:README.md" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected version_drift:README.md, got %+v", report.DriftTags)
+	}
+}
+
+func TestCheckDocsDriftPassesOnCurrentPublicVersionReference(t *testing.T) {
+	tmpDir := t.TempDir()
+	workflow := filepath.Join(tmpDir, ".github", "workflows", "x-harness-verify.yml")
+	if err := os.MkdirAll(filepath.Dir(workflow), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(workflow, []byte("name: x\njobs:\n  q:\n    steps:\n      - run: x-harness verify --card x.yaml\n      - run: x-harness policy matrix --json\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(tmpDir, "packages", "cli"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "package.json"), []byte(`{"version":"0.99.0-rc7","scripts":{"verify":"tsc && vitest"}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "packages", "cli", "package.json"), []byte(`{"version":"0.99.0-rc7"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("Version: 0.99.0-rc7\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	report := CheckDocsDrift(tmpDir)
+	if !report.Healthy {
+		t.Fatalf("expected healthy, got %+v", report)
+	}
+}
+
 func TestFormatDocsDriftTextRenders(t *testing.T) {
 	report := &DocsDriftReport{Healthy: true, Root: "/tmp/x"}
 	report.Checks = append(report.Checks, Check{Name: "demo", Status: "passed", Note: "ok"})

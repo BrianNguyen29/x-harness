@@ -25,7 +25,11 @@ These schemas are actively used by the verify gate and CLI.
 - `artifact_hash` — hash of the persisted artifact
 - `ci_run_url` — URI linking to the CI run that produced the artifact
 
-These fields are optional in all tiers. For `standard` and `deep`, the admission engine may emit advisory notes when artifact metadata is sparse, but it does not block valid cards solely for missing these fields.
+These fields are schema-optional so old cards remain parseable. Runtime policy
+can make a subset admission-critical: `xh verify --strict` requires command,
+exit code, runner, and start time for `standard`/`deep` command-backed evidence,
+and `--require-evidence-hash` or `governed-deep` requires at least one output or
+artifact hash. See [Evidence Provenance](EVIDENCE_PROVENANCE.md).
 
 ## Compatibility schemas (v0.1)
 
