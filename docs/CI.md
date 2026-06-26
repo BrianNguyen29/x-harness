@@ -9,6 +9,8 @@ The repository includes these public CI workflows:
 - `.github/workflows/x-harness-verify.yml` for TypeScript build, lint,
   typecheck, tests, Go build/test/vet/race/fuzz/parity, strict verify,
   doctor, examples, and adversarial benchmark gates.
+- `.github/workflows/branch-discipline.yml` for detecting direct non-merge
+  pushes to `main` and failing them with a clear PR-only message.
 - `.github/workflows/security-audit.yml` for dependency vulnerability scanning
   (`npm audit`, `govulncheck`) and secret-scanning requirement documentation.
 - `.github/workflows/codeql.yml` for GitHub CodeQL JavaScript/TypeScript

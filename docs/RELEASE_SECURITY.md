@@ -214,6 +214,15 @@ The starter workflow is disabled by default (`workflow_dispatch` only) so the ge
 
 ## Branch Protection and CODEOWNERS Backup
 
+### After-the-fact direct-push guard
+
+Because branch protection settings are pending backup-owner decisions, a file-only CI guard is in place:
+
+- `.github/workflows/branch-discipline.yml` runs on every `push` to `main`.
+- It checks whether `HEAD` is a merge commit (two or more parents).
+- If `HEAD` has fewer than two parents, the job fails with a message directing changes through pull requests.
+- This does not block PR merge commits (which are merge commits) or `pull_request` events themselves.
+
 ### Required settings for `main`
 
 - **Require pull request before merging** — all commits to `main` must come through a PR.
