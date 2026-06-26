@@ -66,7 +66,7 @@ Exit code is `0` when all tracked files match, and `1` when any tracked file dif
 npm audit --audit-level=high
 
 # Go dependencies
-go install golang.org/x/vuln/cmd/govulncheck@latest
+go install golang.org/x/vuln/cmd/govulncheck@v1.1.4 # last version compatible with Go 1.22
 govulncheck ./...
 ```
 
