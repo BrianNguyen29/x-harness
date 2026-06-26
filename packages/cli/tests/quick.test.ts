@@ -5,8 +5,14 @@ import * as path from "node:path";
 import { execaNode } from "../src/test-helpers.js";
 
 describe("quick command", () => {
-  it("quick appears in default help", async () => {
+  it("quick does not appear in default help", async () => {
     const { stdout, exitCode } = await execaNode(["--help"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).not.toContain("quick");
+  });
+
+  it("quick appears in --help-all", async () => {
+    const { stdout, exitCode } = await execaNode(["--help-all"]);
     expect(exitCode).toBe(0);
     expect(stdout).toContain("quick");
   });

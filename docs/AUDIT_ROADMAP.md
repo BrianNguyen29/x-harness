@@ -1,5 +1,7 @@
 # Audit Roadmap
 
+> **Current status:** Release candidate (`0.99.0-rc7`). CI is under active hardening; the project is **pre-1.0** and not yet production-ready.
+
 This document tracks the post-merge audit recommendations for x-harness and maps them to concrete deliverables, owners, and priority tiers.
 
 ## P1 — Immediate (Low-Risk Tooling & Docs)
@@ -8,15 +10,22 @@ These items are report-only, additive, and do not change runtime admission seman
 
 - [x] **Audit roadmap** — this document (`docs/AUDIT_ROADMAP.md`)
 - [x] **Schema/Policy sync check** — local script (`scripts/check-schema-policy-sync.mjs`) that compares root `schemas/` and `policies/` against `packages/cli/` copies, reports mismatches, and exits non-zero on drift.
-- [x] **Security audit workflow** — CI workflow (`.github/workflows/security-audit.yml`) running `npm audit`, `govulncheck`, and optional secret-scan steps on a scheduled cadence.
+- [x] **Security audit workflow** — CI workflow (`.github/workflows/security-audit.yml`) running `npm audit`, `govulncheck`, and a secret-scanning requirement gate on `push`, `pull_request`, and scheduled cadence.
 - [x] **Policy authority matrix** — human-readable doc (`docs/POLICY_AUTHORITY_MATRIX.md`) derived from `policies/authority.yaml`.
 - [x] **Coverage reporting** — report-only CI workflow (`.github/workflows/coverage-report.yml`) producing `npm run test:coverage` and Go coverage artifacts, plus documented local commands in this doc.
 
 ## P2 — Near-Term (CI Hardening & Drift Detection)
 
-These items may require small changes to existing workflow files or policy manifests.
+These items may require minor changes to existing workflow files or policy manifests.
 
 - [x] **Sync check in CI** — added as a step in `.github/workflows/verify-gates-supplemental.yml` (`node scripts/check-schema-policy-sync.mjs`) so schema/policy drift blocks merge. Verified as a supplemental gate, not required to gate merge until branch protection settings explicitly include `verify-gates-supplemental`.
+- [x] **PR-level dependency vulnerability scanning** — `security-audit.yml` now runs `npm audit --audit-level=high` and `govulncheck` on `push` and `pull_request` to `main`.
+- [x] **Secret scanning requirement documented** — `security-audit.yml` includes a `secret-scanning` job that documents the GitHub Advanced Security requirement and runs a lightweight heuristic scan.
+- [ ] **Scanner report-only → blocking/waiver** — deferred. `policies/scanner.yaml` is `report_only: true`. To promote to blocking, the conformance strict profile must enforce `scanner.blocking: true` and the waiver workflow must be implemented. Owner: user.
+- [ ] **Approval-risk rollout** — deferred. `policies/approval-risk.yaml` has `enabled: false`. Rollout requires calibrating thresholds, enabling `personal_scoring`, and wiring the risk gate into the verify pipeline. Owner: user.
+- [ ] **Coverage thresholds/CI parallelization** — deferred. Coverage workflows (`coverage-report.yml`) are report-only. Threshold enforcement and matrix job splitting (e.g., race detector package-level sharding) require benchmarking. Owner: user.
+- [ ] **Verify pipeline refactor** — deferred. Go-native is already the primary path; remaining work is moving TS-compatibility gates from source-checkout builds to artifact-based parity tests to reduce CI time. Owner: user.
+- [ ] **Go/TS drift controls** — deferred. Schema/policy sync is automated; admission engine drift test (comparing Go-native and TS compatibility decisions for golden examples) is not yet implemented. Owner: user.
 - [ ] **Dependency update automation** — deferred. Requires `dependabot.yml` configuration and alert routing verification. Owner: user.
 - [ ] **SBOM signing** — deferred. `sbom.yml` currently generates CycloneDX but does not attach a signed attestation or Sigstore bundle. SLSA provenance starter workflow (`slsa-provenance.yml`) is available as a stepping-stone for Go binary provenance, but does not sign the SBOM itself. Owner: user.
 - [ ] **Admission engine drift test** — deferred. Needs automated comparison between Go-native and TypeScript compatibility admission decisions for golden examples. Owner: user.
@@ -81,7 +90,7 @@ go tool cover -html=coverage.out -o go-coverage.html
 |----------|------|---------|---------|
 | x-harness Verify | `.github/workflows/x-harness-verify.yml` | `push` / `pull_request` | Primary build/test/verify gate |
 | x-harness Verify Gates Supplemental | `.github/workflows/verify-gates-supplemental.yml` | `push` / `pull_request` | Docs drift, examples, conformance, benchmark, schema/policy sync |
-| Security Audit | `.github/workflows/security-audit.yml` | `schedule` / `workflow_dispatch` | Vulnerability scanning (`npm audit`, `govulncheck`) |
+| Security Audit | `.github/workflows/security-audit.yml` | `push` / `pull_request` / `schedule` / `workflow_dispatch` | Vulnerability scanning (`npm audit`, `govulncheck`) and secret-scanning requirement documentation |
 | Coverage Report | `.github/workflows/coverage-report.yml` | `schedule` / `workflow_dispatch` | Report-only coverage artifact generation |
 | CodeQL | `.github/workflows/codeql.yml` | `push` / `pull_request` / `schedule` | Static analysis |
 | SBOM | `.github/workflows/sbom.yml` | `workflow_dispatch` / `pull_request` | CycloneDX SBOM generation |

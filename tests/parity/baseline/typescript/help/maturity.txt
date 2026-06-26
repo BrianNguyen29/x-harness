@@ -1,4 +1,4 @@
-xh 0.99.0-rc1
+xh 0.99.0-rc7
 
 A lightweight verify-gated harness for AI-agent workflows.
 
@@ -12,53 +12,65 @@ Usage:
   xh <command> [options]
 
 stable:
-  add
-  benchmark
-  check
-  clean
-  context
-  doctor
-  examples
-  handoff
-  init
-  prepare
-  recover
-  recovery
-  report
-  reset
-  status
-  trace
-  verify
+  add          Add claim, evidence, or completion card helpers
+  benchmark    Measure latency and verification benchmark behavior
+  check        Alias for verify
+  clean        Clean generated harness state
+  context      Show canonical context and runtime contract
+  doctor       Validate workspace health and configuration
+  examples     Verify bundled examples
+  handoff      Generate structured handoff prompts
+  init         Install harness assets into a workspace
+  prepare      Alias for handoff readiness
+  recover      Alias for recovery suggest
+  recovery     Generate recovery suggestions
+  report       Show trace summary or metrics report
+  reset        Alias for safe generated-state cleanup
+  status       Alias for report
+  trace        Append or verify trace events
+  verify       Run read-only verification against a completion card
 
 beta:
-  actions
-  ci
-  learn
-  packet
-  profile
-  quick
-  run
-  start
+  actions      List beginner-friendly actions
+  adapters     Inspect adapter matrix
+  boundary     Lint/check/explain boundary policy against repo source files
+  card         Generate or verify admission cards
+  ci           Run the built-in CI workflow
+  conformance  Run conformance checks
+  explain      Explain a completion card's admission/withheld state
+  learn        Read-only concept tour for beginners
+  packet       Work with claim/evidence packets
+  policy       Show policy enforcement matrix and rule explainers
+  profile      Recommend installation profiles
+  quick        Read-only next-action recommender for newcomers
+  readiness    Evaluate readiness levels
+  release      Generate or verify release evidence
+  repair       Repair managed files from manifest
+  run          Run a built-in workflow recipe
+  scan         Run static security scan on adapter or skill files
+  start        Guided onboarding: doctor, examples verify, init wizard, next steps
+  uninstall    Uninstall managed files using manifest
 
 experimental:
-  agent-profile
-  approval-risk
-  attribution
-  components
-  cost
-  decision
-  episode
-  evidence
-  evolve
-  export
-  federation
-  frozen
-  governance
-  import
-  intake
-  intervention
-  permissions
-  prediction
+  agent-profile Inspect agent profiles
+  approval-risk Evaluate approval risk
+  attribution  Evaluate attribution metadata
+  components   Inspect component registry coverage
+  contract     Run contract oracle checks
+  cost         Evaluate cost budget data
+  decision     Record or list decision memory records (ADR-lite)
+  episode      Create episode packages
+  evidence     Manage evidence corpus entries
+  evolve       Evaluate evolution candidates
+  export       Export frozen artifacts
+  federation   Evaluate federation patterns
+  frozen       Inspect frozen manifests
+  governance   Evaluate governance rules
+  import       Import frozen artifacts
+  intake       Evaluate task intake tiering
+  intervention Record governance interventions
+  permissions  Evaluate permission rules
+  prediction   Evaluate prediction/checklist claims
 
 Global options:
   -h, --help          Show help

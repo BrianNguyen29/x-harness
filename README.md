@@ -319,6 +319,7 @@ You only need **one**. Adapters are thin wrappers around the same CLI; they do n
 | [`docs/CI.md`](docs/CI.md) | CI integration and dual-run gates. |
 | [`docs/RELEASE_SECURITY.md`](docs/RELEASE_SECURITY.md) | Release signing, SBOM, and provenance. |
 | [`docs/RELEASE_CANDIDATE.md`](docs/RELEASE_CANDIDATE.md) | Release-candidate checklist. |
+| [`docs/PRODUCTION_READINESS.md`](docs/PRODUCTION_READINESS.md) | Pre-stable checklist and RC status. |
 | [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) | Trust boundaries, attacker capabilities, and non-goals. |
 | [`docs/EVIDENCE_PROVENANCE.md`](docs/EVIDENCE_PROVENANCE.md) | Command evidence provenance, CI binding, checksums, and attestation guidance. |
 | [`docs/CLI_COMMANDS.md`](docs/CLI_COMMANDS.md) | Generated command maturity matrix. |

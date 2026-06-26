@@ -39,6 +39,15 @@ jobs:
   # slsa-framework generator. Before enabling, pin the reusable workflow to a
   # verified SHA and ensure the release workflow uploads the same artifacts.
   #
+  # Provenance pin verification steps:
+  # 1. Visit https://github.com/slsa-framework/slsa-github-generator/releases
+  # 2. Copy the full commit SHA of the desired release.
+  # 3. Verify the SHA via an independent channel (e.g., sigstore certificate or
+  #    the project's documented release notes).
+  # 4. Replace <PINNED_SHA> below with the verified SHA.
+  # 5. Uncomment the provenance job and enable the release trigger above.
+  # 6. Run this workflow from a test tag to confirm artifact hashes match.
+  #
   # provenance:
   #   needs: [build]
   #   permissions:

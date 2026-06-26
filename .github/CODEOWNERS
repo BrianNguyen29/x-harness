@@ -2,3 +2,10 @@
 policies/ @BrianNguyen29
 schemas/ @BrianNguyen29
 internal/admission/ @BrianNguyen29
+
+# Production hardening requirement: backup CODEOWNERS owner
+# Critical paths above are currently assigned to a single owner. Before stable
+# release, add a confirmed secondary owner to each line, e.g.:
+#   .github/workflows/ @BrianNguyen29 @secondary-owner
+# The backup owner must be a repository admin or have the maintain role.
+# See docs/RELEASE_SECURITY.md#branch-protection-and-codeowners-backup

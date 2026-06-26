@@ -56,6 +56,7 @@ prediction:
 evidence:
   files_changed:
     - examples/ci/governed-deep-verify/completion-card.yaml
+    - packages/cli/.github/workflows/x-harness-verify.yml
   command_evidence:
     - command: ./x-harness verify --card examples/ci/governed-deep-verify/completion-card.yaml --profile governed-deep --json
       exit_code: 0

@@ -1,6 +1,10 @@
 name: Security Audit
 
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
   schedule:
     - cron: "0 6 * * 1"
@@ -32,5 +36,46 @@ jobs:
       - run: go install golang.org/x/vuln/cmd/govulncheck@latest
       - run: govulncheck ./...
 
+  secret-scanning:
+    name: Secret scanning requirement
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - name: Document secret scanning requirement
+        run: |
+          echo "================================================================"
+          echo "Production hardening requirement: GitHub Advanced Security"
+          echo "Secret scanning and push protection must be enabled for this"
+          echo "repository before stable release."
+          echo ""
+          echo "Enable at: Settings > Security > Code security and analysis"
+          echo "  - Secret scanning > Enable"
+          echo "  - Push protection > Enable"
+          echo "================================================================"
+      - name: Lightweight source secret scan (examples and fixtures excluded)
+        run: |
+          set +e
+          findings=0
+          # Scan only non-example, non-fixture, non-node_modules, non-test paths
+          # for common high-entropy secret patterns. This is advisory; GitHub
+          # Advanced Security is the authoritative source.
+          scan_paths=(.github/ internal/ cmd/ packages/cli/src/ scripts/)
+          for p in "${scan_paths[@]}"; do
+            if [ -d "$p" ]; then
+              grep -rE 'AKIA[0-9A-Z]{16}|ghp_[a-zA-Z0-9]{36}|sk-[a-zA-Z0-9]{20,}' \
+                "$p" \
+                --include='*.go' --include='*.ts' --include='*.js' --include='*.yml' --include='*.yaml' --include='*.json' --include='*.sh' --include='*.md' \
+                --exclude='*_test.go' --exclude='*_test.ts' --exclude='*.test.ts' --exclude='*.test.js' \
+                2>/dev/null && findings=1 || true
+            fi
+          done
+          if [ "$findings" -eq 1 ]; then
+            echo "::warning::Possible secret-like strings detected in source paths. Review manually."
+            # Report-only for now; do not block merge until scanner policy is promoted.
+            exit 0
+          fi
+          echo "No obvious secret patterns detected in scanned paths."
+
   # P2: Enable OSV-Scanner or TruffleHog once a verified action pin is available.
-  # Secret scanning is partially covered by GitHub Advanced Security and CodeQL.
+  # The secret-scanning job above documents the requirement and runs a lightweight
+  # heuristic until a pinned third-party action or built-in workflow is adopted.

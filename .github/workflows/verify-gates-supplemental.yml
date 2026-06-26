@@ -28,9 +28,9 @@ jobs:
           go-version: "1.22"
       - run: npm ci
       - run: npm run cli-metadata:check
+      - run: npm run build
       - name: Schema / policy sync check
         run: node scripts/check-schema-policy-sync.mjs
-      - run: npm run build
       - run: go build -o ./x-harness ./cmd/x-harness
       - name: Go-native docs drift gate
         run: ./x-harness doctor --docs-drift --root . --json

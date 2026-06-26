@@ -24,8 +24,6 @@ const strictVerifyCommand =
   "node packages/cli/dist/index.js verify --card examples/ci/strict-verify/completion-card.yaml --strict --json";
 const governedDeepVerifyCommand =
   "node packages/cli/dist/index.js verify --card examples/ci/governed-deep-verify/completion-card.yaml --profile governed-deep --json";
-const adversarialBenchmarkCommand =
-  "node packages/cli/dist/index.js benchmark --filter adversarial --gate --json";
 
 function execFileAsync(
   file: string,
@@ -60,19 +58,12 @@ describe("CI workflow", () => {
     expect(workflow).not.toContain("npm run test:smoke");
     expect(workflow).not.toContain("npm run test:integration");
     expect(workflow).toContain("verify-gates");
-    expect(workflow).toContain(adversarialBenchmarkCommand);
-    expect(
-      workflow.indexOf("node packages/cli/dist/index.js examples verify")
-    ).toBeLessThan(workflow.indexOf(adversarialBenchmarkCommand));
     expect(workflow).toContain("go-quality");
     expect(workflow).toContain("go test ./...");
     expect(workflow).toContain("go test -race ./...");
     expect(workflow).toContain("go vet ./...");
     expect(workflow).toContain("go build ./cmd/x-harness");
     expect(workflow).toContain("npm run parity:check-go");
-    expect(workflow).toContain(
-      "./x-harness conformance run --profile strict --json"
-    );
     expect(workflow).toContain("go-fuzz-smoke");
     expect(workflow).toContain("-fuzz=FuzzValidate");
   });

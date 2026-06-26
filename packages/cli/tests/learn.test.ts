@@ -2,8 +2,14 @@ import { describe, it, expect } from "vitest";
 import { execaNode } from "../src/test-helpers.js";
 
 describe("learn command", () => {
-  it("learn appears in default help", async () => {
+  it("learn does not appear in default help", async () => {
     const { stdout, exitCode } = await execaNode(["--help"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).not.toContain("learn");
+  });
+
+  it("learn appears in --help-all", async () => {
+    const { stdout, exitCode } = await execaNode(["--help-all"]);
     expect(exitCode).toBe(0);
     expect(stdout).toContain("learn");
   });

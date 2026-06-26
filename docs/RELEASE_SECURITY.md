@@ -197,14 +197,20 @@ brew upgrade x-harness
 
 ## SLSA Provenance Plan
 
-The release workflow already produces Sigstore bundles (cosign) and npm provenance. To reach SLSA Level 3 for Go binaries, the following starter workflow and plan are provided:
+The release workflow already produces Sigstore bundles (cosign) and npm provenance. To reach SLSA Level 3 for Go binaries, the following starter workflow and plan are provided in `.github/workflows/slsa-provenance.yml`:
 
 1. **Artifact preparation** — `.github/workflows/slsa-provenance.yml` builds the Go binary, generates a SHA256 checksum, and uploads the artifact with a `hashes` output.
 2. **SLSA attestation generation** — once the official `slsa-framework/slsa-github-generator` reusable workflow is pinned to a verified SHA, a `provenance` job can be added that calls the generic generator with the prepared base64-subjects.
+   - Pin verification steps are documented in the workflow file:
+     - Visit the generator releases page and copy the full commit SHA.
+     - Verify the SHA via an independent channel (Sigstore certificate or project release notes).
+     - Replace `<PINNED_SHA>` with the verified SHA.
+     - Uncomment the provenance job and enable the release trigger.
+     - Run from a test tag to confirm artifact hashes match.
 3. **Attestation attachment** — the generated `slsa-attestation.intoto.jsonl` is uploaded to the GitHub Release alongside the existing Sigstore bundles and checksums.
 4. **Consumer verification** — consumers can verify the SLSA attestation with the `slsa-verifier` CLI or rely on the existing cosign bundle and release checksums as a secondary signal.
 
-The starter workflow is disabled by default (`workflow_dispatch` only) so the generator pin can be reviewed and enabled without changing the release critical path.
+The starter workflow is disabled by default (`workflow_dispatch` only) so the generator pin can be reviewed and enabled without changing the release critical path. No unpinned third-party actions are used in the active workflow.
 
 ## Branch Protection and CODEOWNERS Backup
 
@@ -223,16 +229,17 @@ The starter workflow is disabled by default (`workflow_dispatch` only) so the ge
 
 ### CODEOWNERS backup recommendation
 
-The current `.github/CODEOWNERS` assigns critical paths (`.github/workflows/`, `policies/`, `schemas/`, `internal/admission/`) to a single owner. To avoid a single point of failure:
+The current `.github/CODEOWNERS` assigns critical paths (`.github/workflows/`, `policies/`, `schemas/`, `internal/admission/`) to a single owner. To avoid a single point of failure, a backup owner must be added before stable release. Because no confirmed backup owner is currently known, the requirement is documented in `.github/CODEOWNERS` as a comment rather than assigning a guessed handle.
 
-1. Add a secondary reviewer group or individual to each protected path, e.g.:
-   ```
-   .github/workflows/ @BrianNguyen29 @secondary-owner
-   policies/ @BrianNguyen29 @secondary-owner
-   schemas/ @BrianNguyen29 @secondary-owner
-   internal/admission/ @BrianNguyen29 @secondary-owner
-   ```
-2. Ensure the secondary owner is a repository admin or has `maintain` role so they can approve and merge when the primary owner is unavailable.
-3. Keep the backup owner list short (two or three individuals) to preserve review velocity while eliminating single-person dependency.
+Once a backup owner is confirmed out-of-band, add them to each protected path, e.g.:
 
-> **Note**: Changing `.github/CODEOWNERS` itself requires the existing owner approval. Any backup-owner addition should be proposed in a dedicated PR with out-of-band confirmation from the proposed backup owner.
+```
+.github/workflows/ @BrianNguyen29 @secondary-owner
+policies/ @BrianNguyen29 @secondary-owner
+schemas/ @BrianNguyen29 @secondary-owner
+internal/admission/ @BrianNguyen29 @secondary-owner
+```
+
+Ensure the secondary owner is a repository admin or has the `maintain` role so they can approve and merge when the primary owner is unavailable. Keep the backup owner list short (two or three individuals) to preserve review velocity while eliminating single-person dependency.
+
+> **Note**: Changing `.github/CODEOWNERS` itself requires the existing owner approval. Any backup-owner addition should be proposed in a dedicated PR with out-of-band confirmation from the proposed backup owner. The current file documents this requirement as a comment pending confirmation.

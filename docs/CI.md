@@ -9,6 +9,8 @@ The repository includes these public CI workflows:
 - `.github/workflows/x-harness-verify.yml` for TypeScript build, lint,
   typecheck, tests, Go build/test/vet/race/fuzz/parity, strict verify,
   doctor, examples, and adversarial benchmark gates.
+- `.github/workflows/security-audit.yml` for dependency vulnerability scanning
+  (`npm audit`, `govulncheck`) and secret-scanning requirement documentation.
 - `.github/workflows/codeql.yml` for GitHub CodeQL JavaScript/TypeScript
   scanning.
 - `.github/workflows/scorecard.yml` for OpenSSF Scorecard supply-chain checks.
@@ -16,6 +18,10 @@ The repository includes these public CI workflows:
 - `.github/workflows/release.yml` for tag-based package verification, Go binary
   release candidate builds/checksums/signing/cross-platform smoke tests, and npm
   provenance publishing.
+- `.github/workflows/verify-gates-supplemental.yml` for docs drift, examples,
+  conformance, benchmark, schema/policy sync, and additional parity gates.
+- `.github/workflows/slsa-provenance.yml` for artifact preparation and SLSA Level 3
+  provenance planning (disabled by default until the generator is pinned).
 
 The verify workflow is the main pull-request gate. See `.github/workflows/x-harness-verify.yml` for the current pinned YAML. At a high level it runs four jobs:
 
