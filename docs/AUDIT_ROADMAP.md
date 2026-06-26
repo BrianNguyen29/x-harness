@@ -95,7 +95,7 @@ go tool cover -html=coverage.out -o go-coverage.html
 | CodeQL | `.github/workflows/codeql.yml` | `push` / `pull_request` / `schedule` | Static analysis |
 | SBOM | `.github/workflows/sbom.yml` | `workflow_dispatch` / `pull_request` | CycloneDX SBOM generation |
 | Scorecard | `.github/workflows/scorecard.yml` | `push` / `schedule` | OpenSSF Scorecard |
-| SLSA Provenance Starter | `.github/workflows/slsa-provenance.yml` | `workflow_dispatch` | Artifact preparation for SLSA Level 3 (disabled by default)
+| SLSA Provenance Starter | `.github/workflows/slsa-provenance.yml` | `workflow_dispatch` / `release` | Artifact preparation and provenance generation for SLSA Level 3 (enabled via audited semver tag)
 
 ## References
 

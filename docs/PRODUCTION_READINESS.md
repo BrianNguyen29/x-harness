@@ -18,7 +18,7 @@
 ### Security
 - [x] Dependency vulnerability scanning (`npm audit --audit-level=high`, `govulncheck`) runs on every PR/push
 - [ ] Secret scanning enabled via GitHub Advanced Security (repo setting) — documented requirement in `.github/workflows/security-audit.yml`
-- [ ] SLSA provenance generator pinned to a verified SHA and enabled for tagged releases — actionable plan in `.github/workflows/slsa-provenance.yml`
+- [ ] SLSA provenance generator enabled for tagged releases using `@v2.1.0` with audited semver exception (all other actions remain SHA-pinned) — see `.github/workflows/slsa-provenance.yml`
 - [ ] Backup CODEOWNERS owner added for critical paths — documented requirement in `.github/CODEOWNERS`
 
 ### CI / Quality
