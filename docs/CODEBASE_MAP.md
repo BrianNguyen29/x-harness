@@ -128,7 +128,7 @@ These are not implemented in the TypeScript CLI.
 The main PR gate is `.github/workflows/x-harness-verify.yml`. It runs:
 
 - `quality` — Node 22 matrix for `typecheck`, `test:typecheck`, `build`, `lint`, `format:check`, `test`.
-- `go-quality` — Go 1.22 matrix for `go test`, `go test -race`, `go vet`,
+- `go-quality` — Go 1.25.9 matrix for `go test`, `go test -race`, `go vet`,
 `go build ./cmd/x-harness`, and `npm run parity:check-go`.
 - `go-fuzz-smoke` — bounded Go fuzz target (`FuzzValidate`).
 - `verify-gates` — builds both CLIs and runs Go-native primary gates
