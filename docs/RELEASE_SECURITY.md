@@ -197,20 +197,17 @@ brew upgrade x-harness
 
 ## SLSA Provenance Plan
 
-The release workflow already produces Sigstore bundles (cosign) and npm provenance. To reach SLSA Level 3 for Go binaries, the following starter workflow and plan are provided in `.github/workflows/slsa-provenance.yml`:
+The release workflow already produces Sigstore bundles (cosign) and npm provenance. SLSA Level 3 provenance for Go binaries is enabled via `.github/workflows/slsa-provenance.yml`:
 
 1. **Artifact preparation** — `.github/workflows/slsa-provenance.yml` builds the Go binary, generates a SHA256 checksum, and uploads the artifact with a `hashes` output.
-2. **SLSA attestation generation** — once the official `slsa-framework/slsa-github-generator` reusable workflow is pinned to a verified SHA, a `provenance` job can be added that calls the generic generator with the prepared base64-subjects.
-   - Pin verification steps are documented in the workflow file:
-     - Visit the generator releases page and copy the full commit SHA.
-     - Verify the SHA via an independent channel (Sigstore certificate or project release notes).
-     - Replace `<PINNED_SHA>` with the verified SHA.
-     - Uncomment the provenance job and enable the release trigger.
-     - Run from a test tag to confirm artifact hashes match.
+2. **SLSA attestation generation** — a `provenance` job calls the `slsa-framework/slsa-github-generator` generic generator with the prepared base64-subjects.
+   - The generator is referenced by a full semver tag (`@v2.1.0`) rather than a commit SHA. This is a deliberate, scoped exception: the SLSA generator MUST be referenced by semver tag for `slsa-verifier` compatibility. All other third-party actions in this repository remain pinned by SHA.
+   - The tag was audited against commit `f7dd8c54c2067bafc12ca7a55595d5ee9b75204a` via the project's GitHub release page.
+   - To validate the workflow end-to-end before a stable release, run it from a throwaway tag.
 3. **Attestation attachment** — the generated `slsa-attestation.intoto.jsonl` is uploaded to the GitHub Release alongside the existing Sigstore bundles and checksums.
 4. **Consumer verification** — consumers can verify the SLSA attestation with the `slsa-verifier` CLI or rely on the existing cosign bundle and release checksums as a secondary signal.
 
-The starter workflow is disabled by default (`workflow_dispatch` only) so the generator pin can be reviewed and enabled without changing the release critical path. No unpinned third-party actions are used in the active workflow.
+The workflow runs on `release` (published) and `workflow_dispatch`. No unpinned third-party actions are used in the active workflow except the SLSA generator, which is pinned by audited semver tag.
 
 ## Branch Protection and CODEOWNERS Backup
 

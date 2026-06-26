@@ -2,9 +2,8 @@ name: SLSA Provenance Starter
 
 on:
   workflow_dispatch:
-  # Enable on release when the SLSA generator pin is confirmed:
-  # release:
-  #   types: [created]
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -35,27 +34,20 @@ jobs:
           path: |
             ./x-harness
 
-  # To complete SLSA Level 3 provenance, add a provenance job that calls the
-  # slsa-framework generator. Before enabling, pin the reusable workflow to a
-  # verified SHA and ensure the release workflow uploads the same artifacts.
-  #
-  # Provenance pin verification steps:
-  # 1. Visit https://github.com/slsa-framework/slsa-github-generator/releases
-  # 2. Copy the full commit SHA of the desired release.
-  # 3. Verify the SHA via an independent channel (e.g., sigstore certificate or
-  #    the project's documented release notes).
-  # 4. Replace <PINNED_SHA> below with the verified SHA.
-  # 5. Uncomment the provenance job and enable the release trigger above.
-  # 6. Run this workflow from a test tag to confirm artifact hashes match.
-  #
-  # provenance:
-  #   needs: [build]
-  #   permissions:
-  #     actions: read
-  #     id-token: write
-  #     contents: write
-  #   uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@<PINNED_SHA>
-  #   with:
-  #     base64-subjects: "${{ needs.build.outputs.hashes }}"
-  #     upload-assets: true
-  #     provenance-name: "slsa-attestation.intoto.jsonl"
+  # Exception: the slsa-framework/slsa-github-generator reusable workflow MUST be
+  # referenced by a full semver tag (@vX.Y.Z) for slsa-verifier compatibility.
+  # A commit SHA breaks consumer verification. All other third-party actions in this
+  # repository remain pinned by SHA. The tag below was audited against commit
+  # f7dd8c54c2067bafc12ca7a55595d5ee9b75204a via the project's GitHub release page.
+  # See docs/RELEASE_SECURITY.md for the scoped ADR.
+  provenance:
+    needs: [build]
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      base64-subjects: "${{ needs.build.outputs.hashes }}"
+      upload-assets: true
+      provenance-name: "slsa-attestation.intoto.jsonl"

@@ -23,7 +23,7 @@ The repository includes these public CI workflows:
 - `.github/workflows/verify-gates-supplemental.yml` for docs drift, examples,
   conformance, benchmark, schema/policy sync, and additional parity gates.
 - `.github/workflows/slsa-provenance.yml` for artifact preparation and SLSA Level 3
-  provenance planning (disabled by default until the generator is pinned).
+  provenance generation (enabled on published releases with audited semver tag).
 
 The verify workflow is the main pull-request gate. See `.github/workflows/x-harness-verify.yml` for the current pinned YAML. At a high level it runs four jobs:
 
