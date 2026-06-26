@@ -1,0 +1,26 @@
+name: Branch Discipline
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  direct-push-guard:
+    name: direct-push-guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - name: Check for direct push to main
+        run: |
+          PARENT_COUNT=$(($(git rev-list --parents -n 1 HEAD | wc -w) - 1))
+          if [ "$PARENT_COUNT" -ge 2 ]; then
+            echo "Merge commit detected. PR merge path allowed."
+            exit 0
+          fi
+          echo "ERROR: Direct push to main detected."
+          echo "All changes to main must go through a pull request."
+          exit 1
