@@ -638,7 +638,7 @@ describe("release packaging", () => {
     expect(releaseWorkflow).toContain("npm -w packages/cli run pack:dry-run");
     expect(releaseWorkflow).toContain("npm sbom --workspace x-harness");
     expect(releaseWorkflow).toContain(
-      'npm publish "$TARBALL" --provenance --access public --tag next'
+      'npm publish "$TARBALL" --provenance --access public --tag latest'
     );
     expect(releaseWorkflow).toContain(
       'gh release upload "$VERSION" .x-harness/release/go-modules.sbom.json --clobber'

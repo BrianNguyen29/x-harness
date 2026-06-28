@@ -4,7 +4,7 @@ Thank you for helping keep x-harness safe.
 
 ## Supported versions
 
-Security fixes target the current `main` branch and the latest released `0.x` version.
+Security fixes target the current `main` branch and the latest released `1.x` version.
 
 ## Reporting a vulnerability
 

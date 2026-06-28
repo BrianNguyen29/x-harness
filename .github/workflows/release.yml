@@ -396,7 +396,7 @@ jobs:
           set -euo pipefail
           TARBALL="$(find "$PWD/.x-harness/release" -maxdepth 1 -name 'x-harness-*.tgz' -print -quit)"
           test -n "$TARBALL"
-          npm publish "$TARBALL" --provenance --access public --tag next
+          npm publish "$TARBALL" --provenance --access public --tag latest
       - name: Skip npm publish for RC tags
         if: ${{ contains(github.ref_name, '-') }}
         shell: bash

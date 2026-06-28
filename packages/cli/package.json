@@ -1,6 +1,6 @@
 {
   "name": "x-harness",
-  "version": "0.99.0-rc7",
+  "version": "1.0.0",
   "description": "A lightweight verify-gated harness for AI-agent workflows.",
   "license": "MIT",
   "type": "module",

@@ -333,7 +333,7 @@ Hợp đồng có thẩm quyền nằm ở [`X_HARNESS.md`](X_HARNESS.md).
 
 ## Tình trạng dự án
 
-- **Phiên bản**: `0.99.0-rc1` (release candidate). CLI đã đủ tính năng cho hợp đồng v0.x, nhưng dự án vẫn **tiền-1.0**. Hãy ghim phiên bản của bạn và lường trước một số thay đổi nhỏ về contract trước khi đạt `1.0`.
+- **Phiên bản**: `1.0.0` (stable). CLI đã đủ tính năng cho hợp đồng v1.0.
 - **Runtime chính**: Go CLI (khuyến nghị). TypeScript CLI chỉ còn là source-checkout compatibility baseline, không còn được đóng gói trong gói npm đã phát hành.
 - **Không có tuyên bố production**: Một lần `xh verify` đạt **không phải** là bảo đảm đúng đắn. Nó có nghĩa là card của bạn khớp với policy. Xem [`docs/VERIFY_GATE.md`](docs/VERIFY_GATE.md) để biết gate kiểm tra và không kiểm tra những gì.
 

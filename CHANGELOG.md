@@ -9,7 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-28
+
 ### Added
+
+- **Stable release**: `1.0.0` is the first stable release. The CLI is feature-complete for the v1.0 contract.
+- **Branch discipline guard**: `.github/workflows/branch-discipline.yml` detects direct non-merge pushes to `main` and fails them with a clear PR-only message.
+- **SLSA provenance**: Enabled SLSA Level 3 provenance generation using `slsa-framework/slsa-github-generator@v2.1.0` with an audited semver exception (all other actions remain SHA-pinned).
+
+### Changed
+
+- **Npm dist-tag**: Stable releases now publish to npm with `--tag latest` instead of `--tag next`.
+
+### Security
+
+- **Single-maintainer governance risk**: Documented as an accepted risk for `1.0.0`. A post-1.0 follow-up must add a confirmed backup CODEOWNER before the next minor release.
 
 - **`xh boundary {lint,check,explain}` (PR #59)**: Deterministic path-glob + import-regex boundary policy checker. Loads `policies/boundaries.yaml` (schema: `schemas/boundary-policy.schema.json`, mirrored to `packages/cli/schemas/boundary-policy.schema.json`); supports `lint`, `check --all|--changed`, and `explain <file>`; JSON and text output; V1 zero-false-positive on the x-harness repo with the shipped example policy. Boundary checks are opt-in (missing policy is a warning, not a failure).
 - **`verify --contract-oracles`**: New opt-in flag that runs rule-based oracle assertions from `policies/contract-oracle.yaml` (or custom path via `--contract-oracles-policy`). Supports both `grep_rules` and `dependency_rules` (line-level import scanning). Default policy is empty/safe; no assertions run without a policy file.

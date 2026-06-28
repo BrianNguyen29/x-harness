@@ -237,6 +237,8 @@ Because branch protection settings are pending backup-owner decisions, a file-on
 
 The current `.github/CODEOWNERS` assigns critical paths (`.github/workflows/`, `policies/`, `schemas/`, `internal/admission/`) to a single owner. To avoid a single point of failure, a backup owner must be added before stable release. Because no confirmed backup owner is currently known, the requirement is documented in `.github/CODEOWNERS` as a comment rather than assigning a guessed handle.
 
+> **Single-maintainer governance risk (accepted for 1.0.0)**: This project is maintained by a single owner. The absence of a backup CODEOWNER is a documented governance risk accepted for the `1.0.0` release. A post-1.0 follow-up must add a confirmed secondary owner to each protected path before the next minor release.
+
 Once a backup owner is confirmed out-of-band, add them to each protected path, e.g.:
 
 ```

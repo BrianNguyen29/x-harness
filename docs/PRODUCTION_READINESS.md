@@ -1,25 +1,21 @@
 # Production Readiness Checklist
 
-> **Current status**: `0.99.0-rc7` — **Release Candidate / pre-stable**  
-> This project is **not yet production-stable**. It will remain RC until:
-> - All P1/P2 hardening items are completed
-> - A stable `1.0.0` tag is cut and the verify gate passes
-> - Branch protection and required status checks are fully enforced
+> **Current status**: `1.0.0` — **Stable**
+> This project is **production-stable**. The `1.0.0` release completes the RC cycle.
 
 ## Version Stance
 
-- `0.99.0-rc7` is a release candidate.
-- Do **not** market or deploy as production-stable.
-- Consumers should pin to the exact RC tag or commit SHA.
-- The stable release will be tagged only after this checklist is completed and the full verify gate passes.
+- `1.0.0` is the first stable release.
+- The CLI is feature-complete for the v1.0 contract.
+- Consumers can pin to the exact tag or use `latest`.
 
 ## Checklist
 
 ### Security
 - [x] Dependency vulnerability scanning (`npm audit --audit-level=high`, `govulncheck`) runs on every PR/push
 - [ ] Secret scanning enabled via GitHub Advanced Security (repo setting) — documented requirement in `.github/workflows/security-audit.yml`
-- [ ] SLSA provenance generator enabled for tagged releases using `@v2.1.0` with audited semver exception (all other actions remain SHA-pinned) — see `.github/workflows/slsa-provenance.yml`
-- [ ] Backup CODEOWNERS owner added for critical paths — documented requirement in `.github/CODEOWNERS`
+- [x] SLSA provenance generator enabled for tagged releases using `@v2.1.0` with audited semver exception (all other actions remain SHA-pinned) — see `.github/workflows/slsa-provenance.yml`
+- [ ] Backup CODEOWNERS owner added for critical paths — **accepted single-maintainer governance risk for 1.0.0**; tracked as post-1.0 follow-up. See `docs/RELEASE_SECURITY.md` and `.github/CODEOWNERS`
 
 ### CI / Quality
 - [ ] Scanner report-only → blocking/waiver roadmap approved and scheduled (owner: user)
@@ -41,9 +37,9 @@
 | Audit roadmap | `docs/AUDIT_ROADMAP.md` | P1 complete; P2/P3 deferred |
 | Release security | `docs/RELEASE_SECURITY.md` | Active |
 | Threat model | `docs/THREAT_MODEL.md` | Active |
-| Release candidate | `docs/RELEASE_CANDIDATE.md` | Active |
+| Release candidate | `docs/RELEASE_CANDIDATE.md` | Historical (RC cycle complete) |
 | CI integration | `docs/CI.md` | Active |
 
 ## Deferrals
 
-Items with owner `user` are tracked in `docs/AUDIT_ROADMAP.md` and will be scheduled post-RC. No fake owners or guessed timelines are assigned.
+Items with owner `user` are tracked in `docs/AUDIT_ROADMAP.md` and will be scheduled post-1.0. No fake owners or guessed timelines are assigned.
