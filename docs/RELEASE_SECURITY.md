@@ -92,7 +92,7 @@ The TypeScript CLI resolves package assets through `packages/cli/src/core/assets
 Tagged releases publish with npm provenance:
 
 ```bash
-npm publish .x-harness/release/x-harness-<version>.tgz --provenance --access public --tag next
+npm publish .x-harness/release/x-harness-<version>.tgz --provenance --access public --tag latest
 ```
 
 The publish job uses GitHub OIDC (`id-token: write`) and `actions/setup-node` with the npm registry. The build/release job uses OIDC for cosign signing but does not publish. If npm trusted publishing is configured, prefer it over long-lived publish tokens. If a token is still required, it must be scoped to package publish and stored as `NPM_TOKEN`. Stable tags fail closed when `NPM_TOKEN` is missing; RC tags publish signed prerelease GitHub Release artifacts only, are not marked latest, and intentionally skip npm publish.
@@ -220,7 +220,9 @@ Because branch protection settings are pending backup-owner decisions, a file-on
 - If `HEAD` has fewer than two parents, the job fails with a message directing changes through pull requests.
 - This does not block PR merge commits (which are merge commits) or `pull_request` events themselves.
 
-### Required settings for `main`
+### Recommended settings for `main`
+
+> **Note**: These are recommended, not fully enforced at this time. Branch protection settings requiring a backup CODEOWNER for critical paths are pending confirmation. A file-only direct-push guard (`.github/workflows/branch-discipline.yml`) is in place as a backstop.
 
 - **Require pull request before merging** — all commits to `main` must come through a PR.
 - **Require status checks to pass** — the following workflow jobs are required:

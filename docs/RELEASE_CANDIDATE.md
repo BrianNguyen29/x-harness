@@ -1,5 +1,7 @@
 # Release Candidate Requirements
 
+> **Historical note**: The `0.99.0-rc7` release candidate cycle is complete. This document describes the RC requirements that preceded the stable `1.0.0` release. It is retained for reference.
+
 This document defines the release-candidate (RC) requirements, including dual-run CI, Go parity verification, packaging, and cross-platform smoke evidence.
 
 ## Overview

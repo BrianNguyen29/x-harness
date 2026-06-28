@@ -35,7 +35,7 @@ enforces.
 - [Cleanup](CLEANUP.md)
 - [Release Security](RELEASE_SECURITY.md)
 - [Release Candidate](RELEASE_CANDIDATE.md) — Release requirements and evidence floor
-- [Production Readiness](PRODUCTION_READINESS.md) — Pre-stable checklist and RC status
+- [Production Readiness](PRODUCTION_READINESS.md) — Production readiness checklist and release status
 - [TypeScript Maintenance](TYPESCRIPT_MAINTENANCE.md) — Maintenance mode for the TypeScript CLI
 
 ## Reference

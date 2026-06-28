@@ -27,7 +27,7 @@ These items may require minor changes to existing workflow files or policy manif
 - [ ] **Verify pipeline refactor** — deferred. Go-native is already the primary path; remaining work is moving TS-compatibility gates from source-checkout builds to artifact-based parity tests to reduce CI time. Owner: user.
 - [ ] **Go/TS drift controls** — deferred. Schema/policy sync is automated; admission engine drift test (comparing Go-native and TS compatibility decisions for golden examples) is not yet implemented. Owner: user.
 - [ ] **Dependency update automation** — deferred. Requires `dependabot.yml` configuration and alert routing verification. Owner: user.
-- [ ] **SBOM signing** — deferred. `sbom.yml` currently generates CycloneDX but does not attach a signed attestation or Sigstore bundle. SLSA provenance starter workflow (`slsa-provenance.yml`) is available as a stepping-stone for Go binary provenance, but does not sign the SBOM itself. Owner: user.
+- [ ] **SBOM signing** — deferred. `sbom.yml` currently generates CycloneDX but does not attach a signed attestation or Sigstore bundle. SLSA provenance for Go binaries is now enabled via `slsa-provenance.yml` (audited semver tag `@v2.1.0`). SBOM-specific signing remains deferred. Owner: user.
 - [ ] **Admission engine drift test** — deferred. Needs automated comparison between Go-native and TypeScript compatibility admission decisions for golden examples. Owner: user.
 - [ ] **Context floor enforcement** — deferred. Needs moving `policies/context-floor.yaml` from advisory to runtime-enforced in at least one profile. Owner: user.
 
