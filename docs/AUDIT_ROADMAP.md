@@ -1,6 +1,6 @@
 # Audit Roadmap
 
-> **Current status:** Release candidate (`0.99.0-rc7`). CI is under active hardening; the project is **pre-1.0** and not yet production-ready.
+> **Current status:** Stable (`1.0.0`). CI hardening is complete; the project is **production-ready**.
 
 This document tracks the post-merge audit recommendations for x-harness and maps them to concrete deliverables, owners, and priority tiers.
 

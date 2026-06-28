@@ -105,13 +105,13 @@ func TestCheckDocsDriftFailsOnStalePublicVersionReference(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(tmpDir, "packages", "cli"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "package.json"), []byte(`{"version":"0.99.0-rc7","scripts":{"verify":"tsc && vitest"}}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "package.json"), []byte(`{"version":"1.0.0","scripts":{"verify":"tsc && vitest"}}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "packages", "cli", "package.json"), []byte(`{"version":"0.99.0-rc7"}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "packages", "cli", "package.json"), []byte(`{"version":"1.0.0"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("Version: 0.99.0-rc1\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("Version: 0.99.0-rc7\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -143,13 +143,13 @@ func TestCheckDocsDriftPassesOnCurrentPublicVersionReference(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(tmpDir, "packages", "cli"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "package.json"), []byte(`{"version":"0.99.0-rc7","scripts":{"verify":"tsc && vitest"}}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "package.json"), []byte(`{"version":"1.0.0","scripts":{"verify":"tsc && vitest"}}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "packages", "cli", "package.json"), []byte(`{"version":"0.99.0-rc7"}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "packages", "cli", "package.json"), []byte(`{"version":"1.0.0"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("Version: 0.99.0-rc7\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "README.md"), []byte("Version: 1.0.0\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

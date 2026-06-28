@@ -337,7 +337,7 @@ The authoritative contract is [`X_HARNESS.md`](X_HARNESS.md).
 
 ## Project status
 
-- **Version**: `0.99.0-rc7` (release candidate). The CLI is feature-complete for the v0.x contract, but the project is **pre-1.0**. Pin your version and expect minor contract changes before `1.0`.
+- **Version**: `1.0.0` (stable). The CLI is feature-complete for the v1.0 contract.
 - **Native runtime**: Go CLI (recommended). The TypeScript CLI is a source-checkout compatibility baseline only and is no longer shipped in the published npm package.
 - **No production claims**: A passing `xh verify` is **not** a guarantee of correctness. It means your card matches the policy. See [`docs/VERIFY_GATE.md`](docs/VERIFY_GATE.md) for what the gate does and does not check.
 
